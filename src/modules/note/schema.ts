@@ -88,13 +88,13 @@ export type SearchNoteInput = z.infer<typeof searchNoteQuerySchema>;
 // Response type
 export interface NoteResponse {
   id: number;
-  userId: number;
   content: string;
-  vectorEmbedding?: string;
-  isPublic: boolean;
-  shareToken?: string | null;
   createdAt: Date;
   updatedAt: Date;
+  userId: number;
+  isPublic: boolean;
+  shareToken: string | null;
+  vectorEmbedding?: string | null;
   tags: string[];
 }
 

@@ -5,9 +5,18 @@ import { db } from "@/lib/db.js";
 import { users } from "@/config/schema.js";
 import { UpdateProfileInput, UpdateUserInput, UserResponse } from "./schema.js";
 
+// Add this interface to extend FastifyRequest
+interface RequestWithUser<T = unknown> extends FastifyRequest {
+  user: {
+    id: number;
+    role: string;
+  };
+  body: T;
+}
+
 export async function getProfile(
-  request: FastifyRequest,
-  reply: FastifyReply,
+  request: RequestWithUser,
+  reply: FastifyReply
 ): Promise<UserResponse> {
   const user = await db.query.users.findFirst({
     where: eq(users.id, request.user.id),
@@ -33,8 +42,8 @@ export async function getProfile(
 }
 
 export async function updateProfile(
-  request: FastifyRequest<{ Body: UpdateProfileInput }>,
-  reply: FastifyReply,
+  request: RequestWithUser<UpdateProfileInput>,
+  reply: FastifyReply
 ): Promise<UserResponse> {
   const { name, password } = request.body;
   const userId = request.user.id;
@@ -65,8 +74,8 @@ export async function updateProfile(
 
 // Admin only functions
 export async function listUsers(
-  request: FastifyRequest<{ Querystring: { limit?: number; offset?: number } }>,
-  reply: FastifyReply,
+  request: RequestWithUser & { Querystring: { limit?: number; offset?: number } },
+  reply: FastifyReply
 ): Promise<UserResponse[]> {
   if (request.user.role !== "admin") {
     throw reply.status(403).send({
@@ -97,11 +106,11 @@ export async function listUsers(
 }
 
 export async function updateUser(
-  request: FastifyRequest<{
+  request: RequestWithUser & {
     Params: { id: string };
     Body: UpdateUserInput;
-  }>,
-  reply: FastifyReply,
+  },
+  reply: FastifyReply
 ): Promise<UserResponse> {
   if (request.user.role !== "admin") {
     throw reply.status(403).send({
@@ -149,8 +158,8 @@ export async function updateUser(
 }
 
 export async function deleteUser(
-  request: FastifyRequest<{ Params: { id: string } }>,
-  reply: FastifyReply,
+  request: RequestWithUser & { Params: { id: string } },
+  reply: FastifyReply
 ) {
   if (request.user.role !== "admin") {
     throw reply.status(403).send({

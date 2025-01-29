@@ -5,7 +5,8 @@ CREATE TABLE IF NOT EXISTS "attachments" (
 	"path" text NOT NULL,
 	"size" integer NOT NULL,
 	"mime_type" text NOT NULL,
-	"created_at" timestamp DEFAULT now() NOT NULL
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "note_tags" (
@@ -19,7 +20,7 @@ CREATE TABLE IF NOT EXISTS "notes" (
 	"content" text NOT NULL,
 	"vector_embedding" text,
 	"is_public" boolean DEFAULT false NOT NULL,
-	"share_token" text,
+	"share_token" varchar(255),
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
@@ -36,13 +37,15 @@ CREATE TABLE IF NOT EXISTS "tags" (
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "users" (
 	"id" serial PRIMARY KEY NOT NULL,
-	"email" text NOT NULL,
-	"password_hash" text,
-	"name" text,
+	"email" varchar(255) NOT NULL,
+	"hashed_password" varchar(255),
+	"name" varchar(255),
+	"is_active" boolean DEFAULT true NOT NULL,
 	"role" text DEFAULT 'user' NOT NULL,
 	"github_id" text,
 	"google_id" text,
 	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "users_email_unique" UNIQUE("email"),
 	CONSTRAINT "users_github_id_unique" UNIQUE("github_id"),
 	CONSTRAINT "users_google_id_unique" UNIQUE("google_id")
@@ -54,35 +57,6 @@ CREATE TABLE IF NOT EXISTS "webhooks" (
 	"url" text NOT NULL,
 	"events" text[] NOT NULL,
 	"is_active" boolean DEFAULT true NOT NULL,
-	"created_at" timestamp DEFAULT now() NOT NULL
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
 );
---> statement-breakpoint
-DO $$ BEGIN
- ALTER TABLE "attachments" ADD CONSTRAINT "attachments_note_id_notes_id_fk" FOREIGN KEY ("note_id") REFERENCES "notes"("id") ON DELETE no action ON UPDATE no action;
-EXCEPTION
- WHEN duplicate_object THEN null;
-END $$;
---> statement-breakpoint
-DO $$ BEGIN
- ALTER TABLE "note_tags" ADD CONSTRAINT "note_tags_note_id_notes_id_fk" FOREIGN KEY ("note_id") REFERENCES "notes"("id") ON DELETE no action ON UPDATE no action;
-EXCEPTION
- WHEN duplicate_object THEN null;
-END $$;
---> statement-breakpoint
-DO $$ BEGIN
- ALTER TABLE "note_tags" ADD CONSTRAINT "note_tags_tag_id_tags_id_fk" FOREIGN KEY ("tag_id") REFERENCES "tags"("id") ON DELETE no action ON UPDATE no action;
-EXCEPTION
- WHEN duplicate_object THEN null;
-END $$;
---> statement-breakpoint
-DO $$ BEGIN
- ALTER TABLE "notes" ADD CONSTRAINT "notes_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE no action ON UPDATE no action;
-EXCEPTION
- WHEN duplicate_object THEN null;
-END $$;
---> statement-breakpoint
-DO $$ BEGIN
- ALTER TABLE "webhooks" ADD CONSTRAINT "webhooks_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE no action ON UPDATE no action;
-EXCEPTION
- WHEN duplicate_object THEN null;
-END $$;

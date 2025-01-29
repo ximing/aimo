@@ -2,7 +2,7 @@ import { join } from "path";
 import { fileURLToPath } from "url";
 import Fastify, { FastifyRequest, FastifyReply } from "fastify";
 import cors from "@fastify/cors";
-import jwt from "@fastify/jwt";
+import jwt, { FastifyJWT } from "@fastify/jwt";
 import multipart from "@fastify/multipart";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import { sql } from "drizzle-orm";
@@ -14,8 +14,27 @@ import { systemRoutes } from "./modules/system/routes.js";
 import { env } from "./config/env.js";
 import { db } from "./lib/db.js";
 import { redisClient } from "./lib/redis.js";
+import { users } from "./config/schema.js";
+import { eq } from "drizzle-orm";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
+
+// Add this type declaration
+declare module "@fastify/jwt" {
+  interface FastifyJWT {
+    payload: { id: number; email: string; role: string }; // payload type is used for signing and verifying
+    user: { id: number; email: string; role: string; isActive: boolean }; // user type is return type of `request.user` object
+  }
+}
+
+declare module "fastify" {
+  interface FastifyRequest {
+    user: FastifyJWT['user']; // use the JWT user type
+  }
+  interface FastifyInstance {
+    authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+  }
+}
 
 async function checkDependencies() {
   try {
@@ -76,12 +95,36 @@ export async function buildApp() {
     },
   });
 
-  // Add authentication decorator
+  // Update the authenticate decorator
   app.decorate(
     "authenticate",
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        await request.jwtVerify();
+        const token = await request.jwtVerify<{ id: number }>();
+        
+        // Fetch user from database
+        const user = await db.query.users.findFirst({
+          where: eq(users.id, token.id),
+          columns: {
+            id: true,
+            email: true,
+            role: true,
+            isActive: true,
+            // add other needed fields
+          },
+        });
+
+        if (!user) {
+          throw new Error("User not found");
+        }
+
+        if (!user.isActive) {
+          throw new Error("User is inactive");
+        }
+
+        // Attach user to request
+        request.user = user;
+
       } catch (err) {
         reply.status(401).send({
           message: "Unauthorized",

@@ -22,15 +22,25 @@ interface AuthUser {
   email: string;
   role: string;
 }
+interface RequestWithUser<T = unknown> extends FastifyRequest {
+  user: {
+    id: number;
+    email: string;
+    role: string;
+    name?: string;
+  };
+  body: T;
+}
 
-declare module "fastify" {
-  interface FastifyRequest {
-    user: AuthUser;
-  }
+interface GoogleUserInfo {
+  id: string;
+  email: string;
+  name: string;
+  verified_email: boolean;
 }
 
 export async function register(
-  request: FastifyRequest<{ Body: RegisterInput }>,
+  request: RequestWithUser<RegisterInput>,
   reply: FastifyReply,
 ): Promise<AuthResponse> {
   const result = zodSchemas.register.safeParse(request.body);
@@ -56,14 +66,14 @@ export async function register(
   }
 
   // Hash password
-  const passwordHash = await bcrypt.hash(password, 10);
+  const hashedPassword = await bcrypt.hash(password, 10);
 
   // Create user
   const [user] = await db
     .insert(users)
     .values({
       email,
-      passwordHash,
+      hashedPassword,
       name,
       role: "user",
     })
@@ -96,12 +106,18 @@ export async function login(
 ): Promise<AuthResponse> {
   const { email, password } = request.body;
 
+  // 添加日志以便调试
+  console.log('Login attempt:', { email });
+
   // Find user
   const user = await db.query.users.findFirst({
     where: eq(users.email, email),
   });
 
-  if (!user || !user.passwordHash) {
+  // 添加日志以便调试
+  console.log('User found:', { found: !!user });
+
+  if (!user || !user.hashedPassword) {
     throw reply.status(401).send({
       message: "Invalid credentials",
       code: "INVALID_CREDENTIALS",
@@ -109,7 +125,10 @@ export async function login(
   }
 
   // Verify password
-  const validPassword = await bcrypt.compare(password, user.passwordHash);
+  const validPassword = await bcrypt.compare(password, user.hashedPassword);
+
+  // 添加日志以便调试
+  console.log('Password valid:', validPassword);
 
   if (!validPassword) {
     throw reply.status(401).send({
@@ -196,6 +215,7 @@ export async function githubAuth(request: FastifyRequest, reply: FastifyReply) {
           name: githubUser.name || githubUser.login,
           githubId: githubUser.id.toString(),
           role: "user",
+          hashedPassword: null,
         })
         .returning();
     }
@@ -252,7 +272,7 @@ export async function googleAuth(request: FastifyRequest, reply: FastifyReply) {
     const { tokens } = await oauth2Client.getToken(code);
     oauth2Client.setCredentials(tokens);
 
-    const { data: googleUser } = await oauth2Client.request({
+    const { data: googleUser } = await oauth2Client.request<GoogleUserInfo>({
       url: "https://www.googleapis.com/oauth2/v2/userinfo",
     });
 
@@ -269,6 +289,7 @@ export async function googleAuth(request: FastifyRequest, reply: FastifyReply) {
           name: googleUser.name,
           googleId: googleUser.id,
           role: "user",
+          hashedPassword: null,
         })
         .returning();
     }
@@ -289,7 +310,7 @@ export async function googleAuth(request: FastifyRequest, reply: FastifyReply) {
 }
 
 export async function refreshToken(
-  request: FastifyRequest,
+  request: RequestWithUser,
   reply: FastifyReply,
 ) {
   try {
@@ -324,7 +345,7 @@ export async function getProfile(request: FastifyRequest, reply: FastifyReply) {
       name: true,
       role: true,
       createdAt: true,
-      passwordHash: false,
+      hashedPassword: false,
     },
   });
 

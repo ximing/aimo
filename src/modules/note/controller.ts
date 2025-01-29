@@ -11,10 +11,13 @@ import {
 import { generateEmbedding } from "@/lib/openai.js";
 import { nanoid } from "nanoid";
 import { triggerWebhook } from "@/lib/webhook.js";
+import { FastifyJWT } from "@fastify/jwt";
 
 export async function createNote(
-  request: FastifyRequest<{ Body: CreateNoteInput }>,
-  reply: FastifyReply,
+  request: FastifyRequest<{
+    Body: CreateNoteInput;
+  }> & { user: FastifyJWT["user"] },
+  reply: FastifyReply
 ): Promise<NoteResponse> {
   const { content, tags: tagNames = [], isPublic = false } = request.body;
   const userId = request.user.id;
@@ -74,8 +77,8 @@ export async function updateNote(
   request: FastifyRequest<{
     Params: { id: string };
     Body: UpdateNoteInput;
-  }>,
-  reply: FastifyReply,
+  }> & { user: FastifyJWT["user"] },
+  reply: FastifyReply
 ): Promise<NoteResponse> {
   const { id } = request.params;
   const { content, tags: tagNames, isPublic } = request.body;
@@ -148,8 +151,10 @@ export async function updateNote(
 }
 
 export async function deleteNote(
-  request: FastifyRequest<{ Params: { id: string } }>,
-  reply: FastifyReply,
+  request: FastifyRequest<{
+    Params: { id: string };
+  }> & { user: FastifyJWT["user"] },
+  reply: FastifyReply
 ) {
   const { id } = request.params;
   const userId = request.user.id;
@@ -172,36 +177,48 @@ export async function deleteNote(
 }
 
 export async function getNotes(
-  request: FastifyRequest<{ Querystring: { limit?: number; offset?: number } }>,
-  reply: FastifyReply,
+  request: FastifyRequest<{
+    Querystring: { limit?: number; offset?: number };
+  }> & { user: FastifyJWT["user"] },
+  reply: FastifyReply
 ) {
   const userId = request.user.id;
   const limit = request.query.limit || 20;
   const offset = request.query.offset || 0;
 
-  const userNotes = await db.query.notes.findMany({
-    where: eq(notes.userId, userId),
-    with: {
-      tags: {
-        with: {
-          tag: true,
-        },
-      },
-    },
-    limit,
-    offset,
-    orderBy: [desc(notes.createdAt)],
-  });
+  const userNotes = await db
+    .select({
+      id: notes.id,
+      content: notes.content,
+      createdAt: notes.createdAt,
+      updatedAt: notes.updatedAt,
+      userId: notes.userId,
+      isPublic: notes.isPublic,
+      shareToken: notes.shareToken,
+      vectorEmbedding: notes.vectorEmbedding,
+      tags: sql<string[]>`
+        array_agg(distinct ${tags.name})
+        filter (where ${tags.name} is not null)
+      `.as("tags"),
+    })
+    .from(notes)
+    .leftJoin(noteTags, eq(notes.id, noteTags.noteId))
+    .leftJoin(tags, eq(noteTags.tagId, tags.id))
+    .where(eq(notes.userId, userId))
+    .groupBy(notes.id)
+    .orderBy(desc(notes.createdAt))
+    .limit(limit)
+    .offset(offset);
 
   return userNotes.map((note) => ({
     ...note,
-    tags: note.tags.map((t) => t.tag.name),
+    tags: note.tags || [],
   }));
 }
 
 export async function searchNotes(
   request: FastifyRequest<{ Querystring: SearchNoteInput }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const { q, tag, limit = 10, offset = 0 } = request.query;
   const userId = request.user.id;
@@ -229,7 +246,7 @@ export async function searchNotes(
 
 export async function getNotesByTag(
   request: FastifyRequest<{ Params: { tag: string } }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const { tag } = request.params;
   const userId = request.user.id;
@@ -241,7 +258,7 @@ export async function getNotesByTag(
         SELECT 1 FROM note_tags nt
         INNER JOIN tags t ON nt.tag_id = t.id
         WHERE nt.note_id = notes.id AND t.name = ${tag}
-      )`,
+      )`
     ),
     with: {
       tags: {
@@ -261,7 +278,7 @@ export async function getNotesByTag(
 
 export async function getNoteByShareToken(
   request: FastifyRequest<{ Params: { token: string } }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const { token } = request.params;
 

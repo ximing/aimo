@@ -1,4 +1,4 @@
-import { FastifyInstance } from "fastify";
+import { FastifyInstance, RouteHandlerMethod } from "fastify";
 import {
   createNote,
   updateNote,
@@ -16,19 +16,19 @@ import {
 } from "./schema.js";
 
 export async function noteRoutes(app: FastifyInstance) {
-  // Add authentication check middleware
-  app.addHook("preHandler", async (request, reply) => {
-    if (request.routerPath === "/api/notes/share/:token") {
+  // Protect all routes except getNoteByShareToken
+  app.addHook("onRequest", async (request, reply) => {
+    if (request.routerPath === "/api/notes/shared/:token") {
       return;
     }
     await app.authenticate(request, reply);
   });
 
   // CRUD operations
-  app.post("/", { schema: createNoteSchema }, createNote);
-  app.put("/:id", { schema: updateNoteSchema }, updateNote);
-  app.delete("/:id", deleteNote);
-  app.get("/", getNotes);
+  app.post("/", { schema: createNoteSchema }, createNote as RouteHandlerMethod);
+  app.put("/:id", { schema: updateNoteSchema }, updateNote as RouteHandlerMethod);
+  app.delete("/:id", deleteNote as RouteHandlerMethod);
+  app.get("/", getNotes as RouteHandlerMethod);
 
   // Search and filter
   app.get("/search", { schema: searchNoteSchema }, searchNotes);
@@ -36,7 +36,7 @@ export async function noteRoutes(app: FastifyInstance) {
 
   // Public access
   app.get(
-    "/share/:token",
+    "/shared/:token",
     { schema: getNoteByShareTokenSchema },
     getNoteByShareToken,
   );

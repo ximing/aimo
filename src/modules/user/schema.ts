@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { FastifySchema } from "fastify";
+import { users } from "@/config/schema.js";
 
 const updateProfileBodySchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").optional(),
@@ -63,3 +64,6 @@ export const zodSchemas = {
   updateProfile: updateProfileBodySchema,
   updateUser: updateUserBodySchema,
 };
+
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;

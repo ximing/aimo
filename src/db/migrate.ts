@@ -1,37 +1,51 @@
+import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
-import { db } from "../lib/db.js";
-import { join } from "path";
-import { fileURLToPath } from "url";
-import { sql } from "drizzle-orm";
-
-const __dirname = fileURLToPath(new URL(".", import.meta.url));
+import postgres from "postgres";
+import { config } from "../config/index.js";
+import { eq } from "drizzle-orm";
+import bcrypt from "bcrypt";
+import { users } from "@/config/schema.js";
 
 async function main() {
-  try {
-    console.log("Running migrations...");
+  const sql = postgres(config.databaseUrl, { max: 1 });
+  const db = drizzle(sql);
 
-    // 先删除已存在的 schema
-    try {
-      await db.execute(sql`DROP SCHEMA IF EXISTS drizzle CASCADE`);
-      console.log("✅ Cleaned up old schema");
-    } catch (error) {
-      console.error("Warning: Failed to clean up old schema:", error);
-    }
+  // 执行迁移
+  console.log("Running migrations...");
+  await migrate(db, { migrationsFolder: "src/db/migrations" });
 
-    // 创建新的 schema
-    await db.execute(sql`CREATE SCHEMA IF NOT EXISTS drizzle`);
-    console.log("✅ Created new schema");
+  // 检查是否存在管理员账户
+  const adminUser = await db
+    .select()
+    .from(users)
+    .where(eq(users.role, "admin"))
+    .limit(1);
 
-    // 运行迁移
-    await migrate(db, {
-      migrationsFolder: join(__dirname, "migrations"),
+  if (adminUser.length === 0 && config.adminEmail && config.adminPassword) {
+    console.log("Creating admin user...");
+
+    // 创建管理员账户
+    const hashedPassword = await bcrypt.hash(config.adminPassword, 10);
+
+    await db.insert(users).values({
+      email: config.adminEmail,
+      hashedPassword,
+      name: config.adminName || "Administrator",
+      role: "admin",
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
-    console.log("✅ Migrations completed");
-    process.exit(0);
-  } catch (error) {
-    console.error("❌ Migration failed:", error);
-    process.exit(1);
+
+    console.log("Admin user created successfully");
   }
+
+  await sql.end();
+  console.log("Migrations completed");
 }
 
-main();
+main().catch((err) => {
+  console.error("Migration failed");
+  console.error(err);
+  process.exit(1);
+});
