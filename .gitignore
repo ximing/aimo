@@ -1,0 +1,9 @@
+ # Environment variables
+.env
+.env.*
+!.env.example
+dist
+build
+node_modules
+temp
+.DS_Store
