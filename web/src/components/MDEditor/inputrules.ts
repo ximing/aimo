@@ -58,46 +58,45 @@ function tagRule(nodeType: NodeType) {
       if (!tagContent) return null;
 
       const tr = state.tr;
-      
+
       // 计算正确的替换范围
       const hasBeforeSpace = beforeSpace === " ";
       const from = hasBeforeSpace ? start + 1 : start;
-      
+
       // 创建标签节点
       const tagNode = nodeType.create({ name: tagContent });
-      
+
       // 使用单个事务完成替换
-      tr.replaceWith(from, end, tagNode)
-        .insertText(" ", from + 1); // 在标签后插入空格
-      
+      tr.replaceWith(from, end, tagNode).insertText(" ", from + 1); // 在标签后插入空格
+
       return tr;
     }
   );
 }
 
 export function buildInputRules(schema: Schema) {
-  // const rules = smartQuotes.concat(ellipsis, emDash);
+  const rules = smartQuotes.concat(ellipsis, emDash);
   let type;
-  const rules = [];
+  // const rules = [];
 
   if ((type = schema.nodes.tag)) {
     rules.push(tagRule(type));
   }
-  // if ((type = schema.nodes.blockquote)) {
-  //   rules.push(blockQuoteRule(type));
-  // }
-  // if ((type = schema.nodes.ordered_list)) {
-  //   rules.push(orderedListRule(type));
-  // }
-  // if ((type = schema.nodes.bullet_list)) {
-  //   rules.push(bulletListRule(type));
-  // }
-  // if ((type = schema.nodes.code_block)) {
-  //   rules.push(codeBlockRule(type));
-  // }
-  // if ((type = schema.nodes.heading)) {
-  //   rules.push(headingRule(type, 6));
-  // }
+  if ((type = schema.nodes.blockquote)) {
+    rules.push(blockQuoteRule(type));
+  }
+  if ((type = schema.nodes.ordered_list)) {
+    rules.push(orderedListRule(type));
+  }
+  if ((type = schema.nodes.bullet_list)) {
+    rules.push(bulletListRule(type));
+  }
+  if ((type = schema.nodes.code_block)) {
+    rules.push(codeBlockRule(type));
+  }
+  if ((type = schema.nodes.heading)) {
+    rules.push(headingRule(type, 6));
+  }
 
   return inputRules({ rules });
 }

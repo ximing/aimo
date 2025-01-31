@@ -1,4 +1,4 @@
-import { Fragment, useState, useEffect, useCallback } from "react";
+import { Fragment, useState, useEffect, useCallback, useRef } from "react";
 import {
   Input,
   Select,
@@ -12,6 +12,7 @@ import {
 } from "antd";
 import { useNoteStore } from "@/stores/noteStore";
 import MDEditor from "@/components/MDEditor";
+import MarkdownView from "@/components/MarkdownView";
 import {
   SearchOutlined,
   MacCommandOutlined,
@@ -23,6 +24,9 @@ import {
 import dayjs from "dayjs";
 import "./style.css";
 import { Note } from "@/api/types";
+import { useSpring, animated } from "@react-spring/web";
+import { useScroll } from "react-use";
+import type { MenuProps } from "antd";
 
 const SearchBar = ({
   value,
@@ -133,7 +137,7 @@ export default function Notes() {
     return text.length;
   };
 
-  const getMenuItems = (note: Note) => [
+  const getMenuItems = (note: Note): MenuProps["items"] => [
     {
       key: "edit",
       icon: <EditOutlined />,
@@ -212,19 +216,15 @@ export default function Notes() {
             <MoreOutlined className="note-more-btn" />
           </Dropdown>
         </div>
-        <div
-          className="preview-content"
-          dangerouslySetInnerHTML={{ __html: note.content }}
-        />
+        <div className="note-content">
+          <MarkdownView content={note.content} />
+        </div>
       </Card>
     );
   };
 
   // 检查新建内容是否为空
-  const isNewNoteEmpty =
-    !newNoteContent ||
-    newNoteContent === "<p></p>" ||
-    newNoteContent === "<p><br></p>";
+  const isNewNoteEmpty = !newNoteContent || !newNoteContent.trim();
 
   const renderFooter = () => {
     if (isLoading) {
@@ -240,42 +240,69 @@ export default function Notes() {
     }
     return null;
   };
+
+  // 添加滚动处理
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const { y: scrollY } = useScroll(scrollRef);
+
+  // 编辑器高度动画
+  const MIN_EDITOR_HEIGHT = 120;
+  const MAX_EDITOR_HEIGHT = 190;
+
+  const editorStyle = useSpring({
+    height: Math.max(
+      MIN_EDITOR_HEIGHT,
+      MAX_EDITOR_HEIGHT - Math.max(0, scrollY * 0.8) // 使用更平滑的缩放系数
+    ),
+    config: {
+      tension: 180, // 降低张力
+      friction: 24, // 增加摩擦力
+      clamp: false, // 允许轻微的弹性
+      mass: 1.2, // 增加质量使动画更有重量感
+    },
+  });
+
   return (
     <div className="notes-container">
-      <div className="content-header">
-        <Select value={sortBy} onChange={setSortBy} style={{ width: 120 }}>
-          <Select.Option value="newest">最新优先</Select.Option>
-          <Select.Option value="oldest">最早优先</Select.Option>
-        </Select>
-        <SearchBar value={searchText} onChange={setSearchText} />
+      <div className="notes-header">
+        <div className="content-header">
+          <Select value={sortBy} onChange={setSortBy} style={{ width: 120 }}>
+            <Select.Option value="newest">最新优先</Select.Option>
+            <Select.Option value="oldest">最早优先</Select.Option>
+          </Select>
+          <SearchBar value={searchText} onChange={setSearchText} />
+        </div>
+        <animated.div style={editorStyle as any} className="note-editor">
+          <MDEditor
+            value={newNoteContent}
+            onChange={setNewNoteContent}
+            onTagsChange={setNoteTags}
+            onPublish={handleCreateNote}
+            placeholder="写点什么..."
+            disabled={isNewNoteEmpty}
+            loading={isPublishing}
+          />
+        </animated.div>
       </div>
-      <div className="note-editor">
-        <MDEditor
-          value={newNoteContent}
-          onChange={setNewNoteContent}
-          onTagsChange={setNoteTags}
-          onPublish={handleCreateNote}
-          placeholder="写点什么..."
-          disabled={isNewNoteEmpty}
-          loading={isPublishing}
-        />
-      </div>
-      <div className="note-list">
-        {isLoading && !filteredNotes().length ? (
-          <div className="notes-loading">
-            <Spin />
-            <span>加载中...</span>
-          </div>
-        ) : filteredNotes().length ? (
-          <>
-            {filteredNotes().map((note) => (
-              <Fragment key={note.id}>{renderNoteContent(note)}</Fragment>
-            ))}
-            {renderFooter()}
-          </>
-        ) : (
-          <Empty description="暂无笔记" />
-        )}
+
+      <div className="notes-scroll-container" ref={scrollRef}>
+        <div className="note-list">
+          {isLoading && !filteredNotes().length ? (
+            <div className="notes-loading">
+              <Spin />
+              <span>加载中...</span>
+            </div>
+          ) : filteredNotes().length ? (
+            <>
+              {filteredNotes().map((note) => (
+                <Fragment key={note.id}>{renderNoteContent(note)}</Fragment>
+              ))}
+              {renderFooter()}
+            </>
+          ) : (
+            <Empty description="暂无笔记" />
+          )}
+        </div>
       </div>
 
       <Modal

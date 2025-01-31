@@ -1,14 +1,10 @@
 .md-editor {
   display: flex;
   flex-direction: column;
-  border: 1px solid #d9d9d9;
   border-radius: 4px;
-  min-height: 160px;
-}
-
-.md-editor:focus-within {
-  border-color: #42b883;
-  box-shadow: 0 0 0 2px rgba(66, 184, 131, 0.2);
+  height: 100%;
+  box-sizing: border-box;
+  background-color: #fff;
 }
 
 .editor-main {
@@ -30,7 +26,6 @@
 .editor-content .ProseMirror {
   flex: 1;
   height: 100%;
-  min-height: 60px;
   outline: none;
   word-wrap: break-word;
   white-space: pre-wrap;
@@ -90,12 +85,21 @@
 
 /* 内容样式 */
 .editor-content .ProseMirror p {
-  margin: 1em 0;
+  margin: 0.5em 0;
 }
 
-.editor-content .ProseMirror h1 { font-size: 2em; margin: 0.67em 0; }
-.editor-content .ProseMirror h2 { font-size: 1.5em; margin: 0.75em 0; }
-.editor-content .ProseMirror h3 { font-size: 1.17em; margin: 0.83em 0; }
+.editor-content .ProseMirror h1 {
+  font-size: 2em;
+  margin: 0.67em 0;
+}
+.editor-content .ProseMirror h2 {
+  font-size: 1.5em;
+  margin: 0.75em 0;
+}
+.editor-content .ProseMirror h3 {
+  font-size: 1.17em;
+  margin: 0.83em 0;
+}
 
 .editor-content .ProseMirror ul,
 .editor-content .ProseMirror ol {
@@ -141,7 +145,8 @@
   margin: 0 4px;
 }
 
-.ProseMirror-menu-dropdown, .ProseMirror-menu-dropdown-menu {
+.ProseMirror-menu-dropdown,
+.ProseMirror-menu-dropdown-menu {
   z-index: 50;
 }
 
@@ -179,4 +184,4 @@
   margin: 0 2px;
   font-size: 14px;
   cursor: default;
-} 
+}
