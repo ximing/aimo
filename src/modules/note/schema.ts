@@ -104,3 +104,54 @@ export const zodSchemas = {
   updateNote: updateNoteBodySchema,
   searchNote: searchNoteQuerySchema,
 };
+
+// 添加热力图相关的 schema
+const heatmapQuerySchema = z.object({
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format"),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format"),
+});
+
+const getNotesQuerySchema = z.object({
+  page: z.number().int().min(1).optional(),
+  pageSize: z.number().int().min(1).max(100).optional(),
+  sortBy: z.enum(["newest", "oldest"]).optional(),
+});
+
+// Fastify schemas
+export const getNotesSchema: FastifySchema = {
+  querystring: {
+    type: "object",
+    properties: {
+      page: { type: "number", minimum: 1 },
+      pageSize: { type: "number", minimum: 1, maximum: 100 },
+      sortBy: { type: "string", enum: ["newest", "oldest"] },
+    },
+  },
+};
+
+export const heatmapSchema: FastifySchema = {
+  querystring: {
+    type: "object",
+    required: ["startDate", "endDate"],
+    properties: {
+      startDate: { type: "string", format: "date" },
+      endDate: { type: "string", format: "date" },
+    },
+  },
+  response: {
+    200: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          date: { type: "string" },
+          count: { type: "number" },
+        },
+      },
+    },
+  },
+};
+
+// Types for request validation
+export type GetNotesQuery = z.infer<typeof getNotesQuerySchema>;
+export type HeatmapQuery = z.infer<typeof heatmapQuerySchema>;

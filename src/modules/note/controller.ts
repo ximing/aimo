@@ -7,6 +7,8 @@ import {
   UpdateNoteInput,
   SearchNoteInput,
   NoteResponse,
+  GetNotesQuery,
+  HeatmapQuery,
 } from "./schema.js";
 import { generateEmbedding } from "@/lib/openai.js";
 import { nanoid } from "nanoid";
@@ -15,6 +17,11 @@ import { FastifyJWT } from "@fastify/jwt";
 
 interface TagCount {
   name: string;
+  count: number;
+}
+
+interface HeatmapData {
+  date: string;
   count: number;
 }
 
@@ -183,11 +190,7 @@ export async function deleteNote(
 
 export async function getNotes(
   request: FastifyRequest<{
-    Querystring: {
-      page?: number;
-      pageSize?: number;
-      sortBy?: "newest" | "oldest";
-    };
+    Querystring: GetNotesQuery;
   }> & { user: FastifyJWT["user"] },
   reply: FastifyReply
 ) {
@@ -352,4 +355,31 @@ export async function getTags(
     name,
     count,
   }));
+}
+
+export async function getNotesHeatmap(
+  request: FastifyRequest<{
+    Querystring: HeatmapQuery;
+  }> & { user: FastifyJWT["user"] },
+  reply: FastifyReply
+): Promise<HeatmapData[]> {
+  const { startDate, endDate } = request.query;
+  const userId = request.user.id;
+
+  const result = await db
+    .select({
+      date: sql<string>`DATE(${notes.createdAt})::text`,
+      count: sql<number>`count(*)::int`,
+    })
+    .from(notes)
+    .where(
+      and(
+        eq(notes.userId, userId),
+        sql`${notes.createdAt}::date BETWEEN ${startDate}::date AND ${endDate}::date`
+      )
+    )
+    .groupBy(sql`DATE(${notes.createdAt})`)
+    .orderBy(sql`DATE(${notes.createdAt})`);
+
+  return result;
 }

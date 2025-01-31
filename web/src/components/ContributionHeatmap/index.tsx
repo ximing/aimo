@@ -1,41 +1,82 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import dayjs from "dayjs";
 import isBetween from "dayjs/plugin/isBetween";
 import "./style.css";
-import type { Note } from "@/api/types";
+import { getHeatmapData } from "@/api/notes";
 
 // 注册插件
 dayjs.extend(isBetween);
 
 interface ContributionHeatmapProps {
-  notes: Note[];
+  onRefresh?: () => void;
 }
 
-export default function ContributionHeatmap({ notes }: ContributionHeatmapProps) {
-  const { weeks, maxCount } = useMemo(() => {
-    // 获取最近12周的数据
-    const end = dayjs().endOf('day');
-    const start = end.subtract(83, 'day').startOf('day'); // 12周 = 84天
+export default function ContributionHeatmap({
+  onRefresh,
+}: ContributionHeatmapProps) {
+  const [heatmapData, setHeatmapData] = useState<
+    { date: string; count: number }[]
+  >([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-    // 统计每天的笔记数量
-    const dailyCount = notes.reduce((acc, note) => {
-      const date = dayjs(note.createdAt).format('YYYY-MM-DD');
-      if (dayjs(date).isBetween(start, end, 'day', '[]')) {
-        acc[date] = (acc[date] || 0) + 1;
-      }
-      return acc;
-    }, {} as Record<string, number>);
+  // 获取最近12周的日期范围
+  const dateRange = useMemo(() => {
+    const end = dayjs().endOf("day");
+    const start = end.subtract(83, "day").startOf("day");
+    return {
+      startDate: start.format("YYYY-MM-DD"),
+      endDate: end.format("YYYY-MM-DD"),
+    };
+  }, []);
+
+  // 获取热力图数据
+  const fetchHeatmapData = async () => {
+    if (isLoading) return;
+
+    setIsLoading(true);
+    try {
+      const data = await getHeatmapData(dateRange.startDate, dateRange.endDate);
+      setHeatmapData(data);
+      onRefresh?.();
+    } catch (error) {
+      console.error("Failed to fetch heatmap data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 初始加载和日期范围变化时获取数据
+  useEffect(() => {
+    fetchHeatmapData();
+  }, [dateRange.startDate, dateRange.endDate]);
+
+  const { weeks, maxCount } = useMemo(() => {
+    if (!heatmapData.length) {
+      return { weeks: [], maxCount: 0 };
+    }
+
+    // 创建日期到计数的映射
+    const dailyCount = heatmapData.reduce(
+      (acc, { date, count }) => {
+        acc[date] = count;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
     // 按周分组数据
     const weeks = [];
-    let currentDate = start;
+    let currentDate = dayjs(dateRange.startDate);
     let currentWeek = [];
 
-    while (currentDate.isBefore(end) || currentDate.isSame(end, 'day')) {
-      const date = currentDate.format('YYYY-MM-DD');
+    while (
+      currentDate.isBefore(dateRange.endDate) ||
+      currentDate.isSame(dateRange.endDate, "day")
+    ) {
+      const date = currentDate.format("YYYY-MM-DD");
       currentWeek.push({
         date,
-        count: dailyCount[date] || 0
+        count: dailyCount[date] || 0,
       });
 
       if (currentWeek.length === 7) {
@@ -43,7 +84,7 @@ export default function ContributionHeatmap({ notes }: ContributionHeatmapProps)
         currentWeek = [];
       }
 
-      currentDate = currentDate.add(1, 'day');
+      currentDate = currentDate.add(1, "day");
     }
 
     if (currentWeek.length > 0) {
@@ -54,7 +95,7 @@ export default function ContributionHeatmap({ notes }: ContributionHeatmapProps)
     const maxCount = Math.max(...Object.values(dailyCount), 1);
 
     return { weeks, maxCount };
-  }, [notes]);
+  }, [heatmapData, dateRange]);
 
   // 获取贡献等级 (0-4)
   const getContributionLevel = (count: number) => {
@@ -80,4 +121,4 @@ export default function ContributionHeatmap({ notes }: ContributionHeatmapProps)
       </div>
     </div>
   );
-} 
+}

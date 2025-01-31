@@ -30,6 +30,7 @@ interface NoteState {
   fetchTags: () => Promise<void>;
   setNewNoteContent: (content: string) => void;
   setCurrentPage: (page: number) => void;
+  refreshHeatmap: () => void;
 
   // Computed
   filteredNotes: () => Note[];
@@ -198,4 +199,9 @@ export const useNoteStore = create<NoteState>((set, get) => ({
   },
 
   setNewNoteContent: (content) => set({ newNoteContent: content }),
+
+  refreshHeatmap: () => {
+    // 这里可以触发热力图组件的刷新
+    // 由于热力图组件自己管理状态，这里可以是一个空函数
+  },
 }));

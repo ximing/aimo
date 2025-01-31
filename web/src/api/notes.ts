@@ -76,3 +76,18 @@ export function exportNotes(options: ExportOptions) {
     responseType: "blob",
   });
 }
+
+interface HeatmapData {
+  date: string;
+  count: number;
+}
+
+export async function getHeatmapData(startDate: string, endDate: string): Promise<HeatmapData[]> {
+  const response = await request.get<HeatmapData[]>("/notes/stats/heatmap", {
+    params: {
+      startDate,
+      endDate,
+    },
+  });
+  return response;
+}

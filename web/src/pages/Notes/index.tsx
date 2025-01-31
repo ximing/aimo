@@ -73,6 +73,7 @@ export default function Notes() {
     setNewNoteContent,
     currentPage,
     setCurrentPage,
+    refreshHeatmap,
   } = useNoteStore();
   const [isPublishing, setIsPublishing] = useState(false);
   const [noteTags, setNoteTags] = useState<string[]>([]);
@@ -104,6 +105,10 @@ export default function Notes() {
         isPublic: false,
       });
       await fetchNotes();
+      // 刷新热力图数据
+      if (refreshHeatmap) {
+        refreshHeatmap();
+      }
       message.success("笔记创建成功");
     } catch (error) {
       message.error("创建笔记失败");
@@ -270,7 +275,7 @@ export default function Notes() {
   // 添加处理滚动加载的函数
   const handleScroll = useCallback(() => {
     if (!scrollRef.current) return;
-    
+
     const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
     // 当距离底部小于 50px 时触发加载
     if (scrollHeight - scrollTop - clientHeight < 50) {

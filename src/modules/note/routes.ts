@@ -8,12 +8,15 @@ import {
   getNoteByShareToken,
   getNotesByTag,
   getTags,
+  getNotesHeatmap,
 } from "./controller.js";
 import {
   createNoteSchema,
   updateNoteSchema,
   searchNoteSchema,
   getNoteByShareTokenSchema,
+  getNotesSchema,
+  heatmapSchema,
 } from "./schema.js";
 
 export async function noteRoutes(app: FastifyInstance) {
@@ -33,22 +36,7 @@ export async function noteRoutes(app: FastifyInstance) {
     updateNote as RouteHandlerMethod
   );
   app.delete("/:id", deleteNote as RouteHandlerMethod);
-  app.get(
-    "/",
-    {
-      schema: {
-        querystring: {
-          type: 'object',
-          properties: {
-            page: { type: 'number', minimum: 1 },
-            pageSize: { type: 'number', minimum: 1, maximum: 100 },
-            sortBy: { type: 'string', enum: ['newest', 'oldest'] }
-          }
-        }
-      }
-    },
-    getNotes as RouteHandlerMethod
-  );
+  app.get("/", { schema: getNotesSchema }, getNotes as RouteHandlerMethod);
 
   // Search and filter
   app.get("/search", { schema: searchNoteSchema }, searchNotes);
@@ -63,4 +51,10 @@ export async function noteRoutes(app: FastifyInstance) {
 
   // 获取所有标签及其数量
   app.get("/tags", getTags as RouteHandlerMethod);
+
+  app.get(
+    "/stats/heatmap",
+    { schema: heatmapSchema },
+    getNotesHeatmap as RouteHandlerMethod
+  );
 }
