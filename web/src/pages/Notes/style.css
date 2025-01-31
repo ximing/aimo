@@ -1,0 +1,226 @@
+.content-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.note-editor {
+  margin-bottom: 24px;
+}
+
+.note-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.note-meta {
+  color: #666;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.note-content {
+  font-size: 14px;
+}
+
+.search-wrapper {
+  display: flex;
+  align-items: center;
+  background: #f5f5f5;
+  border-radius: 8px;
+  padding: 8px 12px;
+  transition: all 0.3s;
+  flex: 1;
+  max-width: 480px;
+}
+
+.search-wrapper:focus-within {
+  /* background: #fff;
+  box-shadow: 0 0 0 2px rgba(66, 184, 131, 0.2); */
+}
+
+.search-icon {
+  color: rgb(157, 157, 157);
+  font-size: 16px;
+  margin-right: 8px;
+}
+
+.search-input {
+  flex: 1;
+  font-size: 14px;
+  background: transparent;
+  padding: 0;
+}
+
+.search-input::placeholder {
+  color: rgb(157, 157, 157);
+}
+
+/* 覆盖 antd 的默认样式 */
+.search-input.ant-input {
+  box-shadow: none !important;
+}
+
+.search-input.ant-input:focus {
+  box-shadow: none !important;
+}
+
+.search-shortcut {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 4px;
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+  color: rgb(157, 157, 157);
+  font-size: 12px;
+}
+
+.search-shortcut .anticon {
+  font-size: 12px;
+}
+
+.note-card {
+  border-radius: 8px;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.06),
+    0 1px 3px rgba(0, 0, 0, 0.08);
+  border: none !important; /* 覆盖 antd 默认边框 */
+  transition: box-shadow 0.2s;
+}
+
+.note-card:hover {
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.08),
+    0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+/* 覆盖 antd 卡片边框样式 */
+.note-card.ant-card {
+  border: none;
+}
+
+.note-card .ant-card-body {
+  padding: 16px;
+}
+
+.note-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.note-time {
+  color: rgb(157, 157, 157);
+  font-size: 12px;
+}
+
+.note-more-btn {
+  padding: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  color: rgb(157, 157, 157);
+  transition: all 0.3s;
+}
+
+.note-more-btn:hover {
+  color: rgba(0, 0, 0, 0.88);
+}
+
+.note-editor-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.editor-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.preview-content {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Markdown 预览样式 */
+.preview-content h1 {
+  font-size: 2em;
+  margin: 0.67em 0;
+}
+.preview-content h2 {
+  font-size: 1.5em;
+  margin: 0.75em 0;
+}
+.preview-content h3 {
+  font-size: 1.17em;
+  margin: 0.83em 0;
+}
+
+.preview-content p {
+  margin: 1em 0;
+}
+
+.preview-content ul,
+.preview-content ol {
+  padding-left: 30px;
+  margin: 1em 0;
+}
+
+.preview-content blockquote {
+  margin-left: 0;
+  margin-right: 0;
+  padding-left: 1em;
+  border-left: 3px solid #eee;
+  color: #666;
+}
+
+.preview-content pre {
+  background: #f5f5f5;
+  padding: 1em;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+.preview-content code {
+  background: #f5f5f5;
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-family: monospace;
+}
+
+/* 编辑模式下的样式调整 */
+.note-content .md-editor {
+  border: none;
+  background: transparent;
+}
+
+.note-content .md-editor:focus-within {
+  box-shadow: none;
+}
+
+.notes-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px 0;
+  color: rgb(157, 157, 157);
+  font-size: 14px;
+}
+
+.notes-end {
+  text-align: center;
+  padding: 24px 0;
+  color: rgb(157, 157, 157);
+  font-size: 14px;
+}
+
+/* 调整 Empty 组件的样式 */
+.note-list .ant-empty {
+  padding: 32px 0;
+}

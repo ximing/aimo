@@ -11,10 +11,11 @@ export interface Note {
   userId: number
   content: string
   isPublic: boolean
-  shareToken?: string
+  shareToken?: string | null
   tags: string[]
   createdAt: string
   updatedAt: string
+  vectorEmbedding?: string
 }
 
 export interface LoginResponse {
@@ -84,4 +85,11 @@ export interface ExportOptions {
   format: 'json' | 'csv' | 'xlsx'
   includePrivate?: boolean
   tags?: string[]
+}
+
+export interface SearchNoteInput {
+  q: string
+  tag?: string
+  limit?: number
+  offset?: number
 }

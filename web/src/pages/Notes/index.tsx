@@ -1,175 +1,298 @@
-import { useState } from 'react'
-import { Card, Button, List, Tag, Modal, Input, Space, message } from 'antd'
-import { PlusOutlined, SearchOutlined, ShareAltOutlined } from '@ant-design/icons'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getNotes, createNote, updateNote, deleteNote, searchNotes, shareNote } from '@/api/notes'
-import NoteEditor from '@/components/NoteEditor'
-import type { Note, CreateNoteInput, UpdateNoteInput } from '@/api/types'
-import NoteImportExport from '@/components/NoteImportExport'
+import { Fragment, useState, useEffect, useCallback } from "react";
+import {
+  Input,
+  Select,
+  Card,
+  message,
+  Dropdown,
+  Modal,
+  Button,
+  Spin,
+  Empty,
+} from "antd";
+import { useNoteStore } from "@/stores/noteStore";
+import MDEditor from "@/components/MDEditor";
+import {
+  SearchOutlined,
+  MacCommandOutlined,
+  MoreOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  SendOutlined,
+} from "@ant-design/icons";
+import dayjs from "dayjs";
+import "./style.css";
+import { Note } from "@/api/types";
+
+const SearchBar = ({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) => (
+  <div className="search-wrapper">
+    <SearchOutlined className="search-icon" />
+    <Input
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder="搜索笔记..."
+      bordered={false}
+      className="search-input"
+    />
+    <div className="search-shortcut">
+      <MacCommandOutlined />
+      <span>K</span>
+    </div>
+  </div>
+);
 
 export default function Notes() {
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingNote, setEditingNote] = useState<Note | null>(null)
-  const [searchQuery, setSearchQuery] = useState('')
-  const queryClient = useQueryClient()
+  const [newNoteContent, setNewNoteContent] = useState("");
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [noteToDelete, setNoteToDelete] = useState<Note | null>(null);
+  const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
+  const [editingContent, setEditingContent] = useState<string>("");
+  const {
+    error,
+    sortBy,
+    searchText,
+    fetchNotes,
+    addNote,
+    setSortBy,
+    setSearchText,
+    filteredNotes,
+    deleteNote,
+    updateNote,
+    isLoading,
+    hasMore,
+  } = useNoteStore();
+  const [isPublishing, setIsPublishing] = useState(false);
 
-  const { data: notes = [], isLoading } = useQuery({
-    queryKey: ['notes', searchQuery],
-    queryFn: () => searchQuery ? searchNotes(searchQuery) : getNotes()
-  })
+  useEffect(() => {
+    fetchNotes();
+  }, [fetchNotes]);
 
-  const createMutation = useMutation({
-    mutationFn: createNote,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notes'] })
-      setIsModalOpen(false)
-      message.success('Note created successfully')
+  useEffect(() => {
+    if (error) {
+      message.error(error);
     }
-  })
+  }, [error]);
 
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: UpdateNoteInput }) =>
-      updateNote(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notes'] })
-      setEditingNote(null)
-      message.success('Note updated successfully')
+  const handleCreateNote = async () => {
+    if (!newNoteContent) {
+      message.warning("请输入笔记内容");
+      return;
     }
-  })
 
-  const deleteMutation = useMutation({
-    mutationFn: deleteNote,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notes'] })
-      message.success('Note deleted successfully')
+    setIsPublishing(true);
+    try {
+      await addNote({
+        content: newNoteContent,
+        tags: [],
+        isPublic: false,
+      });
+
+      setNewNoteContent("");
+      await fetchNotes();
+      message.success("笔记创建成功");
+    } catch (error) {
+      message.error("创建笔记失败");
+    } finally {
+      setIsPublishing(false);
     }
-  })
+  };
 
-  const shareMutation = useMutation({
-    mutationFn: shareNote,
-    onSuccess: (data) => {
-      Modal.success({
-        title: 'Note Shared',
-        content: (
-          <div>
-            <p>Share this link with others:</p>
-            <Input.TextArea
-              value={data.shareUrl}
-              autoSize
-              readOnly
-              onClick={(e) => e.currentTarget.select()}
-            />
+  const handleEditNote = (note: Note) => {
+    setEditingNoteId(note.id);
+    setEditingContent(note.content);
+  };
+
+  const handleDeleteNote = (note: Note) => {
+    setNoteToDelete(note);
+    setShowDeleteModal(true);
+  };
+
+  const handleUpdateNote = async (noteId: number, content: string) => {
+    setIsPublishing(true);
+    try {
+      await updateNote(noteId, { content });
+      setEditingNoteId(null);
+      await fetchNotes();
+      message.success("笔记更新成功");
+    } catch (error) {
+      message.error("更新失败");
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
+  const getWordCount = (content: string) => {
+    // 移除 HTML 标签，只统计实际文字
+    const text = content.replace(/<[^>]+>/g, "");
+    return text.length;
+  };
+
+  const getMenuItems = (note: Note) => [
+    {
+      key: "edit",
+      icon: <EditOutlined />,
+      label: "编辑",
+      onClick: () => handleEditNote(note),
+    },
+    {
+      key: "delete",
+      icon: <DeleteOutlined />,
+      label: "删除",
+      onClick: () => handleDeleteNote(note),
+    },
+    {
+      type: "divider",
+    },
+    {
+      key: "info",
+      className: "note-info-item",
+      label: (
+        <div className="note-info">
+          <div>{getWordCount(note.content)} 字</div>
+          <div>创建于 {dayjs(note.createdAt).format("YYYY-MM-DD HH:mm")}</div>
+          {note.updatedAt && note.updatedAt !== note.createdAt && (
+            <div>
+              最后编辑于 {dayjs(note.updatedAt).format("YYYY-MM-DD HH:mm")}
+            </div>
+          )}
+        </div>
+      ),
+    },
+  ];
+
+  const renderNoteContent = (note: Note) => {
+    if (editingNoteId === note.id) {
+      return (
+        <div className="note-editor-wrapper">
+          <MDEditor
+            value={editingContent}
+            onChange={(content) => {
+              setEditingContent(content);
+            }}
+            toolbar={
+              <div className="editor-actions">
+                <Button
+                  type="primary"
+                  icon={<SendOutlined />}
+                  onClick={() => handleUpdateNote(note.id, editingContent)}
+                >
+                  发布
+                </Button>
+                <Button onClick={() => setEditingNoteId(null)}>取消</Button>
+              </div>
+            }
+          />
+        </div>
+      );
+    }
+
+    return (
+      <Card className="note-card">
+        <div className="note-header">
+          <div className="note-time">
+            {dayjs(note.createdAt).format("YYYY-MM-DD HH:mm")}
           </div>
-        )
-      })
+          <Dropdown
+            menu={{ items: getMenuItems(note) }}
+            trigger={["click"]}
+            placement="bottomRight"
+          >
+            <MoreOutlined className="note-more-btn" />
+          </Dropdown>
+        </div>
+        <div
+          className="preview-content"
+          dangerouslySetInnerHTML={{ __html: note.content }}
+        />
+      </Card>
+    );
+  };
+
+  // 检查新建内容是否为空
+  const isNewNoteEmpty =
+    !newNoteContent ||
+    newNoteContent === "<p></p>" ||
+    newNoteContent === "<p><br></p>";
+
+  const renderFooter = () => {
+    if (isLoading) {
+      return (
+        <div className="notes-loading">
+          <Spin size="small" />
+          <span>加载中...</span>
+        </div>
+      );
     }
-  })
-
-  const handleCreate = (values: CreateNoteInput) => {
-    createMutation.mutate(values)
-  }
-
-  const handleUpdate = (values: UpdateNoteInput) => {
-    if (editingNote) {
-      updateMutation.mutate({ id: editingNote.id, data: values })
+    if (!hasMore) {
+      return <div className="notes-end">没有更多笔记了</div>;
     }
-  }
-
-  const handleDelete = (id: number) => {
-    Modal.confirm({
-      title: 'Delete Note',
-      content: 'Are you sure you want to delete this note?',
-      onOk: () => deleteMutation.mutate(id)
-    })
-  }
-
+    return null;
+  };
   return (
-    <div>
-      <Space style={{ marginBottom: 16 }}>
-        <Input
-          placeholder="Search notes..."
-          prefix={<SearchOutlined />}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          style={{ width: 200 }}
+    <div className="notes-container">
+      <div className="content-header">
+        <Select value={sortBy} onChange={setSortBy} style={{ width: 120 }}>
+          <Select.Option value="newest">最新优先</Select.Option>
+          <Select.Option value="oldest">最早优先</Select.Option>
+        </Select>
+        <SearchBar value={searchText} onChange={setSearchText} />
+      </div>
+      <div className="note-editor">
+        <MDEditor
+          value={newNoteContent}
+          onChange={setNewNoteContent}
+          onPublish={handleCreateNote}
+          placeholder="写点什么..."
+          disabled={isNewNoteEmpty}
+          loading={isPublishing}
         />
-        <NoteImportExport
-          availableTags={Array.from(new Set(notes.flatMap(note => note.tags)))}
-        />
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => setIsModalOpen(true)}
-        >
-          New Note
-        </Button>
-      </Space>
-
-      <List
-        grid={{ gutter: 16, column: 3 }}
-        dataSource={notes}
-        loading={isLoading}
-        renderItem={(note) => (
-          <List.Item>
-            <Card
-              title={note.tags.map((tag) => (
-                <Tag key={tag}>{tag}</Tag>
-              ))}
-              extra={
-                <Space>
-                  {note.isPublic && (
-                    <Button
-                      size="small"
-                      icon={<ShareAltOutlined />}
-                      onClick={() => shareMutation.mutate(note.id)}
-                    >
-                      Share
-                    </Button>
-                  )}
-                  <Button size="small" onClick={() => setEditingNote(note)}>
-                    Edit
-                  </Button>
-                  <Button
-                    size="small"
-                    danger
-                    onClick={() => handleDelete(note.id)}
-                  >
-                    Delete
-                  </Button>
-                </Space>
-              }
-            >
-              <div style={{ whiteSpace: 'pre-wrap' }}>{note.content}</div>
-            </Card>
-          </List.Item>
+      </div>
+      <div className="note-list">
+        {isLoading && !filteredNotes().length ? (
+          <div className="notes-loading">
+            <Spin />
+            <span>加载中...</span>
+          </div>
+        ) : filteredNotes().length ? (
+          <>
+            {filteredNotes().map((note) => (
+              <Fragment key={note.id}>{renderNoteContent(note)}</Fragment>
+            ))}
+            {renderFooter()}
+          </>
+        ) : (
+          <Empty description="暂无笔记" />
         )}
-      />
+      </div>
 
       <Modal
-        title="New Note"
-        open={isModalOpen}
-        onCancel={() => setIsModalOpen(false)}
-        footer={null}
+        title="删除笔记"
+        open={showDeleteModal}
+        onOk={async () => {
+          if (noteToDelete) {
+            try {
+              await deleteNote(noteToDelete.id);
+              message.success("笔记已删除");
+              setShowDeleteModal(false);
+              setNoteToDelete(null);
+            } catch (error) {
+              message.error("删除失败");
+            }
+          }
+        }}
+        onCancel={() => {
+          setShowDeleteModal(false);
+          setNoteToDelete(null);
+        }}
       >
-        <NoteEditor
-          onSubmit={handleCreate}
-          onCancel={() => setIsModalOpen(false)}
-          loading={createMutation.isPending}
-        />
-      </Modal>
-
-      <Modal
-        title="Edit Note"
-        open={!!editingNote}
-        onCancel={() => setEditingNote(null)}
-        footer={null}
-      >
-        <NoteEditor
-          initialValues={editingNote || undefined}
-          onSubmit={handleUpdate}
-          onCancel={() => setEditingNote(null)}
-          loading={updateMutation.isPending}
-        />
+        <p>确定要删除这条笔记吗？</p>
       </Modal>
     </div>
-  )
+  );
 }

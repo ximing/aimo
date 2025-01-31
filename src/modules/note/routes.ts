@@ -7,6 +7,7 @@ import {
   searchNotes,
   getNoteByShareToken,
   getNotesByTag,
+  getTags,
 } from "./controller.js";
 import {
   createNoteSchema,
@@ -26,7 +27,11 @@ export async function noteRoutes(app: FastifyInstance) {
 
   // CRUD operations
   app.post("/", { schema: createNoteSchema }, createNote as RouteHandlerMethod);
-  app.put("/:id", { schema: updateNoteSchema }, updateNote as RouteHandlerMethod);
+  app.put(
+    "/:id",
+    { schema: updateNoteSchema },
+    updateNote as RouteHandlerMethod
+  );
   app.delete("/:id", deleteNote as RouteHandlerMethod);
   app.get("/", getNotes as RouteHandlerMethod);
 
@@ -38,6 +43,9 @@ export async function noteRoutes(app: FastifyInstance) {
   app.get(
     "/shared/:token",
     { schema: getNoteByShareTokenSchema },
-    getNoteByShareToken,
+    getNoteByShareToken
   );
+
+  // 获取所有标签及其数量
+  app.get("/tags", getTags as RouteHandlerMethod);
 }

@@ -1,14 +1,12 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { ConfigProvider } from 'antd'
-import Layout from '@/components/Layout'
 import Login from '@/pages/Login'
 import Notes from '@/pages/Notes'
 import Settings from '@/pages/Settings'
-import { useAuthStore } from '@/stores/authStore'
 import Admin from '@/pages/Admin'
-import Tags from '@/pages/Tags'
+import Layout from '@/components/Layout'
+import { useAuthStore } from '@/stores/authStore'
 import { themeConfig } from '@/config/theme'
 import { useThemeStore } from '@/stores/themeStore'
 import { I18nProvider } from '@/components/I18nProvider'
@@ -31,21 +29,7 @@ interface PrivateRouteProps {
 function PrivateRoute({ children }: PrivateRouteProps) {
   const isAuthenticated = useAuthStore(state => state.isAuthenticated)
   
-  if (!isAuthenticated()) {
-    return <Navigate to="/login" />
-  }
-  
-  return <>{children}</>
-}
-
-function AdminRoute({ children }: { children: React.ReactNode }) {
-  const user = useAuthStore(state => state.user)
-  
-  if (user?.role !== 'admin') {
-    return <Navigate to="/notes" />
-  }
-  
-  return <>{children}</>
+  return isAuthenticated() ? <>{children}</> : <Navigate to="/login" />
 }
 
 export function App() {
@@ -70,16 +54,17 @@ export function App() {
                   </PrivateRoute>
                 }
               >
-                <Route index element={<Navigate to="/notes" />} />
+                <Route index element={<Navigate to="/notes" replace />} />
                 <Route path="notes" element={<Notes />} />
-                <Route path="tags" element={<Tags />} />
+                <Route path="daily" element={<div>每日回顾功能开发中...</div>} />
+                <Route path="search" element={<div>高级搜索功能开发中...</div>} />
                 <Route path="settings" element={<Settings />} />
                 <Route
                   path="admin"
                   element={
-                    <AdminRoute>
+                    <PrivateRoute>
                       <Admin />
-                    </AdminRoute>
+                    </PrivateRoute>
                   }
                 />
               </Route>
@@ -87,7 +72,6 @@ export function App() {
           </BrowserRouter>
         </I18nProvider>
       </ConfigProvider>
-      <ReactQueryDevtools />
     </QueryClientProvider>
   )
 }

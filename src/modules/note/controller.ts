@@ -13,6 +13,11 @@ import { nanoid } from "nanoid";
 import { triggerWebhook } from "@/lib/webhook.js";
 import { FastifyJWT } from "@fastify/jwt";
 
+interface TagCount {
+  name: string;
+  count: number;
+}
+
 export async function createNote(
   request: FastifyRequest<{
     Body: CreateNoteInput;
@@ -301,4 +306,42 @@ export async function getNoteByShareToken(
     ...note,
     tags: note.tags.map((t) => t.tag.name),
   };
+}
+
+export async function getTags(
+  request: FastifyRequest & { user: { id: number } },
+  reply: FastifyReply
+): Promise<TagCount[]> {
+  const { id: userId } = request.user;
+
+  const userNotes = await db
+    .select({
+      id: notes.id,
+      tags: sql<string[]>`
+        array_agg(distinct ${tags.name})
+        filter (where ${tags.name} is not null)
+      `.as("tags"),
+    })
+    .from(notes)
+    .leftJoin(noteTags, eq(notes.id, noteTags.noteId))
+    .leftJoin(tags, eq(noteTags.tagId, tags.id))
+    .where(eq(notes.userId, userId))
+    .groupBy(notes.id);
+
+  // 统计每个标签的数量
+  const tagCounts = userNotes.reduce(
+    (acc, note) => {
+      (note.tags || []).forEach((tag) => {
+        acc[tag] = (acc[tag] || 0) + 1;
+      });
+      return acc;
+    },
+    {} as Record<string, number>
+  );
+
+  // 转换为数组格式
+  return Object.entries(tagCounts).map(([name, count]) => ({
+    name,
+    count,
+  }));
 }

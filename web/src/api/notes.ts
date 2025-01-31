@@ -1,26 +1,32 @@
 import request from '@/utils/request'
-import type { Note, CreateNoteInput, UpdateNoteInput, ShareNoteResponse, ImportResult, ExportOptions } from './types'
+import type { Note, CreateNoteInput, UpdateNoteInput, ShareNoteResponse, ImportResult, ExportOptions, SearchNoteInput } from './types'
 
 export function getNotes(params?: { limit?: number; offset?: number }) {
-  return request.get<any, Note[]>('/notes', { params })
+  return request.get<Note[]>('/notes', { params })
 }
 
 export function createNote(data: CreateNoteInput) {
-  return request.post<any, Note>('/notes', data)
+  return request.post<Note>('/notes', data)
 }
 
 export function updateNote(id: number, data: UpdateNoteInput) {
-  return request.put<any, Note>(`/notes/${id}`, data)
+  return request.put<Note>(`/notes/${id}`, data)
 }
 
 export function deleteNote(id: number) {
-  return request.delete<any, void>(`/notes/${id}`)
+  return request.delete(`/notes/${id}`)
 }
 
-export function searchNotes(query: string, tag?: string) {
-  return request.get<any, Note[]>('/notes/search', {
-    params: { q: query, tag }
-  })
+export function searchNotes(params: SearchNoteInput) {
+  return request.get<Note[]>('/notes/search', { params })
+}
+
+export function getNotesByTag(tag: string) {
+  return request.get<Note[]>(`/notes/tags/${tag}`)
+}
+
+export function getNoteByShareToken(token: string) {
+  return request.get<Note>(`/notes/shared/${token}`)
 }
 
 export function shareNote(id: number) {
