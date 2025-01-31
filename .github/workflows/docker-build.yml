@@ -58,4 +58,4 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            USE_CHINA_MIRROR=0
+            USE_CHINA_MIRROR=1
