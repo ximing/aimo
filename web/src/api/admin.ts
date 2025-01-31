@@ -1,18 +1,18 @@
-import request from '@/utils/request'
-import type { UserListItem, SystemStats, UpdateUserInput } from './types'
+import request from "@/utils/request";
+import type { UserListItem, SystemStats, UpdateUserInput } from "./types";
 
-export function getUsers(params?: { limit?: number; offset?: number }) {
-  return request.get<any, UserListItem[]>('/admin/users', { params })
+export async function getUsers(params?: { limit?: number; offset?: number }) {
+  return (await request.get<UserListItem[]>("/admin/users", { params })).data;
 }
 
-export function updateUser(id: number, data: UpdateUserInput) {
-  return request.put<any, UserListItem>(`/admin/users/${id}`, data)
+export async function updateUser(id: number, data: UpdateUserInput) {
+  return (await request.put<UserListItem>(`/admin/users/${id}`, data)).data;
 }
 
-export function deleteUser(id: number) {
-  return request.delete<any, void>(`/admin/users/${id}`)
+export async function deleteUser(id: number) {
+  return (await request.delete<void>(`/admin/users/${id}`)).data;
 }
 
-export function getSystemStats() {
-  return request.get<any, SystemStats>('/admin/stats')
+export async function getSystemStats() {
+  return (await request.get<SystemStats>("/admin/stats")).data;
 }

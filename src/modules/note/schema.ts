@@ -155,3 +155,42 @@ export const heatmapSchema: FastifySchema = {
 // Types for request validation
 export type GetNotesQuery = z.infer<typeof getNotesQuerySchema>;
 export type HeatmapQuery = z.infer<typeof heatmapQuerySchema>;
+
+// 统一的查询参数 schema
+const noteQuerySchema = z.object({
+  // 分页参数
+  page: z.number().int().min(1).optional(),
+  pageSize: z.number().int().min(1).max(100).optional(),
+
+  // 排序
+  sortBy: z.enum(["newest", "oldest"]).optional(),
+
+  // 过滤条件
+  tag: z.string().optional(),
+  search: z.string().optional(),
+  startDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  endDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+});
+
+export type NoteQueryParams = z.infer<typeof noteQuerySchema>;
+
+export const getNoteSchema: FastifySchema = {
+  querystring: {
+    type: "object",
+    properties: {
+      page: { type: "number", minimum: 1 },
+      pageSize: { type: "number", minimum: 1, maximum: 100 },
+      sortBy: { type: "string", enum: ["newest", "oldest"] },
+      tag: { type: "string" },
+      search: { type: "string" },
+      startDate: { type: "string", format: "date" },
+      endDate: { type: "string", format: "date" },
+    },
+  },
+};

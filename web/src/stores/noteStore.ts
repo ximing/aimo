@@ -55,17 +55,21 @@ export const useNoteStore = create<NoteState>((set, get) => ({
   fetchNotes: async (page = 1) => {
     try {
       set({ isLoading: page === 1 }); // 只有第一页加载时显示全局 loading
-      
-      const notes = await getNotes({
+
+      const response = await getNotes({
         page,
         pageSize: get().pageSize,
         sortBy: get().sortBy,
+        tag: get().selectedTag || undefined,
+        search: get().searchText || undefined,
+        // 如果需要日期过滤，可以添加：
+        // startDate: get().selectedDate?.toISOString().split('T')[0],
       });
-
       set((state) => ({
-        notes: page === 1 ? notes : [...state.notes, ...notes],
-        hasMore: notes.length === get().pageSize,
-        currentPage: page, // 更新当前页码
+        notes:
+          page === 1 ? response.notes : [...state.notes, ...response.notes],
+        hasMore: response.pagination.hasMore,
+        currentPage: response.pagination.page,
         error: null,
         isLoading: false,
       }));
@@ -120,14 +124,14 @@ export const useNoteStore = create<NoteState>((set, get) => ({
 
   setSelectedDate: (date) => set({ selectedDate: date }),
   setSortBy: (sort) => {
-    set({ 
+    set({
       sortBy: sort,
       currentPage: 1, // 重置页码
       notes: [], // 清空现有数据
     });
   },
   setSearchText: (text) => {
-    set({ 
+    set({
       searchText: text,
       currentPage: 1, // 重置页码
       notes: [], // 清空现有数据

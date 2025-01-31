@@ -1,19 +1,19 @@
-import request from '@/utils/request'
-import type { LoginResponse } from './types'
+import request from "@/utils/request";
+import type { LoginResponse } from "./types";
 
 interface LoginParams {
-  email: string
-  password: string
+  email: string;
+  password: string;
 }
 
-export function login(params: LoginParams) {
-  return request.post<any, LoginResponse>('/auth/login', params)
+export async function login(params: LoginParams) {
+  return (await request.post<LoginResponse>("/auth/login", params)).data;
 }
 
-export function register(params: LoginParams & { name?: string }) {
-  return request.post<any, LoginResponse>('/auth/register', params)
+export async function register(params: LoginParams & { name?: string }) {
+  return (await request.post<LoginResponse>("/auth/register", params)).data;
 }
 
-export function getProfile() {
-  return request.get<any, LoginResponse>('/auth/profile')
-} 
+export async function getProfile() {
+  return (await request.get<LoginResponse>("/auth/profile")).data;
+}

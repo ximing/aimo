@@ -7,74 +7,75 @@ import type {
   ImportResult,
   ExportOptions,
   SearchNoteInput,
+  PaginatedResponse,
 } from "./types";
 
 interface GetNotesParams {
   page?: number;
   pageSize?: number;
   sortBy?: "newest" | "oldest";
+  tag?: string;
+  search?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
-export async function getNotes(params: GetNotesParams = {}): Promise<Note[]> {
-  const { page = 1, pageSize = 20, sortBy = "newest" } = params;
-
-  const notes = await request.get("/notes", {
-    params: {
-      page,
-      pageSize,
-      sortBy,
-    },
-  });
-  return notes;
+export async function getNotes(params: GetNotesParams = {}) {
+  return (await request.get<PaginatedResponse<Note>>("/notes", { params }))
+    .data;
 }
 
-export function createNote(data: CreateNoteInput) {
-  return request.post<Note>("/notes", data);
+export async function createNote(data: CreateNoteInput) {
+  return (await request.post<Note>("/notes", data)).data;
 }
 
-export function updateNote(id: number, data: UpdateNoteInput) {
-  return request.put<Note>(`/notes/${id}`, data);
+export async function updateNote(id: number, data: UpdateNoteInput) {
+  return (await request.put<Note>(`/notes/${id}`, data)).data;
 }
 
-export function deleteNote(id: number) {
-  return request.delete(`/notes/${id}`);
+export async function deleteNote(id: number) {
+  return (await request.delete<void>(`/notes/${id}`)).data;
 }
 
-export function searchNotes(params: SearchNoteInput) {
-  return request.get<Note[]>("/notes/search", { params });
+export async function searchNotes(params: SearchNoteInput) {
+  return (await request.get<Note[]>("/notes/search", { params })).data;
 }
 
-export function getNotesByTag(tag: string) {
-  return request.get<Note[]>(`/notes/tags/${tag}`);
+export async function getNotesByTag(tag: string) {
+  return (await request.get<Note[]>(`/notes/tags/${tag}`)).data;
 }
 
-export function getNoteByShareToken(token: string) {
-  return request.get<Note>(`/notes/shared/${token}`);
+export async function getNoteByShareToken(token: string) {
+  return (await request.get<Note>(`/notes/shared/${token}`)).data;
 }
 
-export function shareNote(id: number) {
-  return request.post<any, ShareNoteResponse>(`/notes/${id}/share`);
+export async function shareNote(id: number) {
+  return (await request.post<ShareNoteResponse>(`/notes/${id}/share`)).data;
 }
 
-export function getSharedNote(token: string) {
-  return request.get<any, Note>(`/notes/share/${token}`);
+export async function getSharedNote(token: string) {
+  return (await request.get<Note>(`/notes/share/${token}`)).data;
 }
 
-export function importNotes(file: File) {
+export async function importNotes(file: File) {
   const formData = new FormData();
   formData.append("file", file);
-  return request.post<any, ImportResult>("/notes/import", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
+  return (
+    await request.post<ImportResult>("/notes/import", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    })
+  ).data;
 }
 
-export function exportNotes(options: ExportOptions) {
-  return request.get("/notes/export", {
-    params: options,
-    responseType: "blob",
-  });
+export async function exportNotes(options: ExportOptions) {
+  return (
+    await request.get("/notes/export", {
+      params: options,
+      responseType: "blob",
+    })
+  ).data;
 }
 
 interface HeatmapData {
@@ -82,12 +83,16 @@ interface HeatmapData {
   count: number;
 }
 
-export async function getHeatmapData(startDate: string, endDate: string): Promise<HeatmapData[]> {
-  const response = await request.get<HeatmapData[]>("/notes/stats/heatmap", {
-    params: {
-      startDate,
-      endDate,
-    },
-  });
-  return response;
+export async function getHeatmapData(
+  startDate: string,
+  endDate: string
+): Promise<HeatmapData[]> {
+  return (
+    await request.get<HeatmapData[]>("/notes/stats/heatmap", {
+      params: {
+        startDate,
+        endDate,
+      },
+    })
+  ).data;
 }

@@ -17,6 +17,7 @@ import {
   getNoteByShareTokenSchema,
   getNotesSchema,
   heatmapSchema,
+  getNoteSchema,
 } from "./schema.js";
 
 export async function noteRoutes(app: FastifyInstance) {
@@ -36,11 +37,9 @@ export async function noteRoutes(app: FastifyInstance) {
     updateNote as RouteHandlerMethod
   );
   app.delete("/:id", deleteNote as RouteHandlerMethod);
-  app.get("/", { schema: getNotesSchema }, getNotes as RouteHandlerMethod);
 
-  // Search and filter
-  app.get("/search", { schema: searchNoteSchema }, searchNotes);
-  app.get("/tags/:tag", getNotesByTag);
+  // 统一的笔记查询接口
+  app.get("/", { schema: getNoteSchema }, getNotes as RouteHandlerMethod);
 
   // Public access
   app.get(

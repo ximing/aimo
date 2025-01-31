@@ -7,17 +7,17 @@ export interface TagInfo {
 }
 
 export async function getTags(): Promise<TagInfo[]> {
-  return request.get("/notes/tags");
+  return (await request.get<TagInfo[]>("/notes/tags")).data;
 }
 
-export function deleteTag(name: string) {
-  return request.delete<any, void>(`/tags/${name}`);
+export async function deleteTag(name: string) {
+  return (await request.delete<void>(`/tags/${name}`)).data;
 }
 
-export function mergeTag(oldName: string, newName: string) {
-  return request.post<any, void>("/tags/merge", { oldName, newName });
+export async function mergeTag(oldName: string, newName: string) {
+  return (await request.post<void>("/tags/merge", { oldName, newName })).data;
 }
 
-export function getTagStats() {
-  return request.get<any, TagStats[]>("/tags/stats");
+export async function getTagStats() {
+  return (await request.get<TagStats[]>("/tags/stats")).data;
 }

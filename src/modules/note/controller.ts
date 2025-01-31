@@ -9,6 +9,7 @@ import {
   NoteResponse,
   GetNotesQuery,
   HeatmapQuery,
+  NoteQueryParams,
 } from "./schema.js";
 import { generateEmbedding } from "@/lib/openai.js";
 import { nanoid } from "nanoid";
@@ -190,19 +191,23 @@ export async function deleteNote(
 
 export async function getNotes(
   request: FastifyRequest<{
-    Querystring: GetNotesQuery;
+    Querystring: NoteQueryParams;
   }> & { user: FastifyJWT["user"] },
   reply: FastifyReply
 ) {
+  const {
+    page = 1,
+    pageSize = 20,
+    sortBy = "newest",
+    tag,
+    search,
+    startDate,
+    endDate,
+  } = request.query;
   const userId = request.user.id;
-  const page = request.query.page || 1;
-  const pageSize = request.query.pageSize || 20;
-  const sortBy = request.query.sortBy || "newest";
 
-  // 计算偏移量
-  const offset = (page - 1) * pageSize;
-
-  const userNotes = await db
+  // 基础查询
+  let query = db
     .select({
       id: notes.id,
       content: notes.content,
@@ -220,16 +225,66 @@ export async function getNotes(
     .from(notes)
     .leftJoin(noteTags, eq(notes.id, noteTags.noteId))
     .leftJoin(tags, eq(noteTags.tagId, tags.id))
-    .where(eq(notes.userId, userId))
-    .groupBy(notes.id)
-    .orderBy(sortBy === "newest" ? desc(notes.createdAt) : asc(notes.createdAt))
-    .limit(pageSize)
-    .offset(offset);
+    .where(eq(notes.userId, userId));
 
-  return userNotes.map((note) => ({
+  // 添加标签过滤
+  if (tag) {
+    query = query.where(sql`${tags.name} = ${tag}`);
+  }
+
+  // 添加日期范围过滤
+  if (startDate && endDate) {
+    query = query.where(
+      sql`${notes.createdAt}::date BETWEEN ${startDate}::date AND ${endDate}::date`
+    );
+  }
+
+  // 处理搜索和排序
+  if (search) {
+    // 如果是搜索，使用向量搜索
+    const embedding = await generateEmbedding(search);
+    query = query
+      .where(sql`${notes.content} ILIKE ${`%${search}%`}`) // 添加文本匹配
+      .orderBy(sql`(${notes.vectorEmbedding} <-> ${embedding})`) // 向量相似度排序
+      .limit(pageSize);
+  } else {
+    // 如果不是搜索，使用普通排序和分页
+    query = query
+      .orderBy(
+        sortBy === "newest" ? desc(notes.createdAt) : asc(notes.createdAt)
+      )
+      .offset((page - 1) * pageSize)
+      .limit(pageSize);
+  }
+
+  // 执行查询并分组
+  const result = await query.groupBy(notes.id);
+
+  // 处理结果
+  const noteResults = result.map((note) => ({
     ...note,
     tags: note.tags || [],
   }));
+
+  // 获取总数（用于分页）
+  const [{ count }] = await db
+    .select({
+      count: sql<number>`count(distinct ${notes.id})::int`,
+    })
+    .from(notes)
+    .where(eq(notes.userId, userId))
+    .execute();
+
+  // 返回结果
+  return {
+    notes: noteResults,
+    pagination: {
+      total: Number(count),
+      page,
+      pageSize,
+      hasMore: page * pageSize < Number(count),
+    },
+  };
 }
 
 export async function searchNotes(
