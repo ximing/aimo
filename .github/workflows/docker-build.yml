@@ -4,12 +4,13 @@ on:
   push:
     branches: ["main", "master"]
     paths:
-      - "docker/postgres/**"
+        - "docker/postgres/**"
+        - ".github/workflows/**"
   pull_request:
     branches: ["main", "master"]
     paths:
       - "docker/postgres/**"
-
+      - ".github/workflows/**"
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}/postgres
