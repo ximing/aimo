@@ -1,4 +1,9 @@
-import { Outlet, useNavigate, useLocation } from "react-router-dom";
+import {
+  Outlet,
+  useNavigate,
+  useLocation,
+  useSearchParams,
+} from "react-router-dom";
 import {
   FileTextOutlined,
   HistoryOutlined,
@@ -24,10 +29,17 @@ export default function AppLayout() {
   const clearAuth = useAuthStore((state) => state.clearAuth);
   const { notes, tags, selectedTag, setSelectedTag, fetchTags } =
     useNoteStore();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
     fetchTags();
   }, [fetchTags]);
+
+  // 从 URL 同步标签状态到 store
+  useEffect(() => {
+    const tagFromUrl = searchParams.get("tag");
+    setSelectedTag(tagFromUrl);
+  }, [searchParams, setSelectedTag]);
 
   const handleLogout = () => {
     clearAuth();
@@ -80,6 +92,19 @@ export default function AppLayout() {
     },
   ];
 
+  const handleTagClick = (tagName: string | null) => {
+    if (tagName) {
+      setSearchParams({ tag: tagName });
+    } else {
+      searchParams.delete("tag");
+      setSearchParams(searchParams);
+    }
+    // 只有当前不在 notes 路由时才进行导航
+    if (location.pathname !== "/notes") {
+      navigate("/notes");
+    }
+  };
+
   return (
     <div className="app-layout">
       <aside className="sidebar">
@@ -117,10 +142,11 @@ export default function AppLayout() {
           </div>
           <nav className="nav-menu">
             {navItems.map((item) => {
-              if (item.type === "divider") {
-                return <div key="divider" className="nav-divider" />;
-              }
-              const isActive = location.pathname === item.key;
+              // 当有标签选中时，notes 路由不显示激活状态
+              const isActive = 
+                location.pathname === item.key && 
+                (item.key !== "/notes" || !searchParams.get("tag"));
+              
               return (
                 <div
                   key={item.key}
@@ -130,6 +156,9 @@ export default function AppLayout() {
                   onClick={() => {
                     if (item.key === "logout") {
                       handleLogout();
+                    } else if (item.key === "/notes") {
+                      // 点击全部笔记时只清空标签选择
+                      handleTagClick(null);
                     } else {
                       navigate(item.key);
                     }
@@ -149,11 +178,8 @@ export default function AppLayout() {
               {tags.map((tag) => (
                 <span
                   key={tag.name}
-                  className={`tag-item ${selectedTag === tag.name ? "active" : ""}`}
-                  onClick={() => {
-                    setSelectedTag(tag.name);
-                    navigate("/notes");
-                  }}
+                  className={`tag-item ${searchParams.get("tag") === tag.name ? "active" : ""}`}
+                  onClick={() => handleTagClick(tag.name)}
                 >
                   {tag.name} ({tag.count})
                 </span>
