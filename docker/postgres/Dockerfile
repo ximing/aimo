@@ -1,5 +1,5 @@
-FROM pgvector/pgvector:pg17
-
+FROM pgvector/pgvector:pg${PG_VERSION}
+ARG PG_VERSION
 ARG USE_CHINA_MIRROR=0
 RUN if [ x"${USE_CHINA_MIRROR}" = x1 ]; then \
       for f in /etc/apt/sources.list /etc/apt/sources.list.d/debian.sources; do \
