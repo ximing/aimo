@@ -2,11 +2,12 @@ version: '3.8'
 
 services:
   postgres:
-    build:
-      context: .
-      dockerfile: docker/postgres/Dockerfile
-      args:
-        USE_CHINA_MIRROR: 0
+    # build:
+    #   context: .
+    #   dockerfile: docker/postgres/Dockerfile
+    #   args:
+    #     USE_CHINA_MIRROR: 0
+    image: ghcr.io/ximing/aimo/postgres:latest
     environment:
       POSTGRES_USER: aimo
       POSTGRES_PASSWORD: aimo123
