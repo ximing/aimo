@@ -19,14 +19,10 @@ RUN apt-get update \
       gcc \
       libc6-dev \
       make \
-  &&  if grep -q "deb-src" /etc/apt/sources.list.d/pgdg.list > /dev/null; then \
-        echo "deb [trusted=yes] https://apt.fury.io/abcfy2/ /" >/etc/apt/sources.list.d/fury.list; \
-        apt-get update; \
-      fi \
-  && LIBPQ5_VER="$(dpkg-query --showformat='${Version}' --show libpq5)" \
-  && apt-get install -y libpq-dev="${LIBPQ5_VER}" "postgresql-server-dev-${PG_MAJOR}=${PG_VERSION}" \
+  && PG_VERSION=$(pg_config --version | awk '{print $2}' | cut -d. -f1) \
+  && apt-get install -y \
+      postgresql-server-dev-${PG_VERSION} \
   && curl -sSkLf "http://www.xunsearch.com/scws/down/scws-1.2.3.tar.bz2" | tar xjf - \
-  && ZHPARSER_URL="https://github.com/amutu/zhparser/archive/master.tar.gz" \
   &&  if [ x"${USE_CHINA_MIRROR}" = x1 ]; then \
         ZHPARSER_URL="https://mirror.ghproxy.com/${ZHPARSER_URL}"; \
       fi \
