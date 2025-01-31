@@ -1,7 +1,7 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import { db } from "@/lib/db.js";
 import { notes, tags, noteTags } from "@/config/schema.js";
-import { eq, and, sql, like, desc } from "drizzle-orm";
+import { eq, and, sql, like, desc, asc } from "drizzle-orm";
 import {
   CreateNoteInput,
   UpdateNoteInput,
@@ -183,13 +183,21 @@ export async function deleteNote(
 
 export async function getNotes(
   request: FastifyRequest<{
-    Querystring: { limit?: number; offset?: number };
+    Querystring: {
+      page?: number;
+      pageSize?: number;
+      sortBy?: "newest" | "oldest";
+    };
   }> & { user: FastifyJWT["user"] },
   reply: FastifyReply
 ) {
   const userId = request.user.id;
-  const limit = request.query.limit || 20;
-  const offset = request.query.offset || 0;
+  const page = request.query.page || 1;
+  const pageSize = request.query.pageSize || 20;
+  const sortBy = request.query.sortBy || "newest";
+
+  // 计算偏移量
+  const offset = (page - 1) * pageSize;
 
   const userNotes = await db
     .select({
@@ -211,8 +219,8 @@ export async function getNotes(
     .leftJoin(tags, eq(noteTags.tagId, tags.id))
     .where(eq(notes.userId, userId))
     .groupBy(notes.id)
-    .orderBy(desc(notes.createdAt))
-    .limit(limit)
+    .orderBy(sortBy === "newest" ? desc(notes.createdAt) : asc(notes.createdAt))
+    .limit(pageSize)
     .offset(offset);
 
   return userNotes.map((note) => ({

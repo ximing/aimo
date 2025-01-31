@@ -14,7 +14,7 @@ export interface Note {
   shareToken?: string | null
   tags: string[]
   createdAt: string
-  updatedAt: string
+  updatedAt?: string
   vectorEmbedding?: string
 }
 

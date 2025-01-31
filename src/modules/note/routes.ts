@@ -33,7 +33,22 @@ export async function noteRoutes(app: FastifyInstance) {
     updateNote as RouteHandlerMethod
   );
   app.delete("/:id", deleteNote as RouteHandlerMethod);
-  app.get("/", getNotes as RouteHandlerMethod);
+  app.get(
+    "/",
+    {
+      schema: {
+        querystring: {
+          type: 'object',
+          properties: {
+            page: { type: 'number', minimum: 1 },
+            pageSize: { type: 'number', minimum: 1, maximum: 100 },
+            sortBy: { type: 'string', enum: ['newest', 'oldest'] }
+          }
+        }
+      }
+    },
+    getNotes as RouteHandlerMethod
+  );
 
   // Search and filter
   app.get("/search", { schema: searchNoteSchema }, searchNotes);

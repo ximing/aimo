@@ -14,9 +14,11 @@ interface NoteState {
   hasMore: boolean;
   tags: TagInfo[];
   newNoteContent: string;
+  currentPage: number;
+  pageSize: number;
 
   // Actions
-  fetchNotes: () => Promise<void>;
+  fetchNotes: (page?: number) => Promise<void>;
   addNote: (data: CreateNoteInput) => Promise<void>;
   updateNote: (id: number, data: UpdateNoteInput) => Promise<void>;
   removeNote: (id: number) => Promise<void>;
@@ -27,6 +29,7 @@ interface NoteState {
   deleteNote: (id: number) => Promise<void>;
   fetchTags: () => Promise<void>;
   setNewNoteContent: (content: string) => void;
+  setCurrentPage: (page: number) => void;
 
   // Computed
   filteredNotes: () => Note[];
@@ -43,18 +46,33 @@ export const useNoteStore = create<NoteState>((set, get) => ({
   hasMore: true,
   tags: [],
   newNoteContent: "",
+  currentPage: 1,
+  pageSize: 20,
 
-  fetchNotes: async () => {
-    set({ isLoading: true });
+  setCurrentPage: (page) => set({ currentPage: page }),
+
+  fetchNotes: async (page = 1) => {
     try {
-      const notes = await getNotes();
-      set({
-        notes,
-        isLoading: false,
-        hasMore: notes.length >= 20, // 假设每页 20 条
+      set({ isLoading: page === 1 }); // 只有第一页加载时显示全局 loading
+      
+      const notes = await getNotes({
+        page,
+        pageSize: get().pageSize,
+        sortBy: get().sortBy,
       });
+
+      set((state) => ({
+        notes: page === 1 ? notes : [...state.notes, ...notes],
+        hasMore: notes.length === get().pageSize,
+        currentPage: page, // 更新当前页码
+        error: null,
+        isLoading: false,
+      }));
     } catch (error) {
-      set({ error: (error as Error).message, isLoading: false });
+      set({
+        error: "获取笔记失败",
+        isLoading: false,
+      });
     }
   },
 
@@ -63,13 +81,13 @@ export const useNoteStore = create<NoteState>((set, get) => ({
     try {
       const newNote = await createNote(data);
       set((state) => ({
-        notes: [newNote, ...state.notes],  // 将新笔记放在最前面
+        notes: [newNote, ...state.notes], // 将新笔记放在最前面
         isLoading: false,
-        newNoteContent: "",  // 清空输入框
+        newNoteContent: "", // 清空输入框
       }));
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false });
-      throw error;  // 抛出错误以便组件处理
+      throw error; // 抛出错误以便组件处理
     }
   },
 
@@ -100,8 +118,20 @@ export const useNoteStore = create<NoteState>((set, get) => ({
   },
 
   setSelectedDate: (date) => set({ selectedDate: date }),
-  setSortBy: (sort) => set({ sortBy: sort }),
-  setSearchText: (text) => set({ searchText: text }),
+  setSortBy: (sort) => {
+    set({ 
+      sortBy: sort,
+      currentPage: 1, // 重置页码
+      notes: [], // 清空现有数据
+    });
+  },
+  setSearchText: (text) => {
+    set({ 
+      searchText: text,
+      currentPage: 1, // 重置页码
+      notes: [], // 清空现有数据
+    });
+  },
   setSelectedTag: (tag) => set({ selectedTag: tag }),
 
   deleteNote: async (id) => {
@@ -120,7 +150,7 @@ export const useNoteStore = create<NoteState>((set, get) => ({
       const tags = await getTags();
       set({ tags });
     } catch (error) {
-      console.error('Failed to fetch tags:', error);
+      console.error("Failed to fetch tags:", error);
     }
   },
 

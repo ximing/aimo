@@ -71,9 +71,14 @@ export default function Notes() {
     hasMore,
     newNoteContent,
     setNewNoteContent,
+    currentPage,
+    setCurrentPage,
   } = useNoteStore();
   const [isPublishing, setIsPublishing] = useState(false);
   const [noteTags, setNoteTags] = useState<string[]>([]);
+
+  // 添加一个 loading 锁，防止重复请求
+  const loadingRef = useRef(false);
 
   useEffect(() => {
     fetchNotes();
@@ -243,7 +248,7 @@ export default function Notes() {
 
   // 添加滚动处理
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { y: scrollY } = useScroll(scrollRef);
+  const { y: scrollY } = useScroll(scrollRef as React.RefObject<HTMLElement>);
 
   // 编辑器高度动画
   const MIN_EDITOR_HEIGHT = 120;
@@ -262,6 +267,37 @@ export default function Notes() {
     },
   });
 
+  // 添加处理滚动加载的函数
+  const handleScroll = useCallback(() => {
+    if (!scrollRef.current) return;
+    
+    const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+    // 当距离底部小于 50px 时触发加载
+    if (scrollHeight - scrollTop - clientHeight < 50) {
+      if (!isLoading && !loadingRef.current && hasMore) {
+        loadingRef.current = true; // 设置加载锁
+        fetchNotes(currentPage + 1).finally(() => {
+          loadingRef.current = false; // 请求完成后释放加载锁
+        });
+      }
+    }
+  }, [isLoading, hasMore, fetchNotes, currentPage]);
+
+  // 监听搜索文本变化，重置分页
+  useEffect(() => {
+    setCurrentPage(1);
+    fetchNotes(1);
+  }, [searchText, sortBy]);
+
+  // 添加滚动事件监听
+  useEffect(() => {
+    const scrollElement = scrollRef.current;
+    if (scrollElement) {
+      scrollElement.addEventListener("scroll", handleScroll);
+      return () => scrollElement.removeEventListener("scroll", handleScroll);
+    }
+  }, [handleScroll]);
+
   return (
     <div className="notes-container">
       <div className="notes-header">
@@ -272,7 +308,7 @@ export default function Notes() {
           </Select>
           <SearchBar value={searchText} onChange={setSearchText} />
         </div>
-        <animated.div style={editorStyle as any} className="note-editor">
+        <animated.div style={editorStyle} className="note-editor">
           <MDEditor
             value={newNoteContent}
             onChange={setNewNoteContent}
@@ -285,7 +321,11 @@ export default function Notes() {
         </animated.div>
       </div>
 
-      <div className="notes-scroll-container" ref={scrollRef}>
+      <div
+        className="notes-scroll-container"
+        ref={scrollRef}
+        onScroll={handleScroll}
+      >
         <div className="note-list">
           {isLoading && !filteredNotes().length ? (
             <div className="notes-loading">
