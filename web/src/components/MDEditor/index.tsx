@@ -1,22 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "antd";
-import {
-  SendOutlined,
-  PictureOutlined,
-  FontSizeOutlined,
-  UnorderedListOutlined,
-  NumberOutlined,
-} from "@ant-design/icons";
-import { EditorState } from "prosemirror-state";
+import { SendOutlined } from "@ant-design/icons";
 import { EditorView } from "prosemirror-view";
-import { Schema, DOMParser, DOMSerializer } from "prosemirror-model";
-import { schema } from "prosemirror-markdown";
-import { addListNodes } from "prosemirror-schema-list";
+import { EditorState } from "prosemirror-state";
+import { history } from "prosemirror-history";
 import { keymap } from "prosemirror-keymap";
+import { baseKeymap } from "prosemirror-commands";
 import { MenuItem } from "./types";
 import { buildMenuItems } from "./menu";
 import { buildKeymap } from "./keymap";
 import { buildInputRules } from "./inputrules";
+import { mySchema, myParser, mySerializer } from "./schema";
 import "prosemirror-view/style/prosemirror.css";
 import "./styles.css";
 
@@ -24,18 +18,13 @@ interface MDEditorProps {
   value?: string;
   onChange?: (value: string) => void;
   onPublish?: () => void;
+  onTagsChange?: (tags: string[]) => void;
   placeholder?: string;
   readOnly?: boolean;
   toolbar?: React.ReactNode;
   disabled?: boolean;
   loading?: boolean;
 }
-
-// 扩展基础 schema，添加列表支持
-const mySchema = new Schema({
-  nodes: addListNodes(schema.spec.nodes, "paragraph block*", "block"),
-  marks: schema.spec.marks,
-});
 
 function MenuBar({
   items,
@@ -72,6 +61,7 @@ export default function MDEditor({
   value = "",
   onChange,
   onPublish,
+  onTagsChange,
   placeholder = "写点什么...",
   readOnly = false,
   toolbar,
@@ -83,27 +73,38 @@ export default function MDEditor({
   const menuItems = buildMenuItems(mySchema);
   const [isEditorReady, setIsEditorReady] = useState(false);
 
+  // 收集文档中的所有标签
+  const collectTags = (state: EditorState) => {
+    const tags: string[] = [];
+    state.doc.descendants((node) => {
+      if (node.type.name === "tag") {
+        tags.push(node.attrs.name);
+      }
+    });
+    return Array.from(new Set(tags)); // 去重
+  };
+
   useEffect(() => {
     if (!editorRef.current) return;
 
     // 创建初始文档
-    const doc = DOMParser.fromSchema(mySchema).parse(
-      document.createElement("div")
-    );
+    const doc = myParser.parse(value || "");
 
     // 创建编辑器状态
     const state = EditorState.create({
       doc,
       schema: mySchema,
       plugins: [
+        history(),
         buildInputRules(mySchema),
         buildKeymap(mySchema),
-        keymap({
-          "Mod-Enter": () => {
-            onPublish?.();
-            return true;
-          },
-        }),
+        keymap(baseKeymap),
+        // keymap({
+        //   "Mod-Enter": () => {
+        //     onPublish?.();
+        //     return true;
+        //   },
+        // }),
       ],
     });
 
@@ -115,12 +116,13 @@ export default function MDEditor({
         view.updateState(newState);
 
         if (onChange) {
-          const fragment = DOMSerializer.fromSchema(mySchema).serializeFragment(
-            newState.doc.content
-          );
-          const temp = document.createElement("div");
-          temp.appendChild(fragment);
-          onChange(temp.innerHTML);
+          const content = mySerializer.serialize(newState.doc);
+          onChange(content);
+        }
+
+        // 当内容变化时，通知标签变化
+        if (onTagsChange) {
+          onTagsChange(collectTags(newState));
         }
       },
       editable: () => !readOnly,
@@ -128,17 +130,6 @@ export default function MDEditor({
 
     viewRef.current = view;
     setIsEditorReady(true);
-
-    // 设置初始内容
-    if (value) {
-      const parser = DOMParser.fromSchema(mySchema);
-      const element = document.createElement("div");
-      element.innerHTML = value;
-      const doc = parser.parse(element);
-      view.dispatch(
-        view.state.tr.replace(0, view.state.doc.content.size, doc.slice(0))
-      );
-    }
 
     return () => {
       if (viewRef.current) {
@@ -150,22 +141,13 @@ export default function MDEditor({
 
   // 当 value prop 改变时更新编辑器内容
   useEffect(() => {
-    if (!viewRef.current || !value) return;
+    if (!viewRef.current) return;
 
-    const currentContent = (() => {
-      const fragment = DOMSerializer.fromSchema(mySchema).serializeFragment(
-        viewRef.current.state.doc.content
-      );
-      const temp = document.createElement("div");
-      temp.appendChild(fragment);
-      return temp.innerHTML;
-    })();
-
+    const currentContent = mySerializer.serialize(
+      viewRef.current.state.doc
+    );
     if (currentContent !== value) {
-      const parser = DOMParser.fromSchema(mySchema);
-      const element = document.createElement("div");
-      element.innerHTML = value;
-      const doc = parser.parse(element);
+      const doc = myParser.parse(value || "");
       viewRef.current.dispatch(
         viewRef.current.state.tr.replace(
           0,
@@ -177,7 +159,7 @@ export default function MDEditor({
   }, [value]);
 
   // 检查内容是否为空
-  const isEmpty = !value || value === "<p></p>" || value === "<p><br></p>";
+  const isEmpty = !value || value.trim() === "";
 
   return (
     <div className="md-editor">
@@ -200,7 +182,7 @@ export default function MDEditor({
               type="primary"
               icon={<SendOutlined />}
               onClick={onPublish}
-              disabled={disabled}
+              disabled={disabled || isEmpty}
               loading={loading}
             >
               发布

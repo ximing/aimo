@@ -167,4 +167,16 @@
 
 .editor-toolbar .ant-btn .anticon {
   font-size: 14px;
+}
+
+.editor-tag {
+  display: inline-flex;
+  align-items: center;
+  background: #e8f7f0;
+  color: #42b883;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin: 0 2px;
+  font-size: 14px;
+  cursor: default;
 } 

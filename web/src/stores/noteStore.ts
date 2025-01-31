@@ -13,6 +13,7 @@ interface NoteState {
   selectedTag: string | null;
   hasMore: boolean;
   tags: TagInfo[];
+  newNoteContent: string;
 
   // Actions
   fetchNotes: () => Promise<void>;
@@ -25,6 +26,7 @@ interface NoteState {
   setSelectedTag: (tag: string | null) => void;
   deleteNote: (id: number) => Promise<void>;
   fetchTags: () => Promise<void>;
+  setNewNoteContent: (content: string) => void;
 
   // Computed
   filteredNotes: () => Note[];
@@ -40,6 +42,7 @@ export const useNoteStore = create<NoteState>((set, get) => ({
   selectedTag: null,
   hasMore: true,
   tags: [],
+  newNoteContent: "",
 
   fetchNotes: async () => {
     set({ isLoading: true });
@@ -58,13 +61,15 @@ export const useNoteStore = create<NoteState>((set, get) => ({
   addNote: async (data) => {
     set({ isLoading: true, error: null });
     try {
-      const newNote = (await createNote(data)) as Note;
+      const newNote = await createNote(data);
       set((state) => ({
-        notes: [...state.notes, newNote],
+        notes: [newNote, ...state.notes],  // 将新笔记放在最前面
         isLoading: false,
+        newNoteContent: "",  // 清空输入框
       }));
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false });
+      throw error;  // 抛出错误以便组件处理
     }
   },
 
@@ -161,4 +166,6 @@ export const useNoteStore = create<NoteState>((set, get) => ({
 
     return filtered;
   },
+
+  setNewNoteContent: (content) => set({ newNoteContent: content }),
 }));

@@ -48,7 +48,6 @@ const SearchBar = ({
 );
 
 export default function Notes() {
-  const [newNoteContent, setNewNoteContent] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [noteToDelete, setNoteToDelete] = useState<Note | null>(null);
   const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
@@ -66,8 +65,11 @@ export default function Notes() {
     updateNote,
     isLoading,
     hasMore,
+    newNoteContent,
+    setNewNoteContent,
   } = useNoteStore();
   const [isPublishing, setIsPublishing] = useState(false);
+  const [noteTags, setNoteTags] = useState<string[]>([]);
 
   useEffect(() => {
     fetchNotes();
@@ -89,11 +91,9 @@ export default function Notes() {
     try {
       await addNote({
         content: newNoteContent,
-        tags: [],
+        tags: noteTags,
         isPublic: false,
       });
-
-      setNewNoteContent("");
       await fetchNotes();
       message.success("笔记创建成功");
     } catch (error) {
@@ -181,10 +181,16 @@ export default function Notes() {
                   type="primary"
                   icon={<SendOutlined />}
                   onClick={() => handleUpdateNote(note.id, editingContent)}
+                  loading={isPublishing}
                 >
                   发布
                 </Button>
-                <Button onClick={() => setEditingNoteId(null)}>取消</Button>
+                <Button
+                  onClick={() => setEditingNoteId(null)}
+                  disabled={isPublishing}
+                >
+                  取消
+                </Button>
               </div>
             }
           />
@@ -247,6 +253,7 @@ export default function Notes() {
         <MDEditor
           value={newNoteContent}
           onChange={setNewNoteContent}
+          onTagsChange={setNoteTags}
           onPublish={handleCreateNote}
           placeholder="写点什么..."
           disabled={isNewNoteEmpty}
