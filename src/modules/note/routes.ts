@@ -4,18 +4,14 @@ import {
   updateNote,
   deleteNote,
   getNotes,
-  searchNotes,
   getNoteByShareToken,
-  getNotesByTag,
   getTags,
   getNotesHeatmap,
 } from "./controller.js";
 import {
   createNoteSchema,
   updateNoteSchema,
-  searchNoteSchema,
   getNoteByShareTokenSchema,
-  getNotesSchema,
   heatmapSchema,
   getNoteSchema,
 } from "./schema.js";

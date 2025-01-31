@@ -9,6 +9,8 @@ import {
   Button,
   Spin,
   Empty,
+  DatePicker,
+  Popover,
 } from "antd";
 import { useNoteStore } from "@/stores/noteStore";
 import MDEditor from "@/components/MDEditor";
@@ -21,35 +23,82 @@ import {
   DeleteOutlined,
   SendOutlined,
 } from "@ant-design/icons";
-import dayjs from "dayjs";
+import dayjs, { Dayjs } from "dayjs";
 import "./style.css";
 import { Note } from "@/api/types";
 import { useSpring, animated } from "@react-spring/web";
 import { useScroll } from "react-use";
 import type { MenuProps } from "antd";
 
+const { RangePicker } = DatePicker;
+
 const SearchBar = ({
   value,
   onChange,
+  searchMode,
+  onSearchModeChange,
+  dateRange,
+  onDateRangeChange,
 }: {
   value: string;
   onChange: (value: string) => void;
-}) => (
-  <div className="search-wrapper">
-    <SearchOutlined className="search-icon" />
-    <Input
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder="搜索笔记..."
-      bordered={false}
-      className="search-input"
-    />
-    <div className="search-shortcut">
-      <MacCommandOutlined />
-      <span>K</span>
+  searchMode: "similarity" | "fulltext";
+  onSearchModeChange: (mode: "similarity" | "fulltext") => void;
+  dateRange: [Dayjs | null, Dayjs | null];
+  onDateRangeChange: (dates: [Dayjs | null, Dayjs | null]) => void;
+}) => {
+  const [open, setOpen] = useState(false);
+
+  const content = (
+    <div className="search-popover">
+      <div className="search-option">
+        <div className="option-label">搜索方式</div>
+        <Select 
+          value={searchMode}
+          onChange={onSearchModeChange}
+          style={{ width: '100%' }}
+        >
+          <Select.Option value="similarity">相似度搜索</Select.Option>
+          <Select.Option value="fulltext">全文检索</Select.Option>
+        </Select>
+      </div>
+      <div className="search-option">
+        <div className="option-label">时间范围</div>
+        <RangePicker 
+          value={dateRange}
+          onChange={(dates) => onDateRangeChange([dates?.[0] || null, dates?.[1] || null])}
+          style={{ width: '100%' }}
+        />
+      </div>
     </div>
-  </div>
-);
+  );
+
+  return (
+    <Popover
+      content={content}
+      trigger="click"
+      open={open}
+      onOpenChange={setOpen}
+      placement="bottomLeft"
+      overlayClassName="search-popover-overlay"
+    >
+      <div className="search-wrapper">
+        <SearchOutlined className="search-icon" />
+        <Input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="搜索笔记..."
+          bordered={false}
+          className="search-input"
+        />
+        <div className="search-shortcut">
+          <MacCommandOutlined />
+          <span>K</span>
+        </div>
+      </div>
+    </Popover>
+  );
+};
 
 export default function Notes() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -74,6 +123,12 @@ export default function Notes() {
     currentPage,
     setCurrentPage,
     refreshHeatmap,
+    searchMode,
+    setSearchMode,
+    startDate,
+    endDate,
+    setStartDate,
+    setEndDate,
   } = useNoteStore();
   const [isPublishing, setIsPublishing] = useState(false);
   const [noteTags, setNoteTags] = useState<string[]>([]);
@@ -307,11 +362,18 @@ export default function Notes() {
     <div className="notes-container">
       <div className="notes-header">
         <div className="content-header">
+          <SearchBar 
+            value={searchText} 
+            onChange={setSearchText}
+            searchMode={searchMode}
+            onSearchModeChange={setSearchMode}
+            dateRange={[startDate, endDate]}
+            onDateRangeChange={(dates) => setDateRange(dates[0], dates[1])}
+          />
           <Select value={sortBy} onChange={setSortBy} style={{ width: 120 }}>
             <Select.Option value="newest">最新优先</Select.Option>
             <Select.Option value="oldest">最早优先</Select.Option>
           </Select>
-          <SearchBar value={searchText} onChange={setSearchText} />
         </div>
         <animated.div style={editorStyle} className="note-editor">
           <MDEditor

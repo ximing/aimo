@@ -203,6 +203,7 @@ export async function getNotes(
     search,
     startDate,
     endDate,
+    searchMode,
   } = request.query;
   const userId = request.user.id;
 
@@ -241,12 +242,30 @@ export async function getNotes(
 
   // 处理搜索和排序
   if (search) {
-    // 如果是搜索，使用向量搜索
-    const embedding = await generateEmbedding(search);
-    query = query
-      .where(sql`${notes.content} ILIKE ${`%${search}%`}`) // 添加文本匹配
-      .orderBy(sql`(${notes.vectorEmbedding} <-> ${embedding})`) // 向量相似度排序
-      .limit(pageSize);
+    if (searchMode === "similarity") {
+      // 相似度搜索：结合向量搜索和文本匹配
+      const embedding = await generateEmbedding(search);
+      query = query
+        .where(sql`${notes.content} ILIKE ${`%${search}%`}`)
+        .orderBy(sql`(${notes.vectorEmbedding} <-> ${embedding})`)
+        .limit(pageSize);
+    } else {
+      // 全文检索：使用 PostgreSQL 的中文全文搜索功能
+      query = query
+        .where(sql`
+          to_tsvector('chinese', ${notes.content}) @@ 
+          plainto_tsquery('chinese', ${search})
+        `)
+        .orderBy(sql`
+          ts_rank(
+            to_tsvector('chinese', ${notes.content}), 
+            plainto_tsquery('chinese', ${search})
+          ) DESC,
+          ${notes.createdAt} DESC
+        `)
+        .offset((page - 1) * pageSize)
+        .limit(pageSize);
+    }
   } else {
     // 如果不是搜索，使用普通排序和分页
     query = query
@@ -285,66 +304,6 @@ export async function getNotes(
       hasMore: page * pageSize < Number(count),
     },
   };
-}
-
-export async function searchNotes(
-  request: FastifyRequest<{ Querystring: SearchNoteInput }>,
-  reply: FastifyReply
-) {
-  const { q, tag, limit = 10, offset = 0 } = request.query;
-  const userId = request.user.id;
-
-  const embedding = await generateEmbedding(q);
-
-  // Build query based on search criteria
-  let query = db.select().from(notes).where(eq(notes.userId, userId));
-
-  if (tag) {
-    query = query
-      .innerJoin(noteTags, eq(notes.id, noteTags.noteId))
-      .innerJoin(tags, eq(noteTags.tagId, tags.id))
-      .where(eq(tags.name, tag));
-  }
-
-  // Add vector similarity search
-  const results = await query
-    .orderBy(sql`(notes.vector_embedding <-> ${embedding})`)
-    .limit(limit)
-    .offset(offset);
-
-  return results;
-}
-
-export async function getNotesByTag(
-  request: FastifyRequest<{ Params: { tag: string } }>,
-  reply: FastifyReply
-) {
-  const { tag } = request.params;
-  const userId = request.user.id;
-
-  const taggedNotes = await db.query.notes.findMany({
-    where: and(
-      eq(notes.userId, userId),
-      sql`EXISTS (
-        SELECT 1 FROM note_tags nt
-        INNER JOIN tags t ON nt.tag_id = t.id
-        WHERE nt.note_id = notes.id AND t.name = ${tag}
-      )`
-    ),
-    with: {
-      tags: {
-        with: {
-          tag: true,
-        },
-      },
-    },
-    orderBy: [desc(notes.createdAt)],
-  });
-
-  return taggedNotes.map((note) => ({
-    ...note,
-    tags: note.tags.map((t) => t.tag.name),
-  }));
 }
 
 export async function getNoteByShareToken(

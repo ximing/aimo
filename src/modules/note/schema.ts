@@ -156,7 +156,11 @@ export const heatmapSchema: FastifySchema = {
 export type GetNotesQuery = z.infer<typeof getNotesQuerySchema>;
 export type HeatmapQuery = z.infer<typeof heatmapQuerySchema>;
 
-// 统一的查询参数 schema
+// 添加搜索模式枚举
+const searchModeSchema = z.enum(["similarity", "fulltext"]);
+export type SearchMode = z.infer<typeof searchModeSchema>;
+
+// 修改查询参数 schema
 const noteQuerySchema = z.object({
   // 分页参数
   page: z.number().int().min(1).optional(),
@@ -168,6 +172,7 @@ const noteQuerySchema = z.object({
   // 过滤条件
   tag: z.string().optional(),
   search: z.string().optional(),
+  searchMode: searchModeSchema.optional().default("similarity"),
   startDate: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -189,6 +194,7 @@ export const getNoteSchema: FastifySchema = {
       sortBy: { type: "string", enum: ["newest", "oldest"] },
       tag: { type: "string" },
       search: { type: "string" },
+      searchMode: { type: "string", enum: ["similarity", "fulltext"] },
       startDate: { type: "string", format: "date" },
       endDate: { type: "string", format: "date" },
     },

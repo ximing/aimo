@@ -261,3 +261,37 @@
 .note-list .ant-empty {
   padding: 32px 0;
 }
+
+.search-section {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.search-popover {
+  padding: 12px;
+  width: 280px;
+}
+
+.search-option {
+  margin-bottom: 16px;
+}
+
+.search-option:last-child {
+  margin-bottom: 0;
+}
+
+.option-label {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+/* 覆盖 antd popover 样式 */
+.search-popover-overlay .ant-popover-inner {
+  padding: 0;
+}
+
+.search-popover-overlay .ant-popover-arrow {
+  display: none;
+}

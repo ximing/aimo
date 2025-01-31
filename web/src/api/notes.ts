@@ -16,6 +16,7 @@ interface GetNotesParams {
   sortBy?: "newest" | "oldest";
   tag?: string;
   search?: string;
+  searchMode?: "similarity" | "fulltext";
   startDate?: string;
   endDate?: string;
 }
@@ -39,10 +40,6 @@ export async function deleteNote(id: number) {
 
 export async function searchNotes(params: SearchNoteInput) {
   return (await request.get<Note[]>("/notes/search", { params })).data;
-}
-
-export async function getNotesByTag(tag: string) {
-  return (await request.get<Note[]>(`/notes/tags/${tag}`)).data;
 }
 
 export async function getNoteByShareToken(token: string) {

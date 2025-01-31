@@ -2,6 +2,7 @@ import { create } from "zustand";
 import type { Note, CreateNoteInput, UpdateNoteInput } from "@/api/types";
 import { getNotes, createNote, updateNote, deleteNote } from "@/api/notes";
 import { getTags, type TagInfo } from "@/api/tags";
+import { Dayjs } from "dayjs";
 
 interface NoteState {
   notes: Note[];
@@ -16,6 +17,9 @@ interface NoteState {
   newNoteContent: string;
   currentPage: number;
   pageSize: number;
+  searchMode: "similarity" | "fulltext";
+  startDate: Dayjs | null;
+  endDate: Dayjs | null;
 
   // Actions
   fetchNotes: (page?: number) => Promise<void>;
@@ -31,6 +35,8 @@ interface NoteState {
   setNewNoteContent: (content: string) => void;
   setCurrentPage: (page: number) => void;
   refreshHeatmap: () => void;
+  setSearchMode: (mode: "similarity" | "fulltext") => void;
+  setDateRange: (start: Dayjs | null, end: Dayjs | null) => void;
 
   // Computed
   filteredNotes: () => Note[];
@@ -49,6 +55,9 @@ export const useNoteStore = create<NoteState>((set, get) => ({
   newNoteContent: "",
   currentPage: 1,
   pageSize: 20,
+  searchMode: "similarity",
+  startDate: null,
+  endDate: null,
 
   setCurrentPage: (page) => set({ currentPage: page }),
 
@@ -56,12 +65,16 @@ export const useNoteStore = create<NoteState>((set, get) => ({
     try {
       set({ isLoading: page === 1 });
 
+      const state = get();
       const response = await getNotes({
         page,
-        pageSize: get().pageSize,
-        sortBy: get().sortBy,
-        tag: get().selectedTag || undefined,
-        search: get().searchText || undefined,
+        pageSize: state.pageSize,
+        sortBy: state.sortBy,
+        tag: state.selectedTag || undefined,
+        search: state.searchText || undefined,
+        searchMode: state.searchMode,
+        startDate: state.startDate?.format('YYYY-MM-DD'),
+        endDate: state.endDate?.format('YYYY-MM-DD'),
       });
 
       set((state) => ({
@@ -215,5 +228,19 @@ export const useNoteStore = create<NoteState>((set, get) => ({
   refreshHeatmap: () => {
     // 这里可以触发热力图组件的刷新
     // 由于热力图组件自己管理状态，这里可以是一个空函数
+  },
+
+  setSearchMode: (mode) => {
+    set({ searchMode: mode });
+    get().fetchNotes(1);
+  },
+
+  setDateRange: (start, end) => {
+    set({ 
+      startDate: start,
+      endDate: end,
+      currentPage: 1,
+    });
+    get().fetchNotes(1);
   },
 }));
