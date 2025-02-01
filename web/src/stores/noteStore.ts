@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Note, CreateNoteInput, UpdateNoteInput } from "@/api/types";
+import type { Note, CreateNoteInput, UpdateNoteInput, Attachment } from "@/api/types";
 import { getNotes, createNote, updateNote, deleteNote } from "@/api/notes";
 import { getTags, type TagInfo } from "@/api/tags";
 import { Dayjs } from "dayjs";
@@ -20,11 +20,12 @@ interface NoteState {
   searchMode: "similarity" | "fulltext";
   startDate: Dayjs | null;
   endDate: Dayjs | null;
+  total: number;
 
   // Actions
   fetchNotes: (page?: number) => Promise<void>;
-  addNote: (data: CreateNoteInput) => Promise<void>;
-  updateNote: (id: number, data: UpdateNoteInput) => Promise<void>;
+  addNote: (data: CreateNoteInput & { attachments?: Attachment[] }) => Promise<void>;
+  updateNote: (id: number, data: UpdateNoteInput & { attachments?: Attachment[] }) => Promise<void>;
   removeNote: (id: number) => Promise<void>;
   setSelectedDate: (date: Date | null) => void;
   setSortBy: (sort: "newest" | "oldest") => void;
@@ -37,9 +38,6 @@ interface NoteState {
   refreshHeatmap: () => void;
   setSearchMode: (mode: "similarity" | "fulltext") => void;
   setDateRange: (start: Dayjs | null, end: Dayjs | null) => void;
-
-  // Computed
-  filteredNotes: () => Note[];
 }
 
 export const useNoteStore = create<NoteState>((set, get) => ({
@@ -58,59 +56,72 @@ export const useNoteStore = create<NoteState>((set, get) => ({
   searchMode: "similarity",
   startDate: null,
   endDate: null,
+  total: 0,
 
   setCurrentPage: (page) => set({ currentPage: page }),
 
-  fetchNotes: async (page = 1) => {
+  fetchNotes: async (page?: number) => {
+    const state = get();
+    const targetPage = page || state.currentPage;
+    
+    set({ isLoading: true });
     try {
-      set({ isLoading: page === 1 });
-
-      const state = get();
       const response = await getNotes({
-        page,
+        page: targetPage,
         pageSize: state.pageSize,
         sortBy: state.sortBy,
-        tag: state.selectedTag || undefined,
-        search: state.searchText || undefined,
+        search: state.searchText,
         searchMode: state.searchMode,
-        startDate: state.startDate?.format('YYYY-MM-DD'),
-        endDate: state.endDate?.format('YYYY-MM-DD'),
+        startDate: state.startDate?.format("YYYY-MM-DD"),
+        endDate: state.endDate?.format("YYYY-MM-DD"),
       });
 
+      const { notes, pagination } = response;
+      
       set((state) => ({
-        notes: page === 1 ? response.notes : [...state.notes, ...response.notes],
-        hasMore: response.pagination.hasMore,
-        currentPage: response.pagination.page,
+        notes: targetPage === 1 ? notes : [...state.notes, ...notes],
+        currentPage: targetPage,
+        total: pagination.total,
+        hasMore: pagination.hasMore,
         error: null,
-        isLoading: false,
       }));
     } catch (error) {
-      set({
-        error: "获取笔记失败",
-        isLoading: false,
-      });
+      set({ error: getErrorMessage(error) });
+    } finally {
+      set({ isLoading: false });
     }
   },
 
   addNote: async (data) => {
     set({ isLoading: true, error: null });
     try {
-      const newNote = await createNote(data);
+      const newNote = await createNote({
+        content: data.content,
+        tags: data.tags,
+        isPublic: data.isPublic,
+        attachments: data.attachments || [],
+      });
       set((state) => ({
-        notes: [newNote, ...state.notes], // 将新笔记放在最前面
+        notes: [newNote, ...state.notes],
         isLoading: false,
-        newNoteContent: "", // 清空输入框
+        newNoteContent: "",
       }));
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false });
-      throw error; // 抛出错误以便组件处理
+      throw error;
     }
+    get().fetchTags();
   },
 
   updateNote: async (id, data) => {
     set({ isLoading: true, error: null });
     try {
-      const updatedNote = (await updateNote(id, data)) as Note;
+      const updatedNote = await updateNote(id, {
+        content: data.content,
+        tags: data.tags,
+        isPublic: data.isPublic,
+        attachments: data.attachments,
+      });
       set((state) => ({
         notes: state.notes.map((note) => (note.id === id ? updatedNote : note)),
         isLoading: false,
@@ -118,6 +129,7 @@ export const useNoteStore = create<NoteState>((set, get) => ({
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false });
     }
+    get().fetchTags();
   },
 
   removeNote: async (id) => {
@@ -178,49 +190,6 @@ export const useNoteStore = create<NoteState>((set, get) => ({
     } catch (error) {
       console.error("Failed to fetch tags:", error);
     }
-  },
-
-  filteredNotes: () => {
-    const state = get();
-    let filtered = [...state.notes];
-
-    // 按日期筛选
-    if (state.selectedDate) {
-      const selectedDateStr = new Date(state.selectedDate)
-        .toISOString()
-        .split("T")[0];
-      filtered = filtered.filter(
-        (note) =>
-          new Date(note.createdAt).toISOString().split("T")[0] ===
-          selectedDateStr
-      );
-    }
-
-    // 按标签筛选
-    if (state.selectedTag) {
-      filtered = filtered.filter((note) =>
-        note.tags.includes(state.selectedTag!)
-      );
-    }
-
-    // 按搜索文本筛选
-    if (state.searchText) {
-      const searchLower = state.searchText.toLowerCase();
-      filtered = filtered.filter(
-        (note) =>
-          note.content.toLowerCase().includes(searchLower) ||
-          note.tags.some((tag) => tag.toLowerCase().includes(searchLower))
-      );
-    }
-
-    // 排序
-    filtered.sort((a, b) => {
-      const dateA = new Date(a.createdAt).getTime();
-      const dateB = new Date(b.createdAt).getTime();
-      return state.sortBy === "newest" ? dateB - dateA : dateA - dateB;
-    });
-
-    return filtered;
   },
 
   setNewNoteContent: (content) => set({ newNoteContent: content }),

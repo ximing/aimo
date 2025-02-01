@@ -1,111 +1,26 @@
-import { Fragment, useState, useEffect, useCallback, useRef } from "react";
-import {
-  Input,
-  Select,
-  Card,
-  message,
-  Dropdown,
-  Modal,
-  Button,
-  Spin,
-  Empty,
-  DatePicker,
-  Popover,
-} from "antd";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Select, message, Modal, Spin } from "antd";
 import { useNoteStore } from "@/stores/noteStore";
-import MDEditor from "@/components/MDEditor";
-import MarkdownView from "@/components/MarkdownView";
-import {
-  SearchOutlined,
-  MacCommandOutlined,
-  MoreOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  SendOutlined,
-} from "@ant-design/icons";
-import dayjs, { Dayjs } from "dayjs";
-import "./style.css";
-import { Note } from "@/api/types";
+import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import dayjs from "dayjs";
 import { useSpring, animated } from "@react-spring/web";
 import { useScroll } from "react-use";
+import type { Attachment, Note } from "@/api/types";
 import type { MenuProps } from "antd";
-
-const { RangePicker } = DatePicker;
-
-const SearchBar = ({
-  value,
-  onChange,
-  searchMode,
-  onSearchModeChange,
-  dateRange,
-  onDateRangeChange,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  searchMode: "similarity" | "fulltext";
-  onSearchModeChange: (mode: "similarity" | "fulltext") => void;
-  dateRange: [Dayjs | null, Dayjs | null];
-  onDateRangeChange: (dates: [Dayjs | null, Dayjs | null]) => void;
-}) => {
-  const [open, setOpen] = useState(false);
-
-  const content = (
-    <div className="search-popover">
-      <div className="search-option">
-        <div className="option-label">搜索方式</div>
-        <Select 
-          value={searchMode}
-          onChange={onSearchModeChange}
-          style={{ width: '100%' }}
-        >
-          <Select.Option value="similarity">相似度搜索</Select.Option>
-          <Select.Option value="fulltext">全文检索</Select.Option>
-        </Select>
-      </div>
-      <div className="search-option">
-        <div className="option-label">时间范围</div>
-        <RangePicker 
-          value={dateRange}
-          onChange={(dates) => onDateRangeChange([dates?.[0] || null, dates?.[1] || null])}
-          style={{ width: '100%' }}
-        />
-      </div>
-    </div>
-  );
-
-  return (
-    <Popover
-      content={content}
-      trigger="click"
-      open={open}
-      onOpenChange={setOpen}
-      placement="bottomLeft"
-      overlayClassName="search-popover-overlay"
-    >
-      <div className="search-wrapper">
-        <SearchOutlined className="search-icon" />
-        <Input
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="搜索笔记..."
-          bordered={false}
-          className="search-input"
-        />
-        <div className="search-shortcut">
-          <MacCommandOutlined />
-          <span>K</span>
-        </div>
-      </div>
-    </Popover>
-  );
-};
+import { SearchBar } from "./components/SearchBar";
+import { NoteList } from "./components/NoteList";
+import { NoteEditor } from "./components/NoteEditor";
+import "./style.css";
 
 export default function Notes() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [noteToDelete, setNoteToDelete] = useState<Note | null>(null);
   const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
   const [editingContent, setEditingContent] = useState<string>("");
+  const [editingAttachments, setEditingAttachments] = useState<Attachment[]>([]);
+  const [editingTags, setEditingTags] = useState<string[]>([]);
   const {
+    notes,
     error,
     sortBy,
     searchText,
@@ -113,7 +28,6 @@ export default function Notes() {
     addNote,
     setSortBy,
     setSearchText,
-    filteredNotes,
     deleteNote,
     updateNote,
     isLoading,
@@ -127,11 +41,10 @@ export default function Notes() {
     setSearchMode,
     startDate,
     endDate,
-    setStartDate,
-    setEndDate,
   } = useNoteStore();
   const [isPublishing, setIsPublishing] = useState(false);
   const [noteTags, setNoteTags] = useState<string[]>([]);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
 
   // 添加一个 loading 锁，防止重复请求
   const loadingRef = useRef(false);
@@ -158,9 +71,10 @@ export default function Notes() {
         content: newNoteContent,
         tags: noteTags,
         isPublic: false,
+        attachments,
       });
+      setAttachments([]);
       await fetchNotes();
-      // 刷新热力图数据
       if (refreshHeatmap) {
         refreshHeatmap();
       }
@@ -175,6 +89,8 @@ export default function Notes() {
   const handleEditNote = (note: Note) => {
     setEditingNoteId(note.id);
     setEditingContent(note.content);
+    setEditingAttachments(note.attachments);
+    setEditingTags(note.tags);
   };
 
   const handleDeleteNote = (note: Note) => {
@@ -185,8 +101,15 @@ export default function Notes() {
   const handleUpdateNote = async (noteId: number, content: string) => {
     setIsPublishing(true);
     try {
-      await updateNote(noteId, { content });
+      await updateNote(noteId, {
+        content,
+        attachments: editingAttachments,
+        tags: editingTags,
+      });
       setEditingNoteId(null);
+      setEditingContent("");
+      setEditingAttachments([]);
+      setEditingTags([]);
       await fetchNotes();
       message.success("笔记更新成功");
     } catch (error) {
@@ -235,62 +158,6 @@ export default function Notes() {
     },
   ];
 
-  const renderNoteContent = (note: Note) => {
-    if (editingNoteId === note.id) {
-      return (
-        <div className="note-editor-wrapper">
-          <MDEditor
-            value={editingContent}
-            onChange={(content) => {
-              setEditingContent(content);
-            }}
-            toolbar={
-              <div className="editor-actions">
-                <Button
-                  type="primary"
-                  icon={<SendOutlined />}
-                  onClick={() => handleUpdateNote(note.id, editingContent)}
-                  loading={isPublishing}
-                >
-                  发布
-                </Button>
-                <Button
-                  onClick={() => setEditingNoteId(null)}
-                  disabled={isPublishing}
-                >
-                  取消
-                </Button>
-              </div>
-            }
-          />
-        </div>
-      );
-    }
-
-    return (
-      <Card className="note-card">
-        <div className="note-header">
-          <div className="note-time">
-            {dayjs(note.createdAt).format("YYYY-MM-DD HH:mm")}
-          </div>
-          <Dropdown
-            menu={{ items: getMenuItems(note) }}
-            trigger={["click"]}
-            placement="bottomRight"
-          >
-            <MoreOutlined className="note-more-btn" />
-          </Dropdown>
-        </div>
-        <div className="note-content">
-          <MarkdownView content={note.content} />
-        </div>
-      </Card>
-    );
-  };
-
-  // 检查新建内容是否为空
-  const isNewNoteEmpty = !newNoteContent || !newNoteContent.trim();
-
   const renderFooter = () => {
     if (isLoading) {
       return (
@@ -313,17 +180,20 @@ export default function Notes() {
   // 编辑器高度动画
   const MIN_EDITOR_HEIGHT = 120;
   const MAX_EDITOR_HEIGHT = 190;
+  const ATTACHMENT_HEIGHT = 150; // 附件区域的高度
 
   const editorStyle = useSpring({
     height: Math.max(
       MIN_EDITOR_HEIGHT,
-      MAX_EDITOR_HEIGHT - Math.max(0, scrollY * 0.8) // 使用更平滑的缩放系数
+      // 如果有附件，增加额外高度
+      (attachments.length > 0 ? MAX_EDITOR_HEIGHT + ATTACHMENT_HEIGHT : MAX_EDITOR_HEIGHT) - 
+      Math.max(0, scrollY * 0.8)
     ),
     config: {
-      tension: 180, // 降低张力
-      friction: 24, // 增加摩擦力
-      clamp: false, // 允许轻微的弹性
-      mass: 1.2, // 增加质量使动画更有重量感
+      tension: 180,
+      friction: 24,
+      clamp: false,
+      mass: 1.2,
     },
   });
 
@@ -362,8 +232,8 @@ export default function Notes() {
     <div className="notes-container">
       <div className="notes-header">
         <div className="content-header">
-          <SearchBar 
-            value={searchText} 
+          <SearchBar
+            value={searchText}
             onChange={setSearchText}
             searchMode={searchMode}
             onSearchModeChange={setSearchMode}
@@ -376,13 +246,13 @@ export default function Notes() {
           </Select>
         </div>
         <animated.div style={editorStyle} className="note-editor">
-          <MDEditor
+          <NoteEditor
             value={newNoteContent}
             onChange={setNewNoteContent}
-            onTagsChange={setNoteTags}
             onPublish={handleCreateNote}
-            placeholder="写点什么..."
-            disabled={isNewNoteEmpty}
+            onTagsChange={setNoteTags}
+            onAttachmentsChange={setAttachments}
+            attachments={attachments}
             loading={isPublishing}
           />
         </animated.div>
@@ -394,21 +264,22 @@ export default function Notes() {
         onScroll={handleScroll}
       >
         <div className="note-list">
-          {isLoading && !filteredNotes().length ? (
-            <div className="notes-loading">
-              <Spin />
-              <span>加载中...</span>
-            </div>
-          ) : filteredNotes().length ? (
-            <>
-              {filteredNotes().map((note) => (
-                <Fragment key={note.id}>{renderNoteContent(note)}</Fragment>
-              ))}
-              {renderFooter()}
-            </>
-          ) : (
-            <Empty description="暂无笔记" />
-          )}
+          <NoteList
+            notes={notes}
+            isLoading={isLoading}
+            editingNoteId={editingNoteId}
+            editingContent={editingContent}
+            setEditingContent={setEditingContent}
+            handleUpdateNote={handleUpdateNote}
+            setEditingNoteId={setEditingNoteId}
+            isPublishing={isPublishing}
+            getMenuItems={getMenuItems}
+            renderFooter={renderFooter}
+            editingAttachments={editingAttachments}
+            setEditingAttachments={setEditingAttachments}
+            editingTags={editingTags}
+            setEditingTags={setEditingTags}
+          />
         </div>
       </div>
 

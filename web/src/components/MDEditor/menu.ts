@@ -3,6 +3,7 @@ import { toggleMark, setBlockType, wrapIn } from "prosemirror-commands";
 import { wrapInList } from "prosemirror-schema-list";
 import { MenuItem } from "./types";
 import { icons } from "./icons";
+import { uploadAttachments } from "@/api/notes";
 
 export function buildMenuItems(schema: any): MenuItem[] {
   const markActive = (state: EditorState, type: any) => {
@@ -26,13 +27,6 @@ export function buildMenuItems(schema: any): MenuItem[] {
       active: (state) => markActive(state, schema.marks.em),
       run: toggleMark(schema.marks.em),
     },
-    {
-      id: "code",
-      title: "代码",
-      icon: icons.code,
-      active: (state) => markActive(state, schema.marks.code),
-      run: toggleMark(schema.marks.code),
-    },
     { type: "separator" },
     {
       id: "bullet_list",
@@ -41,7 +35,9 @@ export function buildMenuItems(schema: any): MenuItem[] {
       active: (state) => {
         const { $from, to, node } = state.selection;
         if (node && node.type === schema.nodes.bullet_list) return true;
-        return to <= $from.end() && $from.parent.type === schema.nodes.bullet_list;
+        return (
+          to <= $from.end() && $from.parent.type === schema.nodes.bullet_list
+        );
       },
       run: wrapInList(schema.nodes.bullet_list),
     },
@@ -52,7 +48,9 @@ export function buildMenuItems(schema: any): MenuItem[] {
       active: (state) => {
         const { $from, to, node } = state.selection;
         if (node && node.type === schema.nodes.ordered_list) return true;
-        return to <= $from.end() && $from.parent.type === schema.nodes.ordered_list;
+        return (
+          to <= $from.end() && $from.parent.type === schema.nodes.ordered_list
+        );
       },
       run: wrapInList(schema.nodes.ordered_list),
     },
@@ -64,9 +62,93 @@ export function buildMenuItems(schema: any): MenuItem[] {
       active: (state) => {
         const { $from, to, node } = state.selection;
         if (node && node.type === schema.nodes.code_block) return true;
-        return to <= $from.end() && $from.parent.type === schema.nodes.code_block;
+        return (
+          to <= $from.end() && $from.parent.type === schema.nodes.code_block
+        );
       },
       run: setBlockType(schema.nodes.code_block),
     },
+    { type: "separator" },
+    {
+      id: "image",
+      title: "插入图片",
+      icon: icons.image,
+      active: () => false,
+      run: async (state, dispatch, view, options) => {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = "image/*";
+        input.multiple = true;
+        input.onchange = async () => {
+          const files = Array.from(input.files || []);
+          if (files.length) {
+            try {
+              const formData = new FormData();
+              files.forEach((file) => formData.append("files", file));
+              const attachments = await uploadAttachments(formData);
+              options?.onAttachmentsChange?.(attachments);
+            } catch (error) {
+              console.error("Upload failed:", error);
+            }
+          }
+        };
+        input.click();
+        return true;
+      },
+    },
+    {
+      id: "video",
+      title: "插入视频",
+      icon: icons.video,
+      active: () => false,
+      run: async (state, dispatch, view, options) => {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = "video/*";
+        input.multiple = true;
+        input.onchange = async () => {
+          const files = Array.from(input.files || []);
+          if (files.length) {
+            try {
+              const formData = new FormData();
+              files.forEach((file) => formData.append("files", file));
+              const attachments = await uploadAttachments(formData);
+              options?.onAttachmentsChange?.(attachments);
+            } catch (error) {
+              console.error("Upload failed:", error);
+            }
+          }
+        };
+        input.click();
+        return true;
+      },
+    },
+    {
+      id: "audio",
+      title: "插入音频",
+      icon: icons.audio,
+      active: () => false,
+      run: async (state, dispatch, view, options) => {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = "audio/*";
+        input.multiple = true;
+        input.onchange = async () => {
+          const files = Array.from(input.files || []);
+          if (files.length) {
+            try {
+              const formData = new FormData();
+              files.forEach((file) => formData.append("files", file));
+              const attachments = await uploadAttachments(formData);
+              options?.onAttachmentsChange?.(attachments);
+            } catch (error) {
+              console.error("Upload failed:", error);
+            }
+          }
+        };
+        input.click();
+        return true;
+      },
+    },
   ];
-} 
+}

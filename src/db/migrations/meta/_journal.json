@@ -1,12 +1,12 @@
 {
-  "version": "5",
-  "dialect": "pg",
+  "version": "7",
+  "dialect": "postgresql",
   "entries": [
     {
       "idx": 0,
-      "version": "5",
-      "when": 1738150794073,
-      "tag": "0000_mighty_the_stranger",
+      "version": "7",
+      "when": 1738403777850,
+      "tag": "0000_sour_shotgun",
       "breakpoints": true
     }
   ]

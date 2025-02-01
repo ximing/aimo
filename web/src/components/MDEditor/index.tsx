@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import React, { useState } from "react";
+import { useEffect, useRef } from "react";
 import { Button } from "antd";
 import { SendOutlined } from "@ant-design/icons";
 import { EditorView } from "prosemirror-view";
@@ -13,12 +14,17 @@ import { buildInputRules } from "./inputrules";
 import { mySchema, myParser, mySerializer } from "./schema";
 import "prosemirror-view/style/prosemirror.css";
 import "./styles.css";
+import { icons } from "./icons";
+import { CloseOutlined } from "@ant-design/icons";
+import { Attachment } from "@/api/types";
 
 interface MDEditorProps {
   value?: string;
   onChange?: (value: string) => void;
   onPublish?: () => void;
   onTagsChange?: (tags: string[]) => void;
+  onAttachmentsChange?: (attachments: Attachment[]) => void;
+  attachments?: Attachment[];
   placeholder?: string;
   readOnly?: boolean;
   toolbar?: React.ReactNode;
@@ -29,9 +35,11 @@ interface MDEditorProps {
 function MenuBar({
   items,
   editorView,
+  onAttachmentsChange,
 }: {
   items: MenuItem[];
   editorView: EditorView;
+  onAttachmentsChange?: (attachments: Attachment[]) => void;
 }) {
   return (
     <div className="editor-menubar">
@@ -47,7 +55,9 @@ function MenuBar({
             title={item.title}
             onMouseDown={(e) => {
               e.preventDefault();
-              item.run?.(editorView.state, editorView.dispatch);
+              item.run?.(editorView.state, editorView.dispatch, editorView, {
+                onAttachmentsChange: onAttachmentsChange,
+              });
             }}
             dangerouslySetInnerHTML={{ __html: item.icon || "" }}
           />
@@ -62,6 +72,8 @@ export default function MDEditor({
   onChange,
   onPublish,
   onTagsChange,
+  onAttachmentsChange,
+  attachments = [],
   placeholder = "写点什么...",
   readOnly = false,
   toolbar,
@@ -99,12 +111,12 @@ export default function MDEditor({
         buildInputRules(mySchema),
         buildKeymap(mySchema),
         keymap(baseKeymap),
-        // keymap({
-        //   "Mod-Enter": () => {
-        //     onPublish?.();
-        //     return true;
-        //   },
-        // }),
+        keymap({
+          "Mod-Enter": () => {
+            onPublish?.();
+            return true;
+          },
+        }),
       ],
     });
 
@@ -143,9 +155,7 @@ export default function MDEditor({
   useEffect(() => {
     if (!viewRef.current) return;
 
-    const currentContent = mySerializer.serialize(
-      viewRef.current.state.doc
-    );
+    const currentContent = mySerializer.serialize(viewRef.current.state.doc);
     if (currentContent !== value) {
       const doc = myParser.parse(value || "");
       viewRef.current.dispatch(
@@ -161,6 +171,10 @@ export default function MDEditor({
   // 检查内容是否为空
   const isEmpty = !value || value.trim() === "";
 
+  const removeAttachment = (index: number) => {
+    onAttachmentsChange?.(attachments.filter((_, i) => i !== index));
+  };
+
   return (
     <div className="md-editor">
       <div className="editor-main">
@@ -170,14 +184,55 @@ export default function MDEditor({
           data-placeholder={placeholder}
         />
       </div>
-      <div className="editor-toolbar">
-        <div className="editor-menubar">
+      {attachments.length > 0 && (
+        <div className="md-editor-attachments">
+          {attachments.map((att, index) => (
+            <div key={index} className="attachment-preview">
+              {att.mimeType.startsWith("image/") && (
+                <div className="image-preview-wrapper">
+                  <img
+                    src={att.url}
+                    alt={att.filename}
+                    className="image-preview"
+                  />
+                </div>
+              )}
+              {att.mimeType.startsWith("video/") && (
+                <div className="video-preview">
+                  <div className="preview-icon">{icons.video}</div>
+                  <span className="preview-filename">{att.filename}</span>
+                </div>
+              )}
+              {att.mimeType.startsWith("audio/") && (
+                <div className="audio-preview">
+                  <div className="preview-icon">{icons.audio}</div>
+                  <span className="preview-filename">{att.filename}</span>
+                </div>
+              )}
+              <button
+                className="remove-attachment"
+                onClick={() => removeAttachment(index)}
+              >
+                <CloseOutlined />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="editor-footer">
+        <div className="editor-toolbar">
           {isEditorReady && viewRef.current && (
-            <MenuBar items={menuItems} editorView={viewRef.current} />
+            <MenuBar
+              items={menuItems}
+              editorView={viewRef.current}
+              onAttachmentsChange={(_attachments) => {
+                onAttachmentsChange?.([...attachments, ..._attachments]);
+              }}
+            />
           )}
         </div>
-        {toolbar ||
-          (onPublish && (
+        <div className="editor-actions">
+          {toolbar || (
             <Button
               type="primary"
               icon={<SendOutlined />}
@@ -187,7 +242,8 @@ export default function MDEditor({
             >
               发布
             </Button>
-          ))}
+          )}
+        </div>
       </div>
     </div>
   );

@@ -5,19 +5,14 @@ const createNoteBodySchema = z.object({
   content: z.string().min(1, "Content is required"),
   tags: z.array(z.string()).optional(),
   isPublic: z.boolean().optional(),
+  attachments: z.array(z.string()).optional(),
 });
 
 const updateNoteBodySchema = z.object({
   content: z.string().min(1, "Content is required").optional(),
   tags: z.array(z.string()).optional(),
   isPublic: z.boolean().optional(),
-});
-
-const searchNoteQuerySchema = z.object({
-  q: z.string().min(1, "Search query is required"),
-  tag: z.string().optional(),
-  limit: z.number().int().positive().optional(),
-  offset: z.number().int().min(0).optional(),
+  attachments: z.array(z.string()).optional(),
 });
 
 // Fastify schemas
@@ -83,7 +78,6 @@ export const getNoteByShareTokenSchema: FastifySchema = {
 // Types for request validation
 export type CreateNoteInput = z.infer<typeof createNoteBodySchema>;
 export type UpdateNoteInput = z.infer<typeof updateNoteBodySchema>;
-export type SearchNoteInput = z.infer<typeof searchNoteQuerySchema>;
 
 // Response type
 export interface NoteResponse {
@@ -102,7 +96,6 @@ export interface NoteResponse {
 export const zodSchemas = {
   createNote: createNoteBodySchema,
   updateNote: updateNoteBodySchema,
-  searchNote: searchNoteQuerySchema,
 };
 
 // 添加热力图相关的 schema

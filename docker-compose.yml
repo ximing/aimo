@@ -7,7 +7,7 @@ services:
     #   dockerfile: docker/postgres/Dockerfile
     #   args:
     #     USE_CHINA_MIRROR: 0
-    image: ghcr.io/ximing/aimo/postgres:latest
+    image: pgvector/pgvector:pg17
     environment:
       POSTGRES_USER: aimo
       POSTGRES_PASSWORD: aimo123

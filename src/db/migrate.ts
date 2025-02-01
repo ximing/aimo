@@ -10,10 +10,12 @@ async function main() {
   const sql = postgres(config.databaseUrl, { max: 1 });
   const db = drizzle(sql);
 
-  // 执行迁移
-  console.log("Running migrations...");
-  await migrate(db, { migrationsFolder: "src/db/migrations" });
-
+  try {
+    // 执行迁移
+    console.log("Running migrations...");
+    await migrate(db, { migrationsFolder: "src/db/migrations" });
+    console.log("Migrations completed");
+  } catch (err) {}
   // 检查是否存在管理员账户
   const adminUser = await db
     .select()

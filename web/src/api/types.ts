@@ -16,6 +16,7 @@ export interface Note {
   createdAt: string;
   updatedAt?: string;
   vectorEmbedding?: string;
+  attachments: Attachment[];
 }
 
 export interface LoginResponse {
@@ -27,12 +28,14 @@ export interface CreateNoteInput {
   content: string;
   tags?: string[];
   isPublic?: boolean;
+  attachments?: Attachment[];
 }
 
 export interface UpdateNoteInput {
   content?: string;
   tags?: string[];
   isPublic?: boolean;
+  attachments?: Attachment[];
 }
 
 export interface UpdateProfileInput {
@@ -87,13 +90,6 @@ export interface ExportOptions {
   tags?: string[];
 }
 
-export interface SearchNoteInput {
-  q: string;
-  tag?: string;
-  limit?: number;
-  offset?: number;
-}
-
 export interface PaginatedResponse<T> {
   notes: T[];
   pagination: {
@@ -102,4 +98,11 @@ export interface PaginatedResponse<T> {
     pageSize: number;
     hasMore: boolean;
   };
+}
+
+export interface Attachment {
+  url: string;
+  mimeType: string;
+  filename: string;
+  size: number;
 }

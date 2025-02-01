@@ -7,6 +7,7 @@ import {
   getNoteByShareToken,
   getTags,
   getNotesHeatmap,
+  uploadAttachments,
 } from "./controller.js";
 import {
   createNoteSchema,
@@ -52,4 +53,6 @@ export async function noteRoutes(app: FastifyInstance) {
     { schema: heatmapSchema },
     getNotesHeatmap as RouteHandlerMethod
   );
+
+  app.post("/attachments", {}, uploadAttachments);
 }

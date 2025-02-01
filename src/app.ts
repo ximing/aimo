@@ -4,8 +4,9 @@ import Fastify, { FastifyRequest, FastifyReply } from "fastify";
 import cors from "@fastify/cors";
 import jwt, { FastifyJWT } from "@fastify/jwt";
 import multipart from "@fastify/multipart";
+import fastifyStatic from "@fastify/static";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
-import { sql } from "drizzle-orm";
+import { sql, eq } from "drizzle-orm";
 
 import { authRoutes } from "./modules/auth/routes.js";
 import { noteRoutes } from "./modules/note/routes.js";
@@ -15,7 +16,6 @@ import { env } from "./config/env.js";
 import { db } from "./lib/db.js";
 import { redisClient } from "./lib/redis.js";
 import { users } from "./config/schema.js";
-import { eq } from "drizzle-orm";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
@@ -29,10 +29,13 @@ declare module "@fastify/jwt" {
 
 declare module "fastify" {
   interface FastifyRequest {
-    user: FastifyJWT['user']; // use the JWT user type
+    user: FastifyJWT["user"]; // use the JWT user type
   }
   interface FastifyInstance {
-    authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+    authenticate: (
+      request: FastifyRequest,
+      reply: FastifyReply
+    ) => Promise<void>;
   }
 }
 
@@ -62,7 +65,6 @@ async function runMigrations() {
     console.log("✅ Database migrations completed");
   } catch (error) {
     console.error("❌ Migration failed:", error);
-    throw error;
   }
 }
 
@@ -85,6 +87,21 @@ export async function buildApp() {
     origin: true,
   });
 
+  // 如果是本地存储，注册静态文件服务
+  if (env.STORAGE_TYPE === "local") {
+    const uploadDir = join(
+      process.cwd(),
+      env.STORAGE_LOCAL_PATH,
+      env.STORAGE_PATH_PREFIX || ""
+    );
+    console.log("uploadDir", uploadDir);
+    await app.register(fastifyStatic, {
+      root: uploadDir,
+      prefix: `/${env.STORAGE_PATH_PREFIX}`,
+      decorateReply: false, // 避免与其他插件冲突
+    });
+  }
+
   await app.register(jwt, {
     secret: env.JWT_SECRET,
   });
@@ -95,13 +112,12 @@ export async function buildApp() {
     },
   });
 
-  // Update the authenticate decorator
   app.decorate(
     "authenticate",
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const token = await request.jwtVerify<{ id: number }>();
-        
+
         // Fetch user from database
         const user = await db.query.users.findFirst({
           where: eq(users.id, token.id),
@@ -124,14 +140,13 @@ export async function buildApp() {
 
         // Attach user to request
         request.user = user;
-
       } catch (err) {
         reply.status(401).send({
           message: "Unauthorized",
           code: "UNAUTHORIZED",
         });
       }
-    },
+    }
   );
 
   // Register routes

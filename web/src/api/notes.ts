@@ -6,8 +6,8 @@ import type {
   ShareNoteResponse,
   ImportResult,
   ExportOptions,
-  SearchNoteInput,
   PaginatedResponse,
+  Attachment,
 } from "./types";
 
 interface GetNotesParams {
@@ -26,21 +26,23 @@ export async function getNotes(params: GetNotesParams = {}) {
     .data;
 }
 
-export async function createNote(data: CreateNoteInput) {
-  return (await request.post<Note>("/notes", data)).data;
+export async function createNote(data: CreateNoteInput & { attachments?: Attachment[] }): Promise<Note> {
+  const response = await request.post("/notes", data);
+  return response.data;
 }
 
-export async function updateNote(id: number, data: UpdateNoteInput) {
-  return (await request.put<Note>(`/notes/${id}`, data)).data;
+export async function updateNote(
+  id: number,
+  data: UpdateNoteInput & { attachments?: Attachment[] }
+): Promise<Note> {
+  const response = await request.put(`/notes/${id}`, data);
+  return response.data;
 }
 
 export async function deleteNote(id: number) {
   return (await request.delete<void>(`/notes/${id}`)).data;
 }
 
-export async function searchNotes(params: SearchNoteInput) {
-  return (await request.get<Note[]>("/notes/search", { params })).data;
-}
 
 export async function getNoteByShareToken(token: string) {
   return (await request.get<Note>(`/notes/shared/${token}`)).data;
@@ -92,4 +94,19 @@ export async function getHeatmapData(
       },
     })
   ).data;
+}
+
+/**
+ * 上传附件
+ * @param formData 包含文件的 FormData 对象
+ * @returns 上传成功的附件信息数组
+ */
+export async function uploadAttachments(formData: FormData): Promise<Attachment[]> {
+  const response = await request.post("/notes/attachments", formData, {
+    headers: {
+      // 不设置 Content-Type，让浏览器自动设置包含 boundary 的值
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return response.data;
 }

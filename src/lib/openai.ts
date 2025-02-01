@@ -19,12 +19,12 @@ export async function generateEmbedding(text: string): Promise<string> {
   // 尝试从缓存获取
   const cachedEmbedding = await redisClient.get(cacheKey);
   if (cachedEmbedding) {
-    return cachedEmbedding;
+    return JSON.parse(cachedEmbedding);
   }
 
   // 如果缓存中没有，则调用API
   const response = await openai.embeddings.create({
-    model: "text-embedding-3-large",
+    model: "text-embedding-3-small",
     input: text,
   });
 
@@ -35,5 +35,5 @@ export async function generateEmbedding(text: string): Promise<string> {
     EX: 700 * 24 * 60 * 60, // 700 days in seconds
   });
 
-  return embedding;
+  return response.data[0].embedding;
 }

@@ -1,13 +1,11 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import { db } from "@/lib/db.js";
-import { notes, tags, noteTags } from "@/config/schema.js";
-import { eq, and, sql, like, desc, asc } from "drizzle-orm";
+import { notes, tags, noteTags, attachments } from "@/config/schema.js";
+import { eq, and, sql, like, desc, asc, inArray } from "drizzle-orm";
 import {
   CreateNoteInput,
   UpdateNoteInput,
-  SearchNoteInput,
   NoteResponse,
-  GetNotesQuery,
   HeatmapQuery,
   NoteQueryParams,
 } from "./schema.js";
@@ -15,6 +13,8 @@ import { generateEmbedding } from "@/lib/openai.js";
 import { nanoid } from "nanoid";
 import { triggerWebhook } from "@/lib/webhook.js";
 import { FastifyJWT } from "@fastify/jwt";
+import { getStorageService } from "@/lib/storage.js";
+import path from "path";
 
 interface TagCount {
   name: string;
@@ -32,7 +32,12 @@ export async function createNote(
   }> & { user: FastifyJWT["user"] },
   reply: FastifyReply
 ): Promise<NoteResponse> {
-  const { content, tags: tagNames = [], isPublic = false } = request.body;
+  const {
+    content,
+    tags: tagNames = [],
+    isPublic = false,
+    attachments = [],
+  } = request.body;
   const userId = request.user.id;
 
   // Generate vector embedding
@@ -47,6 +52,7 @@ export async function createNote(
       vectorEmbedding: embedding,
       isPublic,
       shareToken: isPublic ? nanoid() : null,
+      attachments: JSON.stringify(attachments),
     })
     .returning();
 
@@ -94,7 +100,7 @@ export async function updateNote(
   reply: FastifyReply
 ): Promise<NoteResponse> {
   const { id } = request.params;
-  const { content, tags: tagNames, isPublic } = request.body;
+  const { content, tags: tagNames, isPublic, attachments } = request.body;
   const userId = request.user.id;
 
   // Check note ownership
@@ -117,6 +123,10 @@ export async function updateNote(
     updateData.shareToken = isPublic
       ? existingNote.shareToken || nanoid()
       : null;
+  }
+
+  if (attachments !== undefined) {
+    updateData.attachments = JSON.stringify(attachments);
   }
 
   const [note] = await db
@@ -217,7 +227,7 @@ export async function getNotes(
       userId: notes.userId,
       isPublic: notes.isPublic,
       shareToken: notes.shareToken,
-      vectorEmbedding: notes.vectorEmbedding,
+      attachments: notes.attachments,
       tags: sql<string[]>`
         array_agg(distinct ${tags.name})
         filter (where ${tags.name} is not null)
@@ -243,26 +253,16 @@ export async function getNotes(
   // 处理搜索和排序
   if (search) {
     if (searchMode === "similarity") {
-      // 相似度搜索：结合向量搜索和文本匹配
+      // 相似度搜索：使用余弦距离
       const embedding = await generateEmbedding(search);
       query = query
-        .where(sql`${notes.content} ILIKE ${`%${search}%`}`)
-        .orderBy(sql`(${notes.vectorEmbedding} <-> ${embedding})`)
+        .orderBy(sql`${notes.vectorEmbedding} <=> ${JSON.stringify(embedding)}`)
         .limit(pageSize);
     } else {
-      // 全文检索：使用 PostgreSQL 的中文全文搜索功能
+      // 全文检索
       query = query
-        .where(sql`
-          to_tsvector('chinese', ${notes.content}) @@ 
-          plainto_tsquery('chinese', ${search})
-        `)
-        .orderBy(sql`
-          ts_rank(
-            to_tsvector('chinese', ${notes.content}), 
-            plainto_tsquery('chinese', ${search})
-          ) DESC,
-          ${notes.createdAt} DESC
-        `)
+        .where(sql`${notes.content} ILIKE ${`%${search}%`}`)
+        .orderBy(desc(notes.createdAt))
         .offset((page - 1) * pageSize)
         .limit(pageSize);
     }
@@ -396,4 +396,47 @@ export async function getNotesHeatmap(
     .orderBy(sql`DATE(${notes.createdAt})`);
 
   return result;
+}
+
+export async function uploadAttachments(
+  request: FastifyRequest<{}>,
+  reply: FastifyReply
+) {
+  const files = await request.files();
+
+  const storage = getStorageService();
+  const results = [];
+
+  for await (const file of files) {
+    // 生成文件名
+    const filename = `${nanoid(64)}${path.extname(file.filename)}`;
+
+    try {
+      // 保存文件
+      const { path: filePath, size } = await storage.saveFile(file, filename);
+
+      // 保存附件记录到数据库
+      const [attachment] = await db
+        .insert(attachments)
+        .values({
+          filename: file.filename,
+          url: filePath,
+          size,
+          mimeType: file.mimetype,
+        })
+        .returning();
+
+      results.push({
+        url: filePath,
+        filename: file.filename,
+        size,
+        mimeType: file.mimetype,
+      });
+    } catch (error) {
+      console.error("File upload failed:", error);
+      throw new Error("File upload failed");
+    }
+  }
+
+  return results;
 }

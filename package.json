@@ -11,8 +11,8 @@
     "test": "NODE_ENV=test vitest",
     "test:watch": "NODE_ENV=test vitest watch",
     "test:coverage": "NODE_ENV=test vitest run --coverage",
-    "db:generate": "drizzle-kit generate:pg",
-    "db:push": "drizzle-kit push:pg",
+    "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:init": "chmod +x scripts/init-db.sh && ./scripts/init-db.sh",
     "db:init:test": "NODE_ENV=test && chmod +x scripts/init-db.sh && ./scripts/init-db.sh",
@@ -34,6 +34,7 @@
     "@fastify/oauth2": "^8.1.1",
     "@fastify/static": "^8.0.4",
     "@octokit/rest": "^21.1.0",
+    "ali-oss": "^6.22.0",
     "bcrypt": "^5.1.1",
     "dotenv": "^16.4.7",
     "drizzle-orm": "^0.39.0",
@@ -47,6 +48,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@types/ali-oss": "^6.16.11",
     "@types/bcrypt": "^5.0.2",
     "@types/node": "^20.17.16",
     "@typescript-eslint/eslint-plugin": "^8.22.0",

@@ -29,8 +29,9 @@ const envSchema = z.object({
   JWT_SECRET: z.string().default("your-super-secret-key"),
 
   // Storage
-  STORAGE_TYPE: z.enum(["local", "s3"]).default("local"),
+  STORAGE_TYPE: z.enum(["local", "aliyun"]).default("local"),
   STORAGE_LOCAL_PATH: z.string().default("./temp/uploads"),
+  STORAGE_PATH_PREFIX: z.string().default("uploads"),
   S3_ENDPOINT: z.string().optional(),
   S3_REGION: z.string().optional(),
   S3_ACCESS_KEY: z.string().optional(),
@@ -46,6 +47,12 @@ const envSchema = z.object({
   // OpenAI
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_API_BASE_URL: z.string().optional(),
+
+  // Aliyun
+  ALIYUN_ACCESS_KEY_ID: z.string().optional(),
+  ALIYUN_ACCESS_KEY_SECRET: z.string().optional(),
+  ALIYUN_OSS_REGION: z.string().optional(),
+  ALIYUN_OSS_BUCKET: z.string().optional(),
 });
 
 // Parse and validate environment variables
@@ -66,8 +73,9 @@ export const env = envSchema.parse({
   JWT_SECRET: process.env.JWT_SECRET,
 
   // Storage
-  STORAGE_TYPE: process.env.STORAGE_TYPE as "local" | "s3",
+  STORAGE_TYPE: process.env.STORAGE_TYPE as "local" | "aliyun",
   STORAGE_LOCAL_PATH: process.env.STORAGE_LOCAL_PATH,
+  STORAGE_PATH_PREFIX: process.env.STORAGE_PATH_PREFIX,
   S3_ENDPOINT: process.env.S3_ENDPOINT,
   S3_REGION: process.env.S3_REGION,
   S3_ACCESS_KEY: process.env.S3_ACCESS_KEY,
@@ -83,6 +91,12 @@ export const env = envSchema.parse({
   // OpenAI
   OPENAI_API_KEY: process.env.OPENAI_API_KEY,
   OPENAI_API_BASE_URL: process.env.OPENAI_API_BASE_URL,
+
+  // Aliyun
+  ALIYUN_ACCESS_KEY_ID: process.env.ALIYUN_ACCESS_KEY_ID,
+  ALIYUN_ACCESS_KEY_SECRET: process.env.ALIYUN_ACCESS_KEY_SECRET,
+  ALIYUN_OSS_REGION: process.env.ALIYUN_OSS_REGION,
+  ALIYUN_OSS_BUCKET: process.env.ALIYUN_OSS_BUCKET,
 });
 
 // Type declaration
