@@ -5,6 +5,7 @@ import { config } from '../config/index.js';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcrypt';
 import { users } from '@/config/schema.js';
+import path from 'path';
 
 async function main() {
   const sql = postgres(config.databaseUrl, { max: 1 });
@@ -13,7 +14,7 @@ async function main() {
   try {
     // 执行迁移
     console.log('Running migrations...');
-    await migrate(db, { migrationsFolder: 'src/db/migrations' });
+    await migrate(db, { migrationsFolder: path.join(__dirname, 'migrations') });
     console.log('Migrations completed');
   } catch (err) {}
   // 检查是否存在管理员账户

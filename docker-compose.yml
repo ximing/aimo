@@ -1,6 +1,23 @@
-version: '3.8'
-
 services:
+  app:
+    image: ghcr.io/${GITHUB_REPOSITORY}:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgres://aimo:aimo123@postgres:5432/aimo
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET}
+      - STORAGE_TYPE=local
+      - STORAGE_LOCAL_PATH=/app/uploads
+      - STORAGE_PATH_PREFIX=uploads
+    volumes:
+      - ./temp/uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
   postgres:
     image: pgvector/pgvector:pg17
     environment:
@@ -18,12 +35,8 @@ services:
       retries: 5
 
   redis:
-    image: redis:alpine
-    ports:
-      - '6379:6379'
+    image: redis:7-alpine
     volumes:
       - ./temp/redis:/data
-
-volumes:
-  postgres_data:
-  redis_data:
+    ports:
+      - "6379:6379"

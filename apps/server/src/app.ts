@@ -7,6 +7,7 @@ import multipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { sql, eq } from 'drizzle-orm';
+import { initDatabase } from './lib/init-db.js';
 
 import { authRoutes } from './modules/auth/routes.js';
 import { noteRoutes } from './modules/note/routes.js';
@@ -82,6 +83,12 @@ export async function buildApp() {
     throw new Error('Dependencies check failed');
   }
 
+  // 初始化数据库
+  const dbInitOk = await initDatabase();
+  if (!dbInitOk) {
+    throw new Error('Database initialization failed');
+  }
+
   // 运行数据库迁移
   await runMigrations();
 
@@ -101,13 +108,17 @@ export async function buildApp() {
       env.STORAGE_LOCAL_PATH,
       env.STORAGE_PATH_PREFIX || ''
     );
-    console.log('uploadDir', uploadDir);
     await app.register(fastifyStatic, {
       root: uploadDir,
       prefix: `/${env.STORAGE_PATH_PREFIX}`,
       decorateReply: false, // 避免与其他插件冲突
     });
   }
+  await app.register(fastifyStatic, {
+    root: join(__dirname, '../public'),
+    prefix: '/public',
+    decorateReply: false, // 避免与其他插件冲突
+  });
 
   await app.register(jwt, {
     secret: env.JWT_SECRET,
@@ -161,6 +172,12 @@ export async function buildApp() {
   await app.register(noteRoutes, { prefix: '/api/notes' });
   await app.register(userRoutes, { prefix: '/api/users' });
   await app.register(systemRoutes, { prefix: '/api/system' });
+  // Serve static files in production
+  if (env.NODE_ENV === 'production') {
+    app.get('/*', async (request, reply) => {
+      return reply.sendFile(join(__dirname, '../public', 'index.html'));
+    });
+  }
 
   // Health check
   app.get('/health', async () => {

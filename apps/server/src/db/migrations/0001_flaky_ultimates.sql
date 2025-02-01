@@ -1,0 +1,1 @@
+ALTER TABLE "webhooks" ADD COLUMN "secret" text NOT NULL;

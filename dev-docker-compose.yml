@@ -1,0 +1,27 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: aimo
+      POSTGRES_PASSWORD: aimo123
+      POSTGRES_DB: aimo
+    ports:
+      - '5432:5432'
+    volumes:
+      - ./temp/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U aimo']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:alpine
+    ports:
+      - '6379:6379'
+    volumes:
+      - ./temp/redis:/data
+
+volumes:
+  postgres_data:
+  redis_data:

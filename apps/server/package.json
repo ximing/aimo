@@ -10,10 +10,8 @@
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:init": "chmod +x scripts/init-db.sh && ./scripts/init-db.sh",
-    "db:init:test": "NODE_ENV=test && chmod +x scripts/init-db.sh && ./scripts/init-db.sh",
     "db:migrate": "tsx src/db/migrate.ts",
-    "db:migrate:test": "NODE_ENV=test && tsx src/db/migrate.ts",
+    "db:init": "chmod +x scripts/init-db.sh && ./scripts/init-db.sh",
     "db:setup": "pnpm db:init && pnpm db:migrate",
     "db:setup:test": "NODE_ENV=test && pnpm db:init:test && pnpm db:migrate"
   },
