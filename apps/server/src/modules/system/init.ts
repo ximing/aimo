@@ -48,7 +48,7 @@ export async function initSystem(
     .insert(users)
     .values({
       email,
-      passwordHash,
+      hashedPassword: passwordHash,
       name,
       role: 'admin',
     })

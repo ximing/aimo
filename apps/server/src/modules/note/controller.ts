@@ -12,7 +12,6 @@ import {
 import { generateEmbedding } from '@/lib/openai.js';
 import { nanoid } from 'nanoid';
 import { triggerWebhook } from '@/lib/webhook.js';
-import { FastifyJWT } from '@fastify/jwt';
 import { getStorageService } from '@/lib/storage.js';
 import path from 'path';
 
@@ -29,7 +28,7 @@ interface HeatmapData {
 export async function createNote(
   request: FastifyRequest<{
     Body: CreateNoteInput;
-  }> & { user: FastifyJWT['user'] },
+  }>,
   reply: FastifyReply
 ): Promise<NoteResponse> {
   const {
@@ -89,6 +88,7 @@ export async function createNote(
   return {
     ...note,
     tags: tagList,
+    vectorEmbedding: note.vectorEmbedding ? JSON.stringify(note.vectorEmbedding) : null,
   };
 }
 
@@ -96,7 +96,7 @@ export async function updateNote(
   request: FastifyRequest<{
     Params: { id: string };
     Body: UpdateNoteInput;
-  }> & { user: FastifyJWT['user'] },
+  }>,
   reply: FastifyReply
 ): Promise<NoteResponse> {
   const { id } = request.params;
@@ -170,13 +170,14 @@ export async function updateNote(
   return {
     ...note,
     tags: tagList,
+    vectorEmbedding: note.vectorEmbedding ? JSON.stringify(note.vectorEmbedding) : null,
   };
 }
 
 export async function deleteNote(
   request: FastifyRequest<{
     Params: { id: string };
-  }> & { user: FastifyJWT['user'] },
+  }>,
   reply: FastifyReply
 ) {
   const { id } = request.params;
@@ -202,7 +203,7 @@ export async function deleteNote(
 export async function getNotes(
   request: FastifyRequest<{
     Querystring: NoteQueryParams;
-  }> & { user: FastifyJWT['user'] },
+  }>,
   reply: FastifyReply
 ) {
   const {
@@ -217,86 +218,95 @@ export async function getNotes(
   } = request.query;
   const userId = request.user.id;
 
-  // 基础查询
-  let query = db
-    .select({
-      id: notes.id,
-      content: notes.content,
-      createdAt: notes.createdAt,
-      updatedAt: notes.updatedAt,
-      userId: notes.userId,
-      isPublic: notes.isPublic,
-      shareToken: notes.shareToken,
-      attachments: notes.attachments,
-      tags: sql<string[]>`
-        array_agg(distinct ${tags.name})
-        filter (where ${tags.name} is not null)
-      `.as('tags'),
-    })
-    .from(notes)
-    .leftJoin(noteTags, eq(notes.id, noteTags.noteId))
-    .leftJoin(tags, eq(noteTags.tagId, tags.id))
-    .where(eq(notes.userId, userId));
-
-  // 添加标签过滤
+  // 构建基础条件
+  const conditions = [eq(notes.userId, userId)];
+  
   if (tag) {
-    query = query.where(sql`${tags.name} = ${tag}`);
+    conditions.push(eq(tags.name, tag));
   }
 
-  // 添加日期范围过滤
   if (startDate && endDate) {
-    query = query.where(
+    conditions.push(
       sql`${notes.createdAt}::date BETWEEN ${startDate}::date AND ${endDate}::date`
     );
   }
 
-  // 处理搜索和排序
-  if (search) {
-    if (searchMode === 'similarity') {
-      // 相似度搜索：使用余弦距离
-      const embedding = await generateEmbedding(search);
-      query = query
-        .orderBy(sql`${notes.vectorEmbedding} <=> ${JSON.stringify(embedding)}`)
-        .limit(pageSize);
-    } else {
-      // 全文检索
-      query = query
-        .where(sql`${notes.content} ILIKE ${`%${search}%`}`)
-        .orderBy(desc(notes.createdAt))
-        .offset((page - 1) * pageSize)
-        .limit(pageSize);
-    }
-  } else {
-    // 如果不是搜索，使用普通排序和分页
-    query = query
-      .orderBy(
-        sortBy === 'newest' ? desc(notes.createdAt) : asc(notes.createdAt)
-      )
-      .offset((page - 1) * pageSize)
-      .limit(pageSize);
+  if (search && searchMode !== 'similarity') {
+    conditions.push(sql`${notes.content} ILIKE ${`%${search}%`}`);
   }
 
-  // 执行查询并分组
-  const result = await query.groupBy(notes.id);
+  // 构建查询
+  const baseSelect = {
+    id: notes.id,
+    content: notes.content,
+    createdAt: notes.createdAt,
+    updatedAt: notes.updatedAt,
+    userId: notes.userId,
+    isPublic: notes.isPublic,
+    shareToken: notes.shareToken,
+    attachments: notes.attachments,
+    vectorEmbedding: notes.vectorEmbedding,
+    tagNames: sql<string[]>`
+      array_agg(distinct ${tags.name})
+      filter (where ${tags.name} is not null)
+    `.as('tag_names'),
+  };
 
-  // 处理结果
-  const noteResults = result.map((note) => ({
-    ...note,
-    tags: note.tags || [],
-  }));
+  // 处理相似度搜索
+  if (search && searchMode === 'similarity') {
+    const embedding = await generateEmbedding(search);
+    const result = await db
+      .select(baseSelect)
+      .from(notes)
+      .leftJoin(noteTags, eq(notes.id, noteTags.noteId))
+      .leftJoin(tags, eq(noteTags.tagId, tags.id))
+      .where(and(...conditions))
+      .groupBy(notes.id)
+      .orderBy(sql`${notes.vectorEmbedding} <=> ${JSON.stringify(embedding)}`)
+      .limit(pageSize)
+      .execute();
 
-  // 获取总数（用于分页）
+    return {
+      notes: result.map(note => ({
+        ...note,
+        tags: note.tagNames || [],
+      })),
+      pagination: {
+        total: result.length,
+        page: 1,
+        pageSize,
+        hasMore: false,
+      },
+    };
+  }
+
+  // 常规查询
+  const result = await db
+    .select(baseSelect)
+    .from(notes)
+    .leftJoin(noteTags, eq(notes.id, noteTags.noteId))
+    .leftJoin(tags, eq(noteTags.tagId, tags.id))
+    .where(and(...conditions))
+    .groupBy(notes.id)
+    .orderBy(sortBy === 'newest' ? desc(notes.createdAt) : asc(notes.createdAt))
+    .offset((page - 1) * pageSize)
+    .limit(pageSize)
+    .execute();
+
+  // 获取总数
   const [{ count }] = await db
     .select({
       count: sql<number>`count(distinct ${notes.id})::int`,
     })
     .from(notes)
-    .where(eq(notes.userId, userId))
+    .where(and(...conditions))
     .execute();
 
-  // 返回结果
   return {
-    notes: noteResults,
+    notes: result.map(note => ({
+      ...note,
+      tags: note.tagNames || [],
+    })),
     pagination: {
       total: Number(count),
       page,
@@ -307,34 +317,48 @@ export async function getNotes(
 }
 
 export async function getNoteByShareToken(
-  request: FastifyRequest<{ Params: { token: string } }>,
+  request: FastifyRequest<{
+    Params: { token: string };
+  }>,
   reply: FastifyReply
 ) {
   const { token } = request.params;
 
-  const note = await db.query.notes.findFirst({
-    where: and(eq(notes.shareToken, token), eq(notes.isPublic, true)),
-    with: {
-      tags: {
-        with: {
-          tag: true,
-        },
-      },
-    },
-  });
+  const result = await db
+    .select({
+      id: notes.id,
+      content: notes.content,
+      createdAt: notes.createdAt,
+      updatedAt: notes.updatedAt,
+      userId: notes.userId,
+      isPublic: notes.isPublic,
+      shareToken: notes.shareToken,
+      attachments: notes.attachments,
+      vectorEmbedding: notes.vectorEmbedding,
+      tagNames: sql<string[]>`
+        array_agg(distinct ${tags.name})
+        filter (where ${tags.name} is not null)
+      `.as('tag_names'),
+    })
+    .from(notes)
+    .leftJoin(noteTags, eq(notes.id, noteTags.noteId))
+    .leftJoin(tags, eq(noteTags.tagId, tags.id))
+    .where(and(eq(notes.shareToken, token), eq(notes.isPublic, true)))
+    .groupBy(notes.id)
+    .execute();
 
-  if (!note) {
+  if (!result || result.length === 0) {
     throw reply.status(404).send({ message: 'Note not found' });
   }
 
   return {
-    ...note,
-    tags: note.tags.map((t) => t.tag.name),
+    ...result[0],
+    tags: result[0].tagNames || [],
   };
 }
 
 export async function getTags(
-  request: FastifyRequest & { user: { id: number } },
+  request: FastifyRequest,
   reply: FastifyReply
 ): Promise<TagCount[]> {
   const { id: userId } = request.user;
@@ -374,9 +398,9 @@ export async function getTags(
 export async function getNotesHeatmap(
   request: FastifyRequest<{
     Querystring: HeatmapQuery;
-  }> & { user: FastifyJWT['user'] },
+  }>,
   reply: FastifyReply
-): Promise<HeatmapData[]> {
+) {
   const { startDate, endDate } = request.query;
   const userId = request.user.id;
 
@@ -399,7 +423,7 @@ export async function getNotesHeatmap(
 }
 
 export async function uploadAttachments(
-  request: FastifyRequest<{}>,
+  request: FastifyRequest,
   reply: FastifyReply
 ) {
   const files = await request.files();

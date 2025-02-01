@@ -16,20 +16,12 @@ import {
   getEnabledProviders,
   validateOAuthConfig,
 } from '@/config/oauth.js';
+import { RequestWithUser } from '@/types/fastify.js';
 
 interface AuthUser {
   id: number;
   email: string;
   role: string;
-}
-interface RequestWithUser<T = unknown> extends FastifyRequest {
-  user: {
-    id: number;
-    email: string;
-    role: string;
-    name?: string;
-  };
-  body: T;
 }
 
 interface GoogleUserInfo {
@@ -40,7 +32,9 @@ interface GoogleUserInfo {
 }
 
 export async function register(
-  request: RequestWithUser<RegisterInput>,
+  request: FastifyRequest<{
+    Body: RegisterInput;
+  }>,
   reply: FastifyReply
 ): Promise<AuthResponse> {
   const result = zodSchemas.register.safeParse(request.body);
@@ -101,7 +95,9 @@ export async function register(
 }
 
 export async function login(
-  request: FastifyRequest<{ Body: LoginInput }>,
+  request: FastifyRequest<{
+    Body: LoginInput;
+  }>,
   reply: FastifyReply
 ): Promise<AuthResponse> {
   const { email, password } = request.body;
@@ -161,7 +157,12 @@ export async function login(
   };
 }
 
-export async function githubAuth(request: FastifyRequest, reply: FastifyReply) {
+export async function githubAuth(
+  request: FastifyRequest<{
+    Querystring: { code?: string }
+  }>,
+  reply: FastifyReply
+) {
   try {
     validateOAuthConfig('github');
   } catch (error) {
@@ -171,7 +172,7 @@ export async function githubAuth(request: FastifyRequest, reply: FastifyReply) {
     });
   }
 
-  const code = request.query.code as string;
+  const code = request.query.code;
 
   if (!code) {
     const authUrl = `https://github.com/login/oauth/authorize?client_id=${oauthConfig.github.clientId}`;
@@ -235,7 +236,12 @@ export async function githubAuth(request: FastifyRequest, reply: FastifyReply) {
   }
 }
 
-export async function googleAuth(request: FastifyRequest, reply: FastifyReply) {
+export async function googleAuth(
+  request: FastifyRequest<{
+    Querystring: { code?: string }
+  }>,
+  reply: FastifyReply
+) {
   try {
     validateOAuthConfig('google');
   } catch (error) {
@@ -245,7 +251,7 @@ export async function googleAuth(request: FastifyRequest, reply: FastifyReply) {
     });
   }
 
-  const code = request.query.code as string;
+  const code = request.query.code;
 
   if (!code) {
     const oauth2Client = new OAuth2Client(
@@ -359,7 +365,7 @@ export async function getProfile(request: FastifyRequest, reply: FastifyReply) {
   return user;
 }
 
-export async function getAuthProviders(
+export async function getProviders(
   request: FastifyRequest,
   reply: FastifyReply
 ) {

@@ -90,6 +90,7 @@ export interface NoteResponse {
   shareToken: string | null;
   vectorEmbedding?: string | null;
   tags: string[];
+  attachments: unknown;
 }
 
 // Export Zod schemas for runtime validation

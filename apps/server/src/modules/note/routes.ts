@@ -1,4 +1,4 @@
-import { FastifyInstance, RouteHandlerMethod } from 'fastify';
+import { FastifyInstance } from 'fastify';
 import {
   createNote,
   updateNote,
@@ -15,6 +15,10 @@ import {
   getNoteByShareTokenSchema,
   heatmapSchema,
   getNoteSchema,
+  CreateNoteInput,
+  UpdateNoteInput,
+  NoteQueryParams,
+  HeatmapQuery,
 } from './schema.js';
 
 export async function noteRoutes(app: FastifyInstance) {
@@ -26,33 +30,64 @@ export async function noteRoutes(app: FastifyInstance) {
     await app.authenticate(request, reply);
   });
 
-  // CRUD operations
-  app.post('/', { schema: createNoteSchema }, createNote as RouteHandlerMethod);
-  app.put(
+  app.post<{
+    Body: CreateNoteInput;
+  }>(
+    '/',
+    { schema: createNoteSchema },
+    createNote
+  );
+
+  app.put<{
+    Params: { id: string };
+    Body: UpdateNoteInput;
+  }>(
     '/:id',
     { schema: updateNoteSchema },
-    updateNote as RouteHandlerMethod
+    updateNote
   );
-  app.delete('/:id', deleteNote as RouteHandlerMethod);
 
-  // 统一的笔记查询接口
-  app.get('/', { schema: getNoteSchema }, getNotes as RouteHandlerMethod);
+  app.delete<{
+    Params: { id: string };
+  }>(
+    '/:id',
+    {},
+    deleteNote
+  );
 
-  // Public access
-  app.get(
+  app.get<{
+    Querystring: NoteQueryParams;
+  }>(
+    '/',
+    { schema: getNoteSchema },
+    getNotes
+  );
+
+  app.get<{
+    Params: { token: string };
+  }>(
     '/shared/:token',
     { schema: getNoteByShareTokenSchema },
     getNoteByShareToken
   );
 
-  // 获取所有标签及其数量
-  app.get('/tags', getTags as RouteHandlerMethod);
-
   app.get(
-    '/stats/heatmap',
-    { schema: heatmapSchema },
-    getNotesHeatmap as RouteHandlerMethod
+    '/tags',
+    {},
+    getTags
   );
 
-  app.post('/attachments', {}, uploadAttachments);
+  app.get<{
+    Querystring: HeatmapQuery;
+  }>(
+    '/stats/heatmap',
+    { schema: heatmapSchema },
+    getNotesHeatmap
+  );
+
+  app.post(
+    '/attachments',
+    {},
+    uploadAttachments
+  );
 }

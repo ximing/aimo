@@ -6,18 +6,56 @@ import {
   updateUser,
   deleteUser,
 } from './controller.js';
-import { updateProfileSchema, updateUserSchema } from './schema.js';
+import {
+  updateProfileSchema,
+  updateUserSchema,
+  UpdateProfileInput,
+  UpdateUserInput,
+} from './schema.js';
 
 export async function userRoutes(app: FastifyInstance) {
-  // Add authentication check middleware
-  app.addHook('preHandler', app.authenticate);
+  // Add authentication to all routes
+  app.addHook('onRequest', app.authenticate);
 
-  // Regular user routes
-  app.get('/profile', getProfile);
-  app.put('/profile', { schema: updateProfileSchema }, updateProfile);
+  app.get(
+    '/profile',
+    {},
+    getProfile
+  );
 
-  // Admin only routes
-  app.get('/', listUsers);
-  app.put('/:id', { schema: updateUserSchema }, updateUser);
-  app.delete('/:id', deleteUser);
+  app.put<{
+    Body: UpdateProfileInput;
+  }>(
+    '/profile',
+    { schema: updateProfileSchema },
+    updateProfile
+  );
+
+  app.get<{
+    Querystring: {
+      limit?: number;
+      offset?: number;
+    };
+  }>(
+    '/',
+    {},
+    listUsers
+  );
+
+  app.put<{
+    Params: { id: string };
+    Body: UpdateUserInput;
+  }>(
+    '/:id',
+    { schema: updateUserSchema },
+    updateUser
+  );
+
+  app.delete<{
+    Params: { id: string };
+  }>(
+    '/:id',
+    {},
+    deleteUser
+  );
 }

@@ -5,17 +5,9 @@ import { db } from '@/lib/db.js';
 import { users } from '@/config/schema.js';
 import { UpdateProfileInput, UpdateUserInput, UserResponse } from './schema.js';
 
-// Add this interface to extend FastifyRequest
-interface RequestWithUser<T = unknown> extends FastifyRequest {
-  user: {
-    id: number;
-    role: string;
-  };
-  body: T;
-}
 
 export async function getProfile(
-  request: RequestWithUser,
+  request: FastifyRequest,
   reply: FastifyReply
 ): Promise<UserResponse> {
   const user = await db.query.users.findFirst({
@@ -27,7 +19,7 @@ export async function getProfile(
       role: true,
       createdAt: true,
       isActive: true,
-      passwordHash: false,
+      hashedPassword: false,
     },
   });
 
@@ -42,7 +34,9 @@ export async function getProfile(
 }
 
 export async function updateProfile(
-  request: RequestWithUser<UpdateProfileInput>,
+  request: FastifyRequest<{
+    Body: UpdateProfileInput;
+  }>,
   reply: FastifyReply
 ): Promise<UserResponse> {
   const { name, password } = request.body;
@@ -74,9 +68,12 @@ export async function updateProfile(
 
 // Admin only functions
 export async function listUsers(
-  request: RequestWithUser & {
-    Querystring: { limit?: number; offset?: number };
-  },
+  request: FastifyRequest<{
+    Querystring: {
+      limit?: number;
+      offset?: number;
+    };
+  }>,
   reply: FastifyReply
 ): Promise<UserResponse[]> {
   if (request.user.role !== 'admin') {
@@ -97,7 +94,7 @@ export async function listUsers(
       role: true,
       createdAt: true,
       isActive: true,
-      passwordHash: false,
+      hashedPassword: false,
     },
     limit,
     offset,
@@ -108,10 +105,10 @@ export async function listUsers(
 }
 
 export async function updateUser(
-  request: RequestWithUser & {
+  request: FastifyRequest<{
     Params: { id: string };
     Body: UpdateUserInput;
-  },
+  }>,
   reply: FastifyReply
 ): Promise<UserResponse> {
   if (request.user.role !== 'admin') {
@@ -160,7 +157,9 @@ export async function updateUser(
 }
 
 export async function deleteUser(
-  request: RequestWithUser & { Params: { id: string } },
+  request: FastifyRequest<{
+    Params: { id: string };
+  }>,
   reply: FastifyReply
 ) {
   if (request.user.role !== 'admin') {

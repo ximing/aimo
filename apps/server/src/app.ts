@@ -23,13 +23,20 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 declare module '@fastify/jwt' {
   interface FastifyJWT {
     payload: { id: number; email: string; role: string }; // payload type is used for signing and verifying
-    user: { id: number; email: string; role: string; isActive: boolean }; // user type is return type of `request.user` object
+    user: {
+      id: number;
+      email: string;
+      role: string;
+      isActive: boolean;
+      name?: string;
+    };
   }
 }
 
 declare module 'fastify' {
   interface FastifyRequest {
-    user: FastifyJWT['user']; // use the JWT user type
+    user: FastifyJWT['user'];
+    routerPath?: string; // 添加 routerPath 定义
   }
   interface FastifyInstance {
     authenticate: (
