@@ -33,16 +33,18 @@ export const NoteList = ({
   const renderNoteContent = (note: Note) => {
     if (editingNoteId === note.id) {
       return (
-        <NoteEditor
-          value={editingContent}
-          onChange={setEditingContent}
-          onPublish={() => updateNote(note.id)}
-          onCancel={cancelEditNote}
-          loading={isPublishing}
-          attachments={editingAttachments}
-          onAttachmentsChange={setEditingAttachments}
-          onTagsChange={setEditingTags}
-        />
+        <div className="note-editor-container">
+          <NoteEditor
+            value={editingContent}
+            onChange={setEditingContent}
+            onPublish={() => updateNote(note.id)}
+            onCancel={cancelEditNote}
+            loading={isPublishing}
+            attachments={editingAttachments}
+            onAttachmentsChange={setEditingAttachments}
+            onTagsChange={setEditingTags}
+          />
+        </div>
       );
     }
 
