@@ -20,11 +20,6 @@ interface TagCount {
   count: number;
 }
 
-interface HeatmapData {
-  date: string;
-  count: number;
-}
-
 export async function createNote(
   request: FastifyRequest<{
     Body: CreateNoteInput;
@@ -87,11 +82,11 @@ export async function createNote(
 
   return {
     ...note,
+    shareToken: note.shareToken || '',
+    createdAt: note.createdAt.getTime(),
+    updatedAt: note.updatedAt.getTime(),
     tags: tagList,
-    vectorEmbedding: note.vectorEmbedding
-      ? JSON.stringify(note.vectorEmbedding)
-      : null,
-  };
+  } as NoteResponse;
 }
 
 export async function updateNote(
@@ -171,11 +166,11 @@ export async function updateNote(
 
   return {
     ...note,
+    shareToken: note.shareToken || '',
+    createdAt: note.createdAt.getTime(),
+    updatedAt: note.updatedAt.getTime(),
     tags: tagList,
-    vectorEmbedding: note.vectorEmbedding
-      ? JSON.stringify(note.vectorEmbedding)
-      : null,
-  };
+  } as NoteResponse;
 }
 
 export async function deleteNote(

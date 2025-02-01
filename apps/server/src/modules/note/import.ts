@@ -6,6 +6,11 @@ import { db } from '@/lib/db.js';
 import { notes } from '@/config/schema.js';
 import { generateEmbedding } from '@/lib/openai.js';
 
+interface ImportRow {
+  content: string;
+  // 其他可能的字段
+}
+
 export async function importNotes(
   request: FastifyRequest,
   reply: FastifyReply
@@ -13,13 +18,17 @@ export async function importNotes(
   const file = await request.file();
   const userId = request.user.id;
 
+  if (!file) {
+    throw new Error('No file uploaded');
+  }
   const buffer = await file.toBuffer();
   const workbook = xlsx.read(buffer);
   const worksheet = workbook.Sheets[workbook.SheetNames[0]];
   const data = xlsx.utils.sheet_to_json(worksheet);
 
   const importedNotes = [];
-  for (const row of data) {
+  for (const item of data) {
+    const row = item as ImportRow;
     const content = row.content;
     const embedding = await generateEmbedding(content);
 
@@ -44,12 +53,19 @@ export async function exportNotes(
   reply: FastifyReply
 ) {
   const userId = request.user.id;
-  const format = request.query.format || 'json';
+  const format = (request.query as { format?: string }).format || 'json';
 
   const userNotes = await db.query.notes.findMany({
     where: eq(notes.userId, userId),
+    columns: {
+      id: true,
+      content: true,
+      createdAt: true,
+      updatedAt: true,
+      // ... 其他需要的字段
+    },
     with: {
-      tags: {
+      noteTags: {
         with: {
           tag: true,
         },

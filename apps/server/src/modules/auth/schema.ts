@@ -1,59 +1,59 @@
-import { z } from 'zod';
-import { FastifySchema } from 'fastify';
+import { Static, Type } from '@sinclair/typebox';
 
-const registerBodySchema = z.object({
-  email: z.string().email('Invalid email format'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  name: z.string().min(2, 'Name must be at least 2 characters').optional(),
+// 基础类型定义
+export const User = Type.Object({
+  id: Type.Number(),
+  email: Type.String({ format: 'email' }),
+  name: Type.Optional(Type.String()),
+  role: Type.String(),
+  createdAt: Type.Number(),
+  isActive: Type.Boolean(),
 });
 
-const loginBodySchema = z.object({
-  email: z.string().email('Invalid email format'),
-  password: z.string().min(1, 'Password is required'),
+export const RegisterSchema = Type.Object({
+  email: Type.String({ format: 'email' }),
+  password: Type.String({ minLength: 6 }),
+  name: Type.Optional(Type.String()),
 });
 
-// Fastify schemas
-export const registerSchema: FastifySchema = {
-  body: {
-    type: 'object',
-    required: ['email', 'password'],
-    properties: {
-      email: { type: 'string', format: 'email' },
-      password: { type: 'string', minLength: 6 },
-      name: { type: 'string', minLength: 2 },
+export const LoginSchema = Type.Object({
+  email: Type.String({ format: 'email' }),
+  password: Type.String(),
+});
+
+export const AuthResponseSchema = Type.Object({
+  user: User,
+  token: Type.String(),
+});
+
+// 导出类型
+export type UserType = Static<typeof User>;
+export type RegisterInput = Static<typeof RegisterSchema>;
+export type LoginInput = Static<typeof LoginSchema>;
+export type AuthResponse = Static<typeof AuthResponseSchema>;
+
+// 路由 schema 定义
+export const schemas = {
+  register: {
+    body: RegisterSchema,
+    response: {
+      200: AuthResponseSchema,
     },
   },
-};
-
-export const loginSchema: FastifySchema = {
-  body: {
-    type: 'object',
-    required: ['email', 'password'],
-    properties: {
-      email: { type: 'string', format: 'email' },
-      password: { type: 'string', minLength: 1 },
+  login: {
+    body: LoginSchema,
+    response: {
+      200: AuthResponseSchema,
     },
   },
-};
-
-// Types for request validation
-export type RegisterInput = z.infer<typeof registerBodySchema>;
-export type LoginInput = z.infer<typeof loginBodySchema>;
-
-// Response types
-export interface AuthResponse {
-  user: {
-    id: number;
-    email: string;
-    name: string | null;
-    role: string;
-    createdAt: Date;
-  };
-  token: string;
-}
-
-// Export Zod schemas for runtime validation
-export const zodSchemas = {
-  register: registerBodySchema,
-  login: loginBodySchema,
+  getProviders: {
+    response: {
+      200: Type.Array(Type.String()),
+    },
+  },
+  getProfile: {
+    response: {
+      200: User,
+    },
+  },
 };

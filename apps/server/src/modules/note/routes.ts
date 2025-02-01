@@ -10,11 +10,7 @@ import {
   uploadAttachments,
 } from './controller.js';
 import {
-  createNoteSchema,
-  updateNoteSchema,
-  getNoteByShareTokenSchema,
-  heatmapSchema,
-  getNoteSchema,
+  schemas,
   CreateNoteInput,
   UpdateNoteInput,
   NoteQueryParams,
@@ -32,12 +28,12 @@ export async function noteRoutes(app: FastifyInstance) {
 
   app.post<{
     Body: CreateNoteInput;
-  }>('/', { schema: createNoteSchema }, createNote);
+  }>('/', { schema: schemas.createNote }, createNote);
 
   app.put<{
     Params: { id: string };
     Body: UpdateNoteInput;
-  }>('/:id', { schema: updateNoteSchema }, updateNote);
+  }>('/:id', { schema: schemas.updateNote }, updateNote);
 
   app.delete<{
     Params: { id: string };
@@ -45,21 +41,25 @@ export async function noteRoutes(app: FastifyInstance) {
 
   app.get<{
     Querystring: NoteQueryParams;
-  }>('/', { schema: getNoteSchema }, getNotes);
+  }>('/', { schema: schemas.getNotes }, getNotes);
 
   app.get<{
     Params: { token: string };
   }>(
     '/shared/:token',
-    { schema: getNoteByShareTokenSchema },
+    { schema: schemas.getNoteByShareToken },
     getNoteByShareToken
   );
 
-  app.get('/tags', {}, getTags);
+  app.get('/tags', { schema: schemas.getTags }, getTags);
 
   app.get<{
     Querystring: HeatmapQuery;
-  }>('/stats/heatmap', { schema: heatmapSchema }, getNotesHeatmap);
+  }>('/stats/heatmap', { schema: schemas.getHeatmap }, getNotesHeatmap);
 
-  app.post('/attachments', {}, uploadAttachments);
+  app.post(
+    '/attachments',
+    { schema: schemas.uploadAttachments },
+    uploadAttachments
+  );
 }

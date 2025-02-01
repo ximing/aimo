@@ -3,7 +3,12 @@ import { eq } from 'drizzle-orm';
 import bcrypt from 'bcrypt';
 import { db } from '@/lib/db.js';
 import { users } from '@/config/schema.js';
-import { UpdateProfileInput, UpdateUserInput, UserResponse } from './schema.js';
+import {
+  UpdateProfileInput,
+  UpdateUserInput,
+  UserResponse,
+  UserQueryParams,
+} from './schema.js';
 
 export async function getProfile(
   request: FastifyRequest,
@@ -29,7 +34,11 @@ export async function getProfile(
     });
   }
 
-  return user;
+  return {
+    ...user,
+    name: user.name || undefined,
+    createdAt: user.createdAt.getTime(),
+  } as UserResponse;
 }
 
 export async function updateProfile(
@@ -46,7 +55,7 @@ export async function updateProfile(
     updateData.name = name;
   }
   if (password) {
-    updateData.passwordHash = await bcrypt.hash(password, 10);
+    updateData.hashedPassword = await bcrypt.hash(password, 10);
   }
 
   const [user] = await db
@@ -62,16 +71,17 @@ export async function updateProfile(
       isActive: users.isActive,
     });
 
-  return user;
+  return {
+    ...user,
+    name: user.name || undefined,
+    createdAt: user.createdAt.getTime(),
+  } as UserResponse;
 }
 
 // Admin only functions
 export async function listUsers(
   request: FastifyRequest<{
-    Querystring: {
-      limit?: number;
-      offset?: number;
-    };
+    Querystring: UserQueryParams;
   }>,
   reply: FastifyReply
 ): Promise<UserResponse[]> {
@@ -82,8 +92,7 @@ export async function listUsers(
     });
   }
 
-  const limit = request.query.limit || 20;
-  const offset = request.query.offset || 0;
+  const { limit = 20, offset = 0 } = request.query;
 
   const userList = await db.query.users.findMany({
     columns: {
@@ -100,7 +109,11 @@ export async function listUsers(
     orderBy: (users, { desc }) => [desc(users.createdAt)],
   });
 
-  return userList;
+  return userList.map(user => ({
+    ...user,
+    name: user.name || undefined,
+    createdAt: user.createdAt.getTime(),
+  } as UserResponse));
 }
 
 export async function updateUser(
@@ -132,7 +145,7 @@ export async function updateUser(
     .update(users)
     .set({
       name,
-      role,
+      role: role as 'admin' | 'user',
       isActive,
     })
     .where(eq(users.id, parseInt(id)))
@@ -152,7 +165,11 @@ export async function updateUser(
     });
   }
 
-  return user;
+  return {
+    ...user,
+    name: user.name || undefined,
+    createdAt: user.createdAt.getTime(),
+  } as UserResponse;
 }
 
 export async function deleteUser(

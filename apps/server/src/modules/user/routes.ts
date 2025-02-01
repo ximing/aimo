@@ -7,35 +7,32 @@ import {
   deleteUser,
 } from './controller.js';
 import {
-  updateProfileSchema,
-  updateUserSchema,
+  schemas,
   UpdateProfileInput,
   UpdateUserInput,
+  UserQueryParams,
 } from './schema.js';
 
 export async function userRoutes(app: FastifyInstance) {
   // Add authentication to all routes
   app.addHook('onRequest', app.authenticate);
 
-  app.get('/profile', {}, getProfile);
+  app.get('/profile', { schema: schemas.getProfile }, getProfile);
 
   app.put<{
     Body: UpdateProfileInput;
-  }>('/profile', { schema: updateProfileSchema }, updateProfile);
+  }>('/profile', { schema: schemas.updateProfile }, updateProfile);
 
   app.get<{
-    Querystring: {
-      limit?: number;
-      offset?: number;
-    };
-  }>('/', {}, listUsers);
+    Querystring: UserQueryParams;
+  }>('/', { schema: schemas.listUsers }, listUsers);
 
   app.put<{
     Params: { id: string };
     Body: UpdateUserInput;
-  }>('/:id', { schema: updateUserSchema }, updateUser);
+  }>('/:id', { schema: schemas.updateUser }, updateUser);
 
   app.delete<{
     Params: { id: string };
-  }>('/:id', {}, deleteUser);
+  }>('/:id', { schema: schemas.deleteUser }, deleteUser);
 }

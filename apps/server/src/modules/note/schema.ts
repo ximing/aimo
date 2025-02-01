@@ -1,196 +1,155 @@
-import { z } from 'zod';
-import { FastifySchema } from 'fastify';
+import { Static, Type } from '@sinclair/typebox';
 
-const createNoteBodySchema = z.object({
-  content: z.string().min(1, 'Content is required'),
-  tags: z.array(z.string()).optional(),
-  isPublic: z.boolean().optional(),
-  attachments: z.array(z.string()).optional(),
+// 基础类型定义
+export const Note = Type.Object({
+  id: Type.Number(),
+  content: Type.String(),
+  createdAt: Type.Number(),
+  updatedAt: Type.Number(),
+  userId: Type.Number(),
+  isPublic: Type.Boolean(),
+  shareToken: Type.Optional(Type.String()),
+  attachments: Type.Array(
+    Type.Object({
+      url: Type.String(),
+      filename: Type.String(),
+      size: Type.Number(),
+      mimeType: Type.String(),
+    })
+  ),
+  vectorEmbedding: Type.Optional(Type.Any()),
+  tags: Type.Array(Type.String()),
 });
 
-const updateNoteBodySchema = z.object({
-  content: z.string().min(1, 'Content is required').optional(),
-  tags: z.array(z.string()).optional(),
-  isPublic: z.boolean().optional(),
-  attachments: z.array(z.string()).optional(),
+export const CreateNoteSchema = Type.Object({
+  content: Type.String(),
+  tags: Type.Optional(Type.Array(Type.String())),
+  isPublic: Type.Optional(Type.Boolean()),
+  attachments: Type.Optional(
+    Type.Array(
+      Type.Object({
+        url: Type.String(),
+        filename: Type.String(),
+        size: Type.Number(),
+        mimeType: Type.String(),
+      })
+    )
+  ),
 });
 
-// Fastify schemas
-export const createNoteSchema: FastifySchema = {
-  body: {
-    type: 'object',
-    required: ['content'],
-    properties: {
-      content: { type: 'string', minLength: 1 },
-      tags: {
-        type: 'array',
-        items: { type: 'string' },
-      },
-      isPublic: { type: 'boolean' },
-    },
-  },
-};
-
-export const updateNoteSchema: FastifySchema = {
-  params: {
-    type: 'object',
-    required: ['id'],
-    properties: {
-      id: { type: 'string' },
-    },
-  },
-  body: {
-    type: 'object',
-    properties: {
-      content: { type: 'string', minLength: 1 },
-      tags: {
-        type: 'array',
-        items: { type: 'string' },
-      },
-      isPublic: { type: 'boolean' },
-    },
-  },
-};
-
-export const searchNoteSchema: FastifySchema = {
-  querystring: {
-    type: 'object',
-    required: ['q'],
-    properties: {
-      q: { type: 'string', minLength: 1 },
-      tag: { type: 'string' },
-      limit: { type: 'number', minimum: 1 },
-      offset: { type: 'number', minimum: 0 },
-    },
-  },
-};
-
-export const getNoteByShareTokenSchema: FastifySchema = {
-  params: {
-    type: 'object',
-    required: ['token'],
-    properties: {
-      token: { type: 'string' },
-    },
-  },
-};
-
-// Types for request validation
-export type CreateNoteInput = z.infer<typeof createNoteBodySchema>;
-export type UpdateNoteInput = z.infer<typeof updateNoteBodySchema>;
-
-// Response type
-export interface NoteResponse {
-  id: number;
-  content: string;
-  createdAt: Date;
-  updatedAt: Date;
-  userId: number;
-  isPublic: boolean;
-  shareToken: string | null;
-  vectorEmbedding?: string | null;
-  tags: string[];
-  attachments: unknown;
-}
-
-// Export Zod schemas for runtime validation
-export const zodSchemas = {
-  createNote: createNoteBodySchema,
-  updateNote: updateNoteBodySchema,
-};
-
-// 添加热力图相关的 schema
-const heatmapQuerySchema = z.object({
-  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format'),
-  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format'),
+export const UpdateNoteSchema = Type.Object({
+  content: Type.Optional(Type.String()),
+  tags: Type.Optional(Type.Array(Type.String())),
+  isPublic: Type.Optional(Type.Boolean()),
+  attachments: Type.Optional(
+    Type.Array(
+      Type.Object({
+        url: Type.String(),
+        filename: Type.String(),
+        size: Type.Number(),
+        mimeType: Type.String(),
+      })
+    )
+  ),
 });
 
-const getNotesQuerySchema = z.object({
-  page: z.number().int().min(1).optional(),
-  pageSize: z.number().int().min(1).max(100).optional(),
-  sortBy: z.enum(['newest', 'oldest']).optional(),
+export const NoteQuerySchema = Type.Object({
+  page: Type.Optional(Type.Number()),
+  pageSize: Type.Optional(Type.Number()),
+  sortBy: Type.Optional(
+    Type.Union([Type.Literal('newest'), Type.Literal('oldest')])
+  ),
+  tag: Type.Optional(Type.String()),
+  search: Type.Optional(Type.String()),
+  searchMode: Type.Optional(
+    Type.Union([Type.Literal('fulltext'), Type.Literal('similarity')])
+  ),
+  startDate: Type.Optional(Type.String({ format: 'date' })),
+  endDate: Type.Optional(Type.String({ format: 'date' })),
 });
 
-// Fastify schemas
-export const getNotesSchema: FastifySchema = {
-  querystring: {
-    type: 'object',
-    properties: {
-      page: { type: 'number', minimum: 1 },
-      pageSize: { type: 'number', minimum: 1, maximum: 100 },
-      sortBy: { type: 'string', enum: ['newest', 'oldest'] },
-    },
-  },
-};
-
-export const heatmapSchema: FastifySchema = {
-  querystring: {
-    type: 'object',
-    required: ['startDate', 'endDate'],
-    properties: {
-      startDate: { type: 'string', format: 'date' },
-      endDate: { type: 'string', format: 'date' },
-    },
-  },
-  response: {
-    200: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          date: { type: 'string' },
-          count: { type: 'number' },
-        },
-      },
-    },
-  },
-};
-
-// Types for request validation
-export type GetNotesQuery = z.infer<typeof getNotesQuerySchema>;
-export type HeatmapQuery = z.infer<typeof heatmapQuerySchema>;
-
-// 添加搜索模式枚举
-const searchModeSchema = z.enum(['similarity', 'fulltext']);
-export type SearchMode = z.infer<typeof searchModeSchema>;
-
-// 修改查询参数 schema
-const noteQuerySchema = z.object({
-  // 分页参数
-  page: z.number().int().min(1).optional(),
-  pageSize: z.number().int().min(1).max(100).optional(),
-
-  // 排序
-  sortBy: z.enum(['newest', 'oldest']).optional(),
-
-  // 过滤条件
-  tag: z.string().optional(),
-  search: z.string().optional(),
-  searchMode: searchModeSchema.optional().default('similarity'),
-  startDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .optional(),
-  endDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .optional(),
+export const HeatmapQuerySchema = Type.Object({
+  startDate: Type.String({ format: 'date' }),
+  endDate: Type.String({ format: 'date' }),
 });
 
-export type NoteQueryParams = z.infer<typeof noteQuerySchema>;
+export const NoteResponseSchema = Type.Object({
+  notes: Type.Array(Note),
+  pagination: Type.Object({
+    total: Type.Number(),
+    page: Type.Number(),
+    pageSize: Type.Number(),
+    hasMore: Type.Boolean(),
+  }),
+});
 
-export const getNoteSchema: FastifySchema = {
-  querystring: {
-    type: 'object',
-    properties: {
-      page: { type: 'number', minimum: 1 },
-      pageSize: { type: 'number', minimum: 1, maximum: 100 },
-      sortBy: { type: 'string', enum: ['newest', 'oldest'] },
-      tag: { type: 'string' },
-      search: { type: 'string' },
-      searchMode: { type: 'string', enum: ['similarity', 'fulltext'] },
-      startDate: { type: 'string', format: 'date' },
-      endDate: { type: 'string', format: 'date' },
+// 导出类型
+export type NoteType = Static<typeof Note>;
+export type CreateNoteInput = Static<typeof CreateNoteSchema>;
+export type UpdateNoteInput = Static<typeof UpdateNoteSchema>;
+export type NoteQueryParams = Static<typeof NoteQuerySchema>;
+export type HeatmapQuery = Static<typeof HeatmapQuerySchema>;
+export type NoteResponse = Static<typeof Note>;
+
+// 路由 schema 定义
+export const schemas = {
+  createNote: {
+    body: CreateNoteSchema,
+    response: {
+      200: Note,
+    },
+  },
+  updateNote: {
+    body: UpdateNoteSchema,
+    response: {
+      200: Note,
+    },
+  },
+  getNotes: {
+    querystring: NoteQuerySchema,
+    response: {
+      200: NoteResponseSchema,
+    },
+  },
+  getNoteByShareToken: {
+    params: Type.Object({
+      token: Type.String(),
+    }),
+    response: {
+      200: Note,
+    },
+  },
+  getTags: {
+    response: {
+      200: Type.Array(
+        Type.Object({
+          name: Type.String(),
+          count: Type.Number(),
+        })
+      ),
+    },
+  },
+  getHeatmap: {
+    querystring: HeatmapQuerySchema,
+    response: {
+      200: Type.Array(
+        Type.Object({
+          date: Type.String(),
+          count: Type.Number(),
+        })
+      ),
+    },
+  },
+  uploadAttachments: {
+    response: {
+      200: Type.Array(
+        Type.Object({
+          url: Type.String(),
+          filename: Type.String(),
+          size: Type.Number(),
+          mimeType: Type.String(),
+        })
+      ),
     },
   },
 };

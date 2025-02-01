@@ -5,23 +5,16 @@ import {
   githubAuth,
   googleAuth,
   getProviders,
+  getProfile,
 } from './controller.js';
-import {
-  registerSchema,
-  loginSchema,
-  RegisterInput,
-  LoginInput,
-} from './schema.js';
-import { withUser } from '@/utils/route-wrapper.js';
+import { schemas, RegisterInput, LoginInput } from './schema.js';
 
 export async function authRoutes(app: FastifyInstance) {
   app.post<{
     Body: RegisterInput;
   }>(
     '/register',
-    {
-      schema: registerSchema,
-    },
+    { schema: schemas.register },
     register
   );
 
@@ -29,9 +22,7 @@ export async function authRoutes(app: FastifyInstance) {
     Body: LoginInput;
   }>(
     '/login',
-    {
-      schema: loginSchema,
-    },
+    { schema: schemas.login },
     login
   );
 
@@ -59,13 +50,18 @@ export async function authRoutes(app: FastifyInstance) {
     };
   }>('/google/callback', {}, googleAuth);
 
-  app.get('/providers', {}, getProviders);
+  app.get(
+    '/providers',
+    { schema: schemas.getProviders },
+    getProviders
+  );
 
   app.get(
     '/profile',
-    { preValidation: [app.authenticate] },
-    withUser<{
-      Body: never;
-    }>(getProfile)
+    {
+      schema: schemas.getProfile,
+      preValidation: [app.authenticate],
+    },
+    getProfile
   );
 }

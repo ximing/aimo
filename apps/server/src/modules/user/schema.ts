@@ -1,69 +1,76 @@
-import { z } from 'zod';
-import { FastifySchema } from 'fastify';
-import { users } from '@/config/schema.js';
+import { Static, Type } from '@sinclair/typebox';
 
-const updateProfileBodySchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters').optional(),
-  password: z
-    .string()
-    .min(6, 'Password must be at least 6 characters')
-    .optional(),
+// 基础类型定义
+export const User = Type.Object({
+  id: Type.Number(),
+  email: Type.String({ format: 'email' }),
+  name: Type.Optional(Type.String()),
+  role: Type.String(),
+  createdAt: Type.Number(),
+  isActive: Type.Boolean(),
+  githubId: Type.Optional(Type.String()),
+  googleId: Type.Optional(Type.String()),
 });
 
-const updateUserBodySchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters').optional(),
-  role: z.enum(['user', 'admin']).optional(),
-  isActive: z.boolean().optional(),
+export const UpdateProfileSchema = Type.Object({
+  name: Type.Optional(Type.String()),
+  password: Type.Optional(Type.String({ minLength: 6 })),
 });
 
-// Fastify schemas
-export const updateProfileSchema: FastifySchema = {
-  body: {
-    type: 'object',
-    properties: {
-      name: { type: 'string', minLength: 2 },
-      password: { type: 'string', minLength: 6 },
+export const UpdateUserSchema = Type.Object({
+  name: Type.Optional(Type.String()),
+  role: Type.Optional(Type.String()),
+  isActive: Type.Optional(Type.Boolean()),
+});
+
+export const UserQuerySchema = Type.Object({
+  limit: Type.Optional(Type.Number()),
+  offset: Type.Optional(Type.Number()),
+});
+
+// 导出类型
+export type UserType = Static<typeof User>;
+export type UpdateProfileInput = Static<typeof UpdateProfileSchema>;
+export type UpdateUserInput = Static<typeof UpdateUserSchema>;
+export type UserQueryParams = Static<typeof UserQuerySchema>;
+export type UserResponse = UserType;
+
+// 路由 schema 定义
+export const schemas = {
+  getProfile: {
+    response: {
+      200: User,
+    },
+  },
+  updateProfile: {
+    body: UpdateProfileSchema,
+    response: {
+      200: User,
+    },
+  },
+  listUsers: {
+    querystring: UserQuerySchema,
+    response: {
+      200: Type.Array(User),
+    },
+  },
+  updateUser: {
+    params: Type.Object({
+      id: Type.String(),
+    }),
+    body: UpdateUserSchema,
+    response: {
+      200: User,
+    },
+  },
+  deleteUser: {
+    params: Type.Object({
+      id: Type.String(),
+    }),
+    response: {
+      200: Type.Object({
+        success: Type.Boolean(),
+      }),
     },
   },
 };
-
-export const updateUserSchema: FastifySchema = {
-  params: {
-    type: 'object',
-    required: ['id'],
-    properties: {
-      id: { type: 'string' },
-    },
-  },
-  body: {
-    type: 'object',
-    properties: {
-      name: { type: 'string', minLength: 2 },
-      role: { type: 'string', enum: ['user', 'admin'] },
-      isActive: { type: 'boolean' },
-    },
-  },
-};
-
-// Types for request validation
-export type UpdateProfileInput = z.infer<typeof updateProfileBodySchema>;
-export type UpdateUserInput = z.infer<typeof updateUserBodySchema>;
-
-// Response type
-export interface UserResponse {
-  id: number;
-  email: string;
-  name: string | null;
-  role: string;
-  createdAt: Date;
-  isActive: boolean;
-}
-
-// Export Zod schemas for runtime validation
-export const zodSchemas = {
-  updateProfile: updateProfileBodySchema,
-  updateUser: updateUserBodySchema,
-};
-
-export type User = typeof users.$inferSelect;
-export type NewUser = typeof users.$inferInsert;

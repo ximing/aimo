@@ -112,6 +112,7 @@ export const webhooks = pgTable(
     url: text('url').notNull(),
     events: text('events').array().notNull(),
     isActive: boolean('is_active').default(true).notNull(),
+    secret: text('secret').notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },

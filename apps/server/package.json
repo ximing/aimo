@@ -24,6 +24,7 @@
     "@fastify/multipart": "9.0.3",
     "@fastify/oauth2": "^8.1.1",
     "@fastify/static": "^8.0.4",
+    "@sinclair/typebox": "^0.34.15",
     "@octokit/rest": "^21.1.0",
     "ali-oss": "^6.22.0",
     "bcrypt": "^5.1.1",

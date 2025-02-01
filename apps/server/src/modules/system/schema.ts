@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { FastifySchema } from 'fastify';
+import { Static, Type } from '@sinclair/typebox';
 
 const initBodySchema = z.object({
   email: z.string().email('Invalid email format'),
@@ -45,3 +46,42 @@ export interface SystemSettingsResponse {
   version: string;
   adminEmail?: string;
 }
+
+// 基础类型定义
+export const SystemInfo = Type.Object({
+  version: Type.String(),
+  nodeVersion: Type.String(),
+  platform: Type.String(),
+  uptime: Type.Number(),
+  memoryUsage: Type.Object({
+    total: Type.Number(),
+    free: Type.Number(),
+    used: Type.Number(),
+  }),
+  cpuUsage: Type.Array(Type.Number()),
+});
+
+export const SystemStats = Type.Object({
+  totalUsers: Type.Number(),
+  totalNotes: Type.Number(),
+  totalAttachments: Type.Number(),
+  storageUsage: Type.Number(),
+});
+
+// 导出类型
+export type SystemInfoType = Static<typeof SystemInfo>;
+export type SystemStatsType = Static<typeof SystemStats>;
+
+// 路由 schema 定义
+export const schemas = {
+  getInfo: {
+    response: {
+      200: SystemInfo,
+    },
+  },
+  getStats: {
+    response: {
+      200: SystemStats,
+    },
+  },
+};

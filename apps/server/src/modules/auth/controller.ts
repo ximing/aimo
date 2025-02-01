@@ -5,12 +5,7 @@ import bcrypt from 'bcrypt';
 import { db } from '@/lib/db.js';
 import { users } from '@/config/schema.js';
 import { eq } from 'drizzle-orm';
-import {
-  LoginInput,
-  RegisterInput,
-  AuthResponse,
-  zodSchemas,
-} from './schema.js';
+import { LoginInput, RegisterInput, AuthResponse, schemas } from './schema.js';
 import {
   oauthConfig,
   getEnabledProviders,
@@ -37,15 +32,7 @@ export async function register(
   }>,
   reply: FastifyReply
 ): Promise<AuthResponse> {
-  const result = zodSchemas.register.safeParse(request.body);
-  if (!result.success) {
-    throw reply.status(400).send({
-      message: 'Validation error',
-      errors: result.error.errors,
-    });
-  }
-
-  const { email, password, name } = result.data;
+  const { email, password, name } = request.body;
 
   // Check if user exists
   const existingUser = await db.query.users.findFirst({
@@ -91,7 +78,17 @@ export async function register(
     }
   );
 
-  return { user, token };
+  return {
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name || '',
+      role: user.role,
+      createdAt: user.createdAt.getTime(),
+      isActive: true,
+    },
+    token,
+  };
 }
 
 export async function login(
@@ -149,9 +146,10 @@ export async function login(
     user: {
       id: user.id,
       email: user.email,
-      name: user.name,
+      name: user.name || '',
       role: user.role,
-      createdAt: user.createdAt,
+      createdAt: user.createdAt.getTime(),
+      isActive: true,
     },
     token,
   };
