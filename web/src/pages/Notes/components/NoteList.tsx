@@ -1,51 +1,43 @@
 import { Empty, Spin } from "antd";
 import { Fragment } from "react";
-import type { Attachment, Note } from "@/api/types";
+import type { Note } from "@/api/types";
 import { NoteCard } from "./NoteCard";
 import { NoteEditor } from "./NoteEditor";
 import type { MenuProps } from "antd";
+import { useNoteStore } from "@/stores/noteStore";
 
 interface NoteListProps {
   notes: Note[];
-  isLoading: boolean;
-  editingNoteId: number | null;
-  editingContent: string;
-  setEditingContent: (content: string) => void;
-  handleUpdateNote: (noteId: number, content: string) => Promise<void>;
-  setEditingNoteId: (id: number | null) => void;
-  isPublishing: boolean;
   getMenuItems: (note: Note) => MenuProps["items"];
   renderFooter: () => React.ReactNode;
-  editingAttachments: Attachment[];
-  setEditingAttachments: (attachments: Attachment[]) => void;
-  editingTags: string[];
-  setEditingTags: (tags: string[]) => void;
 }
 
 export const NoteList = ({
   notes,
-  isLoading,
-  editingNoteId,
-  editingContent,
-  setEditingContent,
-  handleUpdateNote,
-  setEditingNoteId,
-  isPublishing,
   getMenuItems,
   renderFooter,
-  editingAttachments,
-  setEditingAttachments,
-  editingTags,
-  setEditingTags,
 }: NoteListProps) => {
+  const {
+    isLoading,
+    editingNoteId,
+    editingContent,
+    editingAttachments,
+    isPublishing,
+    setEditingContent,
+    setEditingAttachments,
+    setEditingTags,
+    updateNote,
+    cancelEditNote,
+  } = useNoteStore();
+
   const renderNoteContent = (note: Note) => {
     if (editingNoteId === note.id) {
       return (
         <NoteEditor
           value={editingContent}
           onChange={setEditingContent}
-          onPublish={() => handleUpdateNote(note.id, editingContent)}
-          onCancel={() => setEditingNoteId(null)}
+          onPublish={() => updateNote(note.id)}
+          onCancel={cancelEditNote}
           loading={isPublishing}
           attachments={editingAttachments}
           onAttachmentsChange={setEditingAttachments}

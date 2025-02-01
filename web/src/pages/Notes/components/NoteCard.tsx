@@ -57,6 +57,15 @@ export const NoteCard = ({ note, menuItems }: NoteCardProps) => {
           ))}
         </div>
       )}
+      {note.tags?.length > 0 && (
+        <div className="note-tags">
+          {note.tags.map((tag) => (
+            <span key={tag} className="note-tag">
+              {tag}
+            </span>
+          ))}
+        </div>
+      )}
     </Card>
   );
 }; 

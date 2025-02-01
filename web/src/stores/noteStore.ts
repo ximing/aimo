@@ -2,7 +2,7 @@ import { create } from "zustand";
 import type { Note, CreateNoteInput, UpdateNoteInput, Attachment } from "@/api/types";
 import { getNotes, createNote, updateNote, deleteNote } from "@/api/notes";
 import { getTags, type TagInfo } from "@/api/tags";
-import { Dayjs } from "dayjs";
+import type { Dayjs } from "dayjs";
 
 interface NoteState {
   notes: Note[];
@@ -22,10 +22,21 @@ interface NoteState {
   endDate: Dayjs | null;
   total: number;
 
+  // 新建笔记
+  newNoteTags: string[];
+  newNoteAttachments: Attachment[];
+  isPublishing: boolean;
+
+  // 编辑笔记
+  editingNoteId: number | null;
+  editingContent: string;
+  editingTags: string[];
+  editingAttachments: Attachment[];
+
   // Actions
   fetchNotes: (page?: number) => Promise<void>;
-  addNote: (data: CreateNoteInput & { attachments?: Attachment[] }) => Promise<void>;
-  updateNote: (id: number, data: UpdateNoteInput & { attachments?: Attachment[] }) => Promise<void>;
+  addNote: () => Promise<void>;
+  updateNote: (noteId: number) => Promise<void>;
   removeNote: (id: number) => Promise<void>;
   setSelectedDate: (date: Date | null) => void;
   setSortBy: (sort: "newest" | "oldest") => void;
@@ -34,10 +45,18 @@ interface NoteState {
   deleteNote: (id: number) => Promise<void>;
   fetchTags: () => Promise<void>;
   setNewNoteContent: (content: string) => void;
+  setNewNoteTags: (tags: string[]) => void;
+  setNewNoteAttachments: (attachments: Attachment[]) => void;
+  setEditingContent: (content: string) => void;
+  setEditingTags: (tags: string[]) => void;
+  setEditingAttachments: (attachments: Attachment[]) => void;
   setCurrentPage: (page: number) => void;
   refreshHeatmap: () => void;
   setSearchMode: (mode: "similarity" | "fulltext") => void;
   setDateRange: (start: Dayjs | null, end: Dayjs | null) => void;
+  startEditNote: (note: Note) => void;
+  cancelEditNote: () => void;
+  setIsPublishing: (isPublishing: boolean) => void;
 }
 
 export const useNoteStore = create<NoteState>((set, get) => ({
@@ -53,83 +72,99 @@ export const useNoteStore = create<NoteState>((set, get) => ({
   newNoteContent: "",
   currentPage: 1,
   pageSize: 20,
-  searchMode: "similarity",
+  searchMode: "fulltext",
   startDate: null,
   endDate: null,
   total: 0,
 
+  // 新建笔记
+  newNoteTags: [],
+  newNoteAttachments: [],
+  isPublishing: false,
+
+  // 编辑笔记
+  editingNoteId: null,
+  editingContent: "",
+  editingTags: [],
+  editingAttachments: [],
+
   setCurrentPage: (page) => set({ currentPage: page }),
 
-  fetchNotes: async (page?: number) => {
-    const state = get();
-    const targetPage = page || state.currentPage;
-    
-    set({ isLoading: true });
+  fetchNotes: async (page = 1) => {
+    set({ isLoading: true, error: null });
     try {
       const response = await getNotes({
-        page: targetPage,
-        pageSize: state.pageSize,
-        sortBy: state.sortBy,
-        search: state.searchText,
-        searchMode: state.searchMode,
-        startDate: state.startDate?.format("YYYY-MM-DD"),
-        endDate: state.endDate?.format("YYYY-MM-DD"),
+        page,
+        pageSize: get().pageSize,
+        sortBy: get().sortBy,
+        search: get().searchText,
+        searchMode: get().searchMode,
+        startDate: get().startDate?.format("YYYY-MM-DD"),
+        endDate: get().endDate?.format("YYYY-MM-DD"),
       });
-
-      const { notes, pagination } = response;
       
       set((state) => ({
-        notes: targetPage === 1 ? notes : [...state.notes, ...notes],
-        currentPage: targetPage,
-        total: pagination.total,
-        hasMore: pagination.hasMore,
-        error: null,
-      }));
-    } catch (error) {
-      set({ error: getErrorMessage(error) });
-    } finally {
-      set({ isLoading: false });
-    }
-  },
-
-  addNote: async (data) => {
-    set({ isLoading: true, error: null });
-    try {
-      const newNote = await createNote({
-        content: data.content,
-        tags: data.tags,
-        isPublic: data.isPublic,
-        attachments: data.attachments || [],
-      });
-      set((state) => ({
-        notes: [newNote, ...state.notes],
+        notes: page === 1 ? response.notes : [...state.notes, ...response.notes],
+        hasMore: response.pagination.hasMore,
+        total: response.pagination.total,
+        currentPage: page,
         isLoading: false,
-        newNoteContent: "",
       }));
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false });
+    }
+  },
+
+  addNote: async () => {
+    const { newNoteContent, newNoteTags, newNoteAttachments } = get();
+    if (!newNoteContent.trim()) return;
+
+    set({ isPublishing: true });
+    try {
+      await createNote({
+        content: newNoteContent,
+        tags: newNoteTags,
+        isPublic: false,
+        attachments: newNoteAttachments,
+      });
+      
+      set({
+        newNoteContent: "",
+        newNoteTags: [],
+        newNoteAttachments: [],
+        isPublishing: false,
+      });
+      
+      await get().fetchNotes(1);
+    } catch (error) {
+      set({ error: (error as Error).message, isPublishing: false });
+    }
+  },
+
+  updateNote: async (noteId) => {
+    const { editingContent, editingTags, editingAttachments } = get();
+    set({ isPublishing: true });
+    
+    try {
+      await updateNote(noteId, {
+        content: editingContent,
+        tags: editingTags,
+        attachments: editingAttachments,
+      });
+      
+      set({
+        editingNoteId: null,
+        editingContent: "",
+        editingTags: [],
+        editingAttachments: [],
+        isPublishing: false,
+      });
+      
+      await get().fetchNotes();
+    } catch (error) {
+      set({ error: (error as Error).message, isPublishing: false });
       throw error;
     }
-    get().fetchTags();
-  },
-
-  updateNote: async (id, data) => {
-    set({ isLoading: true, error: null });
-    try {
-      const updatedNote = await updateNote(id, {
-        content: data.content,
-        tags: data.tags,
-        isPublic: data.isPublic,
-        attachments: data.attachments,
-      });
-      set((state) => ({
-        notes: state.notes.map((note) => (note.id === id ? updatedNote : note)),
-        isLoading: false,
-      }));
-    } catch (error) {
-      set({ error: (error as Error).message, isLoading: false });
-    }
-    get().fetchTags();
   },
 
   removeNote: async (id) => {
@@ -193,6 +228,11 @@ export const useNoteStore = create<NoteState>((set, get) => ({
   },
 
   setNewNoteContent: (content) => set({ newNoteContent: content }),
+  setNewNoteTags: (tags) => set({ newNoteTags: tags }),
+  setNewNoteAttachments: (attachments) => set({ newNoteAttachments: attachments }),
+  setEditingContent: (content) => set({ editingContent: content }),
+  setEditingTags: (tags) => set({ editingTags: tags }),
+  setEditingAttachments: (attachments) => set({ editingAttachments: attachments }),
 
   refreshHeatmap: () => {
     // 这里可以触发热力图组件的刷新
@@ -212,4 +252,24 @@ export const useNoteStore = create<NoteState>((set, get) => ({
     });
     get().fetchNotes(1);
   },
+
+  startEditNote: (note: Note) => {
+    set({
+      editingNoteId: note.id,
+      editingContent: note.content,
+      editingTags: note.tags,
+      editingAttachments: note.attachments,
+    });
+  },
+
+  cancelEditNote: () => {
+    set({
+      editingNoteId: null,
+      editingContent: "",
+      editingTags: [],
+      editingAttachments: [],
+    });
+  },
+
+  setIsPublishing: (isPublishing) => set({ isPublishing }),
 }));

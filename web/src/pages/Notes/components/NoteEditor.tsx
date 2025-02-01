@@ -1,7 +1,7 @@
 import MDEditor from "@/components/MDEditor";
 import { Button } from "antd";
 import { SendOutlined } from "@ant-design/icons";
-import { Attachment } from "@/api/types";
+import type { Attachment } from "@/api/types";
 
 interface NoteEditorProps {
   value: string;
