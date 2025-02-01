@@ -13,7 +13,7 @@ function generateCacheKey(text: string): string {
   return createHash('sha256').update(text).digest('hex');
 }
 
-export async function generateEmbedding(text: string): Promise<string> {
+export async function generateEmbedding(text: string): Promise<number[]> {
   const cacheKey = `embedding:${generateCacheKey(text)}`;
 
   // 尝试从缓存获取

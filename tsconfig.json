@@ -9,8 +9,7 @@
     "baseUrl": "apps/server/src",
     "paths": {
       "@/*": ["./*"]
-    },
-    "types": ["./types"]
+    }
   },
   "include": ["apps/server/src/**/*"],
   "exclude": ["node_modules", "dist"]
