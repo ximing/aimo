@@ -39,47 +39,27 @@ export async function authRoutes(app: FastifyInstance) {
     Querystring: {
       code?: string;
     };
-  }>(
-    '/github',
-    {},
-    githubAuth
-  );
+  }>('/github', {}, githubAuth);
 
   app.get<{
     Querystring: {
       code?: string;
     };
-  }>(
-    '/github/callback',
-    {},
-    githubAuth
-  );
+  }>('/github/callback', {}, githubAuth);
 
   app.get<{
     Querystring: {
       code?: string;
     };
-  }>(
-    '/google',
-    {},
-    googleAuth
-  );
+  }>('/google', {}, googleAuth);
 
   app.get<{
     Querystring: {
       code?: string;
     };
-  }>(
-    '/google/callback',
-    {},
-    googleAuth
-  );
+  }>('/google/callback', {}, googleAuth);
 
-  app.get(
-    '/providers',
-    {},
-    getProviders
-  );
+  app.get('/providers', {}, getProviders);
 
   app.get(
     '/profile',

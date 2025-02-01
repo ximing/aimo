@@ -159,7 +159,7 @@ export async function login(
 
 export async function githubAuth(
   request: FastifyRequest<{
-    Querystring: { code?: string }
+    Querystring: { code?: string };
   }>,
   reply: FastifyReply
 ) {
@@ -238,7 +238,7 @@ export async function githubAuth(
 
 export async function googleAuth(
   request: FastifyRequest<{
-    Querystring: { code?: string }
+    Querystring: { code?: string };
   }>,
   reply: FastifyReply
 ) {

@@ -32,36 +32,20 @@ export async function noteRoutes(app: FastifyInstance) {
 
   app.post<{
     Body: CreateNoteInput;
-  }>(
-    '/',
-    { schema: createNoteSchema },
-    createNote
-  );
+  }>('/', { schema: createNoteSchema }, createNote);
 
   app.put<{
     Params: { id: string };
     Body: UpdateNoteInput;
-  }>(
-    '/:id',
-    { schema: updateNoteSchema },
-    updateNote
-  );
+  }>('/:id', { schema: updateNoteSchema }, updateNote);
 
   app.delete<{
     Params: { id: string };
-  }>(
-    '/:id',
-    {},
-    deleteNote
-  );
+  }>('/:id', {}, deleteNote);
 
   app.get<{
     Querystring: NoteQueryParams;
-  }>(
-    '/',
-    { schema: getNoteSchema },
-    getNotes
-  );
+  }>('/', { schema: getNoteSchema }, getNotes);
 
   app.get<{
     Params: { token: string };
@@ -71,23 +55,11 @@ export async function noteRoutes(app: FastifyInstance) {
     getNoteByShareToken
   );
 
-  app.get(
-    '/tags',
-    {},
-    getTags
-  );
+  app.get('/tags', {}, getTags);
 
   app.get<{
     Querystring: HeatmapQuery;
-  }>(
-    '/stats/heatmap',
-    { schema: heatmapSchema },
-    getNotesHeatmap
-  );
+  }>('/stats/heatmap', { schema: heatmapSchema }, getNotesHeatmap);
 
-  app.post(
-    '/attachments',
-    {},
-    uploadAttachments
-  );
+  app.post('/attachments', {}, uploadAttachments);
 }

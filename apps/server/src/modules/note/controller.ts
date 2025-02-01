@@ -88,7 +88,9 @@ export async function createNote(
   return {
     ...note,
     tags: tagList,
-    vectorEmbedding: note.vectorEmbedding ? JSON.stringify(note.vectorEmbedding) : null,
+    vectorEmbedding: note.vectorEmbedding
+      ? JSON.stringify(note.vectorEmbedding)
+      : null,
   };
 }
 
@@ -170,7 +172,9 @@ export async function updateNote(
   return {
     ...note,
     tags: tagList,
-    vectorEmbedding: note.vectorEmbedding ? JSON.stringify(note.vectorEmbedding) : null,
+    vectorEmbedding: note.vectorEmbedding
+      ? JSON.stringify(note.vectorEmbedding)
+      : null,
   };
 }
 
@@ -220,7 +224,7 @@ export async function getNotes(
 
   // 构建基础条件
   const conditions = [eq(notes.userId, userId)];
-  
+
   if (tag) {
     conditions.push(eq(tags.name, tag));
   }
@@ -267,7 +271,7 @@ export async function getNotes(
       .execute();
 
     return {
-      notes: result.map(note => ({
+      notes: result.map((note) => ({
         ...note,
         tags: note.tagNames || [],
       })),
@@ -303,7 +307,7 @@ export async function getNotes(
     .execute();
 
   return {
-    notes: result.map(note => ({
+    notes: result.map((note) => ({
       ...note,
       tags: note.tagNames || [],
     })),

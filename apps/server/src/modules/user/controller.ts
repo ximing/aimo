@@ -5,7 +5,6 @@ import { db } from '@/lib/db.js';
 import { users } from '@/config/schema.js';
 import { UpdateProfileInput, UpdateUserInput, UserResponse } from './schema.js';
 
-
 export async function getProfile(
   request: FastifyRequest,
   reply: FastifyReply
