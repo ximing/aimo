@@ -1,19 +1,17 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "NodeNext",
     "esModuleInterop": true,
     "strict": true,
     "skipLibCheck": true,
     "outDir": "./dist",
-    "rootDir": "./src",
-    "baseUrl": "./src",
+    "rootDir": "apps/server/src",
+    "baseUrl": "apps/server/src",
     "paths": {
       "@/*": ["./*"]
     },
     "types": ["./types"]
   },
-  "include": ["src/**/*"],
+  "include": ["apps/server/src/**/*"],
   "exclude": ["node_modules", "dist"]
 }

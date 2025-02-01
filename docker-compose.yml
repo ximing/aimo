@@ -2,22 +2,17 @@ version: '3.8'
 
 services:
   postgres:
-    # build:
-    #   context: .
-    #   dockerfile: docker/postgres/Dockerfile
-    #   args:
-    #     USE_CHINA_MIRROR: 0
     image: pgvector/pgvector:pg17
     environment:
       POSTGRES_USER: aimo
       POSTGRES_PASSWORD: aimo123
       POSTGRES_DB: aimo
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - ./temp/postgres:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U aimo"]
+      test: ['CMD-SHELL', 'pg_isready -U aimo']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -25,7 +20,7 @@ services:
   redis:
     image: redis:alpine
     ports:
-      - "6379:6379"
+      - '6379:6379'
     volumes:
       - ./temp/redis:/data
 

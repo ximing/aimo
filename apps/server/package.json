@@ -1,0 +1,49 @@
+{
+    "name": "@aimo/server",
+    "version": "0.0.1",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "tsx watch src/app.ts",
+        "build": "tsc",
+        "start": "node dist/app.js",
+        "db:generate": "drizzle-kit generate",
+        "db:push": "drizzle-kit push",
+        "db:studio": "drizzle-kit studio",
+        "db:init": "chmod +x scripts/init-db.sh && ./scripts/init-db.sh",
+        "db:init:test": "NODE_ENV=test && chmod +x scripts/init-db.sh && ./scripts/init-db.sh",
+        "db:migrate": "tsx src/db/migrate.ts",
+        "db:migrate:test": "NODE_ENV=test && tsx src/db/migrate.ts",
+        "db:setup": "pnpm db:init && pnpm db:migrate",
+        "db:setup:test": "NODE_ENV=test && pnpm db:init:test && pnpm db:migrate"
+    },
+    "dependencies": {
+        "@aws-sdk/client-s3": "^3.735.0",
+        "@fastify/cors": "^10.0.2",
+        "@fastify/jwt": "9.0.3",
+        "@fastify/multipart": "9.0.3",
+        "@fastify/oauth2": "^8.1.1",
+        "@fastify/static": "^8.0.4",
+        "@octokit/rest": "^21.1.0",
+        "ali-oss": "^6.22.0",
+        "bcrypt": "^5.1.1",
+        "dotenv": "^16.4.7",
+        "drizzle-orm": "^0.39.0",
+        "fastify": "^5.2.1",
+        "google-auth-library": "^9.15.1",
+        "nanoid": "^5.0.9",
+        "openai": "^4.80.1",
+        "postgres": "^3.4.5",
+        "redis": "^4.7.0",
+        "xlsx": "^0.18.5",
+        "zod": "^3.24.1"
+    },
+    "devDependencies": {
+        "@types/ali-oss": "^6.16.11",
+        "@types/bcrypt": "^5.0.2",
+        "@types/node": "^20.17.16",
+        "drizzle-kit": "^0.30.3",
+        "prettier": "^3.4.2",
+        "vitest": "^3.0.4"
+    }
+}
