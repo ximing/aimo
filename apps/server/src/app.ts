@@ -68,7 +68,7 @@ async function runMigrations() {
   try {
     console.log('Running database migrations...');
     await migrate(db, {
-      migrationsFolder: join(__dirname, 'db/migrations'),
+      migrationsFolder: join(__dirname, '../migrations'),
     });
     console.log('✅ Database migrations completed');
   } catch (error) {

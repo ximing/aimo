@@ -15,7 +15,7 @@ if (!DATABASE_URL) {
 
 export default {
   schema: './src/config/schema.ts',
-  out: './src/db/migrations',
+  out: './migrations',
   dialect: 'postgresql',
   dbCredentials: {
     url: DATABASE_URL,

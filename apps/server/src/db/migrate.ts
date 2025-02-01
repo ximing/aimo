@@ -14,7 +14,7 @@ async function main() {
   try {
     // 执行迁移
     console.log('Running migrations...');
-    await migrate(db, { migrationsFolder: path.join(__dirname, 'migrations') });
+    await migrate(db, { migrationsFolder: path.join(__dirname, '../../migrations') });
     console.log('Migrations completed');
   } catch (err) {}
   // 检查是否存在管理员账户
