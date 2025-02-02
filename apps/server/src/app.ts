@@ -5,6 +5,8 @@ import cors from '@fastify/cors';
 import jwt, { FastifyJWT } from '@fastify/jwt';
 import multipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
+import bcrypt from 'bcrypt';
+
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { sql, eq } from 'drizzle-orm';
 import { initDatabase } from './lib/init-db.js';
@@ -17,6 +19,7 @@ import { env } from './config/env.js';
 import { db } from './lib/db.js';
 import { redisClient } from './lib/redis.js';
 import { users } from './config/schema.js';
+import { config } from './config/index.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
@@ -73,6 +76,31 @@ async function runMigrations() {
     console.log('✅ Database migrations completed');
   } catch (error) {
     console.error('❌ Migration failed:', error);
+  }
+  // 检查是否存在管理员账户
+  const adminUser = await db
+    .select()
+    .from(users)
+    .where(eq(users.role, 'admin'))
+    .limit(1);
+
+  if (adminUser.length === 0 && config.adminEmail && config.adminPassword) {
+    console.log('Creating admin user...');
+
+    // 创建管理员账户
+    const hashedPassword = await bcrypt.hash(config.adminPassword, 10);
+
+    await db.insert(users).values({
+      email: config.adminEmail,
+      hashedPassword,
+      name: config.adminName || 'Administrator',
+      role: 'admin',
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    console.log('Admin user created successfully');
   }
 }
 
