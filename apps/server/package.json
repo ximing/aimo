@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/app.ts",
-    "build": "tsc",
+    "build": "tsc && tsc-alias",
     "start": "node dist/app.js",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
@@ -43,6 +43,7 @@
     "@types/node": "^20.17.16",
     "drizzle-kit": "^0.30.3",
     "prettier": "^3.4.2",
-    "vitest": "^3.0.4"
+    "vitest": "^3.0.4",
+    "tsc-alias": "^1.8.8"
   }
 }

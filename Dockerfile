@@ -21,7 +21,7 @@ COPY . .
 # Build web app
 RUN cd apps/web && pnpm build
 
-# Build server
+# Build server with path alias resolution
 RUN cd apps/server && pnpm build
 
 # Move web dist to server public
@@ -44,6 +44,8 @@ RUN npm install -g pnpm && \
 # Copy built files
 COPY --from=builder /app/apps/server/dist ./apps/server/dist
 COPY --from=builder /app/apps/server/public ./apps/server/public
+COPY --from=builder /app/apps/server/migrations ./apps/server/migrations
+COPY --from=builder /app/apps/server/drizzle.config.ts ./apps/server/drizzle.config.ts
 
 # Set environment variables
 ENV NODE_ENV=production
