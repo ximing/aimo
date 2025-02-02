@@ -1,11 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { User } from '@/api/types';
+import type { UserResponse } from '@/api/types';
 
 interface AuthState {
-  user: User | null;
   token: string | null;
-  setAuth: (user: User, token: string) => void;
+  user: UserResponse | null;
+  setAuth: (token: string, user: UserResponse) => void;
+  updateUser: (user: Partial<UserResponse>) => void;
   clearAuth: () => void;
   isAuthenticated: () => boolean;
 }
@@ -13,16 +14,14 @@ interface AuthState {
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
-      user: null,
       token: null,
-      setAuth: (user: User, token: string) => {
-        set({ user, token });
-        localStorage.setItem('token', token);
-      },
-      clearAuth: () => {
-        set({ user: null, token: null });
-        localStorage.removeItem('token');
-      },
+      user: null,
+      setAuth: (token, user) => set({ token, user }),
+      updateUser: (userData) =>
+        set((state) => ({
+          user: state.user ? { ...state.user, ...userData } : null,
+        })),
+      clearAuth: () => set({ token: null, user: null }),
       isAuthenticated: () => !!get().token,
     }),
     {

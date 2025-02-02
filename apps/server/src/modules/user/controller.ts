@@ -3,12 +3,17 @@ import { eq } from 'drizzle-orm';
 import bcrypt from 'bcrypt';
 import { db } from '@/lib/db.js';
 import { users } from '@/config/schema.js';
-import {
-  UpdateProfileInput,
-  UpdateUserInput,
-  UserResponse,
-  UserQueryParams,
-} from './schema.js';
+import { UpdateUserInput, UserResponse, UserQueryParams } from './schema.js';
+import { getStorageService } from '@/lib/storage.js';
+import path from 'path';
+import { MultipartValue } from '@fastify/multipart';
+import { nanoid } from 'nanoid';
+
+interface MultipartFields {
+  name?: MultipartValue<string>;
+  nickname?: MultipartValue<string>;
+  password?: MultipartValue<string>;
+}
 
 export async function getProfile(
   request: FastifyRequest,
@@ -42,40 +47,67 @@ export async function getProfile(
 }
 
 export async function updateProfile(
-  request: FastifyRequest<{
-    Body: UpdateProfileInput;
-  }>,
+  request: FastifyRequest,
   reply: FastifyReply
 ): Promise<UserResponse> {
-  const { name, password } = request.body;
   const userId = request.user.id;
-
   const updateData: any = {};
-  if (name) {
-    updateData.name = name;
-  }
-  if (password) {
-    updateData.hashedPassword = await bcrypt.hash(password, 10);
-  }
 
-  const [user] = await db
-    .update(users)
-    .set(updateData)
-    .where(eq(users.id, userId))
-    .returning({
-      id: users.id,
-      email: users.email,
-      name: users.name,
-      role: users.role,
-      createdAt: users.createdAt,
-      isActive: users.isActive,
+  try {
+    const parts = request.parts();
+    for await (const part of parts) {
+      if (part.type === 'file') {
+        if (part.fieldname === 'avatar') {
+          const storage = getStorageService();
+          const filename = `avatar-${userId}-${nanoid(64)}${path.extname(part.filename)}`;
+          const { path: avatarPath } = await storage.saveFile(part, filename);
+          updateData.avatar = avatarPath;
+        }
+      } else {
+        updateData[part.fieldname] = part.value;
+      }
+    }
+    if (updateData.password) {
+      const password = updateData.password;
+      if (password.length < 6) {
+        throw reply.status(400).send({
+          message: 'Password must be at least 6 characters',
+          code: 'INVALID_PASSWORD',
+        });
+      }
+      updateData.hashedPassword = await bcrypt.hash(password, 10);
+    }
+
+    // Update user information
+    const [user] = await db
+      .update(users)
+      .set(updateData)
+      .where(eq(users.id, userId))
+      .returning({
+        id: users.id,
+        email: users.email,
+        name: users.name,
+        nickname: users.nickname,
+        avatar: users.avatar,
+        role: users.role,
+        createdAt: users.createdAt,
+        isActive: users.isActive,
+      });
+
+    return {
+      ...user,
+      createdAt: user.createdAt.getTime(),
+    } as UserResponse;
+  } catch (error: any) {
+    if (error.statusCode) {
+      throw error;
+    }
+    console.error('Update profile failed:', error);
+    throw reply.status(500).send({
+      message: 'Failed to update profile',
+      code: 'UPDATE_FAILED',
     });
-
-  return {
-    ...user,
-    name: user.name || undefined,
-    createdAt: user.createdAt.getTime(),
-  } as UserResponse;
+  }
 }
 
 // Admin only functions
@@ -109,11 +141,14 @@ export async function listUsers(
     orderBy: (users, { desc }) => [desc(users.createdAt)],
   });
 
-  return userList.map(user => ({
-    ...user,
-    name: user.name || undefined,
-    createdAt: user.createdAt.getTime(),
-  } as UserResponse));
+  return userList.map(
+    (user) =>
+      ({
+        ...user,
+        name: user.name || undefined,
+        createdAt: user.createdAt.getTime(),
+      }) as UserResponse
+  );
 }
 
 export async function updateUser(
@@ -145,7 +180,7 @@ export async function updateUser(
     .update(users)
     .set({
       name,
-      role: role as 'admin' | 'user',
+      role,
       isActive,
     })
     .where(eq(users.id, parseInt(id)))

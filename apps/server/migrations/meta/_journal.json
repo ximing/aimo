@@ -15,6 +15,13 @@
       "when": 1738428790022,
       "tag": "0001_flaky_ultimates",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1738502147656,
+      "tag": "0002_old_madripoor",
+      "breakpoints": true
     }
   ]
 }

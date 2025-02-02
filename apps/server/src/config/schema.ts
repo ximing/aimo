@@ -20,6 +20,8 @@ export const users = pgTable(
     email: varchar('email', { length: 255 }).notNull().unique(),
     hashedPassword: varchar('hashed_password', { length: 255 }),
     name: varchar('name', { length: 255 }),
+    nickname: varchar('nickname', { length: 255 }),
+    avatar: varchar('avatar', { length: 1024 }),
     isActive: boolean('is_active').notNull().default(true),
     role: text('role', { enum: ['admin', 'user'] })
       .default('user')

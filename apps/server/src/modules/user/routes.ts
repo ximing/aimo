@@ -6,12 +6,7 @@ import {
   updateUser,
   deleteUser,
 } from './controller.js';
-import {
-  schemas,
-  UpdateProfileInput,
-  UpdateUserInput,
-  UserQueryParams,
-} from './schema.js';
+import { schemas, UpdateUserInput, UserQueryParams } from './schema.js';
 
 export async function userRoutes(app: FastifyInstance) {
   // Add authentication to all routes
@@ -19,9 +14,7 @@ export async function userRoutes(app: FastifyInstance) {
 
   app.get('/profile', { schema: schemas.getProfile }, getProfile);
 
-  app.put<{
-    Body: UpdateProfileInput;
-  }>('/profile', { schema: schemas.updateProfile }, updateProfile);
+  app.put('/profile', updateProfile);
 
   app.get<{
     Querystring: UserQueryParams;

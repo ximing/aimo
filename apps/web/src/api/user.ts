@@ -1,18 +1,37 @@
 import request from '@/utils/request';
-import type { User, UpdateProfileInput, UserSettings } from './types';
+import type { UserResponse } from './types';
 
-export async function updateProfile(data: UpdateProfileInput) {
-  return (await request.put<User>('/users/profile', data)).data;
+interface UpdateProfileParams {
+  name?: string;
+  nickname?: string;
+  password?: string;
 }
 
 export async function getProfile() {
-  return (await request.get<User>('/users/profile')).data;
+  return (await request.get<UserResponse>('/users/profile')).data;
+}
+
+export async function updateProfile(formData: FormData) {
+  return (
+    await request.put<UserResponse>('/users/profile', formData, {
+      headers: {
+        // 移除默认的 Content-Type，让浏览器自动设置 multipart/form-data
+        'Content-Type': undefined,
+      },
+    })
+  ).data;
 }
 
 export async function getUserSettings() {
-  return (await request.get<UserSettings>('/users/settings')).data;
+  return (
+    await request.get<{
+      emailNotifications: boolean;
+    }>('/users/settings')
+  ).data;
 }
 
-export async function updateUserSettings(data: Partial<UserSettings>) {
-  return (await request.put<UserSettings>('/users/settings', data)).data;
+export async function updateUserSettings(data: {
+  emailNotifications: boolean;
+}) {
+  return (await request.put('/users/settings', data)).data;
 }

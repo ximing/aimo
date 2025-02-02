@@ -19,8 +19,19 @@ export interface Note {
   attachments: Attachment[];
 }
 
+export interface UserResponse {
+  id: number;
+  email: string;
+  name?: string;
+  nickname?: string;
+  avatar?: string;
+  role: string;
+  createdAt: number;
+  isActive: boolean;
+}
+
 export interface LoginResponse {
-  user: User;
+  user: UserResponse;
   token: string;
 }
 
@@ -45,12 +56,6 @@ export interface UpdateProfileInput {
 
 export interface ShareNoteResponse {
   shareUrl: string;
-}
-
-export interface UserSettings {
-  emailNotifications: boolean;
-  theme: 'light' | 'dark';
-  language: string;
 }
 
 export interface UserListItem extends User {
