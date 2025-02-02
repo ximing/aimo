@@ -55,4 +55,4 @@ ENV PORT=3000
 EXPOSE 3000
 
 # Start server
-CMD ["node", "apps/server/dist/index.js"]
+CMD ["node", "apps/server/dist/app.js"]
