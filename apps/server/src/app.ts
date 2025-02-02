@@ -21,6 +21,8 @@ import { redisClient } from './lib/redis.js';
 import { users } from './config/schema.js';
 import { config } from './config/index.js';
 import { backupService } from './lib/backup.js';
+import postgres from 'postgres';
+import { createDbConnection, getDb } from './lib/db.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
@@ -53,7 +55,37 @@ declare module 'fastify' {
 
 async function checkDependencies() {
   try {
+    // 检查数据库是否存在
+    const dbName = config.databaseUrl.split('/').pop()?.split('?')[0];
+    if (!dbName) {
+      throw new Error('Invalid database URL');
+    }
+
+    // 先连接到 postgres 数据库
+    const pgUrl = config.databaseUrl.replace(`/${dbName}`, '/postgres');
+    const pgDb = postgres(pgUrl);
+
+    try {
+      // 检查数据库是否存在
+      const dbExists = await pgDb`
+        SELECT 1 FROM pg_database WHERE datname = ${dbName}::text
+      `;
+
+      if (!dbExists.length) {
+        console.log(`Creating database ${dbName}...`);
+        // 使用 sql 标识符来安全地引用数据库名
+        await pgDb`CREATE DATABASE ${pgDb(dbName)}`;
+        console.log('✅ Database created successfully');
+      }
+    } finally {
+      await pgDb.end();
+    }
+
+    // 创建实际的数据库连接
+    createDbConnection();
+
     // 检查数据库连接
+    const db = getDb();
     await db.execute(sql`SELECT 1`);
     console.log('✅ Database connection successful');
 
@@ -70,6 +102,29 @@ async function checkDependencies() {
 
 async function runMigrations() {
   try {
+    // 检查数据库是否存在
+    const dbName = config.databaseUrl.split('/').pop()?.split('?')[0];
+    if (!dbName) {
+      throw new Error('Invalid database URL');
+    }
+
+    try {
+      const dbExists = await db.execute(
+        sql`SELECT 1 FROM pg_database WHERE datname = ${dbName}`
+      );
+      if (!dbExists.length) {
+        console.log(`Creating database ${dbName}...`);
+        // 创建数据库需要连接到 postgres 数据库
+        const pgUrl = config.databaseUrl.replace(`/${dbName}`, '/postgres');
+        const pgDb = postgres(pgUrl);
+        await pgDb`CREATE DATABASE "${dbName}"`;
+        await pgDb.end();
+        console.log('✅ Database created successfully');
+      }
+    } catch (error) {
+      console.error('❌ Failed to check/create database:', error);
+      throw error;
+    }
     console.log('Running database migrations...');
     await migrate(db, {
       migrationsFolder: join(__dirname, '../migrations'),
