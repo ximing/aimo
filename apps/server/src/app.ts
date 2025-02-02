@@ -20,6 +20,7 @@ import { db } from './lib/db.js';
 import { redisClient } from './lib/redis.js';
 import { users } from './config/schema.js';
 import { config } from './config/index.js';
+import { backupService } from './lib/backup.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
@@ -216,7 +217,8 @@ export async function buildApp() {
       });
     });
   }
-
+  // 初始化备份服务
+  await backupService.init();
   return app;
 }
 

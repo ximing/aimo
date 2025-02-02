@@ -7,6 +7,7 @@ import {
   Switch,
   Select,
   message,
+  Upload,
 } from 'antd';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { updateProfile, getUserSettings, updateUserSettings } from '@/api/user';
@@ -14,7 +15,9 @@ import { useAuthStore } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
 import { useI18nStore } from '@/stores/i18nStore';
 import { useI18n } from '@/components/I18nProvider';
-
+import { InboxOutlined } from '@ant-design/icons';
+import { importNotes } from '@/api/system';
+import './style.css';
 export default function Settings() {
   const user = useAuthStore((state) => state.user);
   const [profileForm] = Form.useForm();
@@ -44,10 +47,24 @@ export default function Settings() {
     },
   });
 
+  const importMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      return importNotes(formData);
+    },
+    onSuccess: (data) => {
+      message.success(`Successfully imported ${data.imported} notes`);
+    },
+    onError: (error) => {
+      message.error('Failed to import notes');
+    },
+  });
+
   const { t } = useI18n();
 
   return (
-    <div>
+    <div className="settings-container">
       <Card title={t('settings.profile')} loading={!user}>
         <Form
           form={profileForm}
@@ -136,6 +153,31 @@ export default function Settings() {
             </Button>
           </Form.Item>
         </Form>
+      </Card>
+
+      <Divider />
+
+      <Card title="Data Management">
+        <Upload.Dragger
+          name="file"
+          accept=".json"
+          showUploadList={false}
+          customRequest={({ file }) => {
+            if (file instanceof File) {
+              importMutation.mutate(file);
+            }
+          }}
+        >
+          <p className="ant-upload-drag-icon">
+            <InboxOutlined />
+          </p>
+          <p className="ant-upload-text">
+            Click or drag file to import notes
+          </p>
+          <p className="ant-upload-hint">
+            Support for JSON files only
+          </p>
+        </Upload.Dragger>
       </Card>
     </div>
   );

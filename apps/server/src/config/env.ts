@@ -53,6 +53,12 @@ const envSchema = z.object({
   ALIYUN_ACCESS_KEY_SECRET: z.string().optional(),
   ALIYUN_OSS_REGION: z.string().optional(),
   ALIYUN_OSS_BUCKET: z.string().optional(),
+
+  // Backup
+  BACKUP_ENABLED: z.coerce.boolean().default(false),
+  BACKUP_CRON: z.string().default('0 0 * * *'),
+  BACKUP_PATH: z.string().default('./backups'),
+  BACKUP_RETENTION_DAYS: z.coerce.number().default(7),
 });
 
 // Parse and validate environment variables
@@ -97,6 +103,12 @@ export const env = envSchema.parse({
   ALIYUN_ACCESS_KEY_SECRET: process.env.ALIYUN_ACCESS_KEY_SECRET,
   ALIYUN_OSS_REGION: process.env.ALIYUN_OSS_REGION,
   ALIYUN_OSS_BUCKET: process.env.ALIYUN_OSS_BUCKET,
+
+  // Backup
+  BACKUP_ENABLED: process.env.BACKUP_ENABLED,
+  BACKUP_CRON: process.env.BACKUP_CRON,
+  BACKUP_PATH: process.env.BACKUP_PATH,
+  BACKUP_RETENTION_DAYS: process.env.BACKUP_RETENTION_DAYS,
 });
 
 // Type declaration
