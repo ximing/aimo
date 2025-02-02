@@ -114,11 +114,6 @@ export async function buildApp() {
       decorateReply: false, // 避免与其他插件冲突
     });
   }
-  await app.register(fastifyStatic, {
-    root: join(__dirname, '../public'),
-    prefix: '/public',
-    decorateReply: false, // 避免与其他插件冲突
-  });
 
   await app.register(jwt, {
     secret: env.JWT_SECRET,
@@ -126,7 +121,7 @@ export async function buildApp() {
 
   await app.register(multipart, {
     limits: {
-      fileSize: 5 * 1024 * 1024, // 5MB
+      fileSize: 100 * 1024 * 1024, // 100MB
     },
   });
 
@@ -172,10 +167,28 @@ export async function buildApp() {
   await app.register(noteRoutes, { prefix: '/api/notes' });
   await app.register(userRoutes, { prefix: '/api/users' });
   await app.register(systemRoutes, { prefix: '/api/system' });
-  // Serve static files in production
+
+  // Health check
+  app.get('/health', async () => {
+    return { status: 'ok' };
+  });
+
+  // 生产环境下的静态文件服务配置
   if (env.NODE_ENV === 'production') {
-    app.get('/*', async (request, reply) => {
-      return reply.sendFile(join(__dirname, '../public', 'index.html'));
+    await app.register(async function (fastify) {
+      // 先注册静态文件服务
+      await fastify.register(fastifyStatic, {
+        root: join(__dirname, '../public'),
+        prefix: '/',
+      });
+      // 然后注册通配符路由
+      fastify.get('/*', async (request, reply) => {
+        try {
+          return reply.sendFile('index.html');
+        } catch (err) {
+          reply.status(404).send('Not found');
+        }
+      });
     });
   }
 

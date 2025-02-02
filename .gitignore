@@ -7,3 +7,4 @@ build
 node_modules
 temp
 .DS_Store
+apps/server/public
