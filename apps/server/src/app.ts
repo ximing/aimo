@@ -162,18 +162,18 @@ export async function buildApp() {
     }
   );
 
-  // Register routes
+  // Health check (放在 API 路由之前)
+  app.get('/health', async () => {
+    return { status: 'ok' };
+  });
+
+  // Register API routes
   await app.register(authRoutes, { prefix: '/api/auth' });
   await app.register(noteRoutes, { prefix: '/api/notes' });
   await app.register(userRoutes, { prefix: '/api/users' });
   await app.register(systemRoutes, { prefix: '/api/system' });
 
-  // Health check
-  app.get('/health', async () => {
-    return { status: 'ok' };
-  });
-
-  // 生产环境下的静态文件服务配置
+  // 生产环境下的静态文件服务配置 (放在最后)
   if (env.NODE_ENV === 'production') {
     await app.register(async function (fastify) {
       // 先注册静态文件服务
@@ -181,21 +181,13 @@ export async function buildApp() {
         root: join(__dirname, '../public'),
         prefix: '/',
       });
-      // 然后注册通配符路由
-      fastify.get('/*', async (request, reply) => {
-        try {
-          return reply.sendFile('index.html');
-        } catch (err) {
-          reply.status(404).send('Not found');
-        }
+
+      // 所有未匹配的路由都返回 index.html
+      fastify.setNotFoundHandler(async (request, reply) => {
+        return reply.sendFile('index.html');
       });
     });
   }
-
-  // Health check
-  app.get('/health', async () => {
-    return { status: 'ok' };
-  });
 
   return app;
 }
