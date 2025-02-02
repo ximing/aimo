@@ -164,39 +164,45 @@
   padding-top: 20px;
 }
 
+.user-dropdown {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.user-dropdown:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
 .user-info {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.user-info:hover {
-  background: rgba(0, 0, 0, 0.04);
+  gap: 8px;
 }
 
 .avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: #f0f0f0;
   display: flex;
   align-items: center;
-  justify-content: center;
-  color: #999;
 }
 
 .username {
-  flex: 1;
-  font-size: 16px;
-  font-weight: 500;
-  color: rgba(0, 0, 0, 0.88);
-  white-space: nowrap;
+  max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dropdown-icon {
+  font-size: 12px;
+  transition: transform 0.2s;
+}
+
+:where(.css-dev-only-do-not-override-xu9wm8).ant-dropdown-open .dropdown-icon {
+  transform: rotate(180deg);
 }
 
 .user-stats {

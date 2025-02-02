@@ -13,14 +13,16 @@ import {
   LogoutOutlined,
   TeamOutlined,
   UserOutlined,
+  DownOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '@/stores/authStore';
 import { useNoteStore } from '@/stores/noteStore';
 import ContributionHeatmap from '@/components/ContributionHeatmap';
-import { Dropdown } from 'antd';
+import { Avatar, Dropdown } from 'antd';
 import dayjs from 'dayjs';
 import './style.css';
 import { useEffect } from 'react';
+import { ItemType } from 'antd/es/menu/interface';
 
 export default function AppLayout() {
   const navigate = useNavigate();
@@ -111,15 +113,20 @@ export default function AppLayout() {
         <div className="sidebar-content">
           <div className="profile-section">
             <Dropdown
-              menu={{ items: userMenuItems }}
+              menu={{ items: userMenuItems as ItemType[] }}
               placement="bottomRight"
-              trigger={['click']}
+              trigger={['click', 'hover']}
             >
-              <div className="user-info">
-                <span className="avatar">
-                  <UserOutlined />
-                </span>
-                <span className="username">{user?.name || user?.email}</span>
+              <div className="user-dropdown">
+                <div className="user-info">
+                  <span className="avatar">
+                    <Avatar size={32} src={user?.avatar} alt="avatar" />
+                  </span>
+                  <span className="username">
+                    {user?.nickname || user?.name || user?.email}
+                  </span>
+                </div>
+                <DownOutlined className="dropdown-icon" />
               </div>
             </Dropdown>
             <div className="user-stats">
