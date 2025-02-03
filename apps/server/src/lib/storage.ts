@@ -52,7 +52,10 @@ export class AliyunStorage implements StorageService {
 
   async saveFile(file: any, filename: string) {
     // 使用配置的前缀构建OSS路径
-    const ossPath = `${env.STORAGE_PATH_PREFIX}/${filename}`;
+    const date = new Date();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const ossPath = `${env.STORAGE_PATH_PREFIX}/${year}/${month}/${filename}`;
 
     const result = await this.client.putStream(ossPath, file.file);
     // console.log(result);
