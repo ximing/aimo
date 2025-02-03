@@ -6,6 +6,7 @@ import jwt, { FastifyJWT } from '@fastify/jwt';
 import multipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
 import bcrypt from 'bcrypt';
+import postgres from 'postgres';
 
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { sql, eq } from 'drizzle-orm';
@@ -21,7 +22,6 @@ import { redisClient } from './lib/redis.js';
 import { users } from './config/schema.js';
 import { config } from './config/index.js';
 import { backupService } from './lib/backup.js';
-import postgres from 'postgres';
 import { createDbConnection, getDb } from './lib/db.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
@@ -63,8 +63,9 @@ async function checkDependencies() {
 
     // 先连接到 postgres 数据库
     const pgUrl = config.databaseUrl.replace(`/${dbName}`, '/postgres');
+    console.log('pgUrl', pgUrl);
     const pgDb = postgres(pgUrl);
-
+    console.log('pgUrl connect success');
     try {
       // 检查数据库是否存在
       const dbExists = await pgDb`

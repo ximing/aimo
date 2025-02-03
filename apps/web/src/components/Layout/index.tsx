@@ -12,7 +12,6 @@ import {
   SettingOutlined,
   LogoutOutlined,
   TeamOutlined,
-  UserOutlined,
   DownOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '@/stores/authStore';
@@ -145,7 +144,7 @@ export default function AppLayout() {
             </div>
           </div>
           <div className="heatmap-container">
-            <ContributionHeatmap notes={notes} />
+            <ContributionHeatmap />
           </div>
           <nav className="nav-menu">
             {navItems.map((item) => {
