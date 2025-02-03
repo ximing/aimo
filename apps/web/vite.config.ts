@@ -15,6 +15,15 @@ export default defineConfig({
   server: {
     port: 5173, // 开发服务器端口
     proxy: {
+      // '/api': {
+      //   target: 'http://222.128.65.91:12137',
+      //   // target: 'https://aimo.delu.life:1443',
+      //   changeOrigin: true,
+      // },
+      // '/uploads': {
+      //   target: 'https://aimo.delu.life:1443',
+      //   changeOrigin: true,
+      // },
       '/api': {
         target: 'http://localhost:5678',
         changeOrigin: true,

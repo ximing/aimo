@@ -106,6 +106,7 @@ export const useNoteStore = create<NoteState>((set, get) => ({
         searchMode: get().searchMode,
         startDate: get().startDate?.format('YYYY-MM-DD'),
         endDate: get().endDate?.format('YYYY-MM-DD'),
+        tag: get().selectedTag,
       });
 
       set((state) => ({
@@ -208,7 +209,6 @@ export const useNoteStore = create<NoteState>((set, get) => ({
       notes: [], // 清空现有数据
       hasMore: true, // 重置加载更多状态
     }));
-
     // 立即获取新标签的数据
     get().fetchNotes(1);
   },

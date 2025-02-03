@@ -1,7 +1,7 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { db } from '@/lib/db.js';
 import { notes, tags, noteTags, attachments } from '@/config/schema.js';
-import { eq, and, sql, like, desc, asc, inArray } from 'drizzle-orm';
+import { eq, and, sql, like, desc, asc, inArray, SQL } from 'drizzle-orm';
 import {
   CreateNoteInput,
   UpdateNoteInput,
@@ -218,94 +218,73 @@ export async function getNotes(
   const userId = request.user.id;
 
   // 构建基础条件
-  const conditions = [eq(notes.userId, userId)];
-
-  if (tag) {
-    conditions.push(eq(tags.name, tag));
-  }
-
+  const conditions: SQL[] = [eq(notes.userId, userId)];
   if (startDate && endDate) {
     conditions.push(
       sql`${notes.createdAt}::date BETWEEN ${startDate}::date AND ${endDate}::date`
     );
   }
 
-  if (search && searchMode !== 'similarity') {
-    conditions.push(sql`${notes.content} ILIKE ${`%${search}%`}`);
+  if (tag) {
+    const notesWithTag = db
+      .select({ noteId: noteTags.noteId })
+      .from(noteTags)
+      .innerJoin(tags, eq(tags.id, noteTags.tagId))
+      .where(eq(tags.name, tag));
+
+    conditions.push(inArray(notes.id, notesWithTag));
   }
-
-  // 构建查询
-  const baseSelect = {
-    id: notes.id,
-    content: notes.content,
-    createdAt: notes.createdAt,
-    updatedAt: notes.updatedAt,
-    userId: notes.userId,
-    isPublic: notes.isPublic,
-    shareToken: notes.shareToken,
-    attachments: notes.attachments,
-    vectorEmbedding: notes.vectorEmbedding,
-    tagNames: sql<string[]>`
-      array_agg(distinct ${tags.name})
-      filter (where ${tags.name} is not null)
-    `.as('tag_names'),
-  };
-
-  // 处理相似度搜索
-  if (search && searchMode === 'similarity') {
-    const embedding = await generateEmbedding(search);
-    const result = await db
-      .select(baseSelect)
-      .from(notes)
-      .leftJoin(noteTags, eq(notes.id, noteTags.noteId))
-      .leftJoin(tags, eq(noteTags.tagId, tags.id))
-      .where(and(...conditions))
-      .groupBy(notes.id)
-      .orderBy(sql`${notes.vectorEmbedding} <=> ${JSON.stringify(embedding)}`)
-      .limit(pageSize)
-      .execute();
-
-    return {
-      notes: result.map((note) => ({
-        ...note,
-        tags: note.tagNames || [],
-      })),
-      pagination: {
-        total: result.length,
-        page: 1,
-        pageSize,
-        hasMore: false,
+  const orderBy = [
+    sortBy === 'oldest' ? asc(notes.createdAt) : desc(notes.createdAt),
+  ];
+  if (search) {
+    if (searchMode === 'similarity') {
+      const embedding = await generateEmbedding(search);
+      orderBy.push(
+        sql`${notes.vectorEmbedding} <=> ${JSON.stringify(embedding)}`
+      );
+    } else {
+      conditions.push(sql`${notes.content} ILIKE ${`%${search}%`}`);
+    }
+  }
+  const result = await db.query.notes.findMany({
+    columns: {
+      id: true,
+      userId: true,
+      content: true,
+      isPublic: true,
+      shareToken: true,
+      attachments: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+    where: and(...conditions),
+    with: {
+      noteTags: {
+        with: {
+          tag: true,
+        },
       },
-    };
-  }
+    },
+    limit: pageSize,
+    offset: (page - 1) * pageSize,
+    orderBy,
+  });
+  // Transform the result to include flat tags array
+  const transformedResult = result.map((note) => ({
+    ...note,
+    tags: note.noteTags.map((nt) => nt.tag.name),
+    // noteTags: undefined,
+  }));
 
-  // 常规查询
-  const result = await db
-    .select(baseSelect)
-    .from(notes)
-    .leftJoin(noteTags, eq(notes.id, noteTags.noteId))
-    .leftJoin(tags, eq(noteTags.tagId, tags.id))
-    .where(and(...conditions))
-    .groupBy(notes.id)
-    .orderBy(sortBy === 'newest' ? desc(notes.createdAt) : asc(notes.createdAt))
-    .offset((page - 1) * pageSize)
-    .limit(pageSize)
-    .execute();
-
-  // 获取总数
+  // Get total count
   const [{ count }] = await db
-    .select({
-      count: sql<number>`count(distinct ${notes.id})::int`,
-    })
+    .select({ count: sql<number>`count(*)` })
     .from(notes)
-    .where(and(...conditions))
-    .execute();
+    .where(and(...conditions));
 
   return {
-    notes: result.map((note) => ({
-      ...note,
-      tags: note.tagNames || [],
-    })),
+    notes: transformedResult,
     pagination: {
       total: Number(count),
       page,

@@ -16,7 +16,8 @@ export default function Login() {
   const { mutate, isPending } = useMutation({
     mutationFn: login,
     onSuccess: (data) => {
-      setAuth(data.user, data.token);
+      console.log('---->', data);
+      setAuth(data.token, data.user);
       message.success('Login successful');
       navigate('/notes');
     },

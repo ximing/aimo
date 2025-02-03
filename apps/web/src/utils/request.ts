@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { message } from 'antd';
+import { useAuthStore } from '@/stores/authStore';
 
 const request = axios.create({
   baseURL: '/api',
@@ -8,7 +9,7 @@ const request = axios.create({
 
 request.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = useAuthStore.getState().token;
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -26,7 +27,7 @@ request.interceptors.response.use(
   (error) => {
     const { response } = error;
     if (response?.status === 401) {
-      localStorage.removeItem('token');
+      useAuthStore.getState().clearAuth();
       window.location.href = '/login';
     } else {
       message.error(response?.data?.message || 'An error occurred');

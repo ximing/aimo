@@ -33,6 +33,7 @@ const getBase64 = (img: RcFile, callback: (url: string) => void) => {
 };
 
 const normFile = (e: any) => {
+  console.log('---->', e);
   if (Array.isArray(e)) {
     return e;
   }
@@ -149,7 +150,7 @@ export default function Settings() {
           initialValues={{
             ...user,
             password: undefined,
-            avatar: [user?.avatar],
+            avatar: user?.avatar ? [user?.avatar] : [],
           }}
           onFinish={updateProfileMutation.mutate}
         >

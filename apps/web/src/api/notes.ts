@@ -14,7 +14,7 @@ interface GetNotesParams {
   page?: number;
   pageSize?: number;
   sortBy?: 'newest' | 'oldest';
-  tag?: string;
+  tag?: string | null;
   search?: string;
   searchMode?: 'similarity' | 'fulltext';
   startDate?: string;
