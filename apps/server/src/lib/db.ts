@@ -10,6 +10,7 @@ export function createDbConnection(url: string = env.DATABASE_URL) {
   console.log('createDbConnection', url);
   queryClient = postgres(url);
   db = drizzle(queryClient, { schema });
+  console.log('createDbConnection success');
   return db;
 }
 
