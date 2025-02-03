@@ -62,7 +62,7 @@ async function checkDependencies() {
     }
 
     // 先连接到 postgres 数据库
-    const pgUrl = config.databaseUrl.replace(`/${dbName}`, '/postgres');
+    const pgUrl = config.databaseUrl.slice(0, -dbName.length) + 'postgres';
     console.log('pgUrl', pgUrl);
     const pgDb = postgres(pgUrl);
     console.log('pgUrl connect success');
