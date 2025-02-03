@@ -55,9 +55,10 @@ export class AliyunStorage implements StorageService {
     const ossPath = `${env.STORAGE_PATH_PREFIX}/${filename}`;
 
     const result = await this.client.putStream(ossPath, file.file);
-
+    // console.log(result);
     return {
-      path: result.name, // 返回完整的OSS URL
+      // @ts-ignore
+      path: result.url, // 返回完整的OSS URL
       size: file.file.bytesRead,
     };
   }
