@@ -4,6 +4,7 @@ import dayjs from 'dayjs';
 import type { Note } from '@/api/types';
 import type { MenuProps } from 'antd';
 import MarkdownView from '@/components/MarkdownView';
+import { useNoteStore } from '@/stores/noteStore';
 
 interface NoteCardProps {
   note: Note;
@@ -11,8 +12,9 @@ interface NoteCardProps {
 }
 
 export const NoteCard = ({ note, menuItems }: NoteCardProps) => {
+  const { startEditNote } = useNoteStore();
   return (
-    <Card className="note-card">
+    <Card className="note-card" onDoubleClick={() => startEditNote(note)}>
       <div className="note-header">
         <div className="note-time">
           {dayjs(note.createdAt).format('YYYY-MM-DD HH:mm')}
