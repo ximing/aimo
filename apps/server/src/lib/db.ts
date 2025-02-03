@@ -7,6 +7,7 @@ let queryClient: postgres.Sql<{}>;
 let db: ReturnType<typeof drizzle<typeof schema>>;
 
 export function createDbConnection(url: string = env.DATABASE_URL) {
+  console.log('createDbConnection', url);
   queryClient = postgres(url);
   db = drizzle(queryClient, { schema });
   return db;

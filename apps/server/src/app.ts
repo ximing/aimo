@@ -71,7 +71,7 @@ async function checkDependencies() {
       const dbExists = await pgDb`
         SELECT 1 FROM pg_database WHERE datname = ${dbName}::text
       `;
-
+      console.log('dbExists', dbExists);
       if (!dbExists.length) {
         console.log(`Creating database ${dbName}...`);
         // 使用 sql 标识符来安全地引用数据库名
