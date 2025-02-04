@@ -2,7 +2,7 @@
 FROM node:20-slim AS builder
 
 # Install pnpm
-RUN npm install -g pnpm
+RUN npm install -g pnpm@9
 
 # Set working directory
 WORKDIR /app
@@ -38,7 +38,7 @@ COPY --from=builder /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.ya
 COPY --from=builder /app/apps/server/package.json ./apps/server/
 
 # Install production dependencies
-RUN npm install -g pnpm && \
+RUN npm install -g pnpm@9 && \
     pnpm install --prod
 
 # Copy built files
