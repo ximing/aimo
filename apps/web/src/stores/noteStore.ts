@@ -58,6 +58,7 @@ interface NoteState {
   setCurrentPage: (page: number) => void;
   refreshHeatmap: () => void;
   setSearchMode: (mode: 'similarity' | 'fulltext') => void;
+  fetchSearchNotes: () => void;
   setDateRange: (start: Dayjs | null, end: Dayjs | null) => void;
   startEditNote: (note: Note) => void;
   cancelEditNote: () => void;
@@ -198,9 +199,17 @@ export const useNoteStore = create<NoteState>((set, get) => ({
   setSearchText: (text) => {
     set({
       searchText: text,
+    });
+    if (!!text) {
+      get().fetchSearchNotes();
+    }
+  },
+  fetchSearchNotes: () => {
+    set({
       currentPage: 1, // 重置页码
       notes: [], // 清空现有数据
     });
+    get().fetchNotes(1);
   },
   setSelectedTag: (tag) => {
     set((state) => ({

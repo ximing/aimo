@@ -17,22 +17,15 @@ export default function Notes() {
     notes,
     error,
     sortBy,
-    searchText,
     isLoading,
     hasMore,
     newNoteContent,
     currentPage,
-    searchMode,
-    startDate,
-    endDate,
     newNoteAttachments,
     isPublishing,
     fetchNotes,
     addNote,
     setSortBy,
-    setSearchText,
-    setSearchMode,
-    setDateRange,
     setNewNoteContent,
     setNewNoteTags,
     setNewNoteAttachments,
@@ -180,14 +173,7 @@ export default function Notes() {
     <div className="notes-container">
       <div className="notes-header">
         <div className="content-header">
-          <SearchBar
-            value={searchText}
-            onChange={setSearchText}
-            searchMode={searchMode}
-            onSearchModeChange={setSearchMode}
-            dateRange={[startDate, endDate]}
-            onDateRangeChange={(dates) => setDateRange(dates[0], dates[1])}
-          />
+          <SearchBar />
           <Select value={sortBy} onChange={setSortBy} style={{ width: 120 }}>
             <Select.Option value="newest">最新优先</Select.Option>
             <Select.Option value="oldest">最早优先</Select.Option>
