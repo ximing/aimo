@@ -2,7 +2,7 @@ services:
   app:
     image: ghcr.io/${GITHUB_REPOSITORY}:latest
     ports:
-      - "3000:3000"
+      - '3000:3000'
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgres://aimo:aimo123@postgres:5432/aimo
@@ -39,4 +39,4 @@ services:
     volumes:
       - ./temp/redis:/data
     ports:
-      - "6379:6379"
+      - '6379:6379'

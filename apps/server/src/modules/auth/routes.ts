@@ -12,19 +12,11 @@ import { schemas, RegisterInput, LoginInput } from './schema.js';
 export async function authRoutes(app: FastifyInstance) {
   app.post<{
     Body: RegisterInput;
-  }>(
-    '/register',
-    { schema: schemas.register },
-    register
-  );
+  }>('/register', { schema: schemas.register }, register);
 
   app.post<{
     Body: LoginInput;
-  }>(
-    '/login',
-    { schema: schemas.login },
-    login
-  );
+  }>('/login', { schema: schemas.login }, login);
 
   app.get<{
     Querystring: {
@@ -50,11 +42,7 @@ export async function authRoutes(app: FastifyInstance) {
     };
   }>('/google/callback', {}, googleAuth);
 
-  app.get(
-    '/providers',
-    { schema: schemas.getProviders },
-    getProviders
-  );
+  app.get('/providers', { schema: schemas.getProviders }, getProviders);
 
   app.get(
     '/profile',

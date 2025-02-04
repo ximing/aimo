@@ -14,4 +14,4 @@ export function PrivateRoute({ children }: PrivateRouteProps) {
   }
 
   return <>{children}</>;
-} 
+}

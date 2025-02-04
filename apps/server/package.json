@@ -38,7 +38,7 @@
     "zod": "^3.24.1",
     "node-cron": "^3.0.0"
   },
-    "devDependencies": {
+  "devDependencies": {
     "@types/ali-oss": "^6.16.11",
     "@types/bcrypt": "^5.0.2",
     "@types/node": "^20.17.16",

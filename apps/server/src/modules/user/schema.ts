@@ -23,7 +23,9 @@ export const UpdateUserParamsSchema = Type.Object({
 
 export const UpdateUserBodySchema = Type.Object({
   name: Type.Optional(Type.String()),
-  role: Type.Optional(Type.Union([Type.Literal('admin'), Type.Literal('user')])),
+  role: Type.Optional(
+    Type.Union([Type.Literal('admin'), Type.Literal('user')])
+  ),
   isActive: Type.Optional(Type.Boolean()),
 });
 

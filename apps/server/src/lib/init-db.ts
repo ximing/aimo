@@ -14,4 +14,4 @@ export async function initDatabase() {
     console.error('❌ Failed to initialize database:', error);
     return false;
   }
-} 
+}
