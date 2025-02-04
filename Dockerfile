@@ -45,7 +45,6 @@ RUN npm install -g pnpm && \
 COPY --from=builder /app/apps/server/dist ./apps/server/dist
 COPY --from=builder /app/apps/server/public ./apps/server/public
 COPY --from=builder /app/apps/server/migrations ./apps/server/migrations
-COPY --from=builder /app/apps/server/drizzle.config.ts ./apps/server/drizzle.config.ts
 
 # Set environment variables
 ENV NODE_ENV=production
