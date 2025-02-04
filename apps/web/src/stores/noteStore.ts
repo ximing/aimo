@@ -200,7 +200,7 @@ export const useNoteStore = create<NoteState>((set, get) => ({
     set({
       searchText: text,
     });
-    if (!!text) {
+    if (!text) {
       get().fetchSearchNotes();
     }
   },
