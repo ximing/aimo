@@ -63,6 +63,7 @@ interface NoteState {
   startEditNote: (note: Note) => void;
   cancelEditNote: () => void;
   setIsPublishing: (isPublishing: boolean) => void;
+  resetQuery: () => void;
 }
 
 export const useNoteStore = create<NoteState>((set, get) => ({
@@ -78,7 +79,7 @@ export const useNoteStore = create<NoteState>((set, get) => ({
   newNoteContent: '',
   currentPage: 1,
   pageSize: 20,
-  searchMode: 'fulltext',
+  searchMode: 'similarity',
   startDate: null,
   endDate: null,
   total: 0,
@@ -95,6 +96,21 @@ export const useNoteStore = create<NoteState>((set, get) => ({
   editingAttachments: [],
 
   setCurrentPage: (page) => set({ currentPage: page }),
+
+  resetQuery: () => {
+    set({
+      searchText: '',
+      selectedTag: null,
+      startDate: null,
+      endDate: null,
+      sortBy: 'newest',
+      searchMode: 'similarity',
+      currentPage: 1,
+      notes: [],
+      hasMore: true,
+      total: 0,
+    });
+  },
 
   fetchNotes: async (page = 1) => {
     set({ isLoading: true, error: null });

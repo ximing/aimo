@@ -3,20 +3,14 @@ import { Fragment } from 'react';
 import type { Note } from '@/api/types';
 import { NoteCard } from './NoteCard';
 import { NoteEditor } from './NoteEditor';
-import type { MenuProps } from 'antd';
 import { useNoteStore } from '@/stores/noteStore';
 
 interface NoteListProps {
   notes: Note[];
-  getMenuItems: (note: Note) => MenuProps['items'];
   renderFooter: () => React.ReactNode;
 }
 
-export const NoteList = ({
-  notes,
-  getMenuItems,
-  renderFooter,
-}: NoteListProps) => {
+export const NoteList = ({ notes, renderFooter }: NoteListProps) => {
   const {
     isLoading,
     editingNoteId,
@@ -48,7 +42,7 @@ export const NoteList = ({
       );
     }
 
-    return <NoteCard note={note} menuItems={getMenuItems(note)} />;
+    return <NoteCard note={note} />;
   };
 
   if (isLoading && !notes.length) {

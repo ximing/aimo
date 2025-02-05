@@ -20,7 +20,7 @@ import ContributionHeatmap from '@/components/ContributionHeatmap';
 import { Avatar, Dropdown } from 'antd';
 import dayjs from 'dayjs';
 import './style.css';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { ItemType } from 'antd/es/menu/interface';
 
 export default function AppLayout() {
@@ -28,19 +28,11 @@ export default function AppLayout() {
   const location = useLocation();
   const user = useAuthStore((state) => state.user);
   const clearAuth = useAuthStore((state) => state.clearAuth);
-  const { notes, tags, selectedTag, setSelectedTag, fetchTags } =
-    useNoteStore();
+  const { notes, tags, resetQuery, setSelectedTag, fetchTags } = useNoteStore();
   const [searchParams, setSearchParams] = useSearchParams();
-
   useEffect(() => {
     fetchTags();
   }, [fetchTags]);
-
-  // 从 URL 同步标签状态到 store
-  useEffect(() => {
-    const tagFromUrl = searchParams.get('tag');
-    setSelectedTag(tagFromUrl);
-  }, [searchParams, setSelectedTag]);
 
   const handleLogout = () => {
     clearAuth();
@@ -75,23 +67,26 @@ export default function AppLayout() {
     },
   ].filter(Boolean);
 
-  const navItems = [
-    {
-      key: '/notes',
-      icon: <FileTextOutlined />,
-      label: '全部笔记',
-    },
-    {
-      key: '/daily',
-      icon: <HistoryOutlined />,
-      label: '每日回顾',
-    },
-    {
-      key: '/search',
-      icon: <SearchOutlined />,
-      label: '找一找',
-    },
-  ];
+  const navItems = useMemo(
+    () => [
+      {
+        key: '/notes',
+        icon: <FileTextOutlined />,
+        label: '全部笔记',
+      },
+      {
+        key: '/daily',
+        icon: <HistoryOutlined />,
+        label: '每日回顾',
+      },
+      {
+        key: '/search',
+        icon: <SearchOutlined />,
+        label: '找一找',
+      },
+    ],
+    []
+  );
 
   const handleTagClick = (tagName: string | null) => {
     if (tagName) {
@@ -100,6 +95,7 @@ export default function AppLayout() {
       searchParams.delete('tag');
       setSearchParams(searchParams);
     }
+    setSelectedTag(tagName);
     // 只有当前不在 notes 路由时才进行导航
     if (location.pathname !== '/notes') {
       navigate('/notes');
@@ -156,14 +152,10 @@ export default function AppLayout() {
               return (
                 <div
                   key={item.key}
-                  className={`nav-item ${isActive ? 'active' : ''} ${
-                    item.danger ? 'danger' : ''
-                  }`}
+                  className={`nav-item ${isActive ? 'active' : ''}`}
                   onClick={() => {
-                    if (item.key === 'logout') {
-                      handleLogout();
-                    } else if (item.key === '/notes') {
-                      // 点击全部笔记时只清空标签选择
+                    if (item.key === '/notes') {
+                      resetQuery();
                       handleTagClick(null);
                     } else {
                       navigate(item.key);

@@ -24,6 +24,7 @@
   border-radius: 2px;
   transition: all 0.2s ease;
   position: relative;
+  cursor: pointer;
 }
 
 /* GitHub-style 配色 */

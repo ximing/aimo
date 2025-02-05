@@ -1,8 +1,10 @@
 import { useMemo, useState, useEffect } from 'react';
+import { Tooltip } from 'antd';
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 import './style.css';
 import { getHeatmapData } from '@/api/notes';
+import { useNoteStore } from '@/stores/noteStore';
 
 // 注册插件
 dayjs.extend(isBetween);
@@ -14,6 +16,7 @@ interface ContributionHeatmapProps {
 export default function ContributionHeatmap({
   onRefresh,
 }: ContributionHeatmapProps) {
+  const { resetQuery, setDateRange } = useNoteStore();
   const [heatmapData, setHeatmapData] = useState<
     { date: string; count: number }[]
   >([]);
@@ -76,6 +79,7 @@ export default function ContributionHeatmap({
       const date = currentDate.format('YYYY-MM-DD');
       currentWeek.push({
         date,
+        dateDayjs: currentDate,
         count: dailyCount[date] || 0,
       });
 
@@ -109,12 +113,17 @@ export default function ContributionHeatmap({
       <div className="contribution-grid">
         {weeks.map((week, weekIndex) => (
           <div key={weekIndex} className="contribution-week">
-            {week.map(({ date, count }) => (
-              <div
-                key={date}
-                className={`contribution-day level-${getContributionLevel(count)}`}
-                title={`${count} 条笔记于 ${date}`}
-              />
+            {week.map(({ date, dateDayjs, count }) => (
+              <Tooltip title={`${count} 条笔记于 ${date}`}>
+                <div
+                  key={date}
+                  className={`contribution-day level-${getContributionLevel(count)}`}
+                  onClick={() => {
+                    resetQuery();
+                    setDateRange(dateDayjs, dateDayjs);
+                  }}
+                />
+              </Tooltip>
             ))}
           </div>
         ))}

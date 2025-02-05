@@ -29,8 +29,6 @@ export default function Notes() {
     setNewNoteContent,
     setNewNoteTags,
     setNewNoteAttachments,
-    startEditNote,
-    deleteNote,
   } = useNoteStore();
 
   // 添加一个 loading 锁，防止重复请求
@@ -56,56 +54,6 @@ export default function Notes() {
       message.error('创建笔记失败');
     }
   };
-
-  const getWordCount = (content: string) => {
-    return content.replace(/<[^>]+>/g, '').length;
-  };
-
-  const getMenuItems = (note: Note): MenuProps['items'] => [
-    {
-      key: 'edit',
-      icon: <EditOutlined />,
-      label: '编辑',
-      onClick: () => startEditNote(note),
-    },
-    {
-      key: 'delete',
-      icon: <DeleteOutlined />,
-      label: '删除',
-      onClick: () => {
-        Modal.confirm({
-          title: '删除笔记',
-          content: '确定要删除这条笔记吗？',
-          onOk: async () => {
-            try {
-              await deleteNote(note.id);
-              message.success('笔记已删除');
-            } catch (error) {
-              message.error('删除失败');
-            }
-          },
-        });
-      },
-    },
-    {
-      type: 'divider',
-    },
-    {
-      key: 'info',
-      className: 'note-info-item',
-      label: (
-        <div className="note-info">
-          <div>{getWordCount(note.content)} 字</div>
-          <div>创建于 {dayjs(note.createdAt).format('YYYY-MM-DD HH:mm')}</div>
-          {note.updatedAt && note.updatedAt !== note.createdAt && (
-            <div>
-              最后编辑于 {dayjs(note.updatedAt).format('YYYY-MM-DD HH:mm')}
-            </div>
-          )}
-        </div>
-      ),
-    },
-  ];
 
   const renderFooter = () => {
     if (isLoading) {
@@ -198,11 +146,7 @@ export default function Notes() {
         onScroll={handleScroll}
       >
         <div className="note-list">
-          <NoteList
-            notes={notes}
-            getMenuItems={getMenuItems}
-            renderFooter={renderFooter}
-          />
+          <NoteList notes={notes} renderFooter={renderFooter} />
         </div>
       </div>
     </div>
