@@ -64,7 +64,12 @@ apps/web/
 │   │   ├── auth/
 │   │   │   └── components/    # 认证相关子组件
 │   │   └── home/
-│   │       └── components/    # 首页相关子组件
+│   │       ├── home.tsx       # 首页主组件 (max-w-[600px])
+│   │       └── components/
+│   │           ├── memo-editor.tsx      # 备忘录编辑器
+│   │           ├── memo-card.tsx        # 备忘录卡片 (色块背景)
+│   │           ├── memo-list.tsx        # 备忘录列表
+│   │           └── search-dialog.tsx    # 搜索对话框 (Ctrl+K)
 │   ├── services/              # 业务逻辑服务 (*.service.ts)
 │   ├── utils/                 # 工具函数
 │   ├── App.tsx                # 主应用组件
@@ -85,12 +90,27 @@ apps/web/
 - **图标库**: lucide-react - 所有图标必须使用 lucide-react 库
 - 不要使用其他图标库，保持项目图标库统一
 
+#### 布局规范
+
+- **主容器**: `max-w-[600px]` - PC Web 固定宽度设计，不考虑响应式
+- **内边距**: `px-8 py-12` - 舒适的内边距
+- **卡片间距**: 使用色块背景（`bg-gray-50 dark:bg-dark-800`）替代边框线条，保证设计的自然顺滑
+- **Hover 效果**: 卡片在 hover 时背景色加深（`hover:bg-gray-100 dark:hover:bg-dark-700`），提供视觉反馈
+
 #### 主题规范
 
 - **主题支持**: 暗色和亮色两套主题
 - 使用 Tailwind CSS 的 `dark:` 前缀实现主题切换
 - 在样式中使用 `dark:` 前缀为暗色主题提供对应的样式
 - 例如：`bg-white dark:bg-slate-900`
+
+#### 搜索功能规范
+
+- **搜索入口**: Header 中的搜索按钮，点击打开 SearchDialog
+- **快捷键**: `Ctrl+K` 或 `Cmd+K` 快速打开搜索对话框
+- **搜索方式**: Dialog 模态框方式，避免干扰主界面
+- **搜索实现**: 调用 `MemoService.setSearchQuery()` 进行搜索
+- **关键词**: 支持标题、内容和标签搜索（由后端负责）
 
 #### 状态管理规范
 
@@ -122,7 +142,54 @@ apps/web/
 
 #### Tailwind 自定义
 
-- **颜色**: 扩展了 `primary` 颜色系列
+- **颜色系统**:
+  - `primary` - 绿色主题系列
+    - 50: `#f0fdf4`
+    - 100: `#dcfce7`
+    - 200: `#bbf7d0`
+    - 300: `#86efac`
+    - 400: `#4ade80`
+    - 500: `#22c55e` (主色)
+    - 600: `#16a34a` (hover)
+    - 700: `#15803d` (active)
+    - 800: `#166534`
+    - 900: `#145231`
+    - 950: `#0d3422`
+  - `dark` - 暗色模式色系 (磨砂深灰黑)
+    - 50: `#fafafa`
+    - 100: `#f5f5f5`
+    - 200: `#eeeeee`
+    - 300: `#e0e0e0`
+    - 400: `#a0a0a0`
+    - 500: `#757575`
+    - 600: `#5a5a5a`
+    - 700: `#424242`
+    - 800: `#2a2a2a` (background)
+    - 900: `#1a1a1a` (background)
+    - 950: `#121212` (deep background)
 - **动画**:
   - `fade-in` - 0.3s 淡入效果
   - `slide-up` - 0.3s 向上滑动效果
+
+#### 主题应用指南
+
+- **亮色模式** (Light Mode)
+  - 背景: `bg-white`
+  - 文字: `text-gray-900`
+  - 边框: `border-gray-200`
+  - 次要文字: `text-gray-600`
+  - 禁用文字: `text-gray-400`
+
+- **暗色模式** (Dark Mode - 磨砂质感)
+  - 页面背景: `dark:bg-dark-900` (#1a1a1a)
+  - 卡片背景: `dark:bg-dark-800` (#2a2a2a)
+  - 文字: `dark:text-gray-50`
+  - 边框: `dark:border-dark-700`
+  - 次要文字: `dark:text-gray-400`
+  - 禁用文字: `dark:text-gray-600`
+
+- **交互状态**
+  - 正常: `text-primary-600` / `dark:text-primary-500`
+  - Hover: `hover:bg-primary-50` / `dark:hover:bg-primary-900/20`
+  - Active: `bg-primary-600` / `dark:bg-primary-700`
+  - Focus: `focus:ring-2 focus:ring-primary-500 focus:border-transparent`
