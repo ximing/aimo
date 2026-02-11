@@ -1,2 +1,8 @@
 packages:
-  - 'apps/*'
+  - apps/*
+  - packages/*
+  - config/*
+
+onlyBuiltDependencies:
+  - bcrypt
+  - esbuild

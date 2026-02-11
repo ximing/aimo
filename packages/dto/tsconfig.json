@@ -1,0 +1,29 @@
+{
+  "extends": "@aimo/typescript-config/base.json",
+  "compilerOptions": {
+    "lib": ["ES2022"],
+    "outDir": "./dist",
+    "declaration": true,
+    "declarationMap": true,
+    "esModuleInterop": true,
+    "noImplicitAny": false,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "sourceMap": true,
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "skipLibCheck": true,
+    "noEmit": false
+  },
+  "exclude": ["node_modules"],
+  "include": ["src/**/*"],
+  "ts-node": {
+    "transpileOnly": true,
+    "files": true,
+    "esm": true,
+    "compilerOptions": {
+      "module": "NodeNext"
+    }
+  }
+}

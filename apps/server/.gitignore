@@ -1,0 +1,27 @@
+# Dependencies
+node_modules
+dist
+build
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# LanceDB data directory
+lancedb_data/
+*.lancedb
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build outputs
+*.tsbuildinfo

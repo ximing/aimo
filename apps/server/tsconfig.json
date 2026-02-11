@@ -1,16 +1,39 @@
 {
-  "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "composite": false,
+    "declaration": true,
+    "declarationMap": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "inlineSources": false,
+    "isolatedModules": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "preserveWatchOutput": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "strictNullChecks": true,
+    "lib": ["ES2022"],
+    "outDir": "./dist",
+    "noImplicitAny": false,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "sourceMap": false,
+    "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "skipLibCheck": true,
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*"]
-    }
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "exclude": ["node_modules", "dist", "build"],
+  "include": ["src"],
+  "ts-node": {
+    "transpileOnly": true,
+    "files": true,
+    "esm": true,
+    "compilerOptions": {
+      "module": "NodeNext"
+    }
+  }
 }

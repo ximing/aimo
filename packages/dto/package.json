@@ -1,0 +1,45 @@
+{
+  "name": "@aimo/dto",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist/**"
+  ],
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c -w",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "typecheck": "tsc --noEmit",
+    "test": "jest"
+  },
+  "jest": {
+    "preset": "@soiljs/jest-presets/node"
+  },
+  "devDependencies": {
+    "@aimo/eslint-config": "workspace:*",
+    "@aimo/jest-presets": "workspace:*",
+    "@aimo/rollup-config": "workspace:*",
+    "@aimo/typescript-config": "workspace:*",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.13.4",
+    "jest": "^29.7.0",
+    "typescript": "^5.7.3"
+  },
+  "dependencies": {
+    "tslib": "2.8.1",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.1"
+  }
+}

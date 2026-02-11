@@ -1,0 +1,50 @@
+services:
+  mysql:
+    image: mysql:8.2
+    container_name: dev-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: dev_password
+      MYSQL_DATABASE: dev_tools
+      MYSQL_USER: dev_user
+      MYSQL_PASSWORD: dev_password
+    ports:
+      - '3307:3306'
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --bind-address=0.0.0.0
+    networks:
+      - dev_network
+    healthcheck:
+      test:
+        ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-u', 'root', '-p$$MYSQL_ROOT_PASSWORD']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: dev-redis
+    ports:
+      - '6380:6379'
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - dev_network
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+networks:
+  dev_network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  redis_data:

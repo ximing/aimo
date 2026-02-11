@@ -1,19 +1,16 @@
-import request from '@/utils/request';
-import type { LoginResponse } from './types';
+import type { RegisterDto, LoginDto, LoginResponseDto } from '@aimo/dto';
+import request from '../utils/request';
 
-interface LoginParams {
-  email: string;
-  password: string;
-}
+/**
+ * Register a new user
+ */
+export const register = (data: RegisterDto) => {
+  return request.post<any, { code: number; data: { user: any } }>('/api/v1/auth/register', data);
+};
 
-export async function login(params: LoginParams) {
-  return (await request.post<LoginResponse>('/auth/login', params)).data;
-}
-
-export async function register(params: LoginParams & { name?: string }) {
-  return (await request.post<LoginResponse>('/auth/register', params)).data;
-}
-
-export async function getProfile() {
-  return (await request.get<LoginResponse>('/auth/profile')).data;
-}
+/**
+ * Login with email and password
+ */
+export const login = (data: LoginDto) => {
+  return request.post<any, { code: number; data: LoginResponseDto }>('/api/v1/auth/login', data);
+};

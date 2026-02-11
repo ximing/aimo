@@ -1,37 +1,19 @@
-import request from '@/utils/request';
-import type { UserResponse } from './types';
+import type { UserInfoDto, UpdateUserDto } from '@aimo/dto';
+import request from '../utils/request';
 
-interface UpdateProfileParams {
-  name?: string;
-  nickname?: string;
-  password?: string;
-}
+/**
+ * Get current user info
+ */
+export const getUserInfo = () => {
+  return request.get<unknown, { code: number; data: UserInfoDto }>('/api/v1/user/info');
+};
 
-export async function getProfile() {
-  return (await request.get<UserResponse>('/users/profile')).data;
-}
-
-export async function updateProfile(formData: FormData) {
-  return (
-    await request.put<UserResponse>('/users/profile', formData, {
-      headers: {
-        // 移除默认的 Content-Type，让浏览器自动设置 multipart/form-data
-        'Content-Type': undefined,
-      },
-    })
-  ).data;
-}
-
-export async function getUserSettings() {
-  return (
-    await request.get<{
-      emailNotifications: boolean;
-    }>('/users/settings')
-  ).data;
-}
-
-export async function updateUserSettings(data: {
-  emailNotifications: boolean;
-}) {
-  return (await request.put('/users/settings', data)).data;
-}
+/**
+ * Update user info
+ */
+export const updateUserInfo = (data: UpdateUserDto) => {
+  return request.put<unknown, { code: number; data: { message: string; user: UserInfoDto } }>(
+    '/api/v1/user/info',
+    data
+  );
+};

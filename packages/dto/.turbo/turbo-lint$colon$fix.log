@@ -1,0 +1,12 @@
+
+
+> @aimo/dto@0.0.0 lint:fix /Users/ximing/project/mygithub/aimo/packages/dto
+> eslint src/ --fix
+
+[0m[0m
+[0m[4m/Users/ximing/project/mygithub/aimo/packages/dto/src/response.ts[24m[0m
+[0m   [2m5:37[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m17:36[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[33m[1m✖ 2 problems (0 errors, 2 warnings)[22m[39m[0m
+[0m[33m[1m[22m[39m[0m

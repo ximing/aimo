@@ -1,0 +1,17 @@
+export const OBJECT_TYPE = {
+  MEMO: 'MEMO',
+  PAGE: 'PAGE',
+  ANNOTATION: 'ANNOTATION',
+  INBOX: 'INBOX',
+  FILE: 'FILE',
+  SPACE: 'SPACE',
+  NOTE: 'NOTE',
+  LIBRARY: 'LIBRARY',
+  USER: 'USER',
+  TIMELINE: 'TIMELINE',
+};
+
+export const PAGE_CATEGORY = {
+  NOTE: 'NOTE',
+  DAILY: 'DAILY',
+};

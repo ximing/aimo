@@ -1,0 +1,56 @@
+
+
+> @aimo/server@0.0.0 lint:fix /Users/ximing/project/mygithub/aimo/apps/server
+> eslint src/ --fix
+
+[0m[0m
+[0m[4m/Users/ximing/project/mygithub/aimo/apps/server/src/app.ts[24m[0m
+[0m  [2m24:14[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/ximing/project/mygithub/aimo/apps/server/src/config/config.ts[24m[0m
+[0m   [2m7:37[22m  [33mwarning[39m  NODE_ENV is not listed as a dependency in root turbo.json          [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m30:16[22m  [33mwarning[39m  PORT is not listed as a dependency in root turbo.json              [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m32:14[22m  [33mwarning[39m  CORS_ORIGIN is not listed as a dependency in root turbo.json       [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m33:18[22m  [33mwarning[39m  CORS_CREDENTIALS is not listed as a dependency in root turbo.json  [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m36:13[22m  [33mwarning[39m  JWT_SECRET is not listed as a dependency in root turbo.json        [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m39:11[22m  [33mwarning[39m  LANCEDB_PATH is not listed as a dependency in root turbo.json      [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m42:13[22m  [33mwarning[39m  OPENAI_API_KEY is not listed as a dependency in root turbo.json    [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m43:12[22m  [33mwarning[39m  OPENAI_MODEL is not listed as a dependency in root turbo.json      [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m44:14[22m  [33mwarning[39m  OPENAI_BASE_URL is not listed as a dependency in root turbo.json   [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m46:8[22m   [33mwarning[39m  NODE_ENV is not listed as a dependency in root turbo.json          [2mturbo/no-undeclared-env-vars[22m[0m
+[0m[0m
+[0m[4m/Users/ximing/project/mygithub/aimo/apps/server/src/config/env.ts[24m[0m
+[0m  [2m6:13[22m  [33mwarning[39m  NODE_ENV is not listed as a dependency in root turbo.json  [2mturbo/no-undeclared-env-vars[22m[0m
+[0m[0m
+[0m[4m/Users/ximing/project/mygithub/aimo/apps/server/src/index.ts[24m[0m
+[0m  [2m3:1[22m  [33mwarning[39m  TZ is not listed as a dependency in root turbo.json  [2mturbo/no-undeclared-env-vars[22m[0m
+[0m[0m
+[0m[4m/Users/ximing/project/mygithub/aimo/apps/server/src/ioc.ts[24m[0m
+[0m  [2m28:23[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/ximing/project/mygithub/aimo/apps/server/src/middlewares/auth-handler.ts[24m[0m
+[0m  [2m3:15[22m  [33mwarning[39m  'UserInfoDto' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m[0m
+[0m[4m/Users/ximing/project/mygithub/aimo/apps/server/src/middlewares/error-handler.ts[24m[0m
+[0m  [2m4:73[22m  [33mwarning[39m  'next' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m[0m
+[0m[4m/Users/ximing/project/mygithub/aimo/apps/server/src/services/embedding.service.ts[24m[0m
+[0m  [2m8:18[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/ximing/project/mygithub/aimo/apps/server/src/services/memo.service.ts[24m[0m
+[0m    [2m4:21[22m  [33mwarning[39m  'NewMemo' is defined but never used       [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m112:19[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m112:27[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m245:46[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/ximing/project/mygithub/aimo/apps/server/src/services/user.service.ts[24m[0m
+[0m  [2m8:34[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/ximing/project/mygithub/aimo/apps/server/src/types/express.ts[24m[0m
+[0m  [2m5:3[22m  [33mwarning[39m  ES2015 module syntax is preferred over namespaces  [2m@typescript-eslint/no-namespace[22m[0m
+[0m[0m
+[0m[4m/Users/ximing/project/mygithub/aimo/apps/server/src/types/response.ts[24m[0m
+[0m  [2m1:34[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[33m[1m✖ 24 problems (0 errors, 24 warnings)[22m[39m[0m
+[0m[33m[1m[22m[39m[0m

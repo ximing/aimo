@@ -8,7 +8,8 @@
     "build": "pnpm -r build",
     "build:web": "pnpm --filter @aimo/web build",
     "build:server": "pnpm --filter @aimo/server build",
-    "lint": "eslint .",
+    "lint": "turbo lint",
+    "lint:fix": "turbo lint:fix",
     "format": "prettier --write .",
     "rm": "find . -name \"node_modules\" -type d -prune -exec rm -rf '{}' +",
     "dev:env": "docker compose -f dev-docker-compose.yml up -d"
@@ -20,8 +21,13 @@
     "eslint": "^9.19.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.0",
-    "prettier": "^3.0.0",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.3"
-  }
+    "typescript": "^5.7.3",
+    "@changesets/cli": "^2.28.0",
+    "plop": "^4.0.1",
+    "prettier": "^3.5.1",
+    "turbo": "^2.4.2",
+    "rollup": "^4.12.0"
+  },
+  "packageManager": "pnpm@10.22.0"
 }
