@@ -38,18 +38,18 @@ WORKDIR /app
 # Install pnpm for production
 RUN npm install -g pnpm@10.22.0
 
-# Copy package files
+# Copy package files for dependency resolution
 COPY --from=builder /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
 COPY --from=builder /app/apps/server/package.json ./apps/server/
 COPY --from=builder /app/packages/dto/package.json ./packages/dto/
 
-# Install production dependencies only
-RUN pnpm install --prod --frozen-lockfile
+# Install production dependencies only (minimal install)
+RUN pnpm install --prod --frozen-lockfile --prefer-offline
 
-# Copy built files
-COPY --from=builder /app/apps/server/dist ./apps/server/dist
-COPY --from=builder /app/apps/server/public ./apps/server/public
-COPY --from=builder /app/packages/dto/dist ./packages/dto/dist
+# Copy built files from builder stage
+COPY --from=builder /app/apps/server/dist/ ./apps/server/dist/
+COPY --from=builder /app/apps/server/public/ ./apps/server/public/
+COPY --from=builder /app/packages/dto/dist/ ./packages/dto/dist/
 
 # Create .env file with default values if not provided
 ENV NODE_ENV=production

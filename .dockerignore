@@ -5,7 +5,6 @@ npm-debug.log
 .env
 .env.local
 .env.*.local
-dist
 build
 .turbo
 .next
@@ -16,3 +15,6 @@ build
 lancedb_data
 .catpaw
 .cursor
+# Keep dist directories created during build
+!/apps/server/dist
+!/packages/dto/dist
