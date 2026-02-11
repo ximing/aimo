@@ -6,12 +6,12 @@
  * Attachment information DTO
  */
 export interface AttachmentDto {
-  id: string; // attachmentId
+  attachmentId: string; // unique attachment identifier
   filename: string;
   url: string;
   type: string; // MIME type
   size: number; // file size in bytes
-  createdAt: string; // ISO 8601 date string
+  createdAt: number; // timestamp in milliseconds
 }
 
 /**

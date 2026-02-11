@@ -1,15 +1,18 @@
 import { view, useService } from '@rabjs/react';
 import { MemoService } from '../../../services/memo.service';
-import type { MemoDto } from '@aimo/dto';
+import type { MemoListItemDto } from '@aimo/dto';
 import { MemoCard } from './memo-card';
 
 /**
  * Group memos by date
  */
-const groupMemosByDate = (memos: MemoDto[]): Map<string, MemoDto[]> => {
-  const grouped = new Map<string, MemoDto[]>();
+const groupMemosByDate = (
+  memos: MemoListItemDto[]
+): Map<string, MemoListItemDto[]> => {
+  const grouped = new Map<string, MemoListItemDto[]>();
 
   memos.forEach((memo) => {
+    // createdAt is now a timestamp in milliseconds
     const date = new Date(memo.createdAt);
     const dateStr = date.toLocaleDateString('zh-CN', {
       year: 'numeric',

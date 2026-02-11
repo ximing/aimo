@@ -1,25 +1,12 @@
 import { useState } from 'react';
 import { view, useService } from '@rabjs/react';
-import type { MemoDto } from '@aimo/dto';
+import type { MemoListItemDto } from '@aimo/dto';
 import { MemoService } from '../../../services/memo.service';
 import { FileText, Film } from 'lucide-react';
 
 interface MemoCardProps {
-  memo: MemoDto;
+  memo: MemoListItemDto;
 }
-
-// Extract image URLs from content (simple markdown image syntax)
-const extractImages = (content: string): string[] => {
-  const imageRegex = /!\[.*?\]\((.*?)\)/g;
-  const matches: string[] = [];
-  let match;
-
-  while ((match = imageRegex.exec(content)) !== null) {
-    matches.push(match[1]);
-  }
-
-  return matches.slice(0, 2); // Limit to 2 images per card
-};
 
 // Extract plain text without markdown syntax
 const extractPlainText = (content: string, maxLength = 150): string => {
@@ -69,10 +56,10 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
     setIsEditing(false);
   };
 
-  const formatDate = (date: Date) => {
-    const now = new Date();
-    const d = new Date(date);
-    const diffMs = now.getTime() - d.getTime();
+  const formatDate = (timestamp: number) => {
+    // timestamp is in milliseconds
+    const now = Date.now();
+    const diffMs = now - timestamp;
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
@@ -82,6 +69,7 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
     if (diffHours < 24) return `${diffHours}小时前`;
     if (diffDays < 7) return `${diffDays}天前`;
 
+    const d = new Date(timestamp);
     return d.toLocaleDateString('zh-CN', {
       month: '2-digit',
       day: '2-digit',
@@ -92,29 +80,38 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
 
   const plainText = extractPlainText(memo.content, 120);
 
-  // 渲染附件九宫格
+  // 渲染附件网格
   const renderAttachments = () => {
     if (!memo.attachments || memo.attachments.length === 0) return null;
 
     return (
-      <div className="grid grid-cols-3 gap-2">
-        {memo.attachments.map((attachmentId, idx) => {
-          const url = `/api/v1/attachments/file/${attachmentId.split('/').pop()}`;
-          // 简单判断文件类型（需要完整数据时可以调用 API）
-          const isImage = attachmentId.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/);
-          const isVideo = attachmentId.toLowerCase().match(/\.(mp4|mov|avi|webm)$/);
+      <div className="grid grid-cols-5 gap-2">
+        {memo.attachments.map((attachment) => {
+          const isImage = attachment.type.startsWith('image/');
+          const isVideo = attachment.type.startsWith('video/');
 
           return (
-            <div key={idx} className="relative aspect-square bg-gray-100 dark:bg-dark-800 rounded overflow-hidden">
+            <div
+              key={attachment.attachmentId}
+              className="relative aspect-square bg-gray-100 dark:bg-dark-800 rounded overflow-hidden"
+            >
               {isImage ? (
-                <img src={url} alt="" className="w-full h-full object-cover" />
+                <img
+                  src={attachment.url}
+                  alt={attachment.filename}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
               ) : isVideo ? (
                 <div className="w-full h-full flex items-center justify-center">
-                  <Film className="w-8 h-8 text-gray-400 dark:text-gray-600" />
+                  <Film className="w-6 h-6 text-gray-400 dark:text-gray-600" />
                 </div>
               ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <FileText className="w-8 h-8 text-gray-400 dark:text-gray-600" />
+                <div className="w-full h-full flex flex-col items-center justify-center gap-1">
+                  <FileText className="w-6 h-6 text-gray-400 dark:text-gray-600" />
+                  <span className="text-xs text-gray-500 dark:text-gray-500 truncate max-w-full px-1">
+                    {attachment.filename}
+                  </span>
                 </div>
               )}
             </div>

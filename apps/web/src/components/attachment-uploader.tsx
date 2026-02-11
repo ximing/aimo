@@ -3,11 +3,11 @@
  * 九宫格附件上传组件，最多支持 9 个附件
  */
 
-import { useState, useRef } from 'react';
+import { useRef } from 'react';
 import { X, Upload, FileText, Film } from 'lucide-react';
 
 export interface AttachmentItem {
-  id: string;
+  attachmentId: string;
   file?: File;
   url: string;
   type: string;
@@ -44,7 +44,7 @@ export const AttachmentUploader = ({
     
     // 创建本地预览URL
     const newAttachments: AttachmentItem[] = filesToAdd.map((file) => ({
-      id: `temp-${Date.now()}-${Math.random()}`,
+      attachmentId: `temp-${Date.now()}-${Math.random()}`,
       file,
       url: URL.createObjectURL(file),
       type: file.type,
@@ -60,11 +60,11 @@ export const AttachmentUploader = ({
   };
 
   const handleRemove = (id: string) => {
-    const attachment = attachments.find((a) => a.id === id);
+    const attachment = attachments.find((a) => a.attachmentId === id);
     if (attachment && attachment.file) {
       URL.revokeObjectURL(attachment.url);
     }
-    onAttachmentsChange(attachments.filter((a) => a.id !== id));
+    onAttachmentsChange(attachments.filter((a) => a.attachmentId !== id));
   };
 
   const handleAddClick = () => {
@@ -77,7 +77,7 @@ export const AttachmentUploader = ({
 
     return (
       <div
-        key={attachment.id}
+        key={attachment.attachmentId}
         className="relative aspect-square bg-gray-100 dark:bg-dark-800 rounded-lg overflow-hidden group"
       >
         {isImage ? (
@@ -103,7 +103,7 @@ export const AttachmentUploader = ({
         {!disabled && (
           <button
             type="button"
-            onClick={() => handleRemove(attachment.id)}
+            onClick={() => handleRemove(attachment.attachmentId)}
             className="absolute top-1 right-1 p-1 bg-black/50 hover:bg-black/70 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
             aria-label="删除附件"
           >

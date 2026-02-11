@@ -1,34 +1,40 @@
 import type {
   CreateMemoDto,
   UpdateMemoDto,
-  MemoDto,
-  PaginatedMemoDto,
+  MemoWithAttachmentsDto,
   MemoSearchOptionsDto,
   MemoVectorSearchDto,
+  MemoListItemDto,
+  PaginatedMemoListDto,
 } from '@aimo/dto';
 import request from '../utils/request';
 
 /**
- * Get memos list with pagination and filters
+ * Get memos list with pagination and filters (excludes embedding)
  */
 export const getMemos = (params: Partial<MemoSearchOptionsDto>) => {
-  return request.get<unknown, { code: number; data: PaginatedMemoDto }>('/api/v1/memos', {
-    params,
-  });
+  return request.get<unknown, { code: number; data: PaginatedMemoListDto }>(
+    '/api/v1/memos',
+    {
+      params,
+    }
+  );
 };
 
 /**
  * Get a single memo by ID
  */
 export const getMemo = (memoId: string) => {
-  return request.get<unknown, { code: number; data: MemoDto }>(`/api/v1/memos/${memoId}`);
+  return request.get<unknown, { code: number; data: MemoWithAttachmentsDto }>(
+    `/api/v1/memos/${memoId}`
+  );
 };
 
 /**
  * Create a new memo
  */
 export const createMemo = (data: CreateMemoDto) => {
-  return request.post<unknown, { code: number; data: { message: string; memo: MemoDto } }>(
+  return request.post<unknown, { code: number; data: { message: string; memo: MemoWithAttachmentsDto } }>(
     '/api/v1/memos',
     data
   );
@@ -38,10 +44,10 @@ export const createMemo = (data: CreateMemoDto) => {
  * Update a memo
  */
 export const updateMemo = (memoId: string, data: UpdateMemoDto) => {
-  return request.put<unknown, { code: number; data: { message: string; memo: MemoDto } }>(
-    `/api/v1/memos/${memoId}`,
-    data
-  );
+  return request.put<
+    unknown,
+    { code: number; data: { message: string; memo: MemoWithAttachmentsDto } }
+  >(`/api/v1/memos/${memoId}`, data);
 };
 
 /**
@@ -54,11 +60,11 @@ export const deleteMemo = (memoId: string) => {
 };
 
 /**
- * Vector search for memos
+ * Vector search for memos (excludes embedding)
  */
 export const vectorSearch = (params: MemoVectorSearchDto) => {
-  return request.post<unknown, { code: number; data: { items: MemoDto[]; count: number } }>(
-    '/api/v1/memos/search/vector',
-    params
-  );
+  return request.post<
+    unknown,
+    { code: number; data: { items: MemoListItemDto[]; count: number } }
+  >('/api/v1/memos/search/vector', params);
 };

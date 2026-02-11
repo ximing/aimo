@@ -7,7 +7,6 @@ import { Service } from 'typedi';
 import { LanceDbService, type AttachmentRecord } from '../sources/lancedb.js';
 import { AttachmentStorageService } from './attachment-storage.service.js';
 import type { AttachmentDto } from '@aimo/dto';
-import { config } from '../config/config.js';
 
 export interface CreateAttachmentOptions {
   uid: string;
@@ -43,7 +42,8 @@ export class AttachmentService {
       mimeType,
     });
 
-    // Prepare record
+    // Prepare record - use timestamp in milliseconds
+    const now = Date.now();
     const record: AttachmentRecord = {
       attachmentId,
       uid,
@@ -52,7 +52,7 @@ export class AttachmentService {
       type: mimeType,
       size,
       storageType,
-      createdAt: new Date(),
+      createdAt: now,
     };
 
     // Save to database
@@ -63,12 +63,12 @@ export class AttachmentService {
     const accessUrl = await this.generateAccessUrl(url, storageType);
 
     return {
-      id: attachmentId,
+      attachmentId,
       filename,
       url: accessUrl,
       type: mimeType,
       size,
-      createdAt: record.createdAt.toISOString(),
+      createdAt: now,
     };
   }
 
@@ -92,12 +92,12 @@ export class AttachmentService {
     const accessUrl = await this.generateAccessUrl(record.url, record.storageType);
 
     return {
-      id: record.attachmentId,
+      attachmentId: record.attachmentId,
       filename: record.filename,
       url: accessUrl,
       type: record.type,
       size: record.size,
-      createdAt: record.createdAt.toISOString(),
+      createdAt: record.createdAt,
     };
   }
 
@@ -137,12 +137,12 @@ export class AttachmentService {
         const r = record as unknown as AttachmentRecord;
         const accessUrl = await this.generateAccessUrl(r.url, r.storageType);
         return {
-          id: r.attachmentId,
+          attachmentId: r.attachmentId,
           filename: r.filename,
           url: accessUrl,
           type: r.type,
           size: r.size,
-          createdAt: r.createdAt.toISOString(),
+          createdAt: r.createdAt,
         };
       })
     );
@@ -219,10 +219,15 @@ export class AttachmentService {
 
   /**
    * Generate access URL based on storage type
+   * 
+   * For S3:
+   * - Public buckets: Returns direct URL without signing
+   * - Private buckets: Returns presigned URL with expiration
    */
   private async generateAccessUrl(url: string, storageType: 'local' | 's3'): Promise<string> {
     if (storageType === 's3') {
-      // Generate presigned URL for S3
+      // For public S3 buckets: returns direct URL
+      // For private S3 buckets: generates and returns presigned URL
       return await this.storageService.generatePresignedUrl(url);
     } else {
       // For local storage, return API endpoint path

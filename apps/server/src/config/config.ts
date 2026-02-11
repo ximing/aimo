@@ -7,7 +7,7 @@ loadEnv();
 console.log('Current Environment:', process.env.NODE_ENV);
 
 export type StorageType = 'local' | 's3';
-export type BackupStorageType = 'local' | 's3' | 'oss';
+export type BackupStorageType = 'local' | 's3';
 export type AttachmentStorageType = 'local' | 's3';
 
 export interface BackupRetentionPolicy {
@@ -22,23 +22,14 @@ export interface BackupConfig {
   retentionPolicy: BackupRetentionPolicy;
   // Note: Backup is automatically disabled if LanceDB uses S3 storage
   // S3 provides built-in redundancy and managed storage, making local backups unnecessary
-  // S3 配置
+  // S3-compatible 配置（支持 AWS S3、MinIO、Aliyun OSS 等）
   s3?: {
     bucket: string;
     prefix: string;
     awsAccessKeyId?: string;
     awsSecretAccessKey?: string;
     region?: string;
-    endpoint?: string;
-  };
-  // OSS 配置
-  oss?: {
-    bucket: string;
-    prefix: string;
-    accessKeyId?: string;
-    accessKeySecret?: string;
-    region?: string;
-    endpoint?: string;
+    endpoint?: string; // 可选：自定义端点（如 MinIO、Aliyun OSS 等）
   };
   // 本地存储配置
   local?: {
@@ -55,14 +46,15 @@ export interface AttachmentConfig {
   local?: {
     path: string; // 本地存储路径
   };
-  // S3 配置
+  // S3-compatible 配置（支持 AWS S3、MinIO、Aliyun OSS 等）
   s3?: {
     bucket: string;
     prefix: string;
     awsAccessKeyId?: string;
     awsSecretAccessKey?: string;
     region?: string;
-    endpoint?: string;
+    endpoint?: string; // 可选：自定义端点（如 MinIO、Aliyun OSS 等）
+    isPublic?: boolean; // 是否为公开桶（true: 返回直接 URL，false: 生成 presigned URL）
   };
 }
 
@@ -148,17 +140,6 @@ export const config: Config = {
             endpoint: process.env.BACKUP_S3_ENDPOINT,
           }
         : undefined,
-    oss:
-      process.env.BACKUP_STORAGE_TYPE === 'oss'
-        ? {
-            bucket: process.env.BACKUP_OSS_BUCKET || '',
-            prefix: process.env.BACKUP_OSS_PREFIX || 'backups',
-            accessKeyId: process.env.BACKUP_OSS_ACCESS_KEY_ID,
-            accessKeySecret: process.env.BACKUP_OSS_ACCESS_KEY_SECRET,
-            region: process.env.BACKUP_OSS_REGION || 'cn-hangzhou',
-            endpoint: process.env.BACKUP_OSS_ENDPOINT,
-          }
-        : undefined,
     local:
       process.env.BACKUP_STORAGE_TYPE === 'local'
         ? {
@@ -206,6 +187,7 @@ export const config: Config = {
             awsSecretAccessKey: process.env.ATTACHMENT_AWS_SECRET_ACCESS_KEY,
             region: process.env.ATTACHMENT_AWS_REGION || 'us-east-1',
             endpoint: process.env.ATTACHMENT_S3_ENDPOINT,
+            isPublic: process.env.ATTACHMENT_S3_IS_PUBLIC === 'true',
           }
         : undefined,
   },

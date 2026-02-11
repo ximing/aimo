@@ -2,10 +2,16 @@ import { Service } from 'typedi';
 import { LanceDbService } from '../sources/lancedb.js';
 import { EmbeddingService } from './embedding.service.js';
 import { BackupService } from './backup.service.js';
+import { AttachmentService } from './attachment.service.js';
 import type { Memo, NewMemo } from '../models/db/memo.schema.js';
+import type { MemoWithAttachmentsDto, PaginatedMemoWithAttachmentsDto, MemoListItemDto, PaginatedMemoListDto } from '@aimo/dto';
+import type { DenormalizedAttachment } from '../models/db/schema.js';
 import { generateTypeId } from '../utils/id.js';
 import { OBJECT_TYPE } from '../models/constant/type.js';
 
+/**
+ * Service-specific options for memo search (internal use)
+ */
 export interface MemoSearchOptions {
   uid: string;
   page?: number;
@@ -17,6 +23,9 @@ export interface MemoSearchOptions {
   endDate?: Date;
 }
 
+/**
+ * Service-specific options for vector search (internal use)
+ */
 export interface MemoVectorSearchOptions {
   uid: string;
   query: string;
@@ -24,23 +33,41 @@ export interface MemoVectorSearchOptions {
   threshold?: number;
 }
 
-export interface PaginatedResult<T> {
-  items: T[];
-  pagination: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
-}
-
 @Service()
 export class MemoService {
   constructor(
     private lanceDb: LanceDbService,
     private embeddingService: EmbeddingService,
-    private backupService: BackupService
+    private backupService: BackupService,
+    private attachmentService: AttachmentService
   ) {}
+
+  /**
+   * Convert Arrow List<Struct> attachments to plain JSON array
+   */
+  private convertArrowAttachments(arrowAttachments: any): DenormalizedAttachment[] {
+    if (!arrowAttachments) {
+      return [];
+    }
+
+    // If it's already a plain array, return as is
+    if (Array.isArray(arrowAttachments)) {
+      return arrowAttachments;
+    }
+
+    // If it's an Arrow StructVector, convert to array
+    if (arrowAttachments.toArray) {
+      return arrowAttachments.toArray();
+    }
+
+    // If it's an Arrow Vector with data property
+    if (arrowAttachments.data && Array.isArray(arrowAttachments.data)) {
+      return arrowAttachments.data;
+    }
+
+    // Fallback: return empty array
+    return [];
+  }
 
   /**
    * Trigger backup for data changes
@@ -55,36 +82,69 @@ export class MemoService {
   }
 
   /**
-   * Create a new memo with automatic embedding
+   * Create a new memo with automatic embedding and denormalized attachments
    */
-  async createMemo(uid: string, content: string, attachments?: string[]): Promise<Memo> {
+  async createMemo(uid: string, content: string, attachments?: string[]): Promise<MemoWithAttachmentsDto> {
     try {
       if (!content || content.trim().length === 0) {
         throw new Error('Memo content cannot be empty');
       }
 
-      // Validate attachments (max 9)
-      if (attachments && attachments.length > 9) {
-        throw new Error('Maximum 9 attachments allowed per memo');
-      }
-
       // Generate embedding for the content
       const embedding = await this.embeddingService.generateEmbedding(content);
 
+      // Get full attachment details for denormalization (immutable at creation time)
+      const denormalizedAttachments: DenormalizedAttachment[] = [];
+      if (attachments && attachments.length > 0) {
+        const attachmentDetails = await Promise.all(
+          attachments.map(async (attachmentId) => {
+            try {
+              const att = await this.attachmentService.getAttachment(attachmentId, uid);
+              if (!att) {
+                console.warn(`Attachment not found: ${attachmentId}`);
+              }
+              return att;
+            } catch (error) {
+              console.warn(`Failed to get attachment ${attachmentId}:`, error);
+              return null;
+            }
+          })
+        );
+
+        // Filter and convert to denormalized format
+        attachmentDetails.forEach((att) => {
+          if (att) {
+            denormalizedAttachments.push({
+              attachmentId: att.attachmentId,
+              filename: att.filename,
+              url: att.url,
+              type: att.type,
+              size: att.size,
+              createdAt: att.createdAt,
+            });
+          }
+        });
+      }
+
+      const now = Date.now();
       const memo: Memo = {
         memoId: generateTypeId(OBJECT_TYPE.MEMO),
         uid,
         content,
         attachments,
         embedding,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: now,
+        updatedAt: now,
       };
 
-      // Prepare record for LanceDB (convert attachments array to JSON string)
+      // Prepare record for LanceDB with denormalized attachments
+      // Convert embedding to array if it's an Arrow object
+      const embeddingArray = Array.isArray(embedding) ? embedding : Array.from(embedding || []);
+      
       const memoRecord = {
         ...memo,
-        attachments: attachments ? JSON.stringify(attachments) : undefined,
+        embedding: embeddingArray,
+        attachments: denormalizedAttachments.length > 0 ? denormalizedAttachments : undefined,
       };
 
       const memosTable = await this.lanceDb.openTable('memos');
@@ -93,7 +153,11 @@ export class MemoService {
       // Trigger backup on memo creation
       this.triggerBackup('memo_created');
 
-      return memo;
+      // Return with denormalized attachment data directly (no need to query again)
+      return {
+        ...memo,
+        attachments: denormalizedAttachments,
+      } ;
     } catch (error) {
       console.error('Error creating memo:', error);
       throw error;
@@ -101,9 +165,9 @@ export class MemoService {
   }
 
   /**
-   * Get memos for a user with pagination and filters
+   * Get memos for a user with pagination and filters (excludes embedding to reduce payload)
    */
-  async getMemos(options: MemoSearchOptions): Promise<PaginatedResult<Memo>> {
+  async getMemos(options: MemoSearchOptions): Promise<PaginatedMemoListDto> {
     try {
       const {
         uid,
@@ -126,12 +190,12 @@ export class MemoService {
         filterConditions.push(`content LIKE '%${search}%'`);
       }
 
-      // Add date filters
+      // Add date filters (convert Date objects to millisecond timestamps)
       if (startDate) {
-        filterConditions.push(`createdAt >= '${startDate.toISOString()}'`);
+        filterConditions.push(`createdAt >= ${startDate.getTime()}`);
       }
       if (endDate) {
-        filterConditions.push(`createdAt <= '${endDate.toISOString()}'`);
+        filterConditions.push(`createdAt <= ${endDate.getTime()}`);
       }
 
       const whereClause = filterConditions.join(' AND ');
@@ -147,16 +211,20 @@ export class MemoService {
         .sort((a: any, b: any) => {
           const aValue = sortBy === 'createdAt' ? a.createdAt : a.updatedAt;
           const bValue = sortBy === 'createdAt' ? b.createdAt : b.updatedAt;
-          const comparison = new Date(aValue).getTime() - new Date(bValue).getTime();
+          const comparison = aValue - bValue;
           return sortOrder === 'asc' ? comparison : -comparison;
         })
         .slice(offset, offset + limit);
 
-      // Parse attachments JSON strings back to arrays
+      // Use denormalized attachments directly and exclude embedding
       const items = results.map((memo: any) => ({
-        ...memo,
-        attachments: memo.attachments ? JSON.parse(memo.attachments) : undefined,
-      })) as Memo[];
+        memoId: memo.memoId,
+        uid: memo.uid,
+        content: memo.content,
+        attachments: this.convertArrowAttachments(memo.attachments),
+        createdAt: memo.createdAt,
+        updatedAt: memo.updatedAt,
+      })) as MemoListItemDto[];
 
       return {
         items,
@@ -176,7 +244,7 @@ export class MemoService {
   /**
    * Get a single memo by ID
    */
-  async getMemoById(memoId: string, uid: string): Promise<Memo | null> {
+  async getMemoById(memoId: string, uid: string): Promise<MemoWithAttachmentsDto | null> {
     try {
       const memosTable = await this.lanceDb.openTable('memos');
 
@@ -191,10 +259,12 @@ export class MemoService {
       }
 
       const memo: any = results[0];
+
+      // Use denormalized attachments directly (no need to query again)
       return {
         ...memo,
-        attachments: memo.attachments ? JSON.parse(memo.attachments) : [],
-      } as Memo;
+        attachments: this.convertArrowAttachments(memo.attachments),
+      } as MemoWithAttachmentsDto;
     } catch (error) {
       console.error('Error getting memo by ID:', error);
       throw error;
@@ -204,38 +274,79 @@ export class MemoService {
   /**
    * Update a memo
    */
-  async updateMemo(memoId: string, uid: string, content: string, attachments?: string[]): Promise<Memo | null> {
+  async updateMemo(memoId: string, uid: string, content: string, attachments?: string[]): Promise<MemoWithAttachmentsDto | null> {
     try {
       if (!content || content.trim().length === 0) {
         throw new Error('Memo content cannot be empty');
       }
 
-      // Validate attachments (max 9)
-      if (attachments && attachments.length > 9) {
-        throw new Error('Maximum 9 attachments allowed per memo');
-      }
+      // Find existing memo (get original data with attachmentIds)
+      const memosTable = await this.lanceDb.openTable('memos');
+      const results = await memosTable
+        .query()
+        .where(`memoId = '${memoId}' AND uid = '${uid}'`)
+        .limit(1)
+        .toArray();
 
-      // Find existing memo
-      const existingMemo = await this.getMemoById(memoId, uid);
-      if (!existingMemo) {
+      if (results.length === 0) {
         throw new Error('Memo not found');
       }
+
+      const existingMemo: any = results[0];
 
       // Generate new embedding
       const embedding = await this.embeddingService.generateEmbedding(content);
 
-      const memosTable = await this.lanceDb.openTable('memos');
+      // Get full attachment details for denormalization if attachments are provided
+      let denormalizedAttachments: DenormalizedAttachment[] | undefined;
+      if (attachments !== undefined) {
+        denormalizedAttachments = [];
+        if (attachments.length > 0) {
+          const attachmentDetails = await Promise.all(
+            attachments.map(async (attachmentId) => {
+              try {
+                const att = await this.attachmentService.getAttachment(attachmentId, uid);
+                if (!att) {
+                  console.warn(`Attachment not found: ${attachmentId}`);
+                }
+                return att;
+              } catch (error) {
+                console.warn(`Failed to get attachment ${attachmentId}:`, error);
+                return null;
+              }
+            })
+          );
+
+           // Filter and convert to denormalized format
+           attachmentDetails.forEach((att) => {
+             if (att) {
+               denormalizedAttachments!.push({
+                 attachmentId: att.attachmentId,
+                 filename: att.filename,
+                 url: att.url,
+                 type: att.type,
+                 size: att.size,
+                 createdAt: att.createdAt,
+               });
+             }
+           });
+        }
+      }
 
       // Update the memo
-      const updateData: Record<string, string> = {
+      const now = Date.now();
+      // Convert embedding to array if it's an Arrow object
+      const embeddingArray = Array.isArray(embedding) ? embedding : Array.from(embedding || []);
+      
+      const updateData: Record<string, any> = {
         content,
-        embedding: JSON.stringify(embedding),
-        updatedAt: new Date().toISOString(),
+        embedding: embeddingArray,
+        updatedAt: now,
       };
 
       // Add attachments to update if provided
       if (attachments !== undefined) {
-        updateData.attachments = JSON.stringify(attachments);
+        updateData.attachments = denormalizedAttachments && denormalizedAttachments.length > 0 ? denormalizedAttachments : undefined;
       }
 
       await memosTable.update(updateData, { where: `memoId = '${memoId}' AND uid = '${uid}'` });
@@ -243,13 +354,17 @@ export class MemoService {
       // Trigger backup on memo update
       this.triggerBackup('memo_updated');
 
+      // Build updated memo object with denormalized attachments
+      const finalAttachments = denormalizedAttachments !== undefined 
+        ? denormalizedAttachments 
+        : this.convertArrowAttachments(existingMemo.attachments);
       return {
         ...existingMemo,
         content,
-        attachments: attachments !== undefined ? attachments : existingMemo.attachments,
+        attachments: finalAttachments,
         embedding,
-        updatedAt: new Date(),
-      };
+        updatedAt: now,
+      } as MemoWithAttachmentsDto;
     } catch (error) {
       console.error('Error updating memo:', error);
       throw error;
@@ -282,9 +397,9 @@ export class MemoService {
   }
 
   /**
-   * Vector search for memos using semantic search
+   * Vector search for memos using semantic search (excludes embedding to reduce payload)
    */
-  async vectorSearch(options: MemoVectorSearchOptions): Promise<Memo[]> {
+  async vectorSearch(options: MemoVectorSearchOptions): Promise<MemoListItemDto[]> {
     try {
       const { uid, query, limit = 10, threshold = 0.5 } = options;
 
@@ -312,11 +427,15 @@ export class MemoService {
         return similarity >= threshold;
       });
 
-      // Parse attachments JSON strings back to arrays
+      // Use denormalized attachments directly and exclude embedding
       return filtered.map((memo: any) => ({
-        ...memo,
-        attachments: memo.attachments ? JSON.parse(memo.attachments) : [],
-      })) as Memo[];
+        memoId: memo.memoId,
+        uid: memo.uid,
+        content: memo.content,
+        attachments: this.convertArrowAttachments(memo.attachments),
+        createdAt: memo.createdAt,
+        updatedAt: memo.updatedAt,
+      })) as MemoListItemDto[];
     } catch (error) {
       console.error('Error performing vector search:', error);
       throw error;
@@ -332,10 +451,10 @@ export class MemoService {
 
       const results = await memosTable.query().where(`uid = '${uid}'`).toArray();
 
-      // Parse attachments JSON strings back to arrays
+      // Use denormalized attachments directly
       return results.map((memo: any) => ({
         ...memo,
-        attachments: memo.attachments ? JSON.parse(memo.attachments) : [],
+        attachments: this.convertArrowAttachments(memo.attachments),
       })) as Memo[];
     } catch (error) {
       console.error('Error getting all memos:', error);

@@ -3,6 +3,12 @@ import type { AttachmentDto, UploadAttachmentResponseDto } from '@aimo/dto';
 
 const API_BASE = '/api/v1/attachments';
 
+interface ApiResponse<T> {
+  code: number;
+  data: T;
+  message?: string;
+}
+
 export const attachmentApi = {
   /**
    * 上传附件
@@ -11,11 +17,15 @@ export const attachmentApi = {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await axios.post<UploadAttachmentResponseDto>(`${API_BASE}/upload`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const response = await axios.post<ApiResponse<UploadAttachmentResponseDto>>(
+      `${API_BASE}/upload`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
 
     if (response.data.code === 0) {
       return response.data.data.attachment;
@@ -36,8 +46,10 @@ export const attachmentApi = {
    * 删除附件
    */
   async delete(attachmentId: string): Promise<void> {
-    const response = await axios.delete(`${API_BASE}/${attachmentId}`);
-    
+    const response = await axios.delete<ApiResponse<{ message: string }>>(
+      `${API_BASE}/${attachmentId}`
+    );
+
     if (response.data.code !== 0) {
       throw new Error(response.data.message || 'Delete failed');
     }

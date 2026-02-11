@@ -17,7 +17,7 @@ const request: AxiosInstance = axios.create({
 
 /**
  * Request interceptor
- * Add token to headers if available
+ * Add token to headers if available and serialize Date objects to timestamps
  */
 request.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
@@ -26,6 +26,16 @@ request.interceptors.request.use(
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Serialize Date objects in query parameters to timestamps
+    if (config.params) {
+      Object.keys(config.params).forEach((key) => {
+        if (config.params[key] instanceof Date) {
+          config.params[key] = config.params[key].getTime();
+        }
+      });
+    }
+
     return config;
   },
   (error: AxiosError) => {

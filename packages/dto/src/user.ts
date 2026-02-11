@@ -17,6 +17,6 @@ export interface UserProfileDto extends UserInfoDto {
   avatar?: string;
   phone?: string;
   status: number;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: number; // timestamp in milliseconds
+  updatedAt: number; // timestamp in milliseconds
 }

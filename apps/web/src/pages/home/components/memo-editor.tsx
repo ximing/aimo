@@ -34,7 +34,7 @@ export const MemoEditor = view(() => {
         const filesToUpload = attachments.filter((a) => a.file).map((a) => a.file!);
         if (filesToUpload.length > 0) {
           const uploadedAttachments = await attachmentApi.uploadBatch(filesToUpload);
-          attachmentIds = uploadedAttachments.map((a) => a.id);
+          attachmentIds = uploadedAttachments.map((a) => a.attachmentId);
         }
       }
 
@@ -83,10 +83,6 @@ export const MemoEditor = view(() => {
   };
 
   const handleAttachmentClick = () => {
-    if (attachments.length >= 9) {
-      alert('最多只能上传 9 个附件');
-      return;
-    }
     fileInputRef.current?.click();
   };
 
@@ -94,15 +90,8 @@ export const MemoEditor = view(() => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
-    const remainingSlots = 9 - attachments.length;
-    if (remainingSlots <= 0) {
-      alert('最多只能上传 9 个附件');
-      return;
-    }
-
-    const filesToAdd = files.slice(0, remainingSlots);
-    const newAttachments: AttachmentItem[] = filesToAdd.map((file) => ({
-      id: `temp-${Date.now()}-${Math.random()}`,
+    const newAttachments: AttachmentItem[] = files.map((file) => ({
+      attachmentId: `temp-${Date.now()}-${Math.random()}`,
       file,
       url: URL.createObjectURL(file),
       type: file.type,
@@ -114,14 +103,6 @@ export const MemoEditor = view(() => {
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-  };
-
-  const handleRemoveAttachment = (id: string) => {
-    const attachment = attachments.find((a) => a.id === id);
-    if (attachment && attachment.file) {
-      URL.revokeObjectURL(attachment.url);
-    }
-    setAttachments(attachments.filter((a) => a.id !== id));
   };
 
   return (
@@ -176,10 +157,10 @@ export const MemoEditor = view(() => {
           <button
             type="button"
             onClick={handleAttachmentClick}
-            disabled={loading || attachments.length >= 9}
+            disabled={loading}
             className="p-2 text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-500 hover:bg-gray-100 dark:hover:bg-dark-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="添加附件"
-            title={attachments.length >= 9 ? '已达到最大附件数量' : `添加附件 (${attachments.length}/9)`}
+            title={`添加附件${attachments.length > 0 ? ` (${attachments.length})` : ''}`}
           >
             <Paperclip className="w-5 h-5" />
           </button>

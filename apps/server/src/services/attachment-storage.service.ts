@@ -1,13 +1,21 @@
 /**
  * Attachment Storage Service
- * Handles file storage operations for both local and S3 storage
+ * Handles file storage operations for local and S3-compatible storage
+ * 
+ * Supports all S3-compatible services:
+ * - AWS S3
+ * - MinIO
+ * - Aliyun OSS (with S3-compatible endpoint)
+ * - DigitalOcean Spaces
+ * - Backblaze B2
+ * - And more...
  */
 
 import { Service } from 'typedi';
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { createWriteStream, createReadStream, existsSync, mkdirSync, unlinkSync } from 'fs';
-import { join, dirname } from 'path';
+import { join } from 'path';
 import { pipeline } from 'stream/promises';
 import { config } from '../config/config.js';
 import { nanoid } from 'nanoid';
@@ -29,9 +37,17 @@ export class AttachmentStorageService {
   private s3Client?: S3Client;
 
   constructor() {
-    // Initialize S3 client if using S3 storage
+    // Initialize S3 client for all S3-compatible storage services
+    // This works with: AWS S3, MinIO, Aliyun OSS, DigitalOcean Spaces, etc.
     if (config.attachment.storageType === 's3' && config.attachment.s3) {
       const s3Config = config.attachment.s3;
+      
+      // Determine if we should use path-style or virtual-hosted-style
+      // Aliyun OSS requires virtual-hosted-style (don't use forcePathStyle)
+      // MinIO and others typically use path-style
+      const isAliyunOSS = s3Config.endpoint?.includes(s3Config.region || 'aliyuncs');
+      const forcePathStyle = s3Config.endpoint && !isAliyunOSS ? true : undefined;
+      
       this.s3Client = new S3Client({
         region: s3Config.region || 'us-east-1',
         credentials: s3Config.awsAccessKeyId && s3Config.awsSecretAccessKey
@@ -41,18 +57,18 @@ export class AttachmentStorageService {
             }
           : undefined,
         endpoint: s3Config.endpoint,
-        forcePathStyle: !!s3Config.endpoint, // Required for MinIO and other S3-compatible services
+        forcePathStyle, // true for MinIO, false for Aliyun OSS
       });
     }
   }
 
   /**
-   * Save file to storage (local or S3)
+   * Save file to storage (local or S3-compatible)
    */
   async saveFile(options: SaveFileOptions): Promise<SaveFileResult> {
     const { buffer, filename, mimeType } = options;
     const fileId = nanoid();
-    const attachmentId = `attachments/${fileId}`;
+    const attachmentId = fileId; // Just the ID, no prefix
 
     // Get file extension from original filename
     const ext = filename.split('.').pop() || '';
@@ -102,7 +118,8 @@ export class AttachmentStorageService {
   }
 
   /**
-   * Save file to S3 storage
+   * Save file to S3-compatible storage
+   * Works with: AWS S3, MinIO, Aliyun OSS, DigitalOcean Spaces, etc.
    */
   private async saveToS3(
     buffer: Buffer,
@@ -126,16 +143,61 @@ export class AttachmentStorageService {
 
     await this.s3Client.send(command);
 
-    // Return S3 URL
-    const s3Url = s3Config.endpoint
-      ? `${s3Config.endpoint}/${s3Config.bucket}/${key}`
-      : `https://${s3Config.bucket}.s3.${s3Config.region}.amazonaws.com/${key}`;
+    // Generate URL based on endpoint type
+    const url = this.generateS3Url(key);
 
     return {
       attachmentId,
-      url: s3Url,
+      url,
       storageType: 's3',
     };
+  }
+
+  /**
+   * Generate S3-compatible URL
+   * Handles different URL formats for various S3 providers
+   */
+  private generateS3Url(key: string): string {
+    if (!config.attachment.s3) {
+      throw new Error('S3 configuration is missing');
+    }
+
+    const s3Config = config.attachment.s3;
+    const bucket = s3Config.bucket;
+
+    if (s3Config.endpoint) {
+      // For S3-compatible services with custom endpoint
+      // e.g., MinIO: minio:9000 or http://minio:9000
+      // e.g., Aliyun OSS: oss-cn-beijing.aliyuncs.com or https://delu-cdn.oss-cn-beijing.aliyuncs.com
+      // Format: https://bucket.endpoint/key or https://endpoint/bucket/key
+      
+      // For virtual-hosted-style endpoints (like Aliyun OSS)
+      if (s3Config.endpoint.includes(s3Config.region || 'aliyuncs')) {
+        // Aliyun OSS: use virtual-hosted-style
+        // https://bucket.oss-cn-beijing.aliyuncs.com/prefix/filename
+        // or https://delu-cdn.oss-cn-beijing.aliyuncs.com/prefix/filename
+        
+        // Check if endpoint already has protocol prefix
+        if (s3Config.endpoint.startsWith('http://') || s3Config.endpoint.startsWith('https://')) {
+          // Endpoint already has protocol, extract domain part
+          const domain = s3Config.endpoint.split('://')[1];
+          return `https://${bucket}.${domain}/${key}`;
+        } else {
+          // Endpoint is just domain, add protocol
+          return `https://${bucket}.${s3Config.endpoint}/${key}`;
+        }
+      } else {
+        // For other S3-compatible services (MinIO, etc.)
+        // Use path-style: https://endpoint/bucket/key
+        const baseUrl = s3Config.endpoint.startsWith('http') 
+          ? s3Config.endpoint 
+          : `https://${s3Config.endpoint}`;
+        return `${baseUrl}/${bucket}/${key}`;
+      }
+    } else {
+      // AWS S3 standard URL
+      return `https://${bucket}.s3.${s3Config.region}.amazonaws.com/${key}`;
+    }
   }
 
   /**
@@ -164,21 +226,39 @@ export class AttachmentStorageService {
   }
 
   /**
-   * Generate presigned URL for S3 file access
+   * Generate presigned URL for S3-compatible file access
+   * For public buckets, returns the direct URL without signing
+   * For private buckets, generates a presigned URL with expiration
    */
   async generatePresignedUrl(url: string): Promise<string> {
-    if (!this.s3Client || !config.attachment.s3) {
-      throw new Error('S3 client is not initialized');
+    if (!config.attachment.s3) {
+      throw new Error('S3 configuration is missing');
     }
 
     const s3Config = config.attachment.s3;
     
-    // Extract key from URL
+    // If bucket is public, return the URL as-is without signing
+    if (s3Config.isPublic) {
+      return url;
+    }
+
+    // For private buckets, generate presigned URL
+    if (!this.s3Client) {
+      throw new Error('S3 client is not initialized');
+    }
+    
+    // Extract key from URL - handle different URL formats
     let key: string;
+    
     if (url.includes(s3Config.bucket)) {
-      // Parse key from full S3 URL
-      const urlParts = url.split(`${s3Config.bucket}/`);
-      key = urlParts[1];
+      // Parse key from URL
+      // Format 1: https://bucket.endpoint/prefix/filename (virtual-hosted)
+      // Format 2: https://endpoint/bucket/prefix/filename (path-style)
+      const bucketIndex = url.indexOf(s3Config.bucket);
+      const afterBucket = url.substring(bucketIndex + s3Config.bucket.length);
+      
+      // Remove leading '/' and extract the rest as key
+      key = afterBucket.replace(/^\/+/, '').split('?')[0];
     } else {
       // Assume it's already a key
       key = url;
@@ -229,7 +309,7 @@ export class AttachmentStorageService {
   }
 
   /**
-   * Delete file from S3 storage
+   * Delete file from S3-compatible storage
    */
   private async deleteFromS3(url: string): Promise<void> {
     if (!this.s3Client || !config.attachment.s3) {
@@ -238,11 +318,13 @@ export class AttachmentStorageService {
 
     const s3Config = config.attachment.s3;
     
-    // Extract key from URL
+    // Extract key from URL - handle different URL formats
     let key: string;
+    
     if (url.includes(s3Config.bucket)) {
-      const urlParts = url.split(`${s3Config.bucket}/`);
-      key = urlParts[1];
+      const bucketIndex = url.indexOf(s3Config.bucket);
+      const afterBucket = url.substring(bucketIndex + s3Config.bucket.length);
+      key = afterBucket.replace(/^\/+/, '').split('?')[0];
     } else {
       key = url;
     }

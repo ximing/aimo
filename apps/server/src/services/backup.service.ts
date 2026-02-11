@@ -125,7 +125,7 @@ export class BackupService extends EventEmitter {
       this.emit('backup:success', {
         filename,
         reason,
-        timestamp: new Date(),
+        timestamp: Date.now(),
       });
     } catch (error) {
       console.error('Backup execution failed:', error);
@@ -134,7 +134,7 @@ export class BackupService extends EventEmitter {
       this.emit('backup:error', {
         error,
         reason,
-        timestamp: new Date(),
+        timestamp: Date.now(),
       });
     } finally {
       this.backupInProgress = false;

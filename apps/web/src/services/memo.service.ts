@@ -1,5 +1,11 @@
 import { Service } from '@rabjs/react';
-import type { MemoDto, CreateMemoDto, UpdateMemoDto, MemoSearchOptionsDto } from '@aimo/dto';
+import type {
+  MemoWithAttachmentsDto,
+  MemoListItemDto,
+  CreateMemoDto,
+  UpdateMemoDto,
+  MemoSearchOptionsDto,
+} from '@aimo/dto';
 import * as memoApi from '../api/memo';
 
 /**
@@ -8,8 +14,8 @@ import * as memoApi from '../api/memo';
  */
 export class MemoService extends Service {
   // State
-  memos: MemoDto[] = [];
-  currentMemo: MemoDto | null = null;
+  memos: MemoListItemDto[] = [];
+  currentMemo: MemoWithAttachmentsDto | null = null;
   loading = false;
 
   // Pagination

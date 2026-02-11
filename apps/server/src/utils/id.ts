@@ -1,10 +1,9 @@
 import { customAlphabet } from 'nanoid';
 import { OBJECT_TYPE } from '../models/constant/type.js';
-const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 24);
 const typeid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 23);
 
 export const generateUid = () => {
-  return nanoid();
+  return generateTypeId(OBJECT_TYPE.USER);
 };
 
 export const generateTypeId = (type: (typeof OBJECT_TYPE)[keyof typeof OBJECT_TYPE]) => {

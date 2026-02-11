@@ -4,17 +4,16 @@
  */
 
 export interface Memo {
-  id?: number;
-  memoId: string; // Unique memo ID (nanoid)
+  memoId: string; // Unique memo ID (generateTypeId)
   uid: string; // User ID who owns this memo
   content: string; // Memo text content
-  attachments?: string[]; // Attachment IDs (up to 9)
+  attachments?: string[]; // Attachment IDs
   embedding: number[]; // Vector embedding for semantic search
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: number; // timestamp in milliseconds
+  updatedAt: number; // timestamp in milliseconds
 }
 
-export type NewMemo = Omit<Memo, 'id' | 'createdAt' | 'updatedAt'> & {
-  createdAt?: Date;
-  updatedAt?: Date;
+export type NewMemo = Omit<Memo, 'createdAt' | 'updatedAt'> & {
+  createdAt?: number;
+  updatedAt?: number;
 };

@@ -41,6 +41,7 @@ export class UserService {
       }
 
       // Create new user record
+      const now = Date.now();
       const user: User = {
         uid: userData.uid || generateUid(),
         email: userData.email,
@@ -50,8 +51,8 @@ export class UserService {
         nickname: userData.nickname,
         avatar: userData.avatar,
         status: userData.status ?? 1,
-        createdAt: userData.createdAt || new Date(),
-        updatedAt: userData.updatedAt || new Date(),
+        createdAt: userData.createdAt || now,
+        updatedAt: userData.updatedAt || now,
       };
 
       const usersTable = await this.lanceDb.openTable('users');
@@ -144,7 +145,7 @@ export class UserService {
         ...existingUser,
         ...updates,
         uid: existingUser.uid, // Don't allow changing UID
-        updatedAt: new Date(),
+        updatedAt: Date.now(),
       };
 
       // Use update with SQL where clause

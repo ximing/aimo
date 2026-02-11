@@ -86,7 +86,7 @@ export class EmbeddingService {
           modelHash,
           contentHash,
           embedding,
-          createdAt: new Date(),
+          createdAt: Date.now(),
         } as Record<string, unknown>,
       ]);
     } catch (error) {
