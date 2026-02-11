@@ -8,6 +8,7 @@ export interface Memo {
   memoId: string; // Unique memo ID (nanoid)
   uid: string; // User ID who owns this memo
   content: string; // Memo text content
+  attachments?: string[]; // Attachment IDs (up to 9)
   embedding: number[]; // Vector embedding for semantic search
   createdAt: Date;
   updatedAt: Date;

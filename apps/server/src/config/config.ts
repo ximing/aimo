@@ -8,6 +8,7 @@ console.log('Current Environment:', process.env.NODE_ENV);
 
 export type StorageType = 'local' | 's3';
 export type BackupStorageType = 'local' | 's3' | 'oss';
+export type AttachmentStorageType = 'local' | 's3';
 
 export interface BackupRetentionPolicy {
   maxCount?: number; // 最多保留N个备份
@@ -45,6 +46,26 @@ export interface BackupConfig {
   };
 }
 
+export interface AttachmentConfig {
+  storageType: AttachmentStorageType;
+  maxFileSize: number; // 最大文件大小（字节）
+  allowedMimeTypes: string[]; // 允许的 MIME 类型白名单
+  presignedUrlExpiry: number; // S3 预签名 URL 过期时间（秒）
+  // 本地存储配置
+  local?: {
+    path: string; // 本地存储路径
+  };
+  // S3 配置
+  s3?: {
+    bucket: string;
+    prefix: string;
+    awsAccessKeyId?: string;
+    awsSecretAccessKey?: string;
+    region?: string;
+    endpoint?: string;
+  };
+}
+
 export interface Config {
   port: number;
   cors: {
@@ -67,6 +88,7 @@ export interface Config {
     };
   };
   backup: BackupConfig;
+  attachment: AttachmentConfig;
   openai: {
     apiKey: string;
     model: string;
@@ -141,6 +163,49 @@ export const config: Config = {
       process.env.BACKUP_STORAGE_TYPE === 'local'
         ? {
             path: process.env.BACKUP_LOCAL_PATH || './backups',
+          }
+        : undefined,
+  },
+  attachment: {
+    storageType: (process.env.ATTACHMENT_STORAGE_TYPE || 'local') as AttachmentStorageType,
+    maxFileSize: Number(process.env.ATTACHMENT_MAX_FILE_SIZE) || 52428800, // 默认 50MB
+    allowedMimeTypes: process.env.ATTACHMENT_ALLOWED_MIME_TYPES
+      ? process.env.ATTACHMENT_ALLOWED_MIME_TYPES.split(',')
+      : [
+          // 图片
+          'image/png',
+          'image/jpeg',
+          'image/gif',
+          'image/webp',
+          'image/svg+xml',
+          // PDF
+          'application/pdf',
+          // 文档
+          'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          // 表格
+          'application/vnd.ms-excel',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          // 文本
+          'text/plain',
+          'text/markdown',
+        ],
+    presignedUrlExpiry: Number(process.env.ATTACHMENT_PRESIGNED_URL_EXPIRY) || 3600, // 默认 1 小时
+    local:
+      process.env.ATTACHMENT_STORAGE_TYPE !== 's3'
+        ? {
+            path: process.env.ATTACHMENT_LOCAL_PATH || './attachments',
+          }
+        : undefined,
+    s3:
+      process.env.ATTACHMENT_STORAGE_TYPE === 's3'
+        ? {
+            bucket: process.env.ATTACHMENT_S3_BUCKET || '',
+            prefix: process.env.ATTACHMENT_S3_PREFIX || 'attachments',
+            awsAccessKeyId: process.env.ATTACHMENT_AWS_ACCESS_KEY_ID,
+            awsSecretAccessKey: process.env.ATTACHMENT_AWS_SECRET_ACCESS_KEY,
+            region: process.env.ATTACHMENT_AWS_REGION || 'us-east-1',
+            endpoint: process.env.ATTACHMENT_S3_ENDPOINT,
           }
         : undefined,
   },

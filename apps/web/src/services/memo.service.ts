@@ -89,9 +89,9 @@ export class MemoService extends Service {
   /**
    * Create a new memo
    */
-  async createMemo(content: string) {
+  async createMemo(content: string, attachments?: string[]) {
     try {
-      const data: CreateMemoDto = { content };
+      const data: CreateMemoDto = { content, attachments };
       const response = await memoApi.createMemo(data);
 
       if (response.code === 0 && response.data) {
@@ -113,9 +113,9 @@ export class MemoService extends Service {
   /**
    * Update a memo
    */
-  async updateMemo(memoId: string, content: string) {
+  async updateMemo(memoId: string, content: string, attachments?: string[]) {
     try {
-      const data: UpdateMemoDto = { content };
+      const data: UpdateMemoDto = { content, attachments };
       const response = await memoApi.updateMemo(memoId, data);
 
       if (response.code === 0 && response.data) {

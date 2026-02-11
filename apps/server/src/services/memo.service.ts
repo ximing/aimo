@@ -57,10 +57,15 @@ export class MemoService {
   /**
    * Create a new memo with automatic embedding
    */
-  async createMemo(uid: string, content: string): Promise<Memo> {
+  async createMemo(uid: string, content: string, attachments?: string[]): Promise<Memo> {
     try {
       if (!content || content.trim().length === 0) {
         throw new Error('Memo content cannot be empty');
+      }
+
+      // Validate attachments (max 9)
+      if (attachments && attachments.length > 9) {
+        throw new Error('Maximum 9 attachments allowed per memo');
       }
 
       // Generate embedding for the content
@@ -70,13 +75,20 @@ export class MemoService {
         memoId: generateTypeId(OBJECT_TYPE.MEMO),
         uid,
         content,
+        attachments,
         embedding,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
 
+      // Prepare record for LanceDB (convert attachments array to JSON string)
+      const memoRecord = {
+        ...memo,
+        attachments: attachments ? JSON.stringify(attachments) : undefined,
+      };
+
       const memosTable = await this.lanceDb.openTable('memos');
-      await memosTable.add([memo as unknown as Record<string, unknown>]);
+      await memosTable.add([memoRecord as unknown as Record<string, unknown>]);
 
       // Trigger backup on memo creation
       this.triggerBackup('memo_created');
@@ -140,8 +152,14 @@ export class MemoService {
         })
         .slice(offset, offset + limit);
 
+      // Parse attachments JSON strings back to arrays
+      const items = results.map((memo: any) => ({
+        ...memo,
+        attachments: memo.attachments ? JSON.parse(memo.attachments) : undefined,
+      })) as Memo[];
+
       return {
-        items: results as Memo[],
+        items,
         pagination: {
           total,
           page,
@@ -168,7 +186,15 @@ export class MemoService {
         .limit(1)
         .toArray();
 
-      return results.length > 0 ? (results[0] as Memo) : null;
+      if (results.length === 0) {
+        return null;
+      }
+
+      const memo: any = results[0];
+      return {
+        ...memo,
+        attachments: memo.attachments ? JSON.parse(memo.attachments) : [],
+      } as Memo;
     } catch (error) {
       console.error('Error getting memo by ID:', error);
       throw error;
@@ -178,10 +204,15 @@ export class MemoService {
   /**
    * Update a memo
    */
-  async updateMemo(memoId: string, uid: string, content: string): Promise<Memo | null> {
+  async updateMemo(memoId: string, uid: string, content: string, attachments?: string[]): Promise<Memo | null> {
     try {
       if (!content || content.trim().length === 0) {
         throw new Error('Memo content cannot be empty');
+      }
+
+      // Validate attachments (max 9)
+      if (attachments && attachments.length > 9) {
+        throw new Error('Maximum 9 attachments allowed per memo');
       }
 
       // Find existing memo
@@ -202,6 +233,11 @@ export class MemoService {
         updatedAt: new Date().toISOString(),
       };
 
+      // Add attachments to update if provided
+      if (attachments !== undefined) {
+        updateData.attachments = JSON.stringify(attachments);
+      }
+
       await memosTable.update(updateData, { where: `memoId = '${memoId}' AND uid = '${uid}'` });
 
       // Trigger backup on memo update
@@ -210,6 +246,7 @@ export class MemoService {
       return {
         ...existingMemo,
         content,
+        attachments: attachments !== undefined ? attachments : existingMemo.attachments,
         embedding,
         updatedAt: new Date(),
       };
@@ -275,7 +312,11 @@ export class MemoService {
         return similarity >= threshold;
       });
 
-      return filtered as Memo[];
+      // Parse attachments JSON strings back to arrays
+      return filtered.map((memo: any) => ({
+        ...memo,
+        attachments: memo.attachments ? JSON.parse(memo.attachments) : [],
+      })) as Memo[];
     } catch (error) {
       console.error('Error performing vector search:', error);
       throw error;
@@ -291,7 +332,11 @@ export class MemoService {
 
       const results = await memosTable.query().where(`uid = '${uid}'`).toArray();
 
-      return results as Memo[];
+      // Parse attachments JSON strings back to arrays
+      return results.map((memo: any) => ({
+        ...memo,
+        attachments: memo.attachments ? JSON.parse(memo.attachments) : [],
+      })) as Memo[];
     } catch (error) {
       console.error('Error getting all memos:', error);
       throw error;

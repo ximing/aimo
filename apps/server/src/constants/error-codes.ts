@@ -19,6 +19,13 @@ export const ErrorCode = {
 
   // 业务相关错误: 3000-3999
   BUSINESS_ERROR: 3000,
+
+  // 附件相关错误: 4000-4999
+  FILE_TOO_LARGE: 4000,
+  UNSUPPORTED_FILE_TYPE: 4001,
+  ATTACHMENT_NOT_FOUND: 4002,
+  STORAGE_ERROR: 4003,
+  FILE_UPLOAD_ERROR: 4004,
 } as const;
 
 export const ErrorMessage = {
@@ -35,4 +42,9 @@ export const ErrorMessage = {
   [ErrorCode.DB_ERROR]: '数据库错误',
   [ErrorCode.DB_CONNECT_ERROR]: '数据库连接错误',
   [ErrorCode.BUSINESS_ERROR]: '业务错误',
+  [ErrorCode.FILE_TOO_LARGE]: '文件过大',
+  [ErrorCode.UNSUPPORTED_FILE_TYPE]: '不支持的文件类型',
+  [ErrorCode.ATTACHMENT_NOT_FOUND]: '附件不存在',
+  [ErrorCode.STORAGE_ERROR]: '存储错误',
+  [ErrorCode.FILE_UPLOAD_ERROR]: '文件上传失败',
 } as const;

@@ -2,15 +2,16 @@ import { Service } from 'typedi';
 import * as lancedb from '@lancedb/lancedb';
 import type { Connection, Table } from '@lancedb/lancedb';
 import { config } from '../config/config.js';
-import { usersSchema, memosSchema, type UserRecord, type MemoRecord } from '../models/db/schema.js';
+import { usersSchema, memosSchema, embeddingCacheSchema, attachmentsSchema, type UserRecord, type MemoRecord, type EmbeddingCacheRecord, type AttachmentRecord } from '../models/db/schema.js';
 
 // Re-export for backward compatibility
-export type { UserRecord, MemoRecord };
+export type { UserRecord, MemoRecord, EmbeddingCacheRecord, AttachmentRecord };
 
 @Service()
 export class LanceDbService {
   private db!: Connection;
   private initialized = false;
+  private tableCache: Map<string, Table> = new Map();
 
   async init() {
     try {
@@ -99,6 +100,20 @@ export class LanceDbService {
         await this.db.createEmptyTable('memos', memosSchema);
         console.log('Memos table created successfully');
       }
+
+      // Create embedding_cache table if not exists with explicit schema
+      if (!tableNames.includes('embedding_cache')) {
+        console.log('Creating embedding_cache table with explicit schema...');
+        await this.db.createEmptyTable('embedding_cache', embeddingCacheSchema);
+        console.log('Embedding cache table created successfully');
+      }
+
+      // Create attachments table if not exists with explicit schema
+      if (!tableNames.includes('attachments')) {
+        console.log('Creating attachments table with explicit schema...');
+        await this.db.createEmptyTable('attachments', attachmentsSchema);
+        console.log('Attachments table created successfully');
+      }
     } catch (error) {
       console.error('Error ensuring tables exist:', error);
       throw error;
@@ -117,10 +132,21 @@ export class LanceDbService {
 
   /**
    * Open a table by name
+   * Uses caching to reuse Table objects and avoid repeated initialization overhead
+   * Table objects are designed for long-term reuse and cache index data in memory
    */
   async openTable(tableName: string): Promise<Table> {
+    // Check cache first
+    if (this.tableCache.has(tableName)) {
+      return this.tableCache.get(tableName)!;
+    }
+
+    // Open table and cache it
     const db = this.getDb();
-    return db.openTable(tableName);
+    const table = await db.openTable(tableName);
+    this.tableCache.set(tableName, table);
+
+    return table;
   }
 
   /**
@@ -128,5 +154,42 @@ export class LanceDbService {
    */
   async isInitialized(): Promise<boolean> {
     return this.initialized;
+  }
+
+  /**
+   * Close all cached tables and release resources
+   * Call this during application shutdown to ensure proper cleanup
+   */
+  async closeAllTables(): Promise<void> {
+    try {
+      for (const [tableName, table] of this.tableCache.entries()) {
+        try {
+          table.close();
+          console.log(`Closed table: ${tableName}`);
+        } catch (error) {
+          console.warn(`Error closing table ${tableName}:`, error);
+        }
+      }
+      this.tableCache.clear();
+    } catch (error) {
+      console.error('Error closing tables:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Close the database connection and all cached resources
+   * Should be called during application shutdown
+   */
+  async close(): Promise<void> {
+    try {
+      await this.closeAllTables();
+      this.db.close();
+      this.initialized = false;
+      console.log('LanceDB connection closed');
+    } catch (error) {
+      console.error('Error closing LanceDB:', error);
+      throw error;
+    }
   }
 }

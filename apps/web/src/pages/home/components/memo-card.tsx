@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { view, useService } from '@rabjs/react';
 import type { MemoDto } from '@aimo/dto';
 import { MemoService } from '../../../services/memo.service';
+import { FileText, Film } from 'lucide-react';
 
 interface MemoCardProps {
   memo: MemoDto;
@@ -89,8 +90,39 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
     });
   };
 
-  const images = extractImages(memo.content);
   const plainText = extractPlainText(memo.content, 120);
+
+  // 渲染附件九宫格
+  const renderAttachments = () => {
+    if (!memo.attachments || memo.attachments.length === 0) return null;
+
+    return (
+      <div className="grid grid-cols-3 gap-2">
+        {memo.attachments.map((attachmentId, idx) => {
+          const url = `/api/v1/attachments/file/${attachmentId.split('/').pop()}`;
+          // 简单判断文件类型（需要完整数据时可以调用 API）
+          const isImage = attachmentId.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/);
+          const isVideo = attachmentId.toLowerCase().match(/\.(mp4|mov|avi|webm)$/);
+
+          return (
+            <div key={idx} className="relative aspect-square bg-gray-100 dark:bg-dark-800 rounded overflow-hidden">
+              {isImage ? (
+                <img src={url} alt="" className="w-full h-full object-cover" />
+              ) : isVideo ? (
+                <div className="w-full h-full flex items-center justify-center">
+                  <Film className="w-8 h-8 text-gray-400 dark:text-gray-600" />
+                </div>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <FileText className="w-8 h-8 text-gray-400 dark:text-gray-600" />
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
 
   return (
     <div
@@ -129,25 +161,11 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
         </div>
       ) : (
         <div className="space-y-3">
-          {/* Images */}
-          {images.length > 0 && (
-            <div className="grid grid-cols-2 gap-2">
-              {images.map((imgUrl, idx) => (
-                <img
-                  key={idx}
-                  src={imgUrl}
-                  alt={`memo-image-${idx}`}
-                  className="w-full h-20 object-cover rounded"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
-                  }}
-                />
-              ))}
-            </div>
-          )}
-
           {/* Content */}
-          <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">{plainText}</p>
+          <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">{plainText}</p>
+
+          {/* Attachments (九宫格) */}
+          {renderAttachments()}
 
           {/* Footer */}
           <div className="flex items-center justify-between pt-2">

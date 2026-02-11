@@ -4,10 +4,12 @@
 
 export interface CreateMemoDto {
   content: string;
+  attachments?: string[]; // Array of attachment IDs (max 9)
 }
 
 export interface UpdateMemoDto {
   content: string;
+  attachments?: string[]; // Array of attachment IDs (max 9)
 }
 
 export interface MemoDto {
@@ -15,6 +17,7 @@ export interface MemoDto {
   memoId: string;
   uid: string;
   content: string;
+  attachments?: string[]; // Array of attachment IDs
   embedding: number[];
   createdAt: Date;
   updatedAt: Date;

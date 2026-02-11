@@ -40,6 +40,7 @@ export const memosSchema = new Schema([
   new Field('memoId', new Utf8(), false), // non-nullable unique memo id
   new Field('uid', new Utf8(), false), // non-nullable user id
   new Field('content', new Utf8(), false), // non-nullable memo content
+  new Field('attachments', new Utf8(), true), // nullable attachment IDs (JSON array string)
   new Field('embedding', new FixedSizeList(1536, new Field('item', new Float32(), true)), false), // 1536-dim embedding vector
   new Field('createdAt', new TimestampMicrosecond(), false), // non-nullable creation timestamp (microsecond precision)
   new Field('updatedAt', new TimestampMicrosecond(), false), // non-nullable update timestamp (microsecond precision)
@@ -67,7 +68,62 @@ export interface MemoRecord {
   memoId: string;
   uid: string;
   content: string;
+  attachments?: string; // JSON string of attachment IDs array
   embedding: number[];
   createdAt: Date;
   updatedAt: Date;
+}
+
+/**
+ * Embedding cache table schema
+ * Stores cached embeddings to avoid redundant API calls for the same content
+ */
+export const embeddingCacheSchema = new Schema([
+  new Field('id', new Int32(), true), // nullable id
+  new Field('modelHash', new Utf8(), false), // non-nullable model identifier hash
+  new Field('contentHash', new Utf8(), false), // non-nullable content hash
+  new Field('embedding', new FixedSizeList(1536, new Field('item', new Float32(), true)), false), // 1536-dim embedding vector
+  new Field('createdAt', new TimestampMicrosecond(), false), // non-nullable creation timestamp
+]);
+
+/**
+ * Type definition for embedding cache records
+ */
+export interface EmbeddingCacheRecord {
+  id?: number;
+  modelHash: string;
+  contentHash: string;
+  embedding: number[];
+  createdAt: Date;
+}
+
+/**
+ * Attachments table schema
+ * Stores file attachments with metadata
+ */
+export const attachmentsSchema = new Schema([
+  new Field('id', new Int32(), true), // nullable id
+  new Field('attachmentId', new Utf8(), false), // non-nullable unique attachment id
+  new Field('uid', new Utf8(), false), // non-nullable user id
+  new Field('filename', new Utf8(), false), // non-nullable original filename
+  new Field('url', new Utf8(), false), // non-nullable S3 address or local relative path
+  new Field('type', new Utf8(), false), // non-nullable MIME type
+  new Field('size', new Int32(), false), // non-nullable file size in bytes
+  new Field('storageType', new Utf8(), false), // non-nullable storage type: 'local' | 's3'
+  new Field('createdAt', new TimestampMicrosecond(), false), // non-nullable creation timestamp
+]);
+
+/**
+ * Type definition for attachment records
+ */
+export interface AttachmentRecord {
+  id?: number;
+  attachmentId: string;
+  uid: string;
+  filename: string;
+  url: string;
+  type: string;
+  size: number;
+  storageType: 'local' | 's3';
+  createdAt: Date;
 }

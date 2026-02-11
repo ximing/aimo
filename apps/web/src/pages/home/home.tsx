@@ -49,7 +49,7 @@ export const HomePage = view(() => {
 
       {/* Main Content Area */}
       <main className="flex-1 overflow-hidden flex justify-center w-full">
-        <div className="w-full max-w-[600px] h-full flex flex-col px-8">
+        <div className="w-full max-w-[640px] h-full flex flex-col px-8">
           {/* Memo Editor - Fixed */}
           <div className="pt-4 pb-0 flex-shrink-0">
             <section aria-label="Create new memo">

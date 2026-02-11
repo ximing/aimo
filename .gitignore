@@ -9,3 +9,8 @@ temp
 .DS_Store
 apps/server/public
 .turbo
+
+# Data directories
+lancedb_data/
+backups/
+attachments/

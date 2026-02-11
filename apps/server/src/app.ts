@@ -79,9 +79,28 @@ export async function createApp() {
   // 错误处理中间件
   app.use(errorHandler);
 
-  app.listen(config.port, () => {
+  const server = app.listen(config.port, () => {
     console.log(`Server is running on port ${config.port}`);
   });
+
+  // Graceful shutdown handler
+  const shutdownHandler = async (signal: string) => {
+    console.log(`Received ${signal}, shutting down gracefully...`);
+    server.close(async () => {
+      try {
+        // Close LanceDB connections and release resources
+        await Container.get(LanceDbService).close();
+        console.log('All resources cleaned up');
+        process.exit(0);
+      } catch (error) {
+        console.error('Error during shutdown:', error);
+        process.exit(1);
+      }
+    });
+  };
+
+  process.on('SIGTERM', () => shutdownHandler('SIGTERM'));
+  process.on('SIGINT', () => shutdownHandler('SIGINT'));
 
   return app;
 }
