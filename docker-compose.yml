@@ -1,42 +1,23 @@
+version: '3.8'
+
 services:
   app:
-    image: ghcr.io/${GITHUB_REPOSITORY}:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: aimo:latest
+    container_name: aimo-app
     ports:
       - '3000:3000'
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgres://aimo:aimo123@postgres:5432/aimo
-      - REDIS_URL=redis://redis:6379
-      - JWT_SECRET=${JWT_SECRET}
-      - STORAGE_TYPE=local
-      - STORAGE_LOCAL_PATH=/app/uploads
-      - STORAGE_PATH_PREFIX=uploads
-    volumes:
-      - ./temp/uploads:/app/uploads
-    depends_on:
-      postgres:
-        condition: service_healthy
+      - PORT=3000
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - JWT_SECRET=${JWT_SECRET:-your-secret-key}
     restart: unless-stopped
-
-  postgres:
-    image: pgvector/pgvector:pg17
-    environment:
-      POSTGRES_USER: aimo
-      POSTGRES_PASSWORD: aimo123
-      POSTGRES_DB: aimo
-    ports:
-      - '5432:5432'
-    volumes:
-      - ./temp/postgres:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U aimo']
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  redis:
-    image: redis:7-alpine
-    volumes:
-      - ./temp/redis:/data
-    ports:
-      - '6379:6379'
+      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3000', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s

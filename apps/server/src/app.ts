@@ -6,6 +6,8 @@ import bodyParser from 'body-parser';
 import morgan from 'morgan';
 import dayjs from 'dayjs';
 import { Container } from 'typedi';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { errorHandler } from './middlewares/error-handler.js';
 import { controllers } from './controllers/index.js';
 import { authHandler } from './middlewares/auth-handler.js';
@@ -14,6 +16,9 @@ import { LanceDbService } from './sources/lancedb.js';
 import { BackupService } from './services/backup.service.js';
 import { config } from './config/config.js';
 import cookieParser from 'cookie-parser';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 dayjs.locale('zh-cn');
 useContainer(Container);
@@ -44,6 +49,19 @@ export async function createApp() {
   app.use(bodyParser.json());
   app.use(bodyParser.urlencoded({ extended: true }));
   app.use(authHandler);
+
+  // Serve static files from public directory (web build artifacts)
+  const publicPath = join(__dirname, '../public');
+  app.use(express.static(publicPath, {
+    maxAge: '1d',
+    etag: false,
+    // Cache busting for JS and CSS files
+    setHeaders: (res, path) => {
+      if (path.match(/\.(js|css)$/)) {
+        res.set('Cache-Control', 'public, max-age=31536000, immutable');
+      }
+    },
+  }));
 
   // 配置 routing-controllers
   useExpressServer(app, {

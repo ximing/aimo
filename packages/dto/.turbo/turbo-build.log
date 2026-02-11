@@ -7,7 +7,7 @@
 [1msrc/index.ts[22m → [1mdist/index.js, dist/index.mjs[22m...[39m
 [1m[33m(!) Generated empty chunks[39m[22m
 "index" and "index"
-[32mcreated [1mdist/index.js, dist/index.mjs[22m in [1m433ms[22m[39m
+[32mcreated [1mdist/index.js, dist/index.mjs[22m in [1m411ms[22m[39m
 [36m
 [1m/Users/ximing/project/mygithub/aimo/packages/dto/dist/types/index.d.ts[22m → [1mdist/index.d.ts[22m...[39m
-[32mcreated [1mdist/index.d.ts[22m in [1m16ms[22m[39m
+[32mcreated [1mdist/index.d.ts[22m in [1m17ms[22m[39m
