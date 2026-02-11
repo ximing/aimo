@@ -56,7 +56,7 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
   };
 
   const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this memo?')) return;
+    if (!confirm('确定删除这条备忘录吗？')) return;
 
     setLoading(true);
     await memoService.deleteMemo(memo.memoId);
@@ -69,8 +69,19 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
   };
 
   const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('zh-CN', {
-      year: 'numeric',
+    const now = new Date();
+    const d = new Date(date);
+    const diffMs = now.getTime() - d.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return '刚刚';
+    if (diffMins < 60) return `${diffMins}分钟前`;
+    if (diffHours < 24) return `${diffHours}小时前`;
+    if (diffDays < 7) return `${diffDays}天前`;
+
+    return d.toLocaleDateString('zh-CN', {
       month: '2-digit',
       day: '2-digit',
       hour: '2-digit',
@@ -79,51 +90,54 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
   };
 
   const images = extractImages(memo.content);
-  const plainText = extractPlainText(memo.content);
+  const plainText = extractPlainText(memo.content, 120);
 
   return (
-    <div className="bg-white dark:bg-dark-800 rounded-xl shadow-md dark:shadow-lg border border-gray-200 dark:border-dark-700 p-6 hover:shadow-lg dark:hover:shadow-xl transition-all animate-fade-in duration-300 cursor-pointer group" role="article">
+    <div
+      className="bg-gray-50 dark:bg-dark-800 rounded-lg p-5 animate-fade-in transition-all hover:bg-gray-100 dark:hover:bg-dark-700 cursor-pointer group"
+      role="article"
+    >
       {isEditing ? (
-        <div>
+        <div className="space-y-3">
           <textarea
             value={editContent}
             onChange={(e) => setEditContent(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 dark:border-dark-600 bg-white dark:bg-dark-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none placeholder-gray-500 dark:placeholder-dark-400"
+            className="w-full px-4 py-3 border border-gray-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-gray-900 dark:text-gray-50 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all resize-none placeholder-gray-400 dark:placeholder-gray-600"
             rows={5}
             disabled={loading}
           />
 
-          <div className="mt-4 flex items-center gap-2">
+          <div className="flex items-center gap-2 justify-end">
             <button
               onClick={handleUpdate}
               disabled={loading || !editContent.trim()}
-              className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white text-sm font-medium rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer min-h-[44px] shadow-md hover:shadow-lg"
+              className="px-4 py-2 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white text-sm font-medium rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               aria-label="Save memo changes"
             >
-              {loading ? 'Saving...' : 'Save'}
+              {loading ? '保存中...' : '保存'}
             </button>
 
             <button
               onClick={handleCancel}
               disabled={loading}
-              className="px-4 py-2.5 bg-gray-100 dark:bg-dark-700 hover:bg-gray-200 dark:hover:bg-dark-600 text-gray-700 dark:text-dark-300 text-sm font-medium rounded-lg transition-all duration-200 disabled:opacity-50 cursor-pointer min-h-[44px]"
+              className="px-4 py-2 border border-gray-200 dark:border-dark-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors disabled:opacity-50 cursor-pointer"
               aria-label="Cancel editing"
             >
-              Cancel
+              取消
             </button>
           </div>
         </div>
       ) : (
-        <div>
-          {/* Images Grid */}
+        <div className="space-y-3">
+          {/* Images */}
           {images.length > 0 && (
-            <div className="mb-4 grid grid-cols-2 gap-2 rounded-lg overflow-hidden">
+            <div className="grid grid-cols-2 gap-2">
               {images.map((imgUrl, idx) => (
                 <img
                   key={idx}
                   src={imgUrl}
                   alt={`memo-image-${idx}`}
-                  className="w-full h-24 object-cover rounded"
+                  className="w-full h-20 object-cover rounded"
                   onError={(e) => {
                     (e.target as HTMLImageElement).style.display = 'none';
                   }}
@@ -133,60 +147,31 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
           )}
 
           {/* Content */}
-          <p className="text-gray-800 dark:text-dark-300 text-sm leading-relaxed">{plainText}</p>
+          <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">{plainText}</p>
 
-          {/* Metadata */}
-          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-dark-700 flex items-center justify-between">
-            <div className="text-xs text-gray-500 dark:text-dark-400">
-              <p>{formatDate(memo.createdAt)}</p>
-            </div>
+          {/* Footer */}
+          <div className="flex items-center justify-between pt-2">
+            <span className="text-xs text-gray-500 dark:text-gray-500">{formatDate(memo.createdAt)}</span>
 
             {/* Actions */}
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
               <button
                 onClick={() => setIsEditing(true)}
-                className="p-2.5 text-gray-600 dark:text-dark-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all duration-150 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
+                className="px-3 py-1.5 text-xs text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-dark-700 rounded hover:text-primary-600 dark:hover:text-primary-400 hover:border-primary-200 dark:hover:border-primary-900/50 transition-colors cursor-pointer"
                 title="Edit this memo"
                 aria-label="Edit memo"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                  />
-                </svg>
+                编辑
               </button>
 
               <button
                 onClick={handleDelete}
                 disabled={loading}
-                className="p-2.5 text-gray-600 dark:text-dark-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all duration-150 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center disabled:opacity-50"
+                className="px-3 py-1.5 text-xs text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-dark-700 rounded hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-900/50 transition-colors cursor-pointer disabled:opacity-50"
                 title="Delete this memo"
                 aria-label="Delete memo"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                  />
-                </svg>
-              </button>
-
-              <button
-                onClick={() => {
-                  /* TODO: 实现菜单功能 */
-                }}
-                className="p-2.5 text-gray-600 dark:text-dark-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-dark-800 rounded-lg transition-all duration-150 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
-                title="More options"
-                aria-label="More options"
-              >
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
-                </svg>
+                删除
               </button>
             </div>
           </div>
