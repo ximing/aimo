@@ -1,6 +1,11 @@
 import 'reflect-metadata';
+import { loadEnv } from './config/env.js';
 
-process.env.TZ = 'Asia/Shanghai';
+// Load environment variables first to access config
+loadEnv();
+
+// Set timezone from config
+process.env.TZ = process.env.LOCALE_TIMEZONE || 'Asia/Shanghai';
 
 async function bootstrap() {
   try {

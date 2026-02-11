@@ -73,6 +73,10 @@ export interface Config {
     baseURL: string;
     embeddingDimensions: number; // Embedding vector dimensions (e.g., 1536 for text-embedding-3-small)
   };
+  locale: {
+    language: string; // e.g., 'zh-cn', 'en-us'
+    timezone: string; // e.g., 'Asia/Shanghai', 'UTC'
+  };
   env: string;
 }
 
@@ -145,6 +149,10 @@ export const config: Config = {
     model: process.env.OPENAI_MODEL || 'text-embedding-3-small',
     baseURL: process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1',
     embeddingDimensions: Number(process.env.OPENAI_EMBEDDING_DIMENSIONS) || 1536,
+  },
+  locale: {
+    language: process.env.LOCALE_LANGUAGE || 'zh-cn',
+    timezone: process.env.LOCALE_TIMEZONE || 'Asia/Shanghai',
   },
   env: process.env.NODE_ENV || 'development',
 };

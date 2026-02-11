@@ -20,7 +20,7 @@ import cookieParser from 'cookie-parser';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-dayjs.locale('zh-cn');
+dayjs.locale(config.locale.language);
 useContainer(Container);
 
 export async function createApp() {
