@@ -45,21 +45,22 @@ export const MemoEditor = view(() => {
   };
 
   return (
-    <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-6 transition-colors duration-200">
-      <form onSubmit={handleSubmit}>
+    <div className="bg-white dark:bg-dark-800 rounded-xl shadow-md dark:shadow-lg border border-gray-200 dark:border-dark-700 p-6 transition-all duration-200 hover:shadow-lg dark:hover:shadow-xl">
+      <form onSubmit={handleSubmit} noValidate>
         {error && (
-          <div className="mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg text-sm">
+          <div className="mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg text-sm animate-slide-up" role="alert">
             {error}
           </div>
         )}
 
         {/* Editor Toolbar */}
-        <div className="mb-3 flex items-center gap-1 p-2 bg-gray-50 dark:bg-dark-700 rounded-lg border border-gray-200 dark:border-dark-600 flex-wrap">
+        <div className="mb-3 flex items-center gap-1 p-2 bg-gray-50 dark:bg-dark-700 rounded-lg border border-gray-200 dark:border-dark-600 flex-wrap" role="toolbar" aria-label="Text formatting options">
           <button
             type="button"
             onClick={() => insertText('# ', '\n')}
-            className="p-2 text-gray-600 dark:text-dark-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-dark-600 rounded transition-colors"
-            title="Heading"
+            className="p-2.5 text-gray-600 dark:text-dark-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-dark-600 rounded transition-all duration-150 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
+            title="Add heading"
+            aria-label="Add heading"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -74,8 +75,9 @@ export const MemoEditor = view(() => {
           <button
             type="button"
             onClick={() => insertText('**', '**')}
-            className="p-2 text-gray-600 dark:text-dark-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-dark-600 rounded transition-colors"
-            title="Bold"
+            className="p-2.5 text-gray-600 dark:text-dark-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-dark-600 rounded transition-all duration-150 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
+            title="Make text bold"
+            aria-label="Make text bold"
           >
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
               <path d="M6 4a2 2 0 012-2h6a2 2 0 012 2v2H6V4zm0 4h8v8H6V8zm10 0v8h2a2 2 0 012-2h-2V8zm0 10H6v2a2 2 0 002 2h6a2 2 0 002-2v-2z" />
@@ -85,8 +87,9 @@ export const MemoEditor = view(() => {
           <button
             type="button"
             onClick={() => insertText('*', '*')}
-            className="p-2 text-gray-600 dark:text-dark-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-dark-600 rounded transition-colors"
-            title="Italic"
+            className="p-2.5 text-gray-600 dark:text-dark-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-dark-600 rounded transition-all duration-150 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
+            title="Make text italic"
+            aria-label="Make text italic"
           >
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
               <path d="M9 5a1 1 0 100-2H5a1 1 0 000 2h2l3 12H8a1 1 0 100 2h4a1 1 0 100-2h-2l-3-12h2z" />
@@ -96,8 +99,9 @@ export const MemoEditor = view(() => {
           <button
             type="button"
             onClick={() => insertText('- ', '')}
-            className="p-2 text-gray-600 dark:text-dark-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-dark-600 rounded transition-colors"
-            title="Bullet list"
+            className="p-2.5 text-gray-600 dark:text-dark-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-dark-600 rounded transition-all duration-150 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
+            title="Add bullet list"
+            aria-label="Add bullet list"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -112,8 +116,9 @@ export const MemoEditor = view(() => {
           <button
             type="button"
             onClick={() => insertText('[', ']')}
-            className="p-2 text-gray-600 dark:text-dark-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-dark-600 rounded transition-colors"
-            title="Link"
+            className="p-2.5 text-gray-600 dark:text-dark-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-dark-600 rounded transition-all duration-150 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
+            title="Add link"
+            aria-label="Add link"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -128,8 +133,9 @@ export const MemoEditor = view(() => {
           <button
             type="button"
             onClick={() => insertText('@', '')}
-            className="p-2 text-gray-600 dark:text-dark-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-dark-600 rounded transition-colors"
-            title="Mention"
+            className="p-2.5 text-gray-600 dark:text-dark-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-dark-600 rounded transition-all duration-150 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
+            title="Add mention"
+            aria-label="Add mention"
           >
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z" />
@@ -142,9 +148,10 @@ export const MemoEditor = view(() => {
           value={content}
           onChange={(e) => setContent(e.target.value)}
           placeholder="现在的想法是..."
-          className="w-full px-4 py-3 border border-gray-300 dark:border-dark-600 bg-white dark:bg-dark-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none placeholder-gray-500 dark:placeholder-dark-400"
+          className="w-full px-4 py-3 border border-gray-300 dark:border-dark-600 bg-white dark:bg-dark-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none placeholder-gray-500 dark:placeholder-dark-400 focus:shadow-lg"
           rows={5}
           disabled={loading}
+          aria-label="Memo content"
         />
 
         {/* Footer */}
@@ -154,7 +161,7 @@ export const MemoEditor = view(() => {
           <button
             type="submit"
             disabled={loading || !content.trim()}
-            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white font-medium rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer min-h-[44px] shadow-md hover:shadow-lg"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path

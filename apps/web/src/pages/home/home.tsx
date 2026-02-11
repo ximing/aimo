@@ -30,32 +30,30 @@ export const HomePage = view(() => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-dark-950 transition-colors duration-200">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white dark:bg-dark-900 shadow-sm border-b border-gray-200 dark:border-dark-800 transition-colors duration-200">
+    <div className="min-h-screen bg-gray-50 dark:bg-dark-950 transition-colors duration-200 flex flex-col">
+      {/* Header - Floating Card Style */}
+      <header className="sticky top-4 z-50 mx-4 mb-4 bg-white dark:bg-dark-900 shadow-md dark:shadow-lg border border-gray-200 dark:border-dark-800 rounded-xl transition-all duration-300 hover:shadow-lg dark:hover:shadow-xl">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             {/* Logo & App Name */}
-            <div>
-              <div className="flex items-center gap-2">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">A</span>
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Aimo</h1>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Memo Assistant</p>
-                </div>
+            <div className="flex items-center gap-3 flex-1">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md transform transition-transform hover:scale-105">
+                <span className="text-white font-bold text-lg">A</span>
+              </div>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Aimo</h1>
+                <p className="text-xs text-gray-500 dark:text-dark-400">Memo Assistant</p>
               </div>
             </div>
 
             {/* Right Section */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               {/* User Info */}
-              <div className="text-right hidden sm:block">
-                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  {authService.user?.nickname || authService.user?.email}
+              <div className="text-right hidden sm:block pr-4 border-r border-gray-200 dark:border-dark-700">
+                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                  {authService.user?.nickname || authService.user?.email?.split('@')[0]}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="text-xs text-gray-500 dark:text-dark-400 truncate">
                   {authService.user?.email}
                 </p>
               </div>
@@ -63,15 +61,16 @@ export const HomePage = view(() => {
               {/* Theme Toggle Button */}
               <button
                 onClick={handleThemeToggle}
-                className="p-2 text-gray-600 dark:text-dark-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-dark-800 rounded-lg transition-colors"
+                className="p-2.5 text-gray-600 dark:text-dark-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-dark-800 rounded-lg transition-all duration-200 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
                 title={themeService.isDark() ? 'Switch to light mode' : 'Switch to dark mode'}
+                aria-label={themeService.isDark() ? 'Switch to light mode' : 'Switch to dark mode'}
               >
                 {themeService.isDark() ? (
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                   </svg>
                 ) : (
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
                   </svg>
                 )}
@@ -80,7 +79,8 @@ export const HomePage = view(() => {
               {/* Logout Button */}
               <button
                 onClick={handleLogout}
-                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-dark-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-dark-800 rounded-lg transition-colors"
+                className="px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-dark-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-dark-800 rounded-lg transition-all duration-200 cursor-pointer min-h-[44px] whitespace-nowrap"
+                aria-label="Sign out of your account"
               >
                 Logout
               </button>
@@ -90,25 +90,32 @@ export const HomePage = view(() => {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 max-w-2xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-6">
         {/* Search Bar */}
-        <div className="mb-6">
+        <section aria-label="Search memos">
           <SearchBar />
-        </div>
+        </section>
 
         {/* Memo Editor */}
-        <div className="mb-8">
+        <section aria-label="Create new memo">
           <MemoEditor />
-        </div>
+        </section>
 
         {/* Filter Bar */}
-        <div className="mb-8">
+        <section aria-label="Filter and sort memos">
           <FilterBar />
-        </div>
+        </section>
 
         {/* Memos List */}
-        <MemoList />
+        <section aria-label="Your memos">
+          <MemoList />
+        </section>
       </main>
+
+      {/* Footer */}
+      <footer className="py-4 text-center text-xs text-gray-500 dark:text-dark-400">
+        <p>&copy; 2026 Aimo. Built with React & Tailwind CSS.</p>
+      </footer>
     </div>
   );
 });
