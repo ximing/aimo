@@ -12,7 +12,6 @@
     "preserveWatchOutput": true,
     "skipLibCheck": true,
     "strict": true,
-    "noEmit": true,
     "strictNullChecks": true,
     "lib": ["ES2022"],
     "outDir": "./dist",
