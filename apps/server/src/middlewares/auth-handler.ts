@@ -11,6 +11,7 @@ const WHITELIST_PATHS = ['/', '/api/v1/auth/login', '/api/v1/auth/register'];
 // Whitelist path prefixes for static assets and public resources
 const WHITELIST_PREFIXES = [
   '/assets/',        // Static assets (JS, CSS, images)
+  '/fonts/',        // Static assets (JS, CSS, images)
   '/open',           // Open API endpoints
   '/logo.png',       // Logo image
   '/vite.svg',       // Favicon and public assets
