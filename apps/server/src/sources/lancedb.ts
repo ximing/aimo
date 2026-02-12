@@ -301,13 +301,25 @@ export class LanceDbService {
    * Optimize a table to rebuild indexes and consolidate data
    * Should be called after bulk insert/update operations to ensure indexes are up-to-date
    * Non-blocking and handles errors internally - will not throw
+   * 
+   * @param tableName - The name of the table to optimize
+   * @param cleanupOlderThanDays - Optional: Clean up versions older than N days (default: uses config.lancedb.versionRetentionDays)
    */
-  async optimizeTable(tableName: string): Promise<void> {
+  async optimizeTable(tableName: string, cleanupOlderThanDays?: number): Promise<void> {
     try {
       const table = await this.openTable(tableName);
-      console.log(`Optimizing table: ${tableName}...`);
-      await table.optimize();
-      console.log(`Table ${tableName} optimized successfully`);
+      
+      // 使用传入的天数或配置中的默认值
+      const retentionDays = cleanupOlderThanDays ?? config.lancedb.versionRetentionDays;
+      const cleanupDate = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
+      
+      console.log(`Optimizing table: ${tableName} (cleaning versions older than ${retentionDays} days)...`);
+      
+      await table.optimize({
+        cleanupOlderThan: cleanupDate,
+      });
+      
+      console.log(`Table ${tableName} optimized successfully (versions older than ${retentionDays} days cleaned)`);
     } catch (error) {
       console.warn(`Warning: Failed to optimize table ${tableName}:`, error);
       // Don't throw - allow operations to continue even if optimization fails
@@ -317,17 +329,23 @@ export class LanceDbService {
   /**
    * Optimize all tables to rebuild indexes and consolidate data
    * Useful after bulk operations or periodic maintenance
+   * 
+   * @param cleanupOlderThanDays - Optional: Clean up versions older than N days (default: uses config.lancedb.versionRetentionDays)
    */
-  async optimizeAllTables(): Promise<void> {
+  async optimizeAllTables(cleanupOlderThanDays?: number): Promise<void> {
     const tables = ['users', 'memos', 'memo_relations', 'categories', 'attachments', 'embedding_cache'];
+    console.log(`Starting optimization for all tables...`);
+    
     for (const tableName of tables) {
       try {
-        await this.optimizeTable(tableName);
+        await this.optimizeTable(tableName, cleanupOlderThanDays);
       } catch (error) {
         console.warn(`Warning: Failed to optimize ${tableName}:`, error);
         // Continue with other tables even if one fails
       }
     }
+    
+    console.log(`All tables optimization completed`);
   }
 
   /**

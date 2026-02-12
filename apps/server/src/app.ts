@@ -14,6 +14,7 @@ import { authHandler } from './middlewares/auth-handler.js';
 import { initIOC } from './ioc.js';
 import { LanceDbService } from './sources/lancedb.js';
 import { BackupService } from './services/backup.service.js';
+import { SchedulerService } from './services/scheduler.service.js';
 import { config } from './config/config.js';
 import cookieParser from 'cookie-parser';
 
@@ -37,6 +38,16 @@ export async function createApp() {
       console.error('Failed to initialize backup service:', error);
       // Continue app startup even if backup service fails to initialize
     }
+  }
+
+  // Initialize scheduler service for periodic tasks
+  try {
+    const schedulerService = Container.get(SchedulerService);
+    await schedulerService.init();
+    console.log('Scheduler service initialized');
+  } catch (error) {
+    console.error('Failed to initialize scheduler service:', error);
+    // Continue app startup even if scheduler service fails to initialize
   }
 
   const app: any = express();
@@ -88,6 +99,12 @@ export async function createApp() {
     console.log(`Received ${signal}, shutting down gracefully...`);
     server.close(async () => {
       try {
+        // Stop scheduler service
+        const schedulerService = Container.get(SchedulerService);
+        if (schedulerService.isReady()) {
+          await schedulerService.stop();
+        }
+        
         // Close LanceDB connections and release resources
         await Container.get(LanceDbService).close();
         console.log('All resources cleaned up');

@@ -70,6 +70,7 @@ export interface Config {
   lancedb: {
     storageType: StorageType;
     path: string; // local: "./lancedb_data" or s3: "s3://bucket/path/to/database"
+    versionRetentionDays: number; // 版本保留天数，默认 7 天
     s3?: {
       bucket: string;
       prefix: string; // path inside bucket
@@ -81,6 +82,9 @@ export interface Config {
   };
   backup: BackupConfig;
   attachment: AttachmentConfig;
+  scheduler?: {
+    dbOptimizationCron: string; // Cron expression for database optimization (default: '0 2 * * *' - daily at 2 AM)
+  };
   openai: {
     apiKey: string;
     model: string;
@@ -109,6 +113,7 @@ export const config: Config = {
       process.env.LANCEDB_STORAGE_TYPE === 's3'
         ? `s3://${process.env.LANCEDB_S3_BUCKET}/${process.env.LANCEDB_S3_PREFIX || 'lancedb'}`
         : process.env.LANCEDB_PATH || './lancedb_data',
+    versionRetentionDays: Number(process.env.LANCEDB_VERSION_RETENTION_DAYS) || 7, // 默认保留 7 天
     s3:
       process.env.LANCEDB_STORAGE_TYPE === 's3'
         ? {
@@ -190,6 +195,9 @@ export const config: Config = {
             isPublic: process.env.ATTACHMENT_S3_IS_PUBLIC === 'true',
           }
         : undefined,
+  },
+  scheduler: {
+    dbOptimizationCron: process.env.DB_OPTIMIZATION_CRON || '0 2 * * *', // 默认每天凌晨 2 点
   },
   openai: {
     apiKey: process.env.OPENAI_API_KEY || '',

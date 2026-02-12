@@ -165,9 +165,6 @@ export class MemoService {
         }
       }
 
-      // Optimize indexes after insert to ensure scalar indexes are updated
-      await this.lanceDb.optimizeTable('memos');
-
       // Trigger backup on memo creation
       this.triggerBackup('memo_created');
 
@@ -407,9 +404,6 @@ export class MemoService {
         }
       }
 
-      // Optimize indexes after update to ensure scalar indexes are updated
-      await this.lanceDb.optimizeTable('memos');
-
       // Trigger backup on memo update
       this.triggerBackup('memo_updated');
 
@@ -454,13 +448,10 @@ export class MemoService {
         await this.memoRelationService.deleteRelationsByTargetMemo(uid, memoId);
       } catch (error) {
         console.warn('Failed to delete memo relations during memo deletion:', error);
-        // Don't throw - allow memo deletion even if relation cleanup fails
-      }
+      // Don't throw - allow memo deletion even if relation cleanup fails
+    }
 
-      // Optimize indexes after delete to ensure scalar indexes are updated
-      await this.lanceDb.optimizeTable('memos');
-
-      // Trigger backup on memo deletion
+    // Trigger backup on memo deletion
       this.triggerBackup('memo_deleted');
 
       return true;

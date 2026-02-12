@@ -89,9 +89,6 @@ export class EmbeddingService {
           createdAt: Date.now(),
         } as Record<string, unknown>,
       ]);
-
-      // Optimize indexes after insert to ensure scalar indexes are updated
-      await this.lanceDb.optimizeTable('embedding_cache');
     } catch (error) {
       // Cache save failure should not break embedding generation
       console.warn('Warning: Failed to save embedding to cache:', error);
