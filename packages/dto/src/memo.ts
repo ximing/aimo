@@ -9,6 +9,8 @@ export interface CreateMemoDto {
   categoryId?: string; // Optional category ID (undefined = uncategorized)
   attachments?: string[]; // Array of attachment IDs (max 9)
   relationIds?: string[]; // Array of target memo IDs to relate to
+  createdAt?: number; // Optional timestamp in milliseconds (for imports)
+  updatedAt?: number; // Optional timestamp in milliseconds (for imports)
 }
 
 export interface UpdateMemoDto {

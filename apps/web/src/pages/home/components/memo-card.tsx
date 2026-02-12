@@ -123,7 +123,7 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
 
   return (
     <div
-      className="bg-gray-50 dark:bg-dark-800 rounded-lg p-3 animate-fade-in transition-all hover:bg-gray-100 dark:hover:bg-dark-700 cursor-pointer group"
+      className="bg-white dark:bg-dark-800 rounded-lg p-3 animate-fade-in transition-all hover:bg-gray-100 dark:hover:bg-dark-700 cursor-pointer group"
       role="article"
     >
       {isEditing ? (
@@ -157,7 +157,7 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
           </div>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-1">
           {/* Content */}
           <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
             {plainText}

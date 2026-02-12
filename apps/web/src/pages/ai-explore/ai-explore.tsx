@@ -25,7 +25,7 @@ export const AIExplorePage = view(() => {
 
             {/* Features Preview */}
             <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-              <div className="bg-gray-50 dark:bg-dark-800 rounded-lg p-6 text-left">
+              <div className="bg-white dark:bg-dark-800 rounded-lg p-6 text-left">
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
                     <Lightbulb className="w-5 h-5 text-primary-600 dark:text-primary-400" />
@@ -41,7 +41,7 @@ export const AIExplorePage = view(() => {
                 </div>
               </div>
 
-              <div className="bg-gray-50 dark:bg-dark-800 rounded-lg p-6 text-left">
+              <div className="bg-white dark:bg-dark-800 rounded-lg p-6 text-left">
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
                     <Sparkles className="w-5 h-5 text-primary-600 dark:text-primary-400" />

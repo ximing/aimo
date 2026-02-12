@@ -55,7 +55,7 @@ export const Layout = view(({ children }: LayoutProps) => {
   const userEmail = authService.user?.email || '';
 
   return (
-    <div className="h-screen flex bg-white dark:bg-dark-900 text-gray-900 dark:text-gray-50 transition-colors">
+    <div className="h-screen flex bg-gray-50 dark:bg-dark-900 text-gray-900 dark:text-gray-50 transition-colors">
       {/* Left Sidebar - Fixed 70px */}
       <aside className="w-[70px] flex-shrink-0 border-r border-gray-100 dark:border-dark-800 flex flex-col items-center py-4 gap-4">
         {/* Logo Area - Top */}

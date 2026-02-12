@@ -163,7 +163,7 @@ export const SearchSortBar = view(() => {
                     className={`w-full text-left px-3 py-2 text-sm rounded transition-colors ${
                       memoService.sortBy === 'createdAt'
                         ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-700'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700'
                     }`}
                   >
                     创建时间
@@ -173,7 +173,7 @@ export const SearchSortBar = view(() => {
                     className={`w-full text-left px-3 py-2 text-sm rounded transition-colors ${
                       memoService.sortBy === 'updatedAt'
                         ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-700'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700'
                     }`}
                   >
                     修改时间
@@ -190,7 +190,7 @@ export const SearchSortBar = view(() => {
                     className={`w-full text-left px-3 py-2 text-sm rounded transition-colors ${
                       memoService.sortOrder === 'desc'
                         ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-700'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700'
                     }`}
                   >
                     最新优先
@@ -200,7 +200,7 @@ export const SearchSortBar = view(() => {
                     className={`w-full text-left px-3 py-2 text-sm rounded transition-colors ${
                       memoService.sortOrder === 'asc'
                         ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-700'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700'
                     }`}
                   >
                     最旧优先
@@ -209,7 +209,7 @@ export const SearchSortBar = view(() => {
               </div>
 
               {/* Current Selection Info */}
-              <div className="px-4 py-2 bg-gray-50 dark:bg-dark-700 border-t border-gray-200 dark:border-dark-700 rounded-b-lg">
+              <div className="px-4 py-2 bg-gray-100 dark:bg-dark-700 border-t border-gray-200 dark:border-dark-700 rounded-b-lg">
                 <p className="text-xs text-gray-600 dark:text-gray-400">
                   {sortByLabel} · {sortOrderLabel}
                 </p>

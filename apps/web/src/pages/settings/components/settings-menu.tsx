@@ -21,7 +21,7 @@ export const SettingsMenu = ({ activeTab, onTabChange }: SettingsMenuProps) => {
   ];
 
   return (
-    <aside className="w-[240px] flex-shrink-0 border-r border-gray-200 dark:border-dark-800 bg-gray-50 dark:bg-dark-800/50 px-4 py-6">
+    <aside className="w-[240px] flex-shrink-0 bg-white dark:bg-dark-800/50 px-4 py-6">
       <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-50 mb-6 px-3">设置</h2>
       <nav className="space-y-1">
         {menuItems.map((item) => (

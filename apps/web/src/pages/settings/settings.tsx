@@ -18,7 +18,7 @@ export const SettingsPage = view(() => {
           <SettingsMenu activeTab={activeTab} onTabChange={setActiveTab} />
 
           {/* Right Content Area */}
-          <div className="flex-1 overflow-y-auto bg-white dark:bg-dark-900">
+          <div className="flex-1 overflow-y-auto bg-gray-50 dark:bg-dark-900">
             <div className="px-12 py-8">
               {activeTab === 'account' && <AccountSettings />}
               {activeTab === 'import' && <ImportData />}

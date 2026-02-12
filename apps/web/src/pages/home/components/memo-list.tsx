@@ -128,7 +128,7 @@ export const MemoList = view(() => {
                   className={`px-3 py-2 text-sm rounded transition-colors ${
                     memoService.page === pageNum
                       ? 'bg-primary-600 text-white font-medium'
-                      : 'border border-gray-200 dark:border-dark-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-800'
+                      : 'border border-gray-200 dark:border-dark-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-800'
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   {pageNum}
@@ -140,7 +140,7 @@ export const MemoList = view(() => {
           <button
             onClick={() => memoService.nextPage()}
             disabled={memoService.page === memoService.totalPages || memoService.loading}
-            className="px-4 py-2 text-sm border border-gray-200 dark:border-dark-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-50 dark:hover:bg-dark-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+            className="px-4 py-2 text-sm border border-gray-200 dark:border-dark-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-dark-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
           >
             下一页
           </button>

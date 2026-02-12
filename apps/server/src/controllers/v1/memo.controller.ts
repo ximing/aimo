@@ -86,7 +86,7 @@ export class MemoV1Controller {
         return ResponseUtil.error(ErrorCode.PARAMS_ERROR, 'Content is required');
       }
 
-      const memo = await this.memoService.createMemo(user.uid, memoData.content, memoData.attachments, memoData.categoryId, memoData.relationIds);
+      const memo = await this.memoService.createMemo(user.uid, memoData.content, memoData.attachments, memoData.categoryId, memoData.relationIds, memoData.createdAt, memoData.updatedAt);
       return ResponseUtil.success({
         message: 'Memo created successfully',
         memo,

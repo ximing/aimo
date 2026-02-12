@@ -87,7 +87,7 @@ export class MemoService {
   /**
    * Create a new memo with automatic embedding and denormalized attachments
    */
-  async createMemo(uid: string, content: string, attachments?: string[], categoryId?: string, relationIds?: string[]): Promise<MemoWithAttachmentsDto> {
+  async createMemo(uid: string, content: string, attachments?: string[], categoryId?: string, relationIds?: string[], createdAt?: number, updatedAt?: number): Promise<MemoWithAttachmentsDto> {
     try {
       if (!content || content.trim().length === 0) {
         throw new Error('Memo content cannot be empty');
@@ -138,8 +138,8 @@ export class MemoService {
         content,
         attachments,
         embedding,
-        createdAt: now,
-        updatedAt: now,
+        createdAt: createdAt || now,
+        updatedAt: updatedAt || now,
       };
 
       // Prepare record for LanceDB with denormalized attachments
@@ -366,7 +366,7 @@ export class MemoService {
       // Convert embedding to array if it's an Arrow object
       const embeddingArray = Array.isArray(embedding) ? embedding : Array.from(embedding || []);
       
-      const updateData: Record<string, any> = {
+      const updateValues: Record<string, any> = {
         content,
         embedding: embeddingArray,
         updatedAt: now,
@@ -374,15 +374,28 @@ export class MemoService {
 
       // Add categoryId to update if provided
       if (categoryId !== undefined) {
-        updateData.categoryId = categoryId || undefined;
+        // Only add if not null/undefined (LanceDB doesn't support undefined values in update)
+        if (categoryId !== null) {
+          updateValues.categoryId = categoryId;
+        } else {
+          // For null, we need to set it explicitly (clearing the category)
+          updateValues.categoryId = null;
+        }
       }
 
       // Add attachments to update if provided
-      if (attachments !== undefined) {
-        updateData.attachments = denormalizedAttachments && denormalizedAttachments.length > 0 ? denormalizedAttachments : undefined;
+      if (denormalizedAttachments !== undefined) {
+        // Only add attachments if there are any, otherwise omit to keep existing
+        if (denormalizedAttachments.length > 0) {
+          updateValues.attachments = denormalizedAttachments;
+        }
       }
 
-      await memosTable.update(updateData, { where: `memoId = '${memoId}' AND uid = '${uid}'` });
+      // Update using proper update method with where clause
+      await memosTable.update({
+        where: `memoId = '${memoId}' AND uid = '${uid}'`,
+        values: updateValues,
+      });
 
       // Update relations if provided
       if (relationIds !== undefined) {
@@ -405,10 +418,13 @@ export class MemoService {
         ? denormalizedAttachments 
         : this.convertArrowAttachments(existingMemo.attachments);
       return {
-        ...existingMemo,
+        memoId,
+        uid,
         content,
+        categoryId: categoryId !== undefined ? (categoryId || undefined) : existingMemo.categoryId,
         attachments: finalAttachments,
         embedding,
+        createdAt: existingMemo.createdAt,
         updatedAt: now,
       } as MemoWithAttachmentsDto;
     } catch (error) {

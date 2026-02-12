@@ -109,7 +109,7 @@ export const MemoEditor = view(() => {
     <form onSubmit={handleSubmit} noValidate className="space-y-2">
       {error && (
         <div
-          className="px-3 py-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 text-red-700 dark:text-red-400 rounded text-xs animate-slide-up"
+          className="px-3 py-2 bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-800/30 text-red-700 dark:text-red-400 rounded text-xs animate-slide-up"
           role="alert"
         >
           {error}
@@ -117,7 +117,7 @@ export const MemoEditor = view(() => {
       )}
 
       {/* Textarea container with integrated submit button */}
-      <div className="bg-gray-50 dark:bg-dark-800 rounded-lg p-3 flex flex-col gap-3 transition-colors">
+      <div className="bg-white dark:bg-dark-800 rounded-lg p-3 flex flex-col gap-3 transition-colors">
         <textarea
           ref={textareaRef}
           value={content}

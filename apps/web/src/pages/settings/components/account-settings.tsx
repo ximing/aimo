@@ -46,7 +46,7 @@ export const AccountSettings = view(() => {
       </div>
 
       {/* User Information Form */}
-      <div className="bg-gray-50 dark:bg-dark-800 rounded-lg p-6">
+      <div className="bg-white dark:bg-dark-800 rounded-lg p-6">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-50 mb-4">个人信息</h2>
         <form onSubmit={handleUpdateUserInfo} className="space-y-4">
           <div>
@@ -96,7 +96,7 @@ export const AccountSettings = view(() => {
       </div>
 
       {/* Password Change Form */}
-      <div className="bg-gray-50 dark:bg-dark-800 rounded-lg p-6">
+      <div className="bg-white dark:bg-dark-800 rounded-lg p-6">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-50 mb-4">修改密码</h2>
         <form onSubmit={handleUpdatePassword} className="space-y-4">
           <div>

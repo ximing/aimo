@@ -25,7 +25,7 @@ export const GalleryPage = view(() => {
 
             {/* Features Preview */}
             <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
-              <div className="bg-gray-50 dark:bg-dark-800 rounded-lg p-6">
+              <div className="bg-white dark:bg-dark-800 rounded-lg p-6">
                 <div className="flex flex-col items-center gap-2">
                   <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
                     <ImageIcon className="w-6 h-6 text-purple-600 dark:text-purple-400" />
@@ -39,7 +39,7 @@ export const GalleryPage = view(() => {
                 </div>
               </div>
 
-              <div className="bg-gray-50 dark:bg-dark-800 rounded-lg p-6">
+              <div className="bg-white dark:bg-dark-800 rounded-lg p-6">
                 <div className="flex flex-col items-center gap-2">
                   <div className="w-12 h-12 bg-pink-100 dark:bg-pink-900/30 rounded-lg flex items-center justify-center">
                     <Video className="w-6 h-6 text-pink-600 dark:text-pink-400" />
@@ -53,7 +53,7 @@ export const GalleryPage = view(() => {
                 </div>
               </div>
 
-              <div className="bg-gray-50 dark:bg-dark-800 rounded-lg p-6">
+              <div className="bg-white dark:bg-dark-800 rounded-lg p-6">
                 <div className="flex flex-col items-center gap-2">
                   <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
                     <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
