@@ -75,8 +75,8 @@ export interface MemoSearchOptionsDto {
 
 export interface MemoVectorSearchDto {
   query: string;
+  page?: number;
   limit?: number;
-  threshold?: number;
 }
 
 export interface PaginatedMemoDto {

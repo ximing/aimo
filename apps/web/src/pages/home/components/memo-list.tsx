@@ -64,12 +64,10 @@ export const MemoList = view(() => {
     );
   }
 
-  const groupedMemos = groupMemosByDate(memoService.memos);
-  const sortedDates = Array.from(groupedMemos.keys()).sort((a, b) => {
-    const dateA = new Date(a.split('-').reverse().join('-'));
-    const dateB = new Date(b.split('-').reverse().join('-'));
-    return dateB.getTime() - dateA.getTime();
-  });
+  // Check if results are from vector search (have relevanceScore field)
+  // Vector search results should preserve relevance ordering, not group by date
+  const isVectorSearch = memoService.memos.length > 0 && 
+    'relevanceScore' in (memoService.memos[0] as any);
 
   return (
     <InfiniteScroll
@@ -96,25 +94,48 @@ export const MemoList = view(() => {
       scrollableTarget="memo-list-container"
     >
       <div className="space-y-6">
-        {sortedDates.map((dateStr) => {
-          const memos = groupedMemos.get(dateStr) || [];
-
-          return (
-            <div key={dateStr}>
-              {/* Date Header */}
-              <div className="mb-4 px-1">
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{dateStr}</h3>
-              </div>
-
-              {/* Memos for this date */}
-              <div className="space-y-3">
-                {memos.map((memo) => (
-                  <MemoCard key={memo.memoId} memo={memo} />
-                ))}
-              </div>
+        {isVectorSearch ? (
+          // For vector search: preserve relevance ordering, no date grouping
+          <div>
+            <div className="space-y-3">
+              {memoService.memos.map((memo) => (
+                <MemoCard key={memo.memoId} memo={memo} />
+              ))}
             </div>
-          );
-        })}
+          </div>
+        ) : (
+          // For regular list: group by date
+          <>
+            {(() => {
+              const groupedMemos = groupMemosByDate(memoService.memos);
+              const sortedDates = Array.from(groupedMemos.keys()).sort((a, b) => {
+                const dateA = new Date(a.split('-').reverse().join('-'));
+                const dateB = new Date(b.split('-').reverse().join('-'));
+                return dateB.getTime() - dateA.getTime();
+              });
+
+              return sortedDates.map((dateStr) => {
+                const memos = groupedMemos.get(dateStr) || [];
+
+                return (
+                  <div key={dateStr}>
+                    {/* Date Header */}
+                    <div className="mb-4 px-1">
+                      <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{dateStr}</h3>
+                    </div>
+
+                    {/* Memos for this date */}
+                    <div className="space-y-3">
+                      {memos.map((memo) => (
+                        <MemoCard key={memo.memoId} memo={memo} />
+                      ))}
+                    </div>
+                  </div>
+                );
+              });
+            })()}
+          </>
+        )}
       </div>
     </InfiniteScroll>
   );

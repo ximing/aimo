@@ -62,8 +62,9 @@ export const deleteMemo = (memoId: string) => {
 
 /**
  * Vector search for memos with pagination and relevance scores
+ * Results are automatically sorted by relevance score (highest to lowest)
  */
-export const vectorSearch = (params: MemoVectorSearchDto & { page?: number; limit?: number }) => {
+export const vectorSearch = (params: MemoVectorSearchDto) => {
   return request.post<
     unknown,
     { code: number; data: PaginatedMemoListWithScoreDto }

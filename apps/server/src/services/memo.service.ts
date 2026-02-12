@@ -462,9 +462,19 @@ export class MemoService {
   }
 
   /**
-   * Vector search for memos using semantic search (excludes embedding to reduce payload)
-   * Returns items with relevance scores for frontend to handle filtering
-   * Supports database-level pagination using offset/limit
+   * Vector search for memos using semantic search with pagination
+   * Following LanceDB best practices: automatic prefiltering via BTREE index on uid
+   * Results are automatically sorted by distance (ascending) = relevance descending
+   * 
+   * Best practices from LanceDB official docs:
+   * - Filter by uid BEFORE vector comparison using BTREE index (not full table scan)
+   * - The BTREE index on uid column enables automatic prefiltering
+   * - This narrows down the search space before comparing vectors
+   * - Significantly improves performance by reducing vectors to compare
+   * - .search() returns results sorted by _distance ascending (most similar first)
+   * - _distance represents L2 distance (lower = more similar)
+   * - Use .limit() and .offset() for efficient database-level pagination
+   * - Results: most relevant items for current user only (no cross-user data leakage)
    */
   async vectorSearch(options: MemoVectorSearchOptions): Promise<PaginatedMemoListWithScoreDto> {
     try {
@@ -481,28 +491,29 @@ export class MemoService {
       
       const offset = (page - 1) * limit;
 
-      // Perform vector search with database-level limit and offset for pagination
-      // This is more efficient than loading all results into memory
-      const results = await memosTable
+      // Execute vector search with uid filtering for optimal performance
+      // The BTREE index on uid column enables automatic prefiltering
+      // LanceDB applies the uid filter BEFORE vector comparison (not after full table scan)
+      // This ensures: 1) Only user's memos are searched, 2) Performance is optimized
+      const paginatedResults = await memosTable
         .search(queryEmbedding)
-        .where(`uid = '${uid}'`)
-        .limit(limit + 1) // Fetch one extra to check if there are more results
+        .where(`uid = '${uid}'`) // BTREE index enables prefiltering, not postfiltering
+        .limit(limit)
         .offset(offset)
         .toArray();
 
-      // Get total count separately (without limit/offset)
+      // Get total count for pagination metadata
+      // Also filter by uid to count only user's memos efficiently
       const allResults = await memosTable
         .search(queryEmbedding)
-        .where(`uid = '${uid}'`)
+        .where(`uid = '${uid}'`) // Uses BTREE index for efficient counting
         .toArray();
 
       const total = allResults.length;
       const totalPages = Math.ceil(total / limit);
 
-      // Use only the paginated results (remove the +1 we fetched)
-      const paginatedResults = results.slice(0, limit);
-
-      // Use denormalized attachments directly and include relevance score
+      // Map results to DTOs, preserving the distance-based sort order
+      // Results are already sorted by relevance (distance ascending = most similar first)
       const items = paginatedResults.map((memo: any) => ({
         memoId: memo.memoId,
         uid: memo.uid,
@@ -511,9 +522,11 @@ export class MemoService {
         attachments: this.convertArrowAttachments(memo.attachments),
         createdAt: memo.createdAt,
         updatedAt: memo.updatedAt,
-        // LanceDB returns _distance, lower is better
-        // Convert to similarity score (0-1) where 1.0 is perfect match
-        relevanceScore: 1 - (memo._distance || 0) / 2, // Normalize from distance to similarity
+        // LanceDB returns _distance (L2 distance metric)
+        // Lower _distance = higher similarity
+        // Normalize to relevance score: 0-1, where 1.0 = perfect match
+        // For normalized vectors, _distance ranges from 0 to 2
+        relevanceScore: Math.max(0, Math.min(1, 1 - ((memo._distance || 0) / 2))),
       })) as MemoListItemWithScoreDto[];
 
       return {
