@@ -133,8 +133,8 @@ export const RelatedMemosModal = view(({ isOpen, onClose, memo }: RelatedMemosMo
                         原始笔记
                       </div>
                       <div className="bg-gradient-to-r from-primary-50 to-primary-100/50 dark:from-primary-950/40 dark:to-primary-900/20 px-3 py-2.5 rounded border border-primary-200/50 dark:border-primary-900/40">
-                        <p className="text-sm text-primary-900 dark:text-primary-100 line-clamp-3 leading-relaxed">
-                          {extractPlainText(memo.content, 120)}
+                        <p className="text-sm text-primary-900 dark:text-primary-100 leading-relaxed">
+                          {extractPlainText(memo.content, 500)}
                         </p>
                         <p className="text-xs text-primary-700 dark:text-primary-300 mt-2 opacity-75">
                           {formatDate(memo.createdAt)}
@@ -180,8 +180,8 @@ export const RelatedMemosModal = view(({ isOpen, onClose, memo }: RelatedMemosMo
                                 {index + 1}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-xs text-gray-900 dark:text-gray-100 line-clamp-2 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors leading-relaxed">
-                                  {extractPlainText(relatedMemo.content, 100)}
+                                <p className="text-xs text-gray-900 dark:text-gray-100 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors leading-relaxed">
+                                  {extractPlainText(relatedMemo.content, 500)}
                                 </p>
                                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">
                                   {formatDate(relatedMemo.createdAt)}

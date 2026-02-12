@@ -106,11 +106,11 @@ export class MemoService extends Service {
   }
 
   /**
-   * Create a new memo
+   * Create a new memo with optional attachments and relations
    */
-  async createMemo(content: string, attachments?: string[]) {
+  async createMemo(content: string, attachments?: string[], relationIds?: string[]) {
     try {
-      const data: CreateMemoDto = { content, attachments };
+      const data: CreateMemoDto = { content, attachments, relationIds };
       const response = await memoApi.createMemo(data);
 
       if (response.code === 0 && response.data) {

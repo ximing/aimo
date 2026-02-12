@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { view, useService } from '@rabjs/react';
 import type { MemoListItemDto, MemoListItemWithScoreDto } from '@aimo/dto';
 import { MemoService } from '../../../services/memo.service';
-import { FileText, Film } from 'lucide-react';
+import { FileText, Film, Edit2, Trash2, Link } from 'lucide-react';
 import { RelatedMemosModal } from './related-memos-modal';
 
 interface MemoCardProps {
@@ -30,6 +30,7 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
   const [editContent, setEditContent] = useState(memo.content);
   const [loading, setLoading] = useState(false);
   const [showRelatedModal, setShowRelatedModal] = useState(false);
+  const [selectedRelationMemo, setSelectedRelationMemo] = useState<MemoListItemDto | null>(null);
 
   const memoService = useService(MemoService);
 
@@ -124,8 +125,8 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
   };
 
   const handleCardClick = () => {
-    // Only open modal if not in editing mode
-    if (!isEditing) {
+    // Only open modal if not in editing mode and not already a selected relation
+    if (!isEditing && !selectedRelationMemo) {
       setShowRelatedModal(true);
     }
   };
@@ -168,14 +169,56 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
             </div>
           </div>
         ) : (
-          <div className="space-y-1">
-            {/* Content */}
-            <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
-              {plainText}
-            </p>
+          <div className="space-y-2">
+            {/* Content Section */}
+            <div>
+              <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
+                {plainText}
+              </p>
 
-            {/* Attachments (九宫格) */}
-            {renderAttachments()}
+              {/* Attachments (九宫格) */}
+              {renderAttachments()}
+            </div>
+
+            {/* Relations Section */}
+            {memo.relations && memo.relations.length > 0 && (
+              <div className="space-y-0.5">
+                {memo.relations.map((relation) => (
+                  <button
+                    key={relation.memoId}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedRelationMemo(relation);
+                      setShowRelatedModal(true);
+                    }}
+                    className="w-full flex items-start gap-2 px-2 py-1 hover:bg-gray-100 dark:hover:bg-dark-700 border border-transparent hover:border-primary-200 dark:hover:border-primary-900/30 rounded transition-all duration-150 cursor-pointer group text-left"
+                    title={relation.content}
+                  >
+                    <div className="flex-shrink-0 mt-0.5">
+                      <Link className="w-3.5 h-3.5 text-gray-400 dark:text-gray-600 group-hover:text-primary-500 dark:group-hover:text-primary-400 transition-colors" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-gray-600 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300 line-clamp-2 leading-snug transition-colors">
+                        {relation.content}
+                      </p>
+                    </div>
+                    <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <svg
+                        className="w-3 h-3 text-gray-400 dark:text-gray-600 group-hover:text-primary-500 dark:group-hover:text-primary-400"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Footer */}
             <div className="flex items-center justify-between">
@@ -209,22 +252,28 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
               {/* Actions */}
               <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
-                  onClick={() => setIsEditing(true)}
-                  className="px-3 py-1.5 text-xs text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-dark-700 rounded hover:text-primary-600 dark:hover:text-primary-400 hover:border-primary-200 dark:hover:border-primary-900/50 transition-colors cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsEditing(true);
+                  }}
+                  className="p-1.5 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-dark-700 rounded hover:text-primary-600 dark:hover:text-primary-400 hover:border-primary-200 dark:hover:border-primary-900/50 transition-colors cursor-pointer"
                   title="Edit this memo"
                   aria-label="Edit memo"
                 >
-                  编辑
+                  <Edit2 className="w-4 h-4" />
                 </button>
 
                 <button
-                  onClick={handleDelete}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete();
+                  }}
                   disabled={loading}
-                  className="px-3 py-1.5 text-xs text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-dark-700 rounded hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-900/50 transition-colors cursor-pointer disabled:opacity-50"
+                  className="p-1.5 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-dark-700 rounded hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-900/50 transition-colors cursor-pointer disabled:opacity-50"
                   title="Delete this memo"
                   aria-label="Delete memo"
                 >
-                  删除
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -235,8 +284,11 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
       {/* Related Memos Modal */}
       <RelatedMemosModal
         isOpen={showRelatedModal}
-        onClose={() => setShowRelatedModal(false)}
-        memo={memo}
+        onClose={() => {
+          setShowRelatedModal(false);
+          setSelectedRelationMemo(null);
+        }}
+        memo={selectedRelationMemo || memo}
       />
     </>
   );
