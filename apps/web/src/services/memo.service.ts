@@ -18,11 +18,12 @@ export class MemoService extends Service {
   currentMemo: MemoWithAttachmentsDto | null = null;
   loading = false;
 
-  // Pagination
+  // Pagination (for infinite scroll)
   page = 1;
   limit = 20;
   total = 0;
   totalPages = 0;
+  hasMore = true;
 
   // Filters
   searchQuery = '';
@@ -40,10 +41,13 @@ export class MemoService extends Service {
 
   /**
    * Fetch memos with current filters
+   * @param resetPage If true, reset to page 1 and replace memos. Otherwise append to existing memos (for infinite scroll)
    */
   async fetchMemos(resetPage = false) {
     if (resetPage) {
       this.page = 1;
+      this.memos = [];
+      this.hasMore = true;
     }
 
     this.loading = true;
@@ -71,11 +75,13 @@ export class MemoService extends Service {
       const response = await memoApi.getMemos(params);
 
       if (response.code === 0 && response.data) {
-        this.memos = response.data.items;
+        // Append new memos instead of replacing (for infinite scroll)
+        this.memos = [...this.memos, ...response.data.items];
         this.total = response.data.pagination.total;
         this.totalPages = response.data.pagination.totalPages;
         this.page = response.data.pagination.page;
         this.limit = response.data.pagination.limit;
+        this.hasMore = this.page < this.totalPages;
 
         return { success: true };
       } else {
@@ -209,32 +215,12 @@ export class MemoService extends Service {
   }
 
   /**
-   * Go to next page
+   * Load more memos for infinite scroll
    */
-  nextPage() {
-    if (this.page < this.totalPages) {
+  async loadMore() {
+    if (this.hasMore && !this.loading) {
       this.page++;
-      this.fetchMemos();
-    }
-  }
-
-  /**
-   * Go to previous page
-   */
-  prevPage() {
-    if (this.page > 1) {
-      this.page--;
-      this.fetchMemos();
-    }
-  }
-
-  /**
-   * Go to specific page
-   */
-  goToPage(page: number) {
-    if (page >= 1 && page <= this.totalPages) {
-      this.page = page;
-      this.fetchMemos();
+      await this.fetchMemos(false);
     }
   }
 

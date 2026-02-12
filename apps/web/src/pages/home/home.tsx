@@ -9,10 +9,10 @@ import { Layout } from '../../components/layout';
 export const HomePage = view(() => {
   const memoService = useService(MemoService);
 
-  // Fetch memos on mount
+  // Fetch memos on mount (only once)
   useEffect(() => {
     memoService.fetchMemos();
-  }, [memoService]);
+  }, []);
 
   return (
     <Layout>
@@ -35,7 +35,7 @@ export const HomePage = view(() => {
           </div>
 
           {/* Memos List - Scrollable */}
-          <div className="flex-1 overflow-y-auto mt-6 pb-8 min-h-0 px-8">
+          <div id="memo-list-container" className="flex-1 overflow-y-auto mt-6 pb-8 min-h-0 px-8">
             <section aria-label="Your memos">
               <MemoList />
             </section>

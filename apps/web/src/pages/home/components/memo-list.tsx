@@ -1,4 +1,5 @@
 import { view, useService } from '@rabjs/react';
+import InfiniteScroll from 'react-infinite-scroll-component';
 import { MemoService } from '../../../services/memo.service';
 import type { MemoListItemDto } from '@aimo/dto';
 import { MemoCard } from './memo-card';
@@ -71,8 +72,29 @@ export const MemoList = view(() => {
   });
 
   return (
-    <div className="space-y-6">
-      {/* Grouped Memos by Date */}
+    <InfiniteScroll
+      dataLength={memoService.memos.length}
+      next={memoService.loadMore.bind(memoService)}
+      hasMore={memoService.hasMore}
+      loader={
+        <div className="pt-6 text-center">
+          <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600"></div>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            已加载 {memoService.memos.length}/{memoService.total}
+          </p>
+        </div>
+      }
+      endMessage={
+        memoService.total > 0 && (
+          <div className="pt-6 text-center">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              已全部加载 ({memoService.total} 条)
+            </p>
+          </div>
+        )
+      }
+      scrollableTarget="memo-list-container"
+    >
       <div className="space-y-6">
         {sortedDates.map((dateStr) => {
           const memos = groupedMemos.get(dateStr) || [];
@@ -94,58 +116,6 @@ export const MemoList = view(() => {
           );
         })}
       </div>
-
-      {/* Pagination */}
-      {memoService.totalPages > 1 && (
-        <div className="pt-6 flex items-center justify-center gap-2">
-          <button
-            onClick={() => memoService.prevPage()}
-            disabled={memoService.page === 1 || memoService.loading}
-            className="px-4 py-2 text-sm border border-gray-200 dark:border-dark-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-50 dark:hover:bg-dark-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
-          >
-            上一页
-          </button>
-
-          <div className="flex items-center gap-1">
-            {Array.from({ length: Math.min(5, memoService.totalPages) }, (_, i) => {
-              let pageNum: number;
-
-              if (memoService.totalPages <= 5) {
-                pageNum = i + 1;
-              } else if (memoService.page <= 3) {
-                pageNum = i + 1;
-              } else if (memoService.page >= memoService.totalPages - 2) {
-                pageNum = memoService.totalPages - 4 + i;
-              } else {
-                pageNum = memoService.page - 2 + i;
-              }
-
-              return (
-                <button
-                  key={pageNum}
-                  onClick={() => memoService.goToPage(pageNum)}
-                  disabled={memoService.loading}
-                  className={`px-3 py-2 text-sm rounded transition-colors ${
-                    memoService.page === pageNum
-                      ? 'bg-primary-600 text-white font-medium'
-                      : 'border border-gray-200 dark:border-dark-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-800'
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
-                >
-                  {pageNum}
-                </button>
-              );
-            })}
-          </div>
-
-          <button
-            onClick={() => memoService.nextPage()}
-            disabled={memoService.page === memoService.totalPages || memoService.loading}
-            className="px-4 py-2 text-sm border border-gray-200 dark:border-dark-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-dark-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
-          >
-            下一页
-          </button>
-        </div>
-      )}
-    </div>
+    </InfiniteScroll>
   );
 });
