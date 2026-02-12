@@ -6,6 +6,7 @@ import type {
   MemoVectorSearchDto,
   MemoListItemDto,
   PaginatedMemoListDto,
+  PaginatedMemoListWithScoreDto,
 } from '@aimo/dto';
 import request from '../utils/request';
 
@@ -60,12 +61,12 @@ export const deleteMemo = (memoId: string) => {
 };
 
 /**
- * Vector search for memos with pagination (excludes embedding)
+ * Vector search for memos with pagination and relevance scores
  */
 export const vectorSearch = (params: MemoVectorSearchDto & { page?: number; limit?: number }) => {
   return request.post<
     unknown,
-    { code: number; data: { items: MemoListItemDto[]; pagination: { total: number; page: number; limit: number; totalPages: number } } }
+    { code: number; data: PaginatedMemoListWithScoreDto }
   >('/api/v1/memos/search/vector', params);
 };
 

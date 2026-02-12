@@ -148,7 +148,7 @@ export class MemoV1Controller {
 
   @Post('/search/vector')
   async vectorSearch(
-    @Body() body: { query: string; page?: number; limit?: number; threshold?: number },
+    @Body() body: { query: string; page?: number; limit?: number },
     @CurrentUser() user: UserInfoDto
   ) {
     try {
@@ -165,7 +165,6 @@ export class MemoV1Controller {
         query: body.query,
         page: body.page || 1,
         limit: body.limit || 20,
-        threshold: body.threshold || 0.5,
       });
 
       return ResponseUtil.success(result);

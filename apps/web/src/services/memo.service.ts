@@ -5,16 +5,18 @@ import type {
   CreateMemoDto,
   UpdateMemoDto,
   MemoSearchOptionsDto,
+  MemoListItemWithScoreDto,
 } from '@aimo/dto';
 import * as memoApi from '../api/memo';
 
 /**
  * Memo Service
  * Manages memo data and operations
+ * Note: memos can include relevanceScore when from vector search results
  */
 export class MemoService extends Service {
-  // State
-  memos: MemoListItemDto[] = [];
+  // State (items may include relevanceScore from vector search)
+  memos: (MemoListItemDto | MemoListItemWithScoreDto)[] = [];
   currentMemo: MemoWithAttachmentsDto | null = null;
   loading = false;
 

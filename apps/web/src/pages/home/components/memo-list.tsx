@@ -1,16 +1,16 @@
 import { view, useService } from '@rabjs/react';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import { MemoService } from '../../../services/memo.service';
-import type { MemoListItemDto } from '@aimo/dto';
+import type { MemoListItemDto, MemoListItemWithScoreDto } from '@aimo/dto';
 import { MemoCard } from './memo-card';
 
 /**
  * Group memos by date
  */
 const groupMemosByDate = (
-  memos: MemoListItemDto[]
-): Map<string, MemoListItemDto[]> => {
-  const grouped = new Map<string, MemoListItemDto[]>();
+  memos: (MemoListItemDto | MemoListItemWithScoreDto)[]
+): Map<string, (MemoListItemDto | MemoListItemWithScoreDto)[]> => {
+  const grouped = new Map<string, (MemoListItemDto | MemoListItemWithScoreDto)[]>();
 
   memos.forEach((memo) => {
     // createdAt is now a timestamp in milliseconds

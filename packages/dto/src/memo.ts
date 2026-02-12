@@ -114,3 +114,24 @@ export interface PaginatedMemoListDto {
     totalPages: number;
   };
 }
+
+/**
+ * Memo list item with relevance score (for vector search results)
+ * Includes similarity score for frontend to handle relevance filtering
+ */
+export interface MemoListItemWithScoreDto extends MemoListItemDto {
+  relevanceScore?: number; // Similarity score (0-1), higher is more relevant
+}
+
+/**
+ * Paginated memo list with relevance scores (for vector search results)
+ */
+export interface PaginatedMemoListWithScoreDto {
+  items: MemoListItemWithScoreDto[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}

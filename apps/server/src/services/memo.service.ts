@@ -5,7 +5,7 @@ import { BackupService } from './backup.service.js';
 import { AttachmentService } from './attachment.service.js';
 import { MemoRelationService } from './memo-relation.service.js';
 import type { Memo, NewMemo } from '../models/db/memo.schema.js';
-import type { MemoWithAttachmentsDto, PaginatedMemoWithAttachmentsDto, MemoListItemDto, PaginatedMemoListDto } from '@aimo/dto';
+import type { MemoWithAttachmentsDto, PaginatedMemoWithAttachmentsDto, MemoListItemDto, PaginatedMemoListDto, MemoListItemWithScoreDto, PaginatedMemoListWithScoreDto } from '@aimo/dto';
 import type { DenormalizedAttachment } from '../models/db/schema.js';
 import { generateTypeId } from '../utils/id.js';
 import { OBJECT_TYPE } from '../models/constant/type.js';
@@ -33,7 +33,6 @@ export interface MemoVectorSearchOptions {
   query: string;
   page?: number;
   limit?: number;
-  threshold?: number;
 }
 
 @Service()
@@ -464,11 +463,12 @@ export class MemoService {
 
   /**
    * Vector search for memos using semantic search (excludes embedding to reduce payload)
-   * Supports pagination
+   * Returns items with relevance scores for frontend to handle filtering
+   * Supports database-level pagination using offset/limit
    */
-  async vectorSearch(options: MemoVectorSearchOptions): Promise<PaginatedMemoListDto> {
+  async vectorSearch(options: MemoVectorSearchOptions): Promise<PaginatedMemoListWithScoreDto> {
     try {
-      const { uid, query, page = 1, limit = 20, threshold = 0.5 } = options;
+      const { uid, query, page = 1, limit = 20 } = options;
 
       if (!query || query.trim().length === 0) {
         throw new Error('Search query cannot be empty');
@@ -478,29 +478,31 @@ export class MemoService {
       const queryEmbedding = await this.embeddingService.generateEmbedding(query);
 
       const memosTable = await this.lanceDb.openTable('memos');
+      
+      const offset = (page - 1) * limit;
 
-      // Perform vector search - get all results first
+      // Perform vector search with database-level limit and offset for pagination
+      // This is more efficient than loading all results into memory
+      const results = await memosTable
+        .search(queryEmbedding)
+        .where(`uid = '${uid}'`)
+        .limit(limit + 1) // Fetch one extra to check if there are more results
+        .offset(offset)
+        .toArray();
+
+      // Get total count separately (without limit/offset)
       const allResults = await memosTable
         .search(queryEmbedding)
         .where(`uid = '${uid}'`)
         .toArray();
 
-      // Filter by threshold if needed
-      const filtered = allResults.filter((item: any) => {
-        // LanceDB returns _distance, lower is better
-        // Convert to similarity score (0-1)
-        const similarity = 1 - (item._distance || 0) / 2; // Normalize
-        return similarity >= threshold;
-      });
-
-      const total = filtered.length;
+      const total = allResults.length;
       const totalPages = Math.ceil(total / limit);
 
-      // Get paginated results
-      const offset = (page - 1) * limit;
-      const paginatedResults = filtered.slice(offset, offset + limit);
+      // Use only the paginated results (remove the +1 we fetched)
+      const paginatedResults = results.slice(0, limit);
 
-      // Use denormalized attachments directly and exclude embedding
+      // Use denormalized attachments directly and include relevance score
       const items = paginatedResults.map((memo: any) => ({
         memoId: memo.memoId,
         uid: memo.uid,
@@ -509,7 +511,10 @@ export class MemoService {
         attachments: this.convertArrowAttachments(memo.attachments),
         createdAt: memo.createdAt,
         updatedAt: memo.updatedAt,
-      })) as MemoListItemDto[];
+        // LanceDB returns _distance, lower is better
+        // Convert to similarity score (0-1) where 1.0 is perfect match
+        relevanceScore: 1 - (memo._distance || 0) / 2, // Normalize from distance to similarity
+      })) as MemoListItemWithScoreDto[];
 
       return {
         items,

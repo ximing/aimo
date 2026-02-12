@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { view, useService } from '@rabjs/react';
-import type { MemoListItemDto } from '@aimo/dto';
+import type { MemoListItemDto, MemoListItemWithScoreDto } from '@aimo/dto';
 import { MemoService } from '../../../services/memo.service';
 import { FileText, Film } from 'lucide-react';
 import { RelatedMemosModal } from './related-memos-modal';
 
 interface MemoCardProps {
-  memo: MemoListItemDto;
+  memo: MemoListItemDto | MemoListItemWithScoreDto;
 }
 
 // Extract plain text without markdown syntax
@@ -179,9 +179,33 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
 
           {/* Footer */}
           <div className="flex items-center justify-between">
-            <span className="text-xs text-gray-500 dark:text-gray-500">
-              {formatDate(memo.createdAt)}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-500 dark:text-gray-500">
+                {formatDate(memo.createdAt)}
+              </span>
+              {/* Show relevance score if available (from vector search) */}
+              {'relevanceScore' in memo && (memo as MemoListItemWithScoreDto).relevanceScore !== undefined && (
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-gray-400 dark:text-gray-600">相关度:</span>
+                  <div className="flex items-center gap-0.5">
+                    {[...Array(5)].map((_, i) => {
+                      const score = (memo as MemoListItemWithScoreDto).relevanceScore!;
+                      const filled = (i + 1) <= Math.round(score * 5);
+                      return (
+                        <div
+                          key={i}
+                          className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                            filled
+                              ? 'bg-primary-500'
+                              : 'bg-gray-300 dark:bg-gray-600'
+                          }`}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Actions */}
             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
