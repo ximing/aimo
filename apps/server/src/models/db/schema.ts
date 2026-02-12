@@ -136,6 +136,30 @@ export interface EmbeddingCacheRecord {
 }
 
 /**
+ * Multimodal embedding cache table schema
+ * Stores cached multimodal embeddings to avoid redundant API calls
+ * Supports text, image, and video modalities
+ */
+export const multimodalEmbeddingCacheSchema = new Schema([
+  new Field('modelHash', new Utf8(), false), // non-nullable model identifier hash
+  new Field('contentHash', new Utf8(), false), // non-nullable content hash
+  new Field('modalityType', new Utf8(), false), // non-nullable modality type: 'text' | 'image' | 'video'
+  new Field('embedding', new FixedSizeList(1024, new Field('item', new Float32(), true)), false), // fixed 1024-dim multimodal embedding
+  new Field('createdAt', new Timestamp(TimeUnit.MILLISECOND), false), // non-nullable creation timestamp in milliseconds
+]);
+
+/**
+ * Type definition for multimodal embedding cache records
+ */
+export interface MultimodalEmbeddingCacheRecord {
+  modelHash: string;
+  contentHash: string;
+  modalityType: 'text' | 'image' | 'video';
+  embedding: number[];
+  createdAt: number; // timestamp in milliseconds
+}
+
+/**
  * Memo relations table schema
  * Stores directed relations between memos (A -> B means A is related to B)
  */
@@ -163,6 +187,7 @@ export const categoriesSchema = new Schema([
 /**
  * Attachments table schema
  * Stores file attachments with metadata
+ * For images and videos, multimodalEmbedding stores the fusion vector from multimodal embedding service
  */
 export const attachmentsSchema = new Schema([
   new Field('attachmentId', new Utf8(), false), // non-nullable unique attachment id
@@ -172,6 +197,8 @@ export const attachmentsSchema = new Schema([
   new Field('type', new Utf8(), false), // non-nullable MIME type
   new Field('size', new Int32(), false), // non-nullable file size in bytes
   new Field('storageType', new Utf8(), false), // non-nullable storage type: 'local' | 's3'
+  new Field('multimodalEmbedding', new FixedSizeList(1024, new Field('item', new Float32(), true)), true), // nullable multimodal embedding vector (1024-dim)
+  new Field('multimodalModelHash', new Utf8(), true), // nullable model hash for multimodal embedding
   new Field('createdAt', new Timestamp(TimeUnit.MILLISECOND), false), // non-nullable creation timestamp in milliseconds
 ]);
 
@@ -209,5 +236,7 @@ export interface AttachmentRecord {
   type: string;
   size: number;
   storageType: 'local' | 's3';
+  multimodalEmbedding?: number[]; // optional multimodal embedding vector for images and videos
+  multimodalModelHash?: string; // optional model hash for multimodal embedding
   createdAt: number; // timestamp in milliseconds
 }

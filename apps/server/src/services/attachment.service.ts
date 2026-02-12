@@ -6,6 +6,8 @@
 import { Service } from 'typedi';
 import { LanceDbService, type AttachmentRecord } from '../sources/lancedb.js';
 import { AttachmentStorageService } from './attachment-storage.service.js';
+import { MultimodalEmbeddingService } from './multimodal-embedding.service.js';
+import { config } from '../config/config.js';
 import type { AttachmentDto } from '@aimo/dto';
 
 export interface CreateAttachmentOptions {
@@ -26,11 +28,13 @@ export interface GetAttachmentsOptions {
 export class AttachmentService {
   constructor(
     private lanceDbService: LanceDbService,
-    private storageService: AttachmentStorageService
+    private storageService: AttachmentStorageService,
+    private multimodalEmbeddingService: MultimodalEmbeddingService
   ) {}
 
   /**
    * Create a new attachment
+   * For images and videos, generate multimodal embedding asynchronously if enabled
    */
   async createAttachment(options: CreateAttachmentOptions): Promise<AttachmentDto> {
     const { uid, buffer, filename, mimeType, size } = options;
@@ -59,6 +63,25 @@ export class AttachmentService {
     const table = await this.lanceDbService.openTable('attachments');
     await table.add([record as unknown as Record<string, unknown>]);
 
+    // Generate multimodal embedding asynchronously for images and videos if enabled
+    // This is non-blocking and happens in the background
+    if (config.multimodal.enabled) {
+      const isImage = mimeType.startsWith('image/');
+      const isVideo = mimeType.startsWith('video/');
+
+      if (isImage || isVideo) {
+        // Fire and forget - do not await
+        this.generateAndUpdateMultimodalEmbedding(attachmentId, url, isImage ? 'image' : 'video', filename).catch(
+          (error) => {
+            console.error(
+              `Background multimodal embedding generation failed for ${filename}:`,
+              error
+            );
+          }
+        );
+      }
+    }
+
     // Generate access URL
     const accessUrl = await this.generateAccessUrl(url, storageType);
 
@@ -70,6 +93,69 @@ export class AttachmentService {
       size,
       createdAt: now,
     };
+  }
+
+  /**
+   * Generate multimodal embedding asynchronously and update attachment record
+   * This method is called in the background without blocking
+   */
+  private async generateAndUpdateMultimodalEmbedding(
+    attachmentId: string,
+    url: string,
+    modalityType: 'image' | 'video',
+    filename: string
+  ): Promise<void> {
+    try {
+      console.log(`Starting background multimodal embedding generation for ${modalityType}: ${filename}`);
+
+      // Generate embedding
+      const embedding = await this.multimodalEmbeddingService.generateMultimodalEmbedding(
+        { [modalityType]: url },
+        modalityType
+      );
+
+      // Get model hash from service
+      const modelHash = (this.multimodalEmbeddingService as any).modelHash;
+
+      // Update the attachment record with the embedding
+      const table = await this.lanceDbService.openTable('attachments');
+
+      // Get the existing record
+      const results = await table
+        .query()
+        .where(`attachmentId = '${attachmentId}'`)
+        .limit(1)
+        .toArray();
+
+      if (results.length === 0) {
+        console.warn(`Attachment record not found: ${attachmentId}`);
+        return;
+      }
+
+      const existingRecord = results[0] as AttachmentRecord;
+
+      // Create updated record with multimodal embedding
+      const updatedRecord: AttachmentRecord = {
+        ...existingRecord,
+        multimodalEmbedding: embedding,
+        multimodalModelHash: modelHash,
+      };
+
+      // Delete the old record and add the updated one
+      await table.delete(`attachmentId = '${attachmentId}'`);
+      await table.add([updatedRecord as unknown as Record<string, unknown>]);
+
+      console.log(
+        `Successfully generated and stored multimodal embedding for ${modalityType}: ${filename}`
+      );
+    } catch (error) {
+      console.warn(
+        `Failed to generate multimodal embedding for ${filename}: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      );
+      // Silently fail - this is background work that shouldn't affect user experience
+    }
   }
 
   /**

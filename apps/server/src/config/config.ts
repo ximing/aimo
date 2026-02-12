@@ -58,6 +58,16 @@ export interface AttachmentConfig {
   };
 }
 
+export interface MultimodalEmbeddingConfig {
+  enabled: boolean; // 是否启用多模态 embedding
+  model: string; // 模型名称 (e.g., 'qwen3-vl-embedding')
+  apiKey: string; // DashScope API Key
+  baseURL: string; // DashScope API 基础 URL
+  dimension: number; // 向量维度 (e.g., 1024)
+  outputType: string; // 输出类型 (e.g., 'dense')
+  fps?: number; // 视频帧采样率 (e.g., 0.5)
+}
+
 export interface Config {
   port: number;
   cors: {
@@ -91,6 +101,7 @@ export interface Config {
     baseURL: string;
     embeddingDimensions: number; // Embedding vector dimensions (e.g., 1536 for text-embedding-3-small)
   };
+  multimodal: MultimodalEmbeddingConfig;
   locale: {
     language: string; // e.g., 'zh-cn', 'en-us'
     timezone: string; // e.g., 'Asia/Shanghai', 'UTC'
@@ -204,6 +215,15 @@ export const config: Config = {
     model: process.env.OPENAI_MODEL || 'text-embedding-3-small',
     baseURL: process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1',
     embeddingDimensions: Number(process.env.OPENAI_EMBEDDING_DIMENSIONS) || 1536,
+  },
+  multimodal: {
+    enabled: process.env.MULTIMODAL_EMBEDDING_ENABLED === 'true',
+    model: process.env.MULTIMODAL_EMBEDDING_MODEL || 'qwen3-vl-embedding',
+    apiKey: process.env.DASHSCOPE_API_KEY || '',
+    baseURL: process.env.DASHSCOPE_BASE_URL || 'https://dashscope.aliyuncs.com/api/v1',
+    dimension: Number(process.env.MULTIMODAL_EMBEDDING_DIMENSION) || 1024,
+    outputType: process.env.MULTIMODAL_EMBEDDING_OUTPUT_TYPE || 'dense',
+    fps: Number(process.env.MULTIMODAL_EMBEDDING_VIDEO_FPS) || 0.5,
   },
   locale: {
     language: process.env.LOCALE_LANGUAGE || 'zh-cn',

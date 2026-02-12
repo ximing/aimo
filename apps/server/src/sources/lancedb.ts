@@ -9,16 +9,26 @@ import {
   categoriesSchema,
   embeddingCacheSchema,
   attachmentsSchema,
+  multimodalEmbeddingCacheSchema,
   type UserRecord,
   type MemoRecord,
   type MemoRelationRecord,
   type CategoryRecord,
   type EmbeddingCacheRecord,
   type AttachmentRecord,
+  type MultimodalEmbeddingCacheRecord,
 } from '../models/db/schema.js';
 
 // Re-export for backward compatibility
-export type { UserRecord, MemoRecord, MemoRelationRecord, CategoryRecord, EmbeddingCacheRecord, AttachmentRecord };
+export type {
+  UserRecord,
+  MemoRecord,
+  MemoRelationRecord,
+  CategoryRecord,
+  EmbeddingCacheRecord,
+  AttachmentRecord,
+  MultimodalEmbeddingCacheRecord,
+};
 
 @Service()
 export class LanceDbService {
@@ -144,6 +154,16 @@ export class LanceDbService {
         console.log('Attachments table created successfully');
       }
 
+      // Create multimodal_embedding_cache table if not exists with explicit schema
+      if (!tableNames.includes('multimodal_embedding_cache')) {
+        console.log('Creating multimodal_embedding_cache table with explicit schema...');
+        await this.db.createEmptyTable(
+          'multimodal_embedding_cache',
+          multimodalEmbeddingCacheSchema
+        );
+        console.log('Multimodal embedding cache table created successfully');
+      }
+
       // Create scalar indexes for query optimization
       await this.createScalarIndexes();
     } catch (error) {
@@ -155,12 +175,12 @@ export class LanceDbService {
   /**
    * Create scalar indexes for query optimization
    * Indexes accelerate filtering and search operations
-   * 
+   *
    * Index Strategy:
    * - BTREE indexes: for exact match, range queries, and sorting on indexed fields
    * - BITMAP indexes: for low-cardinality fields (status, flags)
    * - Single-column indexes: cover most query patterns in this schema
-   * 
+   *
    * Note: LanceDB currently does not support composite indexes in this version.
    * Use single-column indexes on the most frequently filtered/sorted columns.
    * Query optimizer will use multiple single-column indexes when needed.
@@ -173,6 +193,7 @@ export class LanceDbService {
       const categories = await this.openTable('categories');
       const attachments = await this.openTable('attachments');
       const embeddingCache = await this.openTable('embedding_cache');
+      const multimodalEmbeddingCache = await this.openTable('multimodal_embedding_cache');
 
       // Users table indexes
       // uid: BTREE for exact match queries
@@ -226,6 +247,29 @@ export class LanceDbService {
       // modelHash: BTREE for model-specific cache filtering
       await this.createIndexIfNotExists(embeddingCache, 'contentHash', 'BTREE', 'embedding_cache');
       await this.createIndexIfNotExists(embeddingCache, 'modelHash', 'BTREE', 'embedding_cache');
+
+      // Multimodal embedding cache indexes
+      // contentHash: BTREE for cache lookup
+      // modelHash: BTREE for model-specific cache filtering
+      // modalityType: BITMAP for low-cardinality modality filtering (text, image, video)
+      await this.createIndexIfNotExists(
+        multimodalEmbeddingCache,
+        'contentHash',
+        'BTREE',
+        'multimodal_embedding_cache'
+      );
+      await this.createIndexIfNotExists(
+        multimodalEmbeddingCache,
+        'modelHash',
+        'BTREE',
+        'multimodal_embedding_cache'
+      );
+      await this.createIndexIfNotExists(
+        multimodalEmbeddingCache,
+        'modalityType',
+        'BITMAP',
+        'multimodal_embedding_cache'
+      );
     } catch (error) {
       console.error('Error creating scalar indexes:', error);
       // Don't throw - allow app to continue even if index creation fails
@@ -301,25 +345,29 @@ export class LanceDbService {
    * Optimize a table to rebuild indexes and consolidate data
    * Should be called after bulk insert/update operations to ensure indexes are up-to-date
    * Non-blocking and handles errors internally - will not throw
-   * 
+   *
    * @param tableName - The name of the table to optimize
    * @param cleanupOlderThanDays - Optional: Clean up versions older than N days (default: uses config.lancedb.versionRetentionDays)
    */
   async optimizeTable(tableName: string, cleanupOlderThanDays?: number): Promise<void> {
     try {
       const table = await this.openTable(tableName);
-      
+
       // 使用传入的天数或配置中的默认值
       const retentionDays = cleanupOlderThanDays ?? config.lancedb.versionRetentionDays;
       const cleanupDate = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
-      
-      console.log(`Optimizing table: ${tableName} (cleaning versions older than ${retentionDays} days)...`);
-      
+
+      console.log(
+        `Optimizing table: ${tableName} (cleaning versions older than ${retentionDays} days)...`
+      );
+
       await table.optimize({
         cleanupOlderThan: cleanupDate,
       });
-      
-      console.log(`Table ${tableName} optimized successfully (versions older than ${retentionDays} days cleaned)`);
+
+      console.log(
+        `Table ${tableName} optimized successfully (versions older than ${retentionDays} days cleaned)`
+      );
     } catch (error) {
       console.warn(`Warning: Failed to optimize table ${tableName}:`, error);
       // Don't throw - allow operations to continue even if optimization fails
@@ -329,13 +377,21 @@ export class LanceDbService {
   /**
    * Optimize all tables to rebuild indexes and consolidate data
    * Useful after bulk operations or periodic maintenance
-   * 
+   *
    * @param cleanupOlderThanDays - Optional: Clean up versions older than N days (default: uses config.lancedb.versionRetentionDays)
    */
   async optimizeAllTables(cleanupOlderThanDays?: number): Promise<void> {
-    const tables = ['users', 'memos', 'memo_relations', 'categories', 'attachments', 'embedding_cache'];
+    const tables = [
+      'users',
+      'memos',
+      'memo_relations',
+      'categories',
+      'attachments',
+      'embedding_cache',
+      'multimodal_embedding_cache',
+    ];
     console.log(`Starting optimization for all tables...`);
-    
+
     for (const tableName of tables) {
       try {
         await this.optimizeTable(tableName, cleanupOlderThanDays);
@@ -344,7 +400,7 @@ export class LanceDbService {
         // Continue with other tables even if one fails
       }
     }
-    
+
     console.log(`All tables optimization completed`);
   }
 

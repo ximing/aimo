@@ -9,6 +9,18 @@ interface ApiResponse<T> {
   message?: string;
 }
 
+export interface GetAttachmentsParams {
+  page?: number;
+  limit?: number;
+}
+
+export interface GetAttachmentsResponse {
+  items: AttachmentDto[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export const attachmentApi = {
   /**
    * 上传附件
@@ -40,6 +52,22 @@ export const attachmentApi = {
   async uploadBatch(files: File[]): Promise<AttachmentDto[]> {
     const uploads = files.map((file) => this.upload(file));
     return await Promise.all(uploads);
+  },
+
+  /**
+   * 获取附件列表
+   */
+  async getAttachments(params?: GetAttachmentsParams): Promise<GetAttachmentsResponse> {
+    const response = await axios.get<ApiResponse<GetAttachmentsResponse>>(
+      API_BASE,
+      { params }
+    );
+
+    if (response.data.code === 0) {
+      return response.data.data;
+    }
+
+    throw new Error(response.data.message || 'Get attachments failed');
   },
 
   /**
