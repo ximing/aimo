@@ -148,7 +148,7 @@ export class MemoV1Controller {
 
   @Post('/search/vector')
   async vectorSearch(
-    @Body() body: { query: string; limit?: number; threshold?: number },
+    @Body() body: { query: string; page?: number; limit?: number; threshold?: number },
     @CurrentUser() user: UserInfoDto
   ) {
     try {
@@ -160,17 +160,15 @@ export class MemoV1Controller {
         return ResponseUtil.error(ErrorCode.PARAMS_ERROR, 'Query is required');
       }
 
-      const results = await this.memoService.vectorSearch({
+      const result = await this.memoService.vectorSearch({
         uid: user.uid,
         query: body.query,
-        limit: body.limit || 10,
+        page: body.page || 1,
+        limit: body.limit || 20,
         threshold: body.threshold || 0.5,
       });
 
-      return ResponseUtil.success({
-        items: results,
-        count: results.length,
-      });
+      return ResponseUtil.success(result);
     } catch (error) {
       console.error('Vector search error:', error);
       return ResponseUtil.error(ErrorCode.DB_ERROR);

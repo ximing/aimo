@@ -190,7 +190,7 @@ export class MemoService extends Service {
 
     if (query && query.trim().length > 0) {
       // Use vector search for non-empty queries (semantic similarity)
-      await this.vectorSearch(query, this.limit);
+      await this.vectorSearch(query, this.limit, true);
     } else {
       // Use regular fetch for empty queries
       await this.fetchMemos(true);
@@ -230,26 +230,40 @@ export class MemoService extends Service {
   }
 
   /**
-   * Vector search for memos
+   * Vector search for memos with pagination support
    */
-  async vectorSearch(query: string, limit = 10) {
+  async vectorSearch(query: string, limit = 20, resetPage = true) {
+    if (resetPage) {
+      this.page = 1;
+      this.memos = [];
+    }
+
     this.loading = true;
 
     try {
-      const response = await memoApi.vectorSearch({ query, limit });
+      const response = await memoApi.vectorSearch({
+        query,
+        page: this.page,
+        limit,
+      });
 
       if (response.code === 0 && response.data) {
-        // Reset to page 1 and clear previous data for search results
-        this.page = 1;
-        this.memos = response.data.items;
-        this.total = response.data.count;
-        
-        // Set pagination info for vector search results
-        // Vector search returns all results at once, so we treat it as page 1 with 1 total page
-        this.totalPages = 1;
-        this.hasMore = false;
+        const { items, pagination } = response.data;
 
-        return { success: true, items: response.data.items };
+        // On first page, replace memos; on subsequent pages, append (for infinite scroll)
+        if (this.page === 1) {
+          this.memos = items;
+        } else {
+          this.memos = [...this.memos, ...items];
+        }
+
+        this.total = pagination.total;
+        this.totalPages = pagination.totalPages;
+        this.page = pagination.page;
+        this.limit = pagination.limit;
+        this.hasMore = this.page < this.totalPages;
+
+        return { success: true, items };
       } else {
         return { success: false, message: 'Vector search failed' };
       }

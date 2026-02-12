@@ -31,6 +31,7 @@ export interface MemoSearchOptions {
 export interface MemoVectorSearchOptions {
   uid: string;
   query: string;
+  page?: number;
   limit?: number;
   threshold?: number;
 }
@@ -463,10 +464,11 @@ export class MemoService {
 
   /**
    * Vector search for memos using semantic search (excludes embedding to reduce payload)
+   * Supports pagination
    */
-  async vectorSearch(options: MemoVectorSearchOptions): Promise<MemoListItemDto[]> {
+  async vectorSearch(options: MemoVectorSearchOptions): Promise<PaginatedMemoListDto> {
     try {
-      const { uid, query, limit = 10, threshold = 0.5 } = options;
+      const { uid, query, page = 1, limit = 20, threshold = 0.5 } = options;
 
       if (!query || query.trim().length === 0) {
         throw new Error('Search query cannot be empty');
@@ -477,30 +479,47 @@ export class MemoService {
 
       const memosTable = await this.lanceDb.openTable('memos');
 
-      // Perform vector search
-      const results = await memosTable
+      // Perform vector search - get all results first
+      const allResults = await memosTable
         .search(queryEmbedding)
         .where(`uid = '${uid}'`)
-        .limit(limit)
         .toArray();
 
       // Filter by threshold if needed
-      const filtered = results.filter((item: any) => {
+      const filtered = allResults.filter((item: any) => {
         // LanceDB returns _distance, lower is better
         // Convert to similarity score (0-1)
         const similarity = 1 - (item._distance || 0) / 2; // Normalize
         return similarity >= threshold;
       });
 
+      const total = filtered.length;
+      const totalPages = Math.ceil(total / limit);
+
+      // Get paginated results
+      const offset = (page - 1) * limit;
+      const paginatedResults = filtered.slice(offset, offset + limit);
+
       // Use denormalized attachments directly and exclude embedding
-      return filtered.map((memo: any) => ({
+      const items = paginatedResults.map((memo: any) => ({
         memoId: memo.memoId,
         uid: memo.uid,
         content: memo.content,
+        categoryId: memo.categoryId,
         attachments: this.convertArrowAttachments(memo.attachments),
         createdAt: memo.createdAt,
         updatedAt: memo.updatedAt,
       })) as MemoListItemDto[];
+
+      return {
+        items,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages,
+        },
+      };
     } catch (error) {
       console.error('Error performing vector search:', error);
       throw error;

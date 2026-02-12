@@ -60,12 +60,12 @@ export const deleteMemo = (memoId: string) => {
 };
 
 /**
- * Vector search for memos (excludes embedding)
+ * Vector search for memos with pagination (excludes embedding)
  */
-export const vectorSearch = (params: MemoVectorSearchDto) => {
+export const vectorSearch = (params: MemoVectorSearchDto & { page?: number; limit?: number }) => {
   return request.post<
     unknown,
-    { code: number; data: { items: MemoListItemDto[]; count: number } }
+    { code: number; data: { items: MemoListItemDto[]; pagination: { total: number; page: number; limit: number; totalPages: number } } }
   >('/api/v1/memos/search/vector', params);
 };
 
