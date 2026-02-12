@@ -46,6 +46,13 @@ export default {
           '100%': { transform: 'translateY(0)', opacity: '1' },
         },
       },
+      scale: {
+        102: '1.02',
+      },
+      fontFamily: {
+        serif: ['Noto Serif JP', 'serif'],
+        sans: ['Noto Sans JP', 'sans-serif'],
+      },
     },
   },
   plugins: [],

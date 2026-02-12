@@ -29,7 +29,7 @@ export const GalleryImageCard = view(({ attachment, onClick }: GalleryImageCardP
   return (
     <button
       onClick={onClick}
-      className="relative group overflow-hidden rounded-lg bg-gray-200 dark:bg-dark-700 aspect-square hover:opacity-90 transition-opacity duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-0"
+      className="relative group overflow-hidden rounded-xl bg-gray-200 dark:bg-dark-700 aspect-square hover:shadow-xl hover:scale-102 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-0 cursor-pointer"
     >
       {/* Image/Video Thumbnail */}
       {(isImage || isVideo) && (
@@ -37,29 +37,30 @@ export const GalleryImageCard = view(({ attachment, onClick }: GalleryImageCardP
           src={attachment.url}
           alt={attachment.filename}
           className="w-full h-full object-cover"
+          loading="lazy"
         />
       )}
 
       {/* Document/Audio Placeholder */}
       {isDocument && (
-        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-300 to-gray-400 dark:from-dark-600 dark:to-dark-700">
-          <div className="text-gray-600 dark:text-gray-400">{getFileIcon()}</div>
+        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-300 to-slate-400 dark:from-dark-600 dark:to-dark-700">
+          <div className="text-slate-600 dark:text-slate-400">{getFileIcon()}</div>
         </div>
       )}
 
       {/* Video Play Icon */}
       {isVideo && (
-        <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-colors duration-200 flex items-center justify-center">
-          <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">
+        <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-colors duration-300 flex items-center justify-center">
+          <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
             <Play className="w-6 h-6 text-gray-900 fill-current ml-0.5" />
           </div>
         </div>
       )}
 
-      {/* Hover Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-end p-3">
-        <p className="text-white text-xs font-medium truncate">{attachment.filename}</p>
-        <p className="text-gray-300 text-xs mt-1">
+      {/* Elegant Hover Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+        <p className="text-white text-xs font-medium truncate font-serif">{attachment.filename}</p>
+        <p className="text-slate-300 text-xs mt-2">
           {(attachment.size / 1024 / 1024).toFixed(2)} MB
         </p>
       </div>

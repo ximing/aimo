@@ -4,8 +4,10 @@ import { Layout } from '../../components/layout';
 import { AttachmentService } from '../../services/attachment.service';
 import { GalleryFilter } from './components/gallery-filter';
 import { GallerySearchBar } from './components/gallery-search-bar';
-import { GalleryGrid } from './components/gallery-grid';
+import { GalleryTimeline } from './components/gallery-timeline';
+import { GalleryImageCard } from './components/gallery-image-card';
 import { GalleryPreviewModal } from './components/gallery-preview-modal';
+import type { AttachmentDto } from '@aimo/dto';
 
 export const GalleryPage = view(() => {
   const attachmentService = useService(AttachmentService);
@@ -54,7 +56,15 @@ export const GalleryPage = view(() => {
                 </div>
               </div>
             ) : (
-              <GalleryGrid onSelectAttachment={handleSelectAttachment} />
+              <GalleryTimeline
+                onSelectAttachment={handleSelectAttachment}
+                renderAttachment={(attachment: AttachmentDto, onSelect) => (
+                  <GalleryImageCard
+                    attachment={attachment}
+                    onClick={() => onSelect(attachment)}
+                  />
+                )}
+              />
             )}
           </div>
         </div>
