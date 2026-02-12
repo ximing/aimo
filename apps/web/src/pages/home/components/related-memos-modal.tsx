@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
-import { X } from 'lucide-react';
+import { X, ArrowRight } from 'lucide-react';
 import { view, useService } from '@rabjs/react';
 import type { MemoListItemDto } from '@aimo/dto';
 import { MemoService } from '../../../services/memo.service';
@@ -13,7 +13,7 @@ interface RelatedMemosModalProps {
 }
 
 // Extract plain text without markdown syntax
-const extractPlainText = (content: string, maxLength = 80): string => {
+const extractPlainText = (content: string, maxLength = 100): string => {
   const withoutImages = content.replace(/!\[.*?\]\((.*?)\)/g, '');
   const withoutLinks = withoutImages.replace(/\[(.*?)\]\((.*?)\)/g, '$1');
   const plainText = withoutLinks
@@ -108,65 +108,98 @@ export const RelatedMemosModal = view(({ isOpen, onClose, memo }: RelatedMemosMo
               leaveTo="opacity-0 scale-95"
             >
               <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-lg bg-white dark:bg-dark-800 shadow-lg transition-all">
-                {/* Header */}
-                <div className="flex items-center justify-between border-b border-gray-200 dark:border-dark-700 px-6 py-4">
-                  <div className="flex-1">
-                    <Dialog.Title className="text-lg font-semibold text-gray-900 dark:text-white">
+                {/* Compact Header */}
+                <div className="flex items-center justify-between px-6 py-3 border-b border-gray-200 dark:border-dark-700">
+                  <div className="flex-1 min-w-0">
+                    <Dialog.Title className="text-sm font-semibold text-gray-900 dark:text-white">
                       相关笔记
                     </Dialog.Title>
-                    <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                      基于当前笔记内容的10条相关笔记
-                    </p>
                   </div>
                   <button
                     onClick={onClose}
-                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer"
+                    className="ml-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer flex-shrink-0"
                     aria-label="Close modal"
                   >
-                    <X className="w-5 h-5" />
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
 
                 {/* Content */}
-                <div className="max-h-[60vh] overflow-y-auto px-6 py-4">
-                  {loading ? (
-                    <div className="flex items-center justify-center py-12">
-                      <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600"></div>
-                      <p className="ml-3 text-sm text-gray-600 dark:text-gray-400">加载相关笔记中...</p>
-                    </div>
-                  ) : relatedMemos.length === 0 ? (
-                    <div className="text-center py-8">
-                      <p className="text-gray-600 dark:text-gray-400">未找到相关笔记</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {relatedMemos.map((relatedMemo) => (
-                        <button
-                          key={relatedMemo.memoId}
-                          onClick={() => handleMemoClick(relatedMemo)}
-                          className="w-full text-left px-4 py-3 bg-gray-50 dark:bg-dark-700 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-600 transition-colors duration-200 cursor-pointer group"
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm text-gray-900 dark:text-white line-clamp-2 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
-                                {extractPlainText(relatedMemo.content, 100)}
-                              </p>
-                              <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
-                                {formatDate(relatedMemo.createdAt)}
-                              </p>
-                            </div>
-                          </div>
-                        </button>
-                      ))}
+                <div className="max-h-[65vh] overflow-y-auto">
+                  {/* Original Memo Reference */}
+                  {memo && (
+                    <div className="px-6 py-4 border-b border-gray-100 dark:border-dark-700/50">
+                      <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">
+                        原始笔记
+                      </div>
+                      <div className="bg-gradient-to-r from-primary-50 to-primary-100/50 dark:from-primary-950/40 dark:to-primary-900/20 px-3 py-2.5 rounded border border-primary-200/50 dark:border-primary-900/40">
+                        <p className="text-sm text-primary-900 dark:text-primary-100 line-clamp-3 leading-relaxed">
+                          {extractPlainText(memo.content, 120)}
+                        </p>
+                        <p className="text-xs text-primary-700 dark:text-primary-300 mt-2 opacity-75">
+                          {formatDate(memo.createdAt)}
+                        </p>
+                      </div>
                     </div>
                   )}
+
+                  {/* Relationship Indicator */}
+                  <div className="flex justify-center py-3 px-6">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-gray-600"></div>
+                      <ArrowRight className="w-3.5 h-3.5 text-gray-400 dark:text-gray-600" />
+                      <div className="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-gray-600"></div>
+                    </div>
+                  </div>
+
+                  {/* Related Memos List */}
+                  <div className="px-6 py-4">
+                    <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wide">
+                      相关内容 ({relatedMemos.length})
+                    </div>
+
+                    {loading ? (
+                      <div className="flex flex-col items-center justify-center py-8">
+                        <div className="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-primary-600 mb-3"></div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">加载中...</p>
+                      </div>
+                    ) : relatedMemos.length === 0 ? (
+                      <div className="text-center py-6">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">未找到相关笔记</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {relatedMemos.map((relatedMemo, index) => (
+                          <button
+                            key={relatedMemo.memoId}
+                            onClick={() => handleMemoClick(relatedMemo)}
+                            className="w-full text-left px-3 py-2.5 rounded border border-gray-200 dark:border-dark-700 bg-white dark:bg-dark-700/50 hover:border-primary-300 dark:hover:border-primary-700 hover:bg-gray-50 dark:hover:bg-dark-700 transition-all duration-200 cursor-pointer group"
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className="flex-shrink-0 text-xs font-medium text-gray-400 dark:text-gray-500 mt-0.5 w-5">
+                                {index + 1}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs text-gray-900 dark:text-gray-100 line-clamp-2 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors leading-relaxed">
+                                  {extractPlainText(relatedMemo.content, 100)}
+                                </p>
+                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">
+                                  {formatDate(relatedMemo.createdAt)}
+                                </p>
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                {/* Footer */}
-                <div className="border-t border-gray-200 dark:border-dark-700 px-6 py-4 flex justify-end">
+                {/* Minimal Footer */}
+                <div className="border-t border-gray-200 dark:border-dark-700 px-6 py-2.5 flex justify-end">
                   <button
                     onClick={onClose}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-dark-700 hover:bg-gray-200 dark:hover:bg-dark-600 rounded-lg transition-colors duration-200 cursor-pointer"
+                    className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors cursor-pointer"
                   >
                     关闭
                   </button>
