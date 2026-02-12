@@ -52,6 +52,7 @@ export const usersSchema = new Schema([
 export const memosSchema = new Schema([
   new Field('memoId', new Utf8(), false), // non-nullable unique memo id
   new Field('uid', new Utf8(), false), // non-nullable user id
+  new Field('categoryId', new Utf8(), true), // nullable category id (undefined = uncategorized)
   new Field('content', new Utf8(), false), // non-nullable memo content
   new Field(
     'attachments',
@@ -104,6 +105,7 @@ export interface DenormalizedAttachment {
 export interface MemoRecord {
   memoId: string;
   uid: string;
+  categoryId?: string; // optional category id (undefined = uncategorized)
   content: string;
   attachments?: DenormalizedAttachment[]; // denormalized attachment objects array (immutable)
   embedding: number[];
@@ -134,6 +136,31 @@ export interface EmbeddingCacheRecord {
 }
 
 /**
+ * Memo relations table schema
+ * Stores directed relations between memos (A -> B means A is related to B)
+ */
+export const memoRelationsSchema = new Schema([
+  new Field('relationId', new Utf8(), false), // non-nullable unique relation id
+  new Field('uid', new Utf8(), false), // non-nullable user id (for permission isolation)
+  new Field('sourceMemoId', new Utf8(), false), // non-nullable source memo id (who initiates the relation)
+  new Field('targetMemoId', new Utf8(), false), // non-nullable target memo id (what is being related)
+  new Field('createdAt', new Timestamp(TimeUnit.MILLISECOND), false), // non-nullable creation timestamp in milliseconds
+]);
+
+/**
+ * Categories table schema
+ * Stores memo categories per user
+ */
+export const categoriesSchema = new Schema([
+  new Field('categoryId', new Utf8(), false), // non-nullable unique category id
+  new Field('uid', new Utf8(), false), // non-nullable user id
+  new Field('name', new Utf8(), false), // non-nullable category name
+  new Field('color', new Utf8(), true), // nullable color hex code for UI display
+  new Field('createdAt', new Timestamp(TimeUnit.MILLISECOND), false), // non-nullable creation timestamp in milliseconds
+  new Field('updatedAt', new Timestamp(TimeUnit.MILLISECOND), false), // non-nullable update timestamp in milliseconds
+]);
+
+/**
  * Attachments table schema
  * Stores file attachments with metadata
  */
@@ -147,6 +174,29 @@ export const attachmentsSchema = new Schema([
   new Field('storageType', new Utf8(), false), // non-nullable storage type: 'local' | 's3'
   new Field('createdAt', new Timestamp(TimeUnit.MILLISECOND), false), // non-nullable creation timestamp in milliseconds
 ]);
+
+/**
+ * Type definition for category records
+ */
+export interface CategoryRecord {
+  categoryId: string;
+  uid: string;
+  name: string;
+  color?: string; // optional color hex code for UI display
+  createdAt: number; // timestamp in milliseconds
+  updatedAt: number; // timestamp in milliseconds
+}
+
+/**
+ * Type definition for memo relation records
+ */
+export interface MemoRelationRecord {
+  relationId: string;
+  uid: string;
+  sourceMemoId: string;
+  targetMemoId: string;
+  createdAt: number; // timestamp in milliseconds
+}
 
 /**
  * Type definition for attachment records

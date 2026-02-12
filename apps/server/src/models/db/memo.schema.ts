@@ -6,6 +6,7 @@
 export interface Memo {
   memoId: string; // Unique memo ID (generateTypeId)
   uid: string; // User ID who owns this memo
+  categoryId?: string; // Optional category ID
   content: string; // Memo text content
   attachments?: string[]; // Attachment IDs
   embedding: number[]; // Vector embedding for semantic search

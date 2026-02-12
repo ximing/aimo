@@ -6,20 +6,26 @@ import type { AttachmentDto } from './attachment.js';
 
 export interface CreateMemoDto {
   content: string;
+  categoryId?: string; // Optional category ID (undefined = uncategorized)
   attachments?: string[]; // Array of attachment IDs (max 9)
+  relationIds?: string[]; // Array of target memo IDs to relate to
 }
 
 export interface UpdateMemoDto {
   content: string;
+  categoryId?: string | null; // Optional category ID (undefined/null = uncategorized)
   attachments?: string[]; // Array of attachment IDs (max 9)
+  relationIds?: string[]; // Array of target memo IDs to relate to (replaces all existing relations)
 }
 
 export interface MemoDto {
   memoId: string;
   uid: string;
   content: string;
+  categoryId?: string; // Optional category ID
   attachments?: string[]; // Array of attachment IDs
   embedding: number[];
+  relations?: MemoDto[]; // Array of related memos (populated when fetching lists)
   createdAt: number; // timestamp in milliseconds
   updatedAt: number; // timestamp in milliseconds
 }
@@ -31,8 +37,10 @@ export interface MemoWithAttachmentsDto {
   memoId: string;
   uid: string;
   content: string;
+  categoryId?: string; // Optional category ID
   attachments?: AttachmentDto[]; // Array of full attachment objects
   embedding: number[];
+  relations?: MemoWithAttachmentsDto[]; // Array of related memos with attachment details
   createdAt: number; // timestamp in milliseconds
   updatedAt: number; // timestamp in milliseconds
 }
@@ -44,7 +52,9 @@ export interface MemoListItemDto {
   memoId: string;
   uid: string;
   content: string;
+  categoryId?: string; // Optional category ID
   attachments?: AttachmentDto[]; // Array of full attachment objects
+  relations?: MemoListItemDto[]; // Array of related memos
   createdAt: number; // timestamp in milliseconds
   updatedAt: number; // timestamp in milliseconds
 }
@@ -56,6 +66,7 @@ export interface MemoSearchOptionsDto {
   sortBy?: 'createdAt' | 'updatedAt';
   sortOrder?: 'asc' | 'desc';
   search?: string;
+  categoryId?: string; // Filter by category ID
   startDate?: Date;
   endDate?: Date;
 }

@@ -1,4 +1,5 @@
 export const OBJECT_TYPE = {
+  CATEGORY: 'CATEGORY',
   MEMO: 'MEMO',
   PAGE: 'PAGE',
   ANNOTATION: 'ANNOTATION',
@@ -9,6 +10,7 @@ export const OBJECT_TYPE = {
   LIBRARY: 'LIBRARY',
   USER: 'USER',
   TIMELINE: 'TIMELINE',
+  RELATION: 'RELATION',
 };
 
 export const PAGE_CATEGORY = {

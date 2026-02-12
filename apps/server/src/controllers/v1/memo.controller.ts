@@ -28,6 +28,7 @@ export class MemoV1Controller {
     @QueryParam('sortBy') sortBy: 'createdAt' | 'updatedAt' = 'createdAt',
     @QueryParam('sortOrder') sortOrder: 'asc' | 'desc' = 'desc',
     @QueryParam('search') search?: string,
+    @QueryParam('categoryId') categoryId?: string,
     @QueryParam('startDate') startDate?: string,
     @QueryParam('endDate') endDate?: string
   ) {
@@ -43,6 +44,7 @@ export class MemoV1Controller {
         sortBy,
         sortOrder,
         search,
+        categoryId,
         startDate: startDate ? new Date(startDate) : undefined,
         endDate: endDate ? new Date(endDate) : undefined,
       });
@@ -84,7 +86,7 @@ export class MemoV1Controller {
         return ResponseUtil.error(ErrorCode.PARAMS_ERROR, 'Content is required');
       }
 
-      const memo = await this.memoService.createMemo(user.uid, memoData.content, memoData.attachments);
+      const memo = await this.memoService.createMemo(user.uid, memoData.content, memoData.attachments, memoData.categoryId, memoData.relationIds);
       return ResponseUtil.success({
         message: 'Memo created successfully',
         memo,
@@ -110,7 +112,7 @@ export class MemoV1Controller {
         return ResponseUtil.error(ErrorCode.PARAMS_ERROR, 'Content is required');
       }
 
-      const memo = await this.memoService.updateMemo(memoId, user.uid, memoData.content, memoData.attachments);
+      const memo = await this.memoService.updateMemo(memoId, user.uid, memoData.content, memoData.attachments, memoData.categoryId, memoData.relationIds);
       if (!memo) {
         return ResponseUtil.error(ErrorCode.NOT_FOUND);
       }

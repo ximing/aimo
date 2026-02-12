@@ -66,15 +66,15 @@ export const SearchSortBar = view(() => {
     <div className="relative flex-shrink-0">
       {/* Search Input Container */}
       <div
-        className={`flex items-center gap-1.5 px-3 py-2 border rounded-lg transition-all duration-200 ${
+        className={`flex items-center gap-1 px-3 py-1.5 border rounded-lg transition-all duration-200 ${
           isFocused
-            ? 'w-64 border-primary-500 bg-white dark:bg-dark-800 shadow-lg gap-2 px-4'
+            ? 'w-64 border-primary-500 bg-white dark:bg-dark-800 shadow-lg gap-2 px-4 py-2'
             : 'w-52 border-gray-200 dark:border-dark-700 bg-white dark:bg-dark-800'
         } text-gray-900 dark:text-gray-50`}
       >
         {/* Search Icon */}
         <svg
-          className="w-4 h-4 text-gray-400 dark:text-gray-600 flex-shrink-0"
+          className="w-3.5 h-3.5 text-gray-400 dark:text-gray-600 flex-shrink-0"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -96,17 +96,17 @@ export const SearchSortBar = view(() => {
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           placeholder="搜索备忘录... (Ctrl+K)"
-          className="flex-1 min-w-0 bg-transparent outline-none text-sm placeholder-gray-400 dark:placeholder-gray-600"
+          className="flex-1 min-w-0 bg-transparent outline-none text-xs placeholder-gray-400 dark:placeholder-gray-600"
         />
 
         {/* Clear Button */}
         {localSearch && (
           <button
             onClick={handleClear}
-            className="flex-shrink-0 p-1 text-gray-400 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-400 transition-colors"
+            className="flex-shrink-0 p-0.5 text-gray-400 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-400 transition-colors"
             aria-label="Clear search"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -121,13 +121,13 @@ export const SearchSortBar = view(() => {
         <div className="relative flex-shrink-0" ref={sortMenuRef}>
           <button
             onClick={() => setShowSortMenu(!showSortMenu)}
-            className="p-1 text-gray-400 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-400 transition-colors"
+            className="p-0.5 text-gray-400 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-400 transition-colors"
             title="Sort options"
             aria-label="Sort options"
             aria-expanded={showSortMenu}
           >
             <svg
-              className={`w-4 h-4 transition-transform ${showSortMenu ? 'rotate-180' : ''}`}
+              className={`w-3.5 h-3.5 transition-transform ${showSortMenu ? 'rotate-180' : ''}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"

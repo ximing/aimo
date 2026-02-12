@@ -3,6 +3,7 @@ import { LanceDbService } from '../sources/lancedb.js';
 import { EmbeddingService } from './embedding.service.js';
 import { BackupService } from './backup.service.js';
 import { AttachmentService } from './attachment.service.js';
+import { MemoRelationService } from './memo-relation.service.js';
 import type { Memo, NewMemo } from '../models/db/memo.schema.js';
 import type { MemoWithAttachmentsDto, PaginatedMemoWithAttachmentsDto, MemoListItemDto, PaginatedMemoListDto } from '@aimo/dto';
 import type { DenormalizedAttachment } from '../models/db/schema.js';
@@ -19,6 +20,7 @@ export interface MemoSearchOptions {
   sortBy?: 'createdAt' | 'updatedAt';
   sortOrder?: 'asc' | 'desc';
   search?: string;
+  categoryId?: string; // Filter by category ID
   startDate?: Date;
   endDate?: Date;
 }
@@ -39,7 +41,8 @@ export class MemoService {
     private lanceDb: LanceDbService,
     private embeddingService: EmbeddingService,
     private backupService: BackupService,
-    private attachmentService: AttachmentService
+    private attachmentService: AttachmentService,
+    private memoRelationService: MemoRelationService
   ) {}
 
   /**
@@ -84,7 +87,7 @@ export class MemoService {
   /**
    * Create a new memo with automatic embedding and denormalized attachments
    */
-  async createMemo(uid: string, content: string, attachments?: string[]): Promise<MemoWithAttachmentsDto> {
+  async createMemo(uid: string, content: string, attachments?: string[], categoryId?: string, relationIds?: string[]): Promise<MemoWithAttachmentsDto> {
     try {
       if (!content || content.trim().length === 0) {
         throw new Error('Memo content cannot be empty');
@@ -127,9 +130,11 @@ export class MemoService {
       }
 
       const now = Date.now();
+      const memoId = generateTypeId(OBJECT_TYPE.MEMO);
       const memo: Memo = {
-        memoId: generateTypeId(OBJECT_TYPE.MEMO),
+        memoId,
         uid,
+        categoryId: categoryId || undefined,
         content,
         attachments,
         embedding,
@@ -149,6 +154,19 @@ export class MemoService {
 
       const memosTable = await this.lanceDb.openTable('memos');
       await memosTable.add([memoRecord as unknown as Record<string, unknown>]);
+
+      // Create relations if provided
+      if (relationIds && relationIds.length > 0) {
+        try {
+          await this.memoRelationService.replaceRelations(uid, memoId, relationIds);
+        } catch (error) {
+          console.warn('Failed to create memo relations:', error);
+          // Don't throw - allow memo creation even if relations fail
+        }
+      }
+
+      // Optimize indexes after insert to ensure scalar indexes are updated
+      await this.lanceDb.optimizeTable('memos');
 
       // Trigger backup on memo creation
       this.triggerBackup('memo_created');
@@ -176,6 +194,7 @@ export class MemoService {
         sortBy = 'createdAt',
         sortOrder = 'desc',
         search,
+        categoryId,
         startDate,
         endDate,
       } = options;
@@ -184,6 +203,11 @@ export class MemoService {
 
       // Build filter conditions
       const filterConditions: string[] = [`uid = '${uid}'`];
+
+      // Add category filter
+      if (categoryId) {
+        filterConditions.push(`categoryId = '${categoryId}'`);
+      }
 
       // Add search filter
       if (search && search.trim().length > 0) {
@@ -217,14 +241,18 @@ export class MemoService {
         .slice(offset, offset + limit);
 
       // Use denormalized attachments directly and exclude embedding
-      const items = results.map((memo: any) => ({
+      let items = results.map((memo: any) => ({
         memoId: memo.memoId,
         uid: memo.uid,
         content: memo.content,
+        categoryId: memo.categoryId,
         attachments: this.convertArrowAttachments(memo.attachments),
         createdAt: memo.createdAt,
         updatedAt: memo.updatedAt,
       })) as MemoListItemDto[];
+
+      // Enrich items with relations
+      items = await this.enrichMemosWithRelations(uid, items);
 
       return {
         items,
@@ -274,7 +302,7 @@ export class MemoService {
   /**
    * Update a memo
    */
-  async updateMemo(memoId: string, uid: string, content: string, attachments?: string[]): Promise<MemoWithAttachmentsDto | null> {
+  async updateMemo(memoId: string, uid: string, content: string, attachments?: string[], categoryId?: string | null, relationIds?: string[]): Promise<MemoWithAttachmentsDto | null> {
     try {
       if (!content || content.trim().length === 0) {
         throw new Error('Memo content cannot be empty');
@@ -344,12 +372,30 @@ export class MemoService {
         updatedAt: now,
       };
 
+      // Add categoryId to update if provided
+      if (categoryId !== undefined) {
+        updateData.categoryId = categoryId || undefined;
+      }
+
       // Add attachments to update if provided
       if (attachments !== undefined) {
         updateData.attachments = denormalizedAttachments && denormalizedAttachments.length > 0 ? denormalizedAttachments : undefined;
       }
 
       await memosTable.update(updateData, { where: `memoId = '${memoId}' AND uid = '${uid}'` });
+
+      // Update relations if provided
+      if (relationIds !== undefined) {
+        try {
+          await this.memoRelationService.replaceRelations(uid, memoId, relationIds);
+        } catch (error) {
+          console.warn('Failed to update memo relations:', error);
+          // Don't throw - allow memo update even if relations fail
+        }
+      }
+
+      // Optimize indexes after update to ensure scalar indexes are updated
+      await this.lanceDb.optimizeTable('memos');
 
       // Trigger backup on memo update
       this.triggerBackup('memo_updated');
@@ -385,6 +431,18 @@ export class MemoService {
 
       // Delete the memo using LanceDB's delete method
       await memosTable.delete(`memoId = '${memoId}' AND uid = '${uid}'`);
+
+      // Clean up relations (both as source and as target)
+      try {
+        await this.memoRelationService.deleteRelationsBySourceMemo(uid, memoId);
+        await this.memoRelationService.deleteRelationsByTargetMemo(uid, memoId);
+      } catch (error) {
+        console.warn('Failed to delete memo relations during memo deletion:', error);
+        // Don't throw - allow memo deletion even if relation cleanup fails
+      }
+
+      // Optimize indexes after delete to ensure scalar indexes are updated
+      await this.lanceDb.optimizeTable('memos');
 
       // Trigger backup on memo deletion
       this.triggerBackup('memo_deleted');
@@ -459,6 +517,61 @@ export class MemoService {
     } catch (error) {
       console.error('Error getting all memos:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Enrich memo list items with their relation data
+   * Fetch all related memos for each item
+   */
+  private async enrichMemosWithRelations(uid: string, items: MemoListItemDto[]): Promise<MemoListItemDto[]> {
+    try {
+      const memosTable = await this.lanceDb.openTable('memos');
+      const memosMap = new Map<string, any>();
+
+      // Build a map of all memos for quick lookup
+      const allMemos = await this.getAllMemosByUid(uid);
+      for (const memo of allMemos) {
+        memosMap.set(memo.memoId, memo);
+      }
+
+      // For each item, fetch its relations
+      const enrichedItems: MemoListItemDto[] = [];
+      for (const item of items) {
+        try {
+          const relatedMemoIds = await this.memoRelationService.getRelatedMemos(uid, item.memoId);
+          const relations: MemoListItemDto[] = [];
+
+          for (const relatedMemoId of relatedMemoIds) {
+            const relatedMemo = memosMap.get(relatedMemoId);
+            if (relatedMemo) {
+              relations.push({
+                memoId: relatedMemo.memoId,
+                uid: relatedMemo.uid,
+                content: relatedMemo.content,
+                categoryId: relatedMemo.categoryId,
+                attachments: relatedMemo.attachments,
+                createdAt: relatedMemo.createdAt,
+                updatedAt: relatedMemo.updatedAt,
+              });
+            }
+          }
+
+          enrichedItems.push({
+            ...item,
+            relations: relations.length > 0 ? relations : undefined,
+          });
+        } catch (error) {
+          console.warn(`Failed to enrich memo ${item.memoId} with relations:`, error);
+          enrichedItems.push(item);
+        }
+      }
+
+      return enrichedItems;
+    } catch (error) {
+      console.error('Error enriching memos with relations:', error);
+      // Return original items if enrichment fails
+      return items;
     }
   }
 }

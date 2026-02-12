@@ -7,6 +7,9 @@ export * from './user.js';
 // Memo DTOs
 export * from './memo.js';
 
+// Category DTOs
+export * from './category.js';
+
 // Attachment DTOs
 export * from './attachment.js';
 

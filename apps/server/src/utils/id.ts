@@ -28,6 +28,10 @@ export const generateTypeId = (type: (typeof OBJECT_TYPE)[keyof typeof OBJECT_TY
       return `u${typeid()}`;
     case OBJECT_TYPE.TIMELINE:
       return `t${typeid()}`;
+    case OBJECT_TYPE.CATEGORY:
+      return `c${typeid()}`;
+    case OBJECT_TYPE.RELATION:
+      return `r${typeid()}`;
   }
   throw new Error(`Invalid type: ${type}`);
 };

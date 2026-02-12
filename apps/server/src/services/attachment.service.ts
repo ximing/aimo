@@ -59,6 +59,9 @@ export class AttachmentService {
     const table = await this.lanceDbService.openTable('attachments');
     await table.add([record as unknown as Record<string, unknown>]);
 
+    // Optimize indexes after insert to ensure scalar indexes are updated
+    await this.lanceDbService.optimizeTable('attachments');
+
     // Generate access URL
     const accessUrl = await this.generateAccessUrl(url, storageType);
 
@@ -184,6 +187,9 @@ export class AttachmentService {
 
     // Delete from database
     await table.delete(`attachmentId = '${attachmentId}'`);
+
+    // Optimize indexes after delete to ensure scalar indexes are updated
+    await this.lanceDbService.optimizeTable('attachments');
 
     return true;
   }

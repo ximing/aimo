@@ -58,6 +58,9 @@ export class UserService {
       const usersTable = await this.lanceDb.openTable('users');
       await usersTable.add([user as unknown as Record<string, unknown>]);
 
+      // Optimize indexes after insert to ensure scalar indexes are updated
+      await this.lanceDb.optimizeTable('users');
+
       // Trigger backup on user creation
       this.triggerBackup('user_created');
 
@@ -158,6 +161,9 @@ export class UserService {
 
       await usersTable.update(updateData, { where: `uid = '${uid}'` });
 
+      // Optimize indexes after update to ensure scalar indexes are updated
+      await this.lanceDb.optimizeTable('users');
+
       // Trigger backup on user update
       this.triggerBackup('user_updated');
 
@@ -185,6 +191,9 @@ export class UserService {
       // Mark as inactive instead of hard delete
       const updateData: Record<string, string> = { status: '0' };
       await usersTable.update(updateData, { where: `uid = '${uid}'` });
+
+      // Optimize indexes after delete to ensure scalar indexes are updated
+      await this.lanceDb.optimizeTable('users');
 
       // Trigger backup on user deletion
       this.triggerBackup('user_deleted');
