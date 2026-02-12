@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useLocation } from 'react-router';
 import { view, useService } from '@rabjs/react';
 import { AuthService } from '../services/auth.service';
 import { ThemeService } from '../services/theme.service';
-import { Zap, Sun, Moon, LogOut } from 'lucide-react';
+import { Zap, Sun, Moon, LogOut, Settings, Sparkles, Images } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -13,8 +13,15 @@ export const Layout = view(({ children }: LayoutProps) => {
   const authService = useService(AuthService);
   const themeService = useService(ThemeService);
   const navigate = useNavigate();
+  const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Check active routes
+  const isHomePage = location.pathname === '/';
+  const isAIExplorePage = location.pathname === '/ai-explore';
+  const isGalleryPage = location.pathname === '/gallery';
+  const isSettingsPage = location.pathname.startsWith('/settings');
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -32,7 +39,6 @@ export const Layout = view(({ children }: LayoutProps) => {
 
   const handleThemeToggle = () => {
     themeService.toggleTheme();
-    setIsMenuOpen(false);
   };
 
   const handleLogout = () => {
@@ -51,79 +57,123 @@ export const Layout = view(({ children }: LayoutProps) => {
   return (
     <div className="h-screen flex bg-white dark:bg-dark-900 text-gray-900 dark:text-gray-50 transition-colors">
       {/* Left Sidebar - Fixed 70px */}
-      <aside className="w-[70px] flex-shrink-0 border-r border-gray-100 dark:border-dark-800 flex flex-col items-center py-4 gap-8">
+      <aside className="w-[70px] flex-shrink-0 border-r border-gray-100 dark:border-dark-800 flex flex-col items-center py-4 gap-4">
         {/* Logo Area - Top */}
         <div className="w-12 h-12 bg-primary-600 rounded-lg flex items-center justify-center flex-shrink-0 shadow-md">
           <span className="text-white font-bold text-lg">A</span>
         </div>
 
-        {/* Memo Navigation - Middle */}
-        <button
-          onClick={handleMemoClick}
-          className="w-12 h-12 rounded-lg flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors flex-shrink-0"
-          title="返回首页"
-          aria-label="返回首页"
-        >
-          <Zap className="w-6 h-6" />
-        </button>
-
-        {/* Spacer to push user menu to bottom */}
-        <div className="flex-1" />
-
-        {/* User Menu - Bottom */}
-        <div className="relative w-full" ref={menuRef}>
+        {/* Navigation Section - Middle */}
+        <nav className="flex flex-col items-center gap-2 flex-shrink-0">
+          {/* Memo Navigation */}
           <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="w-12 h-12 mx-auto flex items-center justify-center bg-gray-100 dark:bg-dark-800 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-700 transition-colors flex-shrink-0"
-            title={userName}
-            aria-label="User menu"
-            aria-expanded={isMenuOpen}
+            onClick={handleMemoClick}
+            className={`w-12 h-12 rounded-lg flex items-center justify-center transition-colors ${
+              isHomePage
+                ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-800'
+            }`}
+            title="备忘录"
+            aria-label="备忘录"
           >
-            <div className="w-6 h-6 bg-primary-600 rounded flex items-center justify-center text-white text-xs font-semibold">
-              {userName.charAt(0).toUpperCase()}
-            </div>
+            <Zap className="w-6 h-6" />
           </button>
 
-          {/* Dropdown Menu - Positioned to the right of sidebar */}
-          {isMenuOpen && (
-            <div className="absolute left-full ml-2 bottom-0 w-56 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg shadow-lg z-50">
-              {/* User Info Section */}
-              <div className="px-4 py-3 border-b border-gray-200 dark:border-dark-700">
-                <p className="font-medium text-gray-900 dark:text-white text-sm">{userName}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-500 truncate mt-1">{userEmail}</p>
-              </div>
+          {/* AI Explore Navigation */}
+          <button
+            onClick={() => navigate('/ai-explore')}
+            className={`w-12 h-12 rounded-lg flex items-center justify-center transition-colors ${
+              isAIExplorePage
+                ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-800'
+            }`}
+            title="AI探索"
+            aria-label="AI探索"
+          >
+            <Sparkles className="w-6 h-6" />
+          </button>
 
-              {/* Menu Items */}
-              <div className="py-2">
-                {/* Theme Toggle */}
-                <button
-                  onClick={handleThemeToggle}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-700 flex items-center gap-2 transition-colors cursor-pointer"
-                >
-                  {themeService.isDark() ? (
-                    <>
-                      <Sun className="w-4 h-4" />
-                      <span>亮色模式</span>
-                    </>
-                  ) : (
-                    <>
-                      <Moon className="w-4 h-4" />
-                      <span>暗色模式</span>
-                    </>
-                  )}
-                </button>
+          {/* Gallery Navigation */}
+          <button
+            onClick={() => navigate('/gallery')}
+            className={`w-12 h-12 rounded-lg flex items-center justify-center transition-colors ${
+              isGalleryPage
+                ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-800'
+            }`}
+            title="图廊"
+            aria-label="图廊"
+          >
+            <Images className="w-6 h-6" />
+          </button>
+        </nav>
 
-                {/* Logout */}
-                <button
-                  onClick={handleLogout}
-                  className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 transition-colors cursor-pointer border-t border-gray-200 dark:border-dark-700 mt-2 pt-2"
-                >
-                  <LogOut className="w-4 h-4" />
-                  <span>登出</span>
-                </button>
+        {/* Spacer to push bottom section down */}
+        <div className="flex-1" />
+
+        {/* Bottom Section - Settings, Theme, User */}
+        <div className="flex flex-col items-center gap-3 flex-shrink-0">
+          {/* Settings Button */}
+          <button
+            onClick={() => navigate('/settings')}
+            className={`w-12 h-12 rounded-lg flex items-center justify-center transition-colors ${
+              isSettingsPage
+                ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-800'
+            }`}
+            title="设置"
+            aria-label="设置"
+          >
+            <Settings className="w-5 h-5" />
+          </button>
+
+          {/* Theme Toggle Button */}
+          <button
+            onClick={handleThemeToggle}
+            className="w-12 h-12 rounded-lg flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors"
+            title={themeService.isDark() ? '切换到亮色模式' : '切换到暗色模式'}
+            aria-label="切换主题"
+          >
+            {themeService.isDark() ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+          </button>
+
+          {/* User Menu */}
+          <div className="relative w-full" ref={menuRef}>
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="w-12 h-12 mx-auto flex items-center justify-center bg-gray-100 dark:bg-dark-800 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-700 transition-colors"
+              title={userName}
+              aria-label="用户菜单"
+              aria-expanded={isMenuOpen}
+            >
+              <div className="w-6 h-6 bg-primary-600 rounded flex items-center justify-center text-white text-xs font-semibold">
+                {userName.charAt(0).toUpperCase()}
               </div>
-            </div>
-          )}
+            </button>
+
+            {/* Dropdown Menu - Positioned to the right of sidebar */}
+            {isMenuOpen && (
+              <div className="absolute left-full ml-2 bottom-0 w-56 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg shadow-lg z-50">
+                {/* User Info Section */}
+                <div className="px-4 py-3 border-b border-gray-200 dark:border-dark-700">
+                  <p className="font-medium text-gray-900 dark:text-white text-sm">{userName}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-500 truncate mt-1">{userEmail}</p>
+                </div>
+
+                {/* Menu Items */}
+                <div className="py-2">
+                  {/* Logout */}
+                  <button
+                    onClick={handleLogout}
+                    className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>登出</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </aside>
 

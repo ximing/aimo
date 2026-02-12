@@ -1,6 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router';
 import AuthPage from './pages/auth';
 import HomePage from './pages/home';
+import SettingsPage from './pages/settings';
+import AIExplorePage from './pages/ai-explore';
+import GalleryPage from './pages/gallery';
 import { ProtectedRoute } from './components/protected-route';
 
 function App() {
@@ -13,6 +16,30 @@ function App() {
           element={
             <ProtectedRoute>
               <HomePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <SettingsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/ai-explore"
+          element={
+            <ProtectedRoute>
+              <AIExplorePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/gallery"
+          element={
+            <ProtectedRoute>
+              <GalleryPage />
             </ProtectedRoute>
           }
         />

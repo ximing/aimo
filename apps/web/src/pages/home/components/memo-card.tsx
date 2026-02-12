@@ -123,7 +123,7 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
 
   return (
     <div
-      className="bg-gray-50 dark:bg-dark-800 rounded-lg p-5 animate-fade-in transition-all hover:bg-gray-100 dark:hover:bg-dark-700 cursor-pointer group"
+      className="bg-gray-50 dark:bg-dark-800 rounded-lg p-3 animate-fade-in transition-all hover:bg-gray-100 dark:hover:bg-dark-700 cursor-pointer group"
       role="article"
     >
       {isEditing ? (
@@ -159,14 +159,18 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
       ) : (
         <div className="space-y-3">
           {/* Content */}
-          <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">{plainText}</p>
+          <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
+            {plainText}
+          </p>
 
           {/* Attachments (九宫格) */}
           {renderAttachments()}
 
           {/* Footer */}
-          <div className="flex items-center justify-between pt-2">
-            <span className="text-xs text-gray-500 dark:text-gray-500">{formatDate(memo.createdAt)}</span>
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-500 dark:text-gray-500">
+              {formatDate(memo.createdAt)}
+            </span>
 
             {/* Actions */}
             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">

@@ -37,15 +37,25 @@ export const SearchSortBar = view(() => {
     }
   }, [showSortMenu]);
 
+  // Debounce search input
+  useEffect(() => {
+    const timeoutId = setTimeout(async () => {
+      if (localSearch !== memoService.searchQuery) {
+        await memoService.setSearchQuery(localSearch);
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [localSearch, memoService]);
+
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setLocalSearch(value);
-    memoService.setSearchQuery(value);
   };
 
-  const handleClear = () => {
+  const handleClear = async () => {
     setLocalSearch('');
-    memoService.setSearchQuery('');
+    await memoService.setSearchQuery('');
     inputRef.current?.focus();
   };
 

@@ -171,10 +171,19 @@ export class MemoService extends Service {
 
   /**
    * Set search query and trigger search
+   * Uses vector search (semantic similarity) if query is provided
+   * Falls back to regular fetch if query is empty
    */
-  setSearchQuery(query: string) {
+  async setSearchQuery(query: string) {
     this.searchQuery = query;
-    this.fetchMemos(true);
+
+    if (query && query.trim().length > 0) {
+      // Use vector search for non-empty queries (semantic similarity)
+      await this.vectorSearch(query, this.limit);
+    } else {
+      // Use regular fetch for empty queries
+      await this.fetchMemos(true);
+    }
   }
 
   /**
