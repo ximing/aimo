@@ -251,4 +251,29 @@ export class MemoService extends Service {
       this.loading = false;
     }
   }
+
+  /**
+   * Find related memos based on vector similarity
+   */
+  async findRelatedMemos(memoId: string, limit: number = 10) {
+    try {
+      const response = await memoApi.findRelatedMemos(memoId, limit);
+
+      if (response.code === 0 && response.data) {
+        return {
+          success: true,
+          items: response.data.items,
+          count: response.data.count,
+        };
+      } else {
+        return { success: false, message: 'Failed to find related memos' };
+      }
+    } catch (error: unknown) {
+      console.error('Find related memos error:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to find related memos',
+      };
+    }
+  }
 }

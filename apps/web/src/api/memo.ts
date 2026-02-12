@@ -68,3 +68,15 @@ export const vectorSearch = (params: MemoVectorSearchDto) => {
     { code: number; data: { items: MemoListItemDto[]; count: number } }
   >('/api/v1/memos/search/vector', params);
 };
+
+/**
+ * Find related memos based on vector similarity
+ */
+export const findRelatedMemos = (memoId: string, limit: number = 10) => {
+  return request.get<
+    unknown,
+    { code: number; data: { items: MemoListItemDto[]; count: number } }
+  >(`/api/v1/memos/${memoId}/related`, {
+    params: { limit },
+  });
+};

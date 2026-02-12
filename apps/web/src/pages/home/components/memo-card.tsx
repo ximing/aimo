@@ -3,6 +3,7 @@ import { view, useService } from '@rabjs/react';
 import type { MemoListItemDto } from '@aimo/dto';
 import { MemoService } from '../../../services/memo.service';
 import { FileText, Film } from 'lucide-react';
+import { RelatedMemosModal } from './related-memos-modal';
 
 interface MemoCardProps {
   memo: MemoListItemDto;
@@ -28,6 +29,7 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(memo.content);
   const [loading, setLoading] = useState(false);
+  const [showRelatedModal, setShowRelatedModal] = useState(false);
 
   const memoService = useService(MemoService);
 
@@ -121,11 +123,20 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
     );
   };
 
+  const handleCardClick = () => {
+    // Only open modal if not in editing mode
+    if (!isEditing) {
+      setShowRelatedModal(true);
+    }
+  };
+
   return (
-    <div
-      className="bg-white dark:bg-dark-800 rounded-lg p-3 animate-fade-in transition-all hover:bg-gray-100 dark:hover:bg-dark-700 cursor-pointer group"
-      role="article"
-    >
+    <>
+      <div
+        onClick={handleCardClick}
+        className="bg-white dark:bg-dark-800 rounded-lg p-3 animate-fade-in transition-all hover:bg-gray-100 dark:hover:bg-dark-700 cursor-pointer group"
+        role="article"
+      >
       {isEditing ? (
         <div className="space-y-3">
           <textarea
@@ -196,6 +207,14 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
           </div>
         </div>
       )}
-    </div>
+      </div>
+
+      {/* Related Memos Modal */}
+      <RelatedMemosModal
+        isOpen={showRelatedModal}
+        onClose={() => setShowRelatedModal(false)}
+        memo={memo}
+      />
+    </>
   );
 });
