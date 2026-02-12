@@ -176,4 +176,27 @@ export class MemoV1Controller {
       return ResponseUtil.error(ErrorCode.DB_ERROR);
     }
   }
+
+  @Get('/:memoId/related')
+  async findRelatedMemos(
+    @Param('memoId') memoId: string,
+    @QueryParam('limit') limit: number = 10,
+    @CurrentUser() user: UserInfoDto
+  ) {
+    try {
+      if (!user?.uid) {
+        return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
+      }
+
+      const results = await this.memoService.findRelatedMemos(memoId, user.uid, limit);
+
+      return ResponseUtil.success({
+        items: results,
+        count: results.length,
+      });
+    } catch (error) {
+      console.error('Find related memos error:', error);
+      return ResponseUtil.error(ErrorCode.DB_ERROR);
+    }
+  }
 }

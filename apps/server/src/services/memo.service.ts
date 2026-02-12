@@ -528,6 +528,46 @@ export class MemoService {
   }
 
   /**
+   * Find related memos based on vector similarity to a given memo
+   * Excludes the memo itself and returns top N similar memos
+   */
+  async findRelatedMemos(memoId: string, uid: string, limit: number = 10): Promise<MemoListItemDto[]> {
+    try {
+      // Get the memo to find related ones
+      const sourceMemo = await this.getMemoById(memoId, uid);
+      if (!sourceMemo) {
+        throw new Error('Memo not found');
+      }
+
+      const memosTable = await this.lanceDb.openTable('memos');
+
+      // Use the memo's existing embedding to search for similar memos
+      const sourceEmbedding = sourceMemo.embedding;
+      
+      // Perform vector search with the memo's embedding
+      const results = await memosTable
+        .search(sourceEmbedding)
+        .where(`uid = '${uid}' AND memoId != '${memoId}'`) // Exclude the memo itself
+        .limit(limit)
+        .toArray();
+
+      // Use denormalized attachments directly and exclude embedding
+      return results.map((memo: any) => ({
+        memoId: memo.memoId,
+        uid: memo.uid,
+        content: memo.content,
+        categoryId: memo.categoryId,
+        attachments: this.convertArrowAttachments(memo.attachments),
+        createdAt: memo.createdAt,
+        updatedAt: memo.updatedAt,
+      })) as MemoListItemDto[];
+    } catch (error) {
+      console.error('Error finding related memos:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Enrich memo list items with their relation data
    * Fetch all related memos for each item
    */
