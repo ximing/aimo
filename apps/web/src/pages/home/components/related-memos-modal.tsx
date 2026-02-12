@@ -128,7 +128,7 @@ export const RelatedMemosModal = view(({ isOpen, onClose, memo }: RelatedMemosMo
                 <div className="max-h-[65vh] overflow-y-auto">
                   {/* Sticky Original Memo Reference */}
                   {memo && (
-                    <div className="sticky top-0 z-10 bg-white dark:bg-dark-800 px-6 py-4 border-b border-gray-100 dark:border-dark-700/50">
+                    <div className="sticky top-0 z-20 bg-white dark:bg-dark-800 px-6 py-4 border-b border-gray-100 dark:border-dark-700/50 shadow-sm">
                       <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">
                         原始笔记
                       </div>
@@ -143,8 +143,8 @@ export const RelatedMemosModal = view(({ isOpen, onClose, memo }: RelatedMemosMo
                     </div>
                   )}
 
-                  {/* Sticky Relationship Indicator */}
-                  <div className="sticky top-[calc(120px+2rem)] z-10 flex justify-center py-3 px-6 bg-white dark:bg-dark-800">
+                  {/* Relationship Indicator */}
+                  <div className="flex justify-center py-3 px-6">
                     <div className="flex items-center gap-2">
                       <div className="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-gray-600"></div>
                       <ArrowRight className="w-3.5 h-3.5 text-gray-400 dark:text-gray-600" />
