@@ -75,8 +75,13 @@ export class MemoService extends Service {
       const response = await memoApi.getMemos(params);
 
       if (response.code === 0 && response.data) {
-        // Append new memos instead of replacing (for infinite scroll)
-        this.memos = [...this.memos, ...response.data.items];
+        // On first page, replace memos; on subsequent pages, append (for infinite scroll)
+        if (this.page === 1) {
+          this.memos = response.data.items;
+        } else {
+          this.memos = [...this.memos, ...response.data.items];
+        }
+        
         this.total = response.data.pagination.total;
         this.totalPages = response.data.pagination.totalPages;
         this.page = response.data.pagination.page;
@@ -234,12 +239,13 @@ export class MemoService extends Service {
       const response = await memoApi.vectorSearch({ query, limit });
 
       if (response.code === 0 && response.data) {
+        // Reset to page 1 and clear previous data for search results
+        this.page = 1;
         this.memos = response.data.items;
         this.total = response.data.count;
         
         // Set pagination info for vector search results
         // Vector search returns all results at once, so we treat it as page 1 with 1 total page
-        this.page = 1;
         this.totalPages = 1;
         this.hasMore = false;
 
