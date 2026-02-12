@@ -76,16 +76,18 @@ export async function createApp() {
 
   // Serve static files from public directory (web build artifacts)
   const publicPath = join(__dirname, '../public');
-  app.use(express.static(publicPath, {
-    maxAge: '1d',
-    etag: false,
-    // Cache busting for JS and CSS files
-    setHeaders: (res, path) => {
-      if (path.match(/\.(js|css)$/)) {
-        res.set('Cache-Control', 'public, max-age=31536000, immutable');
-      }
-    },
-  }));
+  app.use(
+    express.static(publicPath, {
+      maxAge: '1d',
+      etag: false,
+      // Cache busting for JS and CSS files
+      setHeaders: (res, path) => {
+        if (path.match(/\.(js|css)$/)) {
+          res.set('Cache-Control', 'public, max-age=31536000, immutable');
+        }
+      },
+    })
+  );
 
   // 配置 routing-controllers
   useExpressServer(app, {
@@ -117,7 +119,7 @@ export async function createApp() {
         if (schedulerService.isReady()) {
           await schedulerService.stop();
         }
-        
+
         // Close LanceDB connections and release resources
         await Container.get(LanceDbService).close();
         console.log('All resources cleaned up');

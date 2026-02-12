@@ -137,100 +137,99 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
         className="bg-white dark:bg-dark-800 rounded-lg p-3 animate-fade-in transition-all hover:bg-gray-100 dark:hover:bg-dark-700 cursor-pointer group"
         role="article"
       >
-      {isEditing ? (
-        <div className="space-y-3">
-          <textarea
-            value={editContent}
-            onChange={(e) => setEditContent(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-gray-900 dark:text-gray-50 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all resize-none placeholder-gray-400 dark:placeholder-gray-600"
-            rows={5}
-            disabled={loading}
-          />
-
-          <div className="flex items-center gap-2 justify-end">
-            <button
-              onClick={handleUpdate}
-              disabled={loading || !editContent.trim()}
-              className="px-4 py-2 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white text-sm font-medium rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-              aria-label="Save memo changes"
-            >
-              {loading ? '保存中...' : '保存'}
-            </button>
-
-            <button
-              onClick={handleCancel}
+        {isEditing ? (
+          <div className="space-y-3">
+            <textarea
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-gray-900 dark:text-gray-50 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all resize-none placeholder-gray-400 dark:placeholder-gray-600"
+              rows={5}
               disabled={loading}
-              className="px-4 py-2 border border-gray-200 dark:border-dark-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors disabled:opacity-50 cursor-pointer"
-              aria-label="Cancel editing"
-            >
-              取消
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-1">
-          {/* Content */}
-          <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
-            {plainText}
-          </p>
+            />
 
-          {/* Attachments (九宫格) */}
-          {renderAttachments()}
-
-          {/* Footer */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-500 dark:text-gray-500">
-                {formatDate(memo.createdAt)}
-              </span>
-              {/* Show relevance score if available (from vector search) */}
-              {'relevanceScore' in memo && (memo as MemoListItemWithScoreDto).relevanceScore !== undefined && (
-                <div className="flex items-center gap-1">
-                  <span className="text-xs text-gray-400 dark:text-gray-600">相关度:</span>
-                  <div className="flex items-center gap-0.5">
-                    {[...Array(5)].map((_, i) => {
-                      const score = (memo as MemoListItemWithScoreDto).relevanceScore!;
-                      const filled = (i + 1) <= Math.round(score * 5);
-                      return (
-                        <div
-                          key={i}
-                          className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                            filled
-                              ? 'bg-primary-500'
-                              : 'bg-gray-300 dark:bg-gray-600'
-                          }`}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="flex items-center gap-2 justify-end">
               <button
-                onClick={() => setIsEditing(true)}
-                className="px-3 py-1.5 text-xs text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-dark-700 rounded hover:text-primary-600 dark:hover:text-primary-400 hover:border-primary-200 dark:hover:border-primary-900/50 transition-colors cursor-pointer"
-                title="Edit this memo"
-                aria-label="Edit memo"
+                onClick={handleUpdate}
+                disabled={loading || !editContent.trim()}
+                className="px-4 py-2 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white text-sm font-medium rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                aria-label="Save memo changes"
               >
-                编辑
+                {loading ? '保存中...' : '保存'}
               </button>
 
               <button
-                onClick={handleDelete}
+                onClick={handleCancel}
                 disabled={loading}
-                className="px-3 py-1.5 text-xs text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-dark-700 rounded hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-900/50 transition-colors cursor-pointer disabled:opacity-50"
-                title="Delete this memo"
-                aria-label="Delete memo"
+                className="px-4 py-2 border border-gray-200 dark:border-dark-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors disabled:opacity-50 cursor-pointer"
+                aria-label="Cancel editing"
               >
-                删除
+                取消
               </button>
             </div>
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="space-y-1">
+            {/* Content */}
+            <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
+              {plainText}
+            </p>
+
+            {/* Attachments (九宫格) */}
+            {renderAttachments()}
+
+            {/* Footer */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500 dark:text-gray-500">
+                  {formatDate(memo.createdAt)}
+                </span>
+                {/* Show relevance score if available (from vector search) */}
+                {'relevanceScore' in memo &&
+                  (memo as MemoListItemWithScoreDto).relevanceScore !== undefined && (
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs text-gray-400 dark:text-gray-600">相关度:</span>
+                      <div className="flex items-center gap-0.5">
+                        {[...Array(5)].map((_, i) => {
+                          const score = (memo as MemoListItemWithScoreDto).relevanceScore!;
+                          const filled = i + 1 <= Math.round(score * 5);
+                          return (
+                            <div
+                              key={i}
+                              className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                                filled ? 'bg-primary-500' : 'bg-gray-300 dark:bg-gray-600'
+                              }`}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="px-3 py-1.5 text-xs text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-dark-700 rounded hover:text-primary-600 dark:hover:text-primary-400 hover:border-primary-200 dark:hover:border-primary-900/50 transition-colors cursor-pointer"
+                  title="Edit this memo"
+                  aria-label="Edit memo"
+                >
+                  编辑
+                </button>
+
+                <button
+                  onClick={handleDelete}
+                  disabled={loading}
+                  className="px-3 py-1.5 text-xs text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-dark-700 rounded hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-900/50 transition-colors cursor-pointer disabled:opacity-50"
+                  title="Delete this memo"
+                  aria-label="Delete memo"
+                >
+                  删除
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Related Memos Modal */}

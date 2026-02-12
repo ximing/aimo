@@ -83,7 +83,7 @@ export class MemoService extends Service {
         } else {
           this.memos = [...this.memos, ...response.data.items];
         }
-        
+
         this.total = response.data.pagination.total;
         this.totalPages = response.data.pagination.totalPages;
         this.page = response.data.pagination.page;

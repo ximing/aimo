@@ -20,16 +20,16 @@ Base URL: `/api/v1/memos`
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| page | number | 1 | 页码 |
-| limit | number | 10 | 每页记录数 |
-| sortBy | string | createdAt | 排序字段：`createdAt` 或 `updatedAt` |
-| sortOrder | string | desc | 排序顺序：`asc` 或 `desc` |
-| search | string | - | 搜索关键词（标题、内容、标签） |
-| categoryId | string | - | 按分类过滤 |
-| startDate | string | - | 开始日期（ISO 8601 格式） |
-| endDate | string | - | 结束日期（ISO 8601 格式） |
+| Parameter  | Type   | Default   | Description                          |
+| ---------- | ------ | --------- | ------------------------------------ |
+| page       | number | 1         | 页码                                 |
+| limit      | number | 10        | 每页记录数                           |
+| sortBy     | string | createdAt | 排序字段：`createdAt` 或 `updatedAt` |
+| sortOrder  | string | desc      | 排序顺序：`asc` 或 `desc`            |
+| search     | string | -         | 搜索关键词（标题、内容、标签）       |
+| categoryId | string | -         | 按分类过滤                           |
+| startDate  | string | -         | 开始日期（ISO 8601 格式）            |
+| endDate    | string | -         | 结束日期（ISO 8601 格式）            |
 
 **Example Request:**
 
@@ -84,9 +84,9 @@ curl -X GET "http://localhost:3000/api/v1/memos?page=1&limit=20&sortBy=updatedAt
 
 **Path Parameters:**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| memoId | string | 笔记 ID |
+| Parameter | Type   | Description |
+| --------- | ------ | ----------- |
+| memoId    | string | 笔记 ID     |
 
 **Example Request:**
 
@@ -128,10 +128,10 @@ curl -X GET http://localhost:3000/api/v1/memos/memo_123456 \
 **Error Responses:**
 
 | Status | Description |
-|--------|-------------|
-| 401 | 未授权 |
-| 404 | 笔记不存在 |
-| 500 | 数据库错误 |
+| ------ | ----------- |
+| 401    | 未授权      |
+| 404    | 笔记不存在  |
+| 500    | 数据库错误  |
 
 ---
 
@@ -145,14 +145,14 @@ curl -X GET http://localhost:3000/api/v1/memos/memo_123456 \
 
 **Body Parameters (JSON):**
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| content | string | Yes | 笔记内容 |
-| attachments | array | No | 附件 ID 列表 |
-| categoryId | string | No | 分类 ID |
-| relationIds | array | No | 相关笔记 ID 列表 |
-| createdAt | number | No | 创建时间戳（毫秒） |
-| updatedAt | number | No | 更新时间戳（毫秒） |
+| Parameter   | Type   | Required | Description        |
+| ----------- | ------ | -------- | ------------------ |
+| content     | string | Yes      | 笔记内容           |
+| attachments | array  | No       | 附件 ID 列表       |
+| categoryId  | string | No       | 分类 ID            |
+| relationIds | array  | No       | 相关笔记 ID 列表   |
+| createdAt   | number | No       | 创建时间戳（毫秒） |
+| updatedAt   | number | No       | 更新时间戳（毫秒） |
 
 **Example Request:**
 
@@ -194,11 +194,11 @@ curl -X POST http://localhost:3000/api/v1/memos \
 
 **Error Responses:**
 
-| Status | Description |
-|--------|-------------|
-| 400 | Content 为空 |
-| 401 | 未授权 |
-| 500 | 数据库错误 |
+| Status | Description  |
+| ------ | ------------ |
+| 400    | Content 为空 |
+| 401    | 未授权       |
+| 500    | 数据库错误   |
 
 ---
 
@@ -212,18 +212,18 @@ curl -X POST http://localhost:3000/api/v1/memos \
 
 **Path Parameters:**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| memoId | string | 笔记 ID |
+| Parameter | Type   | Description |
+| --------- | ------ | ----------- |
+| memoId    | string | 笔记 ID     |
 
 **Body Parameters (JSON):**
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| content | string | Yes | 笔记内容 |
-| attachments | array | No | 附件 ID 列表 |
-| categoryId | string | No | 分类 ID |
-| relationIds | array | No | 相关笔记 ID 列表 |
+| Parameter   | Type   | Required | Description      |
+| ----------- | ------ | -------- | ---------------- |
+| content     | string | Yes      | 笔记内容         |
+| attachments | array  | No       | 附件 ID 列表     |
+| categoryId  | string | No       | 分类 ID          |
+| relationIds | array  | No       | 相关笔记 ID 列表 |
 
 **Example Request:**
 
@@ -263,12 +263,12 @@ curl -X PUT http://localhost:3000/api/v1/memos/memo_123456 \
 
 **Error Responses:**
 
-| Status | Description |
-|--------|-------------|
-| 400 | Content 为空 |
-| 401 | 未授权 |
-| 404 | 笔记不存在 |
-| 500 | 数据库错误 |
+| Status | Description  |
+| ------ | ------------ |
+| 400    | Content 为空 |
+| 401    | 未授权       |
+| 404    | 笔记不存在   |
+| 500    | 数据库错误   |
 
 ---
 
@@ -282,9 +282,9 @@ curl -X PUT http://localhost:3000/api/v1/memos/memo_123456 \
 
 **Path Parameters:**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| memoId | string | 笔记 ID |
+| Parameter | Type   | Description |
+| --------- | ------ | ----------- |
+| memoId    | string | 笔记 ID     |
 
 **Example Request:**
 
@@ -310,10 +310,10 @@ curl -X DELETE http://localhost:3000/api/v1/memos/memo_123456 \
 **Error Responses:**
 
 | Status | Description |
-|--------|-------------|
-| 401 | 未授权 |
-| 404 | 笔记不存在 |
-| 500 | 数据库错误 |
+| ------ | ----------- |
+| 401    | 未授权      |
+| 404    | 笔记不存在  |
+| 500    | 数据库错误  |
 
 ---
 
@@ -327,11 +327,11 @@ curl -X DELETE http://localhost:3000/api/v1/memos/memo_123456 \
 
 **Body Parameters (JSON):**
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| query | string | Yes | 搜索查询文本 |
-| page | number | No | 页码，默认为 1 |
-| limit | number | No | 每页记录数，默认为 20 |
+| Parameter | Type   | Required | Description           |
+| --------- | ------ | -------- | --------------------- |
+| query     | string | Yes      | 搜索查询文本          |
+| page      | number | No       | 页码，默认为 1        |
+| limit     | number | No       | 每页记录数，默认为 20 |
 
 **Example Request:**
 
@@ -375,10 +375,10 @@ curl -X POST http://localhost:3000/api/v1/memos/search/vector \
 **Error Responses:**
 
 | Status | Description |
-|--------|-------------|
-| 400 | Query 为空 |
-| 401 | 未授权 |
-| 500 | 数据库错误 |
+| ------ | ----------- |
+| 400    | Query 为空  |
+| 401    | 未授权      |
+| 500    | 数据库错误  |
 
 ---
 
@@ -392,15 +392,15 @@ curl -X POST http://localhost:3000/api/v1/memos/search/vector \
 
 **Path Parameters:**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| memoId | string | 笔记 ID |
+| Parameter | Type   | Description |
+| --------- | ------ | ----------- |
+| memoId    | string | 笔记 ID     |
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| limit | number | 10 | 返回相关笔记的最大数量 |
+| Parameter | Type   | Default | Description            |
+| --------- | ------ | ------- | ---------------------- |
+| limit     | number | 10      | 返回相关笔记的最大数量 |
 
 **Example Request:**
 
@@ -436,9 +436,9 @@ curl -X GET "http://localhost:3000/api/v1/memos/memo_123456/related?limit=10" \
 **Error Responses:**
 
 | Status | Description |
-|--------|-------------|
-| 401 | 未授权 |
-| 500 | 数据库错误 |
+| ------ | ----------- |
+| 401    | 未授权      |
+| 500    | 数据库错误  |
 
 ---
 
@@ -460,10 +460,9 @@ Cookie: aimo_token=<jwt_token>
 
 ## Error Codes Reference
 
-| Code | HTTP Status | Meaning |
-|------|-------------|---------|
-| 4001 | 400 | PARAMS_ERROR - 参数错误 |
-| 4004 | 404 | NOT_FOUND - 资源不存在 |
-| 4010 | 401 | UNAUTHORIZED - 未授权 |
-| 5001 | 500 | DB_ERROR - 数据库错误 |
-
+| Code | HTTP Status | Meaning                 |
+| ---- | ----------- | ----------------------- |
+| 4001 | 400         | PARAMS_ERROR - 参数错误 |
+| 4004 | 404         | NOT_FOUND - 资源不存在  |
+| 4010 | 401         | UNAUTHORIZED - 未授权   |
+| 5001 | 500         | DB_ERROR - 数据库错误   |

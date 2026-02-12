@@ -30,7 +30,9 @@ export class StaticController {
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
         res.send(html);
       } else {
-        res.status(404).send('Not Found: index.html not found. Make sure web application is built.');
+        res
+          .status(404)
+          .send('Not Found: index.html not found. Make sure web application is built.');
       }
     } catch (error) {
       console.error('Error serving index.html:', error);

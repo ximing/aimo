@@ -41,7 +41,7 @@ export const AttachmentUploader = ({
     }
 
     const filesToAdd = files.slice(0, remainingSlots);
-    
+
     // 创建本地预览URL
     const newAttachments: AttachmentItem[] = filesToAdd.map((file) => ({
       attachmentId: `temp-${Date.now()}-${Math.random()}`,
@@ -81,11 +81,7 @@ export const AttachmentUploader = ({
         className="relative aspect-square bg-gray-100 dark:bg-dark-800 rounded-lg overflow-hidden group"
       >
         {isImage ? (
-          <img
-            src={attachment.url}
-            alt={attachment.name}
-            className="w-full h-full object-cover"
-          />
+          <img src={attachment.url} alt={attachment.name} className="w-full h-full object-cover" />
         ) : isVideo ? (
           <div className="w-full h-full flex items-center justify-center">
             <Film className="w-8 h-8 text-gray-400 dark:text-gray-600" />
@@ -120,9 +116,7 @@ export const AttachmentUploader = ({
     <div className="space-y-2">
       {/* 九宫格网格 */}
       {attachments.length > 0 && (
-        <div className="grid grid-cols-3 gap-2">
-          {attachments.map(renderAttachment)}
-        </div>
+        <div className="grid grid-cols-3 gap-2">{attachments.map(renderAttachment)}</div>
       )}
 
       {/* 添加按钮 */}
@@ -144,7 +138,9 @@ export const AttachmentUploader = ({
             className="w-full py-2 px-3 border border-dashed border-gray-300 dark:border-dark-600 rounded-lg text-sm text-gray-600 dark:text-gray-400 hover:border-primary-500 hover:text-primary-600 dark:hover:text-primary-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             <Upload className="w-4 h-4" />
-            <span>添加附件 ({attachments.length}/{maxCount})</span>
+            <span>
+              添加附件 ({attachments.length}/{maxCount})
+            </span>
           </button>
         </div>
       )}

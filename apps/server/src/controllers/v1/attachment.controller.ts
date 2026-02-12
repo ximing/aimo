@@ -44,10 +44,7 @@ export class AttachmentV1Controller {
    * POST /api/v1/attachments/upload
    */
   @Post('/upload')
-  async uploadAttachment(
-    @Req() req: Request,
-    @CurrentUser() user: UserInfoDto
-  ) {
+  async uploadAttachment(@Req() req: Request, @CurrentUser() user: UserInfoDto) {
     try {
       if (!user?.uid) {
         return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
@@ -164,7 +161,9 @@ export class AttachmentV1Controller {
       }
 
       // attachmentId format: "attachments/xxxxx"
-      const fullId = attachmentId.includes('attachments/') ? attachmentId : `attachments/${attachmentId}`;
+      const fullId = attachmentId.includes('attachments/')
+        ? attachmentId
+        : `attachments/${attachmentId}`;
 
       const attachment = await this.attachmentService.getAttachment(fullId, user.uid);
       if (!attachment) {
@@ -193,7 +192,9 @@ export class AttachmentV1Controller {
       }
 
       // attachmentId format: "attachments/xxxxx"
-      const fullId = attachmentId.includes('attachments/') ? attachmentId : `attachments/${attachmentId}`;
+      const fullId = attachmentId.includes('attachments/')
+        ? attachmentId
+        : `attachments/${attachmentId}`;
 
       const success = await this.attachmentService.deleteAttachment(fullId, user.uid);
       if (!success) {
@@ -223,11 +224,13 @@ export class AttachmentV1Controller {
       }
 
       // attachmentId format: "attachments/xxxxx" or just the ID
-      const fullId = attachmentId.includes('attachments/') ? attachmentId : `attachments/${attachmentId}`;
+      const fullId = attachmentId.includes('attachments/')
+        ? attachmentId
+        : `attachments/${attachmentId}`;
 
       // Get attachment buffer with permission check
       const result = await this.attachmentService.getAttachmentBuffer(fullId, user.uid);
-      
+
       if (!result) {
         return response.status(404).json(ResponseUtil.error(ErrorCode.ATTACHMENT_NOT_FOUND));
       }
@@ -235,7 +238,10 @@ export class AttachmentV1Controller {
       // Set response headers
       response.setHeader('Content-Type', result.mimeType);
       response.setHeader('Content-Length', result.buffer.length);
-      response.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(result.filename)}"`);
+      response.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${encodeURIComponent(result.filename)}"`
+      );
       response.setHeader('Cache-Control', 'private, max-age=3600'); // Cache for 1 hour
 
       // Send file buffer

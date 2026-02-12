@@ -87,10 +87,7 @@ export class ExportService extends Service {
   /**
    * Convert internal memo to exported format
    */
-  private convertMemoToExportFormat(
-    memo: MemoWithAttachmentsDto,
-    index: number
-  ): ExportedMemo {
+  private convertMemoToExportFormat(memo: MemoWithAttachmentsDto, index: number): ExportedMemo {
     // Generate exported attachments
     const exportedAttachments: ExportedAttachment[] =
       memo.attachments?.map((att) => ({
@@ -145,7 +142,10 @@ export class ExportService extends Service {
         return blob;
       } catch (error) {
         if (attempt === maxRetries) {
-          console.error(`Failed to download attachment ${attachmentId} after ${maxRetries} attempts:`, error);
+          console.error(
+            `Failed to download attachment ${attachmentId} after ${maxRetries} attempts:`,
+            error
+          );
           return null;
         }
         // Wait before retry (exponential backoff)
@@ -339,8 +339,7 @@ export class ExportService extends Service {
       return { success: true, stats: this.exportProgress };
     } catch (error) {
       this.exportProgress.status = 'error';
-      this.exportProgress.errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
+      this.exportProgress.errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return { success: false, stats: this.exportProgress };
     }
   }

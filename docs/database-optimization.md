@@ -17,38 +17,43 @@
 ### 1.2 各表索引配置
 
 #### Users 表
-| 字段 | 索引类型 | 用途 |
-|------|--------|------|
-| `uid` | BTREE | 主键查询，用户身份识别 |
-| `email` | BTREE | 登录认证，精确匹配查询 |
-| `phone` | BTREE | 登录认证备选，精确匹配查询 |
-| `status` | BITMAP | 用户状态过滤（活跃/非活跃） |
+
+| 字段     | 索引类型 | 用途                        |
+| -------- | -------- | --------------------------- |
+| `uid`    | BTREE    | 主键查询，用户身份识别      |
+| `email`  | BTREE    | 登录认证，精确匹配查询      |
+| `phone`  | BTREE    | 登录认证备选，精确匹配查询  |
+| `status` | BITMAP   | 用户状态过滤（活跃/非活跃） |
 
 #### Memos 表
-| 字段 | 索引类型 | 用途 |
-|------|--------|------|
-| `uid` | BTREE | 用户笔记过滤，支持向量搜索前置过滤 |
-| `createdAt` | BTREE | 日期范围查询，结果排序 |
-| `updatedAt` | BTREE | 日期范围查询，结果排序 |
+
+| 字段        | 索引类型 | 用途                               |
+| ----------- | -------- | ---------------------------------- |
+| `uid`       | BTREE    | 用户笔记过滤，支持向量搜索前置过滤 |
+| `createdAt` | BTREE    | 日期范围查询，结果排序             |
+| `updatedAt` | BTREE    | 日期范围查询，结果排序             |
 
 #### Attachments 表
-| 字段 | 索引类型 | 用途 |
-|------|--------|------|
-| `uid` | BTREE | 用户附件过滤 |
-| `attachmentId` | BTREE | 主键查询，精确匹配 |
-| `createdAt` | BTREE | 日期范围查询 |
+
+| 字段           | 索引类型 | 用途               |
+| -------------- | -------- | ------------------ |
+| `uid`          | BTREE    | 用户附件过滤       |
+| `attachmentId` | BTREE    | 主键查询，精确匹配 |
+| `createdAt`    | BTREE    | 日期范围查询       |
 
 #### Embedding Cache 表
-| 字段 | 索引类型 | 用途 |
-|------|--------|------|
-| `contentHash` | BTREE | 缓存查询，精确匹配 |
-| `modelHash` | BTREE | 模型特定过滤，精确匹配 |
+
+| 字段          | 索引类型 | 用途                   |
+| ------------- | -------- | ---------------------- |
+| `contentHash` | BTREE    | 缓存查询，精确匹配     |
+| `modelHash`   | BTREE    | 模型特定过滤，精确匹配 |
 
 ### 1.3 实现代码
 
 在 `LanceDbService` 中实现了两个关键方法：
 
 #### `createScalarIndexes()` - 初始化所有索引
+
 ```typescript
 // 在 ensureTablesExist() 后自动调用
 // 为所有表创建标量索引
@@ -56,6 +61,7 @@
 ```
 
 #### `createIndexIfNotExists()` - 创建单个索引
+
 ```typescript
 // 安全创建索引，处理已存在的索引
 // 支持两种索引类型: BTREE 和 BITMAP
@@ -71,11 +77,13 @@
 在 `LanceDbService` 中添加了两个优化方法：
 
 #### `optimizeTable(tableName)` - 单表优化
+
 - 重建索引结构
 - 整理数据碎片
 - 提升查询性能
 
 #### `optimizeAllTables()` - 全表优化
+
 - 顺序优化所有表
 - 支持单个表失败后继续
 - 适合定期维护
@@ -85,25 +93,30 @@
 ### 2.2 优化触发点
 
 #### Memo 服务 (`memo.service.ts`)
+
 - ✅ `createMemo()` 后自动优化 - 第 154 行
-- ✅ `updateMemo()` 后自动优化 - 第 357 行  
+- ✅ `updateMemo()` 后自动优化 - 第 357 行
 - ✅ `deleteMemo()` 后自动优化 - 第 396 行
 
 #### User 服务 (`user.service.ts`)
+
 - ✅ `createUser()` 后自动优化 - 第 67 行
 - ✅ `updateUser()` 后自动优化 - 第 167 行
 - ✅ `deleteUser()` 后自动优化 - 第 197 行
 
 #### Attachment 服务 (`attachment.service.ts`)
+
 - ✅ `createAttachment()` 后自动优化 - 第 68 行
 - ✅ `deleteAttachment()` 后自动优化 - 第 191 行
 
 #### Embedding 服务 (`embedding.service.ts`)
+
 - ✅ `saveToCache()` 后自动优化 - 第 97 行
 
 ### 2.3 错误处理
 
 所有优化调用都包含 try-catch 块：
+
 ```typescript
 try {
   await this.lanceDb.optimizeTable('tableName');
@@ -114,6 +127,7 @@ try {
 ```
 
 这确保了：
+
 - 索引优化失败不会导致请求失败
 - 详细的警告日志便于监控
 - 应用可靠性优先于性能优化
@@ -125,24 +139,28 @@ try {
 标量索引可显著加速以下场景：
 
 1. **用户认证**
+
    ```sql
    WHERE email = 'user@example.com'  -- 使用 email BTREE 索引
    ```
 
 2. **用户笔记列表**
+
    ```sql
    WHERE uid = 'user123' AND createdAt BETWEEN start AND end
    -- 使用 uid 和 createdAt BTREE 索引
    ```
 
 3. **向量搜索预过滤**
+
    ```typescript
    // 搜索特定用户的笔记
-   table.search(embedding).where("uid = 'user123'")
+   table.search(embedding).where("uid = 'user123'");
    // uid 索引加速元数据过滤
    ```
 
 4. **附件查询**
+
    ```sql
    WHERE uid = 'user123' AND attachmentId = 'att123'
    -- 使用 uid 和 attachmentId 索引
@@ -166,12 +184,14 @@ try {
 ### 3.3 什么时候索引有效
 
 ✅ **有效场景**：
+
 - 大数据集（>10,000 条记录）
 - 频繁过滤查询
 - 范围查询和排序
 - 向量搜索前的元数据过滤
 
 ❌ **效果不明显**：
+
 - 小数据集（<1,000 条记录）
 - 全表扫描
 - 非过滤查询
@@ -181,6 +201,7 @@ try {
 ### 4.1 日志监控
 
 应用启动时会看到：
+
 ```
 Created BTREE index on users.uid
 Created BTREE index on users.email
@@ -234,19 +255,25 @@ await lanceDb.optimizeAllTables();
 ## 六、性能调优建议
 
 ### 6.1 短期优化
+
 ✅ 当前已完成的优化：
+
 - 在应用启动时创建所有标量索引
 - 每次数据修改后自动优化索引
 - 完善的错误处理和日志记录
 
 ### 6.2 中期优化
+
 可以考虑的改进：
+
 - 批量操作时减少优化频率（批处理后优化一次）
 - 针对大批量导入添加特殊优化逻辑
 - 添加索引统计信息监控
 
 ### 6.3 长期优化
+
 高级优化方向：
+
 - 实现自适应优化（根据查询模式调整索引）
 - 添加查询性能分析
 - 实现缓存层减少数据库访问

@@ -47,10 +47,7 @@ export class CategoryService {
     try {
       const table = await this.lanceDb.openTable('categories');
 
-      const results = await table
-        .query()
-        .where(`uid = '${uid}'`)
-        .toArray();
+      const results = await table.query().where(`uid = '${uid}'`).toArray();
 
       // Sort by createdAt in memory
       results.sort((a: any, b: any) => a.createdAt - b.createdAt);
@@ -89,7 +86,11 @@ export class CategoryService {
   /**
    * Update a category
    */
-  async updateCategory(categoryId: string, uid: string, data: UpdateCategoryDto): Promise<CategoryDto | null> {
+  async updateCategory(
+    categoryId: string,
+    uid: string,
+    data: UpdateCategoryDto
+  ): Promise<CategoryDto | null> {
     try {
       const table = await this.lanceDb.openTable('categories');
 
@@ -104,17 +105,20 @@ export class CategoryService {
         categoryId: category.categoryId,
         uid: category.uid,
         name: data.name !== undefined ? data.name.trim() : category.name,
-        color: data.color === null ? undefined : data.color !== undefined ? data.color.trim() : category.color,
+        color:
+          data.color === null
+            ? undefined
+            : data.color !== undefined
+              ? data.color.trim()
+              : category.color,
         createdAt: category.createdAt,
         updatedAt: Date.now(),
       };
 
       // Update in database by deleting old and adding new
-      await table
-        .delete(`categoryId = '${categoryId}'`)
-        .catch(() => {
-          // Ignore error if record doesn't exist
-        });
+      await table.delete(`categoryId = '${categoryId}'`).catch(() => {
+        // Ignore error if record doesn't exist
+      });
 
       await table.add([updatedRecord as unknown as Record<string, unknown>]);
 

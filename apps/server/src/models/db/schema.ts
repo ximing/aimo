@@ -72,7 +72,11 @@ export const memosSchema = new Schema([
     ),
     true
   ), // nullable list of denormalized attachment objects
-  new Field('embedding', new FixedSizeList(getEmbeddingDimensions(), new Field('item', new Float32(), true)), false), // dynamic-dim embedding vector
+  new Field(
+    'embedding',
+    new FixedSizeList(getEmbeddingDimensions(), new Field('item', new Float32(), true)),
+    false
+  ), // dynamic-dim embedding vector
   new Field('createdAt', new Timestamp(TimeUnit.MILLISECOND), false), // non-nullable creation timestamp in milliseconds
   new Field('updatedAt', new Timestamp(TimeUnit.MILLISECOND), false), // non-nullable update timestamp in milliseconds
 ]);
@@ -121,7 +125,11 @@ export interface MemoRecord {
 export const embeddingCacheSchema = new Schema([
   new Field('modelHash', new Utf8(), false), // non-nullable model identifier hash
   new Field('contentHash', new Utf8(), false), // non-nullable content hash
-  new Field('embedding', new FixedSizeList(getEmbeddingDimensions(), new Field('item', new Float32(), true)), false), // dynamic-dim embedding vector
+  new Field(
+    'embedding',
+    new FixedSizeList(getEmbeddingDimensions(), new Field('item', new Float32(), true)),
+    false
+  ), // dynamic-dim embedding vector
   new Field('createdAt', new Timestamp(TimeUnit.MILLISECOND), false), // non-nullable creation timestamp in milliseconds
 ]);
 
@@ -197,7 +205,11 @@ export const attachmentsSchema = new Schema([
   new Field('type', new Utf8(), false), // non-nullable MIME type
   new Field('size', new Int32(), false), // non-nullable file size in bytes
   new Field('storageType', new Utf8(), false), // non-nullable storage type: 'local' | 's3'
-  new Field('multimodalEmbedding', new FixedSizeList(1024, new Field('item', new Float32(), true)), true), // nullable multimodal embedding vector (1024-dim)
+  new Field(
+    'multimodalEmbedding',
+    new FixedSizeList(1024, new Field('item', new Float32(), true)),
+    true
+  ), // nullable multimodal embedding vector (1024-dim)
   new Field('multimodalModelHash', new Utf8(), true), // nullable model hash for multimodal embedding
   new Field('createdAt', new Timestamp(TimeUnit.MILLISECOND), false), // non-nullable creation timestamp in milliseconds
 ]);

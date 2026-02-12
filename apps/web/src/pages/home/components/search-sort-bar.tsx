@@ -156,7 +156,9 @@ export const SearchSortBar = view(() => {
             <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg shadow-lg z-50">
               {/* Sort By Section */}
               <div className="px-4 py-3 border-b border-gray-200 dark:border-dark-700">
-                <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 uppercase">排序方式</p>
+                <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 uppercase">
+                  排序方式
+                </p>
                 <div className="space-y-2">
                   <button
                     onClick={() => handleSortByChange('createdAt')}
@@ -183,7 +185,9 @@ export const SearchSortBar = view(() => {
 
               {/* Sort Order Section */}
               <div className="px-4 py-3">
-                <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 uppercase">排序顺序</p>
+                <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 uppercase">
+                  排序顺序
+                </p>
                 <div className="space-y-2">
                   <button
                     onClick={() => handleSortOrderChange('desc')}

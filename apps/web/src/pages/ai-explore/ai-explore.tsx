@@ -15,9 +15,7 @@ export const AIExplorePage = view(() => {
 
             {/* Title */}
             <div className="space-y-3">
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-50">
-                AI 探索
-              </h1>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-50">AI 探索</h1>
               <p className="text-lg text-gray-600 dark:text-gray-400">
                 智能助手即将上线，让 AI 帮你更好地管理和发现知识
               </p>
@@ -31,9 +29,7 @@ export const AIExplorePage = view(() => {
                     <Lightbulb className="w-5 h-5 text-primary-600 dark:text-primary-400" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900 dark:text-gray-50 mb-1">
-                      智能问答
-                    </h3>
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-50 mb-1">智能问答</h3>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                       基于你的笔记内容，AI 可以回答相关问题
                     </p>
@@ -47,9 +43,7 @@ export const AIExplorePage = view(() => {
                     <Sparkles className="w-5 h-5 text-primary-600 dark:text-primary-400" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900 dark:text-gray-50 mb-1">
-                      内容生成
-                    </h3>
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-50 mb-1">内容生成</h3>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                       帮助你扩展想法，生成更丰富的内容
                     </p>

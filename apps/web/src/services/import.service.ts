@@ -92,7 +92,7 @@ export class ImportService extends Service {
   async selectAndValidateFolder(): Promise<FileSystemDirectoryHandle | null> {
     try {
       const dirHandle = await window.showDirectoryPicker();
-      
+
       // Check if memos_export.json exists
       try {
         await dirHandle.getFileHandle('memos_export.json');
@@ -124,9 +124,7 @@ export class ImportService extends Service {
 
       return data;
     } catch (error) {
-      throw new Error(
-        `读取导出文件失败: ${error instanceof Error ? error.message : '未知错误'}`
-      );
+      throw new Error(`读取导出文件失败: ${error instanceof Error ? error.message : '未知错误'}`);
     }
   }
 
@@ -139,8 +137,8 @@ export class ImportService extends Service {
   ): Promise<File | null> {
     try {
       // file_path format: "attachments/filename"
-      const parts = filePath.split('/').filter(p => p);
-      
+      const parts = filePath.split('/').filter((p) => p);
+
       if (parts.length === 0) return null;
 
       let currentHandle: FileSystemHandle = dirHandle;
@@ -188,7 +186,7 @@ export class ImportService extends Service {
     for (const attachment of exportedMemo.attachments) {
       try {
         const file = await this.getAttachmentFile(dirHandle, attachment.file_path);
-        
+
         if (!file) {
           console.warn(`Attachment not found: ${attachment.file_path}`);
           continue;
@@ -244,6 +242,7 @@ export class ImportService extends Service {
     dirHandle: FileSystemDirectoryHandle,
     exportedData: ExportedData
   ): Promise<MemoNameMapping> {
+    console.log(`Starting import of ${exportedData.memos.length} memos`);
     this.importProgress = {
       totalMemos: exportedData.memos.length,
       processedMemos: 0,
@@ -260,13 +259,18 @@ export class ImportService extends Service {
       try {
         // Check for duplicate
         const existingMemoId = await this.checkMemoExists(exportedMemo.content);
-        
+
         if (existingMemoId) {
           // Memo already exists, just map it
           memoNameMapping[exportedMemo.name] = existingMemoId;
           console.log(`Memo already exists, skipping: ${existingMemoId}`);
-          // Update progress reactively
-          this.importProgress = { ...this.importProgress, processedMemos: this.importProgress.processedMemos + 1 };
+          // Update progress reactively - count as both processed and successful
+          this.importProgress = {
+            ...this.importProgress,
+            processedMemos: this.importProgress.processedMemos + 1,
+            successfulMemos: this.importProgress.successfulMemos + 1,
+            currentMemoContent: exportedMemo.content.substring(0, 50),
+          };
           continue;
         }
 
@@ -314,8 +318,21 @@ export class ImportService extends Service {
             },
           ],
         };
-        console.error(`Failed to import memo "${exportedMemo.name}":`, error);
+        console.error(
+          `Failed to import memo "${exportedMemo.name}":`,
+          error,
+          'Content:',
+          exportedMemo.content.substring(0, 100)
+        );
       }
+    }
+
+    // Log final import statistics
+    console.log(
+      `Import completed: Total=${this.importProgress.totalMemos}, Successful=${this.importProgress.successfulMemos}, Failed=${this.importProgress.failedMemos}`
+    );
+    if (this.importProgress.failedMemos > 0) {
+      console.warn(`Failed memos details:`, this.importProgress.errors);
     }
 
     return memoNameMapping;
@@ -328,7 +345,11 @@ export class ImportService extends Service {
     exportedData: ExportedData,
     memoNameMapping: MemoNameMapping
   ): Promise<void> {
-    this.importProgress = { ...this.importProgress, status: 'creating-relations', processedMemos: 0 };
+    this.importProgress = {
+      ...this.importProgress,
+      status: 'creating-relations',
+      processedMemos: 0,
+    };
 
     let processedRelations = 0;
 
@@ -346,7 +367,11 @@ export class ImportService extends Service {
         const relatedMemoId = memoNameMapping[relation.relatedMemo.name];
 
         // Skip self-references and duplicates
-        if (relatedMemoId && relatedMemoId !== currentMemoId && !relationIds.includes(relatedMemoId)) {
+        if (
+          relatedMemoId &&
+          relatedMemoId !== currentMemoId &&
+          !relationIds.includes(relatedMemoId)
+        ) {
           relationIds.push(relatedMemoId);
         } else if (!relatedMemoId) {
           console.warn(`Related memo not found: ${relation.relatedMemo.name}`);
@@ -371,7 +396,7 @@ export class ImportService extends Service {
             // Prepare update data
             const updateData = {
               content: currentMemo.content,
-              attachments: currentMemo.attachments?.map(a => a.attachmentId),
+              attachments: currentMemo.attachments?.map((a) => a.attachmentId),
               relationIds: relationIds,
             };
 
@@ -403,6 +428,7 @@ export class ImportService extends Service {
       // Read export JSON
       this.importProgress.status = 'reading';
       const exportedData = await this.readExportJson(dirHandle);
+      console.log(`Read ${exportedData.memos.length} memos from export file`);
 
       // Import memos
       const memoNameMapping = await this.importAllMemos(dirHandle, exportedData);
@@ -412,12 +438,22 @@ export class ImportService extends Service {
         await this.createMemoRelations(exportedData, memoNameMapping);
       }
 
+      // Generate summary of missing memos if any
+      if (this.importProgress.failedMemos > 0) {
+        const failedMemoNames = exportedData.memos
+          .filter((memo) => !memoNameMapping[memo.name])
+          .slice(0, 10)
+          .map((memo) => memo.name || memo.content.substring(0, 30))
+          .join('\n  - ');
+        console.warn(`Summary of failed memos (showing up to 10):\n  - ${failedMemoNames}`);
+      }
+
       this.importProgress.status = 'completed';
       return { success: true, stats: this.importProgress };
     } catch (error) {
       this.importProgress.status = 'error';
-      this.importProgress.errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
+      this.importProgress.errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Import process error:', error);
       return { success: false, stats: this.importProgress };
     }
   }

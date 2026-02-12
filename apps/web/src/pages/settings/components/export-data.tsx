@@ -22,7 +22,7 @@ export const ExportData = bindServices(() => {
     }
 
     const interval = setInterval(() => {
-      setProgressRefresh(prev => prev + 1);
+      setProgressRefresh((prev) => prev + 1);
     }, 500); // 每500ms更新一次
 
     return () => clearInterval(interval);
@@ -31,7 +31,7 @@ export const ExportData = bindServices(() => {
   const handleExport = async () => {
     try {
       setIsExporting(true);
-      setShowProgress(true);  // 立即显示进度
+      setShowProgress(true); // 立即显示进度
       setExportResult(null);
       exportService.resetProgress();
 
@@ -41,13 +41,9 @@ export const ExportData = bindServices(() => {
         setExportResult({
           success: true,
           message: `成功导出 ${result.stats.totalMemos} 个备忘录${
-            result.stats.totalAttachments > 0
-              ? ` 和 ${result.stats.totalAttachments} 个附件`
-              : ''
+            result.stats.totalAttachments > 0 ? ` 和 ${result.stats.totalAttachments} 个附件` : ''
           }${
-            result.stats.errors.length > 0
-              ? `，${result.stats.errors.length} 个附件下载失败`
-              : ''
+            result.stats.errors.length > 0 ? `，${result.stats.errors.length} 个附件下载失败` : ''
           }`,
         });
       } else {

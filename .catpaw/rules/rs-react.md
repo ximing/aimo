@@ -314,7 +314,7 @@ export const HomePage = view(() => {
   // ✅ 直接使用全局注册的 Service，无需在 bindServices 中再次注册
   const authService = useService(AuthService);
   const themeService = useService(ThemeService);
-  
+
   return <div>{authService.user?.email}</div>;
 });
 ```

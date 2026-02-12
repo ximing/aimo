@@ -86,7 +86,15 @@ export class MemoV1Controller {
         return ResponseUtil.error(ErrorCode.PARAMS_ERROR, 'Content is required');
       }
 
-      const memo = await this.memoService.createMemo(user.uid, memoData.content, memoData.attachments, memoData.categoryId, memoData.relationIds, memoData.createdAt, memoData.updatedAt);
+      const memo = await this.memoService.createMemo(
+        user.uid,
+        memoData.content,
+        memoData.attachments,
+        memoData.categoryId,
+        memoData.relationIds,
+        memoData.createdAt,
+        memoData.updatedAt
+      );
       return ResponseUtil.success({
         message: 'Memo created successfully',
         memo,
@@ -112,7 +120,14 @@ export class MemoV1Controller {
         return ResponseUtil.error(ErrorCode.PARAMS_ERROR, 'Content is required');
       }
 
-      const memo = await this.memoService.updateMemo(memoId, user.uid, memoData.content, memoData.attachments, memoData.categoryId, memoData.relationIds);
+      const memo = await this.memoService.updateMemo(
+        memoId,
+        user.uid,
+        memoData.content,
+        memoData.attachments,
+        memoData.categoryId,
+        memoData.relationIds
+      );
       if (!memo) {
         return ResponseUtil.error(ErrorCode.NOT_FOUND);
       }

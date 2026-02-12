@@ -80,7 +80,10 @@ export const RegisterForm = view(() => {
       )}
 
       <div>
-        <label htmlFor="register-email" className="block text-sm font-medium text-gray-700 dark:text-dark-300 mb-2">
+        <label
+          htmlFor="register-email"
+          className="block text-sm font-medium text-gray-700 dark:text-dark-300 mb-2"
+        >
           Email <span className="text-red-500">*</span>
         </label>
         <input
@@ -95,7 +98,10 @@ export const RegisterForm = view(() => {
       </div>
 
       <div>
-        <label htmlFor="nickname" className="block text-sm font-medium text-gray-700 dark:text-dark-300 mb-2">
+        <label
+          htmlFor="nickname"
+          className="block text-sm font-medium text-gray-700 dark:text-dark-300 mb-2"
+        >
           Nickname <span className="text-gray-400 dark:text-dark-500 text-xs">(optional)</span>
         </label>
         <input
@@ -110,7 +116,10 @@ export const RegisterForm = view(() => {
       </div>
 
       <div>
-        <label htmlFor="register-password" className="block text-sm font-medium text-gray-700 dark:text-dark-300 mb-2">
+        <label
+          htmlFor="register-password"
+          className="block text-sm font-medium text-gray-700 dark:text-dark-300 mb-2"
+        >
           Password <span className="text-red-500">*</span>
         </label>
         <input
@@ -125,7 +134,10 @@ export const RegisterForm = view(() => {
       </div>
 
       <div>
-        <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 dark:text-dark-300 mb-2">
+        <label
+          htmlFor="confirm-password"
+          className="block text-sm font-medium text-gray-700 dark:text-dark-300 mb-2"
+        >
           Confirm Password <span className="text-red-500">*</span>
         </label>
         <input

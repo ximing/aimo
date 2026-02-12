@@ -73,14 +73,17 @@ export class AttachmentService {
 
       if (isImage || isVideo) {
         // Fire and forget - do not await
-        this.generateAndUpdateMultimodalEmbedding(attachmentId, url, isImage ? 'image' : 'video', filename).catch(
-          (error) => {
-            console.error(
-              `Background multimodal embedding generation failed for ${filename}:`,
-              error
-            );
-          }
-        );
+        this.generateAndUpdateMultimodalEmbedding(
+          attachmentId,
+          url,
+          isImage ? 'image' : 'video',
+          filename
+        ).catch((error) => {
+          console.error(
+            `Background multimodal embedding generation failed for ${filename}:`,
+            error
+          );
+        });
       }
     }
 
@@ -108,7 +111,9 @@ export class AttachmentService {
     filename: string
   ): Promise<void> {
     try {
-      console.log(`Starting background multimodal embedding generation for ${modalityType}: ${filename}`);
+      console.log(
+        `Starting background multimodal embedding generation for ${modalityType}: ${filename}`
+      );
 
       // Generate embedding
       const embedding = await this.multimodalEmbeddingService.generateMultimodalEmbedding(
@@ -165,7 +170,7 @@ export class AttachmentService {
    */
   async getAttachment(attachmentId: string, uid: string): Promise<AttachmentDto | null> {
     const table = await this.lanceDbService.openTable('attachments');
-    
+
     const results = await table
       .query()
       .where(`attachmentId = '${attachmentId}' AND uid = '${uid}'`)
@@ -202,20 +207,13 @@ export class AttachmentService {
     const offset = (page - 1) * limit;
 
     const table = await this.lanceDbService.openTable('attachments');
-    
+
     // Get total count
-    const allResults = await table
-      .query()
-      .where(`uid = '${uid}'`)
-      .toArray();
+    const allResults = await table.query().where(`uid = '${uid}'`).toArray();
     const total = allResults.length;
 
     // Get paginated results
-    const results = await table
-      .query()
-      .where(`uid = '${uid}'`)
-      .limit(limit)
-      .toArray();
+    const results = await table.query().where(`uid = '${uid}'`).limit(limit).toArray();
 
     // Skip manually (LanceDB doesn't have native offset)
     const paginatedResults = results.slice(offset, offset + limit);
@@ -248,7 +246,7 @@ export class AttachmentService {
    */
   async deleteAttachment(attachmentId: string, uid: string): Promise<boolean> {
     const table = await this.lanceDbService.openTable('attachments');
-    
+
     // Find attachment
     const results = await table
       .query()
@@ -286,7 +284,10 @@ export class AttachmentService {
   /**
    * Get attachment file buffer for download (with permission check)
    */
-  async getAttachmentBuffer(attachmentId: string, uid: string): Promise<{
+  async getAttachmentBuffer(
+    attachmentId: string,
+    uid: string
+  ): Promise<{
     buffer: Buffer;
     filename: string;
     mimeType: string;
@@ -326,15 +327,11 @@ export class AttachmentService {
    */
   async getAttachmentByFilename(filename: string): Promise<AttachmentRecord | null> {
     const table = await this.lanceDbService.openTable('attachments');
-    
+
     // Extract filename from path if needed
     const cleanFilename = filename.includes('/') ? filename.split('/').pop()! : filename;
-    
-    const results = await table
-      .query()
-      .where(`url LIKE '%${cleanFilename}%'`)
-      .limit(1)
-      .toArray();
+
+    const results = await table.query().where(`url LIKE '%${cleanFilename}%'`).limit(1).toArray();
 
     if (!results || results.length === 0) {
       return null;
@@ -345,7 +342,7 @@ export class AttachmentService {
 
   /**
    * Generate access URL based on storage type
-   * 
+   *
    * For S3:
    * - Public buckets: Returns direct URL without signing
    * - Private buckets: Returns presigned URL with expiration

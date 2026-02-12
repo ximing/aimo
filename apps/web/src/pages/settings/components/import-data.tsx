@@ -22,7 +22,7 @@ export const ImportData = bindServices(() => {
     }
 
     const interval = setInterval(() => {
-      setProgressRefresh(prev => prev + 1);
+      setProgressRefresh((prev) => prev + 1);
     }, 500); // 每500ms更新一次
 
     return () => clearInterval(interval);
@@ -31,19 +31,25 @@ export const ImportData = bindServices(() => {
   const handleImport = async () => {
     try {
       setIsImporting(true);
-      setShowProgress(true);  // 立即显示进度
+      setShowProgress(true); // 立即显示进度
       setImportResult(null);
       importService.resetProgress();
 
       const result = await importService.import();
 
       if (result.success) {
+        const message =
+          result.stats.failedMemos > 0
+            ? `成功导入 ${result.stats.successfulMemos} 个备忘录，失败 ${result.stats.failedMemos} 个（总计 ${result.stats.totalMemos} 个）`
+            : `成功导入全部 ${result.stats.totalMemos} 个备忘录`;
         setImportResult({
           success: true,
-          message: `成功导入 ${result.stats.successfulMemos} 个备忘录${
-            result.stats.failedMemos > 0 ? `，失败 ${result.stats.failedMemos} 个` : ''
-          }`,
+          message,
         });
+        // Log detailed statistics
+        console.log(
+          `导入完成统计：总计=${result.stats.totalMemos}, 成功=${result.stats.successfulMemos}, 失败=${result.stats.failedMemos}`
+        );
       } else {
         // 只在真正导入失败时显示失败消息，不包括用户取消的情况
         if (result.stats.status === 'error') {
@@ -67,12 +73,16 @@ export const ImportData = bindServices(() => {
   const progress = importService.importProgress;
   // 通过使用 progressRefresh 确保每次都重新计算
   void progressRefresh;
-  const progressPercent =
-    progress.totalMemos > 0
-      ? Math.round(
-          ((progress.processedMemos + progress.successfulMemos) / (progress.totalMemos * 2)) * 100
-        )
-      : 0;
+
+  // 根据状态计算进度百分比
+  let progressPercent = 0;
+  if (progress.status === 'completed') {
+    // 导入完成时显示 100%
+    progressPercent = 100;
+  } else if (progress.totalMemos > 0) {
+    // 导入过程中根据 processedMemos 计算
+    progressPercent = Math.round((progress.processedMemos / progress.totalMemos) * 100);
+  }
 
   return (
     <div className="max-w-2xl space-y-8">
@@ -251,18 +261,26 @@ export const ImportData = bindServices(() => {
           {progress.errors.length > 0 && (
             <div className="space-y-2">
               <h4 className="text-sm font-medium text-gray-900 dark:text-gray-50">
-                导入过程中的错误：
+                导入过程中的错误（共 {progress.errors.length} 个）：
               </h4>
-              <div className="space-y-2 max-h-48 overflow-y-auto">
+              <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                以下是未能导入的备忘录及其错误原因：
+              </p>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
                 {progress.errors.map((err, idx) => (
                   <div
                     key={idx}
                     className="p-3 bg-gray-50 dark:bg-dark-700 rounded border border-gray-200 dark:border-dark-600"
                   >
-                    <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
-                      {err.memoContent}...
+                    <p className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                      备忘录 {idx + 1}：
                     </p>
-                    <p className="text-xs text-red-600 dark:text-red-400 mt-1">{err.error}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 truncate mt-1 ml-2">
+                      内容：{err.memoContent}...
+                    </p>
+                    <p className="text-xs text-red-600 dark:text-red-400 mt-1 ml-2">
+                      错误：{err.error}
+                    </p>
                   </div>
                 ))}
               </div>

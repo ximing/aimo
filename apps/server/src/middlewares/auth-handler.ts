@@ -10,12 +10,12 @@ const WHITELIST_PATHS = ['/', '/api/v1/auth/login', '/api/v1/auth/register'];
 
 // Whitelist path prefixes for static assets and public resources
 const WHITELIST_PREFIXES = [
-  '/assets/',        // Static assets (JS, CSS, images)
-  '/fonts/',        // Static assets (JS, CSS, images)
-  '/open',           // Open API endpoints
-  '/logo.png',       // Logo image
-  '/vite.svg',       // Favicon and public assets
-  '/favicon',        // Favicon
+  '/assets/', // Static assets (JS, CSS, images)
+  '/fonts/', // Static assets (JS, CSS, images)
+  '/open', // Open API endpoints
+  '/logo.png', // Logo image
+  '/vite.svg', // Favicon and public assets
+  '/favicon', // Favicon
 ];
 
 /**
@@ -28,9 +28,9 @@ export const authHandler = async (req: Request, res: Response, next: NextFunctio
     if (WHITELIST_PATHS.includes(req.path)) {
       return next();
     }
-    
+
     // Check if path starts with any whitelisted prefix
-    if (WHITELIST_PREFIXES.some(prefix => req.path.startsWith(prefix))) {
+    if (WHITELIST_PREFIXES.some((prefix) => req.path.startsWith(prefix))) {
       return next();
     }
 

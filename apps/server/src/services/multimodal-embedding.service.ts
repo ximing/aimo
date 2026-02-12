@@ -162,9 +162,7 @@ export class MultimodalEmbeddingService {
       );
 
       if (!response.ok) {
-        throw new Error(
-          `DashScope API call failed: ${response.status} - ${response.statusText}`
-        );
+        throw new Error(`DashScope API call failed: ${response.status} - ${response.statusText}`);
       }
 
       const data = (await response.json()) as DashScopeResponse;

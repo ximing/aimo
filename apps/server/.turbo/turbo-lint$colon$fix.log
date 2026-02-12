@@ -5,58 +5,83 @@
 
 [0m[0m
 [0m[4m/Users/ximing/project/mygithub/aimo/apps/server/src/app.ts[24m[0m
-[0m  [2m42:14[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m53:14[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
 [0m[0m
 [0m[4m/Users/ximing/project/mygithub/aimo/apps/server/src/config/config.ts[24m[0m
-[0m    [2m7:37[22m  [33mwarning[39m  NODE_ENV is not listed as a dependency in root turbo.json                      [2mturbo/no-undeclared-env-vars[22m[0m
-[0m   [2m80:16[22m  [33mwarning[39m  PORT is not listed as a dependency in root turbo.json                          [2mturbo/no-undeclared-env-vars[22m[0m
-[0m   [2m82:14[22m  [33mwarning[39m  CORS_ORIGIN is not listed as a dependency in root turbo.json                   [2mturbo/no-undeclared-env-vars[22m[0m
-[0m   [2m83:18[22m  [33mwarning[39m  CORS_CREDENTIALS is not listed as a dependency in root turbo.json              [2mturbo/no-undeclared-env-vars[22m[0m
-[0m   [2m86:13[22m  [33mwarning[39m  JWT_SECRET is not listed as a dependency in root turbo.json                    [2mturbo/no-undeclared-env-vars[22m[0m
-[0m   [2m89:19[22m  [33mwarning[39m  LANCEDB_STORAGE_TYPE is not listed as a dependency in root turbo.json          [2mturbo/no-undeclared-env-vars[22m[0m
-[0m   [2m91:7[22m   [33mwarning[39m  LANCEDB_STORAGE_TYPE is not listed as a dependency in root turbo.json          [2mturbo/no-undeclared-env-vars[22m[0m
-[0m   [2m92:19[22m  [33mwarning[39m  LANCEDB_S3_BUCKET is not listed as a dependency in root turbo.json             [2mturbo/no-undeclared-env-vars[22m[0m
-[0m   [2m92:52[22m  [33mwarning[39m  LANCEDB_S3_PREFIX is not listed as a dependency in root turbo.json             [2mturbo/no-undeclared-env-vars[22m[0m
-[0m   [2m93:11[22m  [33mwarning[39m  LANCEDB_PATH is not listed as a dependency in root turbo.json                  [2mturbo/no-undeclared-env-vars[22m[0m
-[0m   [2m95:7[22m   [33mwarning[39m  LANCEDB_STORAGE_TYPE is not listed as a dependency in root turbo.json          [2mturbo/no-undeclared-env-vars[22m[0m
-[0m   [2m97:21[22m  [33mwarning[39m  LANCEDB_S3_BUCKET is not listed as a dependency in root turbo.json             [2mturbo/no-undeclared-env-vars[22m[0m
-[0m   [2m98:21[22m  [33mwarning[39m  LANCEDB_S3_PREFIX is not listed as a dependency in root turbo.json             [2mturbo/no-undeclared-env-vars[22m[0m
-[0m   [2m99:29[22m  [33mwarning[39m  AWS_ACCESS_KEY_ID is not listed as a dependency in root turbo.json             [2mturbo/no-undeclared-env-vars[22m[0m
-[0m  [2m100:33[22m  [33mwarning[39m  AWS_SECRET_ACCESS_KEY is not listed as a dependency in root turbo.json         [2mturbo/no-undeclared-env-vars[22m[0m
-[0m  [2m101:21[22m  [33mwarning[39m  AWS_REGION is not listed as a dependency in root turbo.json                    [2mturbo/no-undeclared-env-vars[22m[0m
-[0m  [2m102:23[22m  [33mwarning[39m  LANCEDB_S3_ENDPOINT is not listed as a dependency in root turbo.json           [2mturbo/no-undeclared-env-vars[22m[0m
-[0m  [2m107:14[22m  [33mwarning[39m  BACKUP_ENABLED is not listed as a dependency in root turbo.json                [2mturbo/no-undeclared-env-vars[22m[0m
-[0m  [2m108:32[22m  [33mwarning[39m  BACKUP_THROTTLE_INTERVAL_MS is not listed as a dependency in root turbo.json   [2mturbo/no-undeclared-env-vars[22m[0m
-[0m  [2m109:19[22m  [33mwarning[39m  BACKUP_STORAGE_TYPE is not listed as a dependency in root turbo.json           [2mturbo/no-undeclared-env-vars[22m[0m
-[0m  [2m111:24[22m  [33mwarning[39m  BACKUP_MAX_COUNT is not listed as a dependency in root turbo.json              [2mturbo/no-undeclared-env-vars[22m[0m
-[0m  [2m112:23[22m  [33mwarning[39m  BACKUP_MAX_DAYS is not listed as a dependency in root turbo.json               [2mturbo/no-undeclared-env-vars[22m[0m
-[0m  [2m115:7[22m   [33mwarning[39m  BACKUP_STORAGE_TYPE is not listed as a dependency in root turbo.json           [2mturbo/no-undeclared-env-vars[22m[0m
-[0m  [2m117:21[22m  [33mwarning[39m  BACKUP_S3_BUCKET is not listed as a dependency in root turbo.json              [2mturbo/no-undeclared-env-vars[22m[0m
-[0m  [2m118:21[22m  [33mwarning[39m  BACKUP_S3_PREFIX is not listed as a dependency in root turbo.json              [2mturbo/no-undeclared-env-vars[22m[0m
-[0m  [2m119:29[22m  [33mwarning[39m  BACKUP_AWS_ACCESS_KEY_ID is not listed as a dependency in root turbo.json      [2mturbo/no-undeclared-env-vars[22m[0m
-[0m  [2m120:33[22m  [33mwarning[39m  BACKUP_AWS_SECRET_ACCESS_KEY is not listed as a dependency in root turbo.json  [2mturbo/no-undeclared-env-vars[22m[0m
-[0m  [2m121:21[22m  [33mwarning[39m  BACKUP_AWS_REGION is not listed as a dependency in root turbo.json             [2mturbo/no-undeclared-env-vars[22m[0m
-[0m  [2m122:23[22m  [33mwarning[39m  BACKUP_S3_ENDPOINT is not listed as a dependency in root turbo.json            [2mturbo/no-undeclared-env-vars[22m[0m
-[0m  [2m126:7[22m   [33mwarning[39m  BACKUP_STORAGE_TYPE is not listed as a dependency in root turbo.json           [2mturbo/no-undeclared-env-vars[22m[0m
-[0m  [2m128:21[22m  [33mwarning[39m  BACKUP_OSS_BUCKET is not listed as a dependency in root turbo.json             [2mturbo/no-undeclared-env-vars[22m[0m
-[0m  [2m129:21[22m  [33mwarning[39m  BACKUP_OSS_PREFIX is not listed as a dependency in root turbo.json             [2mturbo/no-undeclared-env-vars[22m[0m
-[0m  [2m130:26[22m  [33mwarning[39m  BACKUP_OSS_ACCESS_KEY_ID is not listed as a dependency in root turbo.json      [2mturbo/no-undeclared-env-vars[22m[0m
-[0m  [2m131:30[22m  [33mwarning[39m  BACKUP_OSS_ACCESS_KEY_SECRET is not listed as a dependency in root turbo.json  [2mturbo/no-undeclared-env-vars[22m[0m
-[0m  [2m132:21[22m  [33mwarning[39m  BACKUP_OSS_REGION is not listed as a dependency in root turbo.json             [2mturbo/no-undeclared-env-vars[22m[0m
-[0m  [2m133:23[22m  [33mwarning[39m  BACKUP_OSS_ENDPOINT is not listed as a dependency in root turbo.json           [2mturbo/no-undeclared-env-vars[22m[0m
-[0m  [2m137:7[22m   [33mwarning[39m  BACKUP_STORAGE_TYPE is not listed as a dependency in root turbo.json           [2mturbo/no-undeclared-env-vars[22m[0m
-[0m  [2m139:19[22m  [33mwarning[39m  BACKUP_LOCAL_PATH is not listed as a dependency in root turbo.json             [2mturbo/no-undeclared-env-vars[22m[0m
-[0m  [2m144:13[22m  [33mwarning[39m  OPENAI_API_KEY is not listed as a dependency in root turbo.json                [2mturbo/no-undeclared-env-vars[22m[0m
-[0m  [2m145:12[22m  [33mwarning[39m  OPENAI_MODEL is not listed as a dependency in root turbo.json                  [2mturbo/no-undeclared-env-vars[22m[0m
-[0m  [2m146:14[22m  [33mwarning[39m  OPENAI_BASE_URL is not listed as a dependency in root turbo.json               [2mturbo/no-undeclared-env-vars[22m[0m
-[0m  [2m147:33[22m  [33mwarning[39m  OPENAI_EMBEDDING_DIMENSIONS is not listed as a dependency in root turbo.json   [2mturbo/no-undeclared-env-vars[22m[0m
-[0m  [2m149:8[22m   [33mwarning[39m  NODE_ENV is not listed as a dependency in root turbo.json                      [2mturbo/no-undeclared-env-vars[22m[0m
+[0m    [2m7:37[22m  [33mwarning[39m  NODE_ENV is not listed as a dependency in root turbo.json                          [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m113:16[22m  [33mwarning[39m  PORT is not listed as a dependency in root turbo.json                              [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m115:14[22m  [33mwarning[39m  CORS_ORIGIN is not listed as a dependency in root turbo.json                       [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m116:18[22m  [33mwarning[39m  CORS_CREDENTIALS is not listed as a dependency in root turbo.json                  [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m119:13[22m  [33mwarning[39m  JWT_SECRET is not listed as a dependency in root turbo.json                        [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m122:19[22m  [33mwarning[39m  LANCEDB_STORAGE_TYPE is not listed as a dependency in root turbo.json              [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m124:7[22m   [33mwarning[39m  LANCEDB_STORAGE_TYPE is not listed as a dependency in root turbo.json              [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m125:19[22m  [33mwarning[39m  LANCEDB_S3_BUCKET is not listed as a dependency in root turbo.json                 [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m125:52[22m  [33mwarning[39m  LANCEDB_S3_PREFIX is not listed as a dependency in root turbo.json                 [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m126:11[22m  [33mwarning[39m  LANCEDB_PATH is not listed as a dependency in root turbo.json                      [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m127:34[22m  [33mwarning[39m  LANCEDB_VERSION_RETENTION_DAYS is not listed as a dependency in root turbo.json    [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m129:7[22m   [33mwarning[39m  LANCEDB_STORAGE_TYPE is not listed as a dependency in root turbo.json              [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m131:21[22m  [33mwarning[39m  LANCEDB_S3_BUCKET is not listed as a dependency in root turbo.json                 [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m132:21[22m  [33mwarning[39m  LANCEDB_S3_PREFIX is not listed as a dependency in root turbo.json                 [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m133:29[22m  [33mwarning[39m  AWS_ACCESS_KEY_ID is not listed as a dependency in root turbo.json                 [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m134:33[22m  [33mwarning[39m  AWS_SECRET_ACCESS_KEY is not listed as a dependency in root turbo.json             [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m135:21[22m  [33mwarning[39m  AWS_REGION is not listed as a dependency in root turbo.json                        [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m136:23[22m  [33mwarning[39m  LANCEDB_S3_ENDPOINT is not listed as a dependency in root turbo.json               [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m141:14[22m  [33mwarning[39m  BACKUP_ENABLED is not listed as a dependency in root turbo.json                    [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m142:32[22m  [33mwarning[39m  BACKUP_THROTTLE_INTERVAL_MS is not listed as a dependency in root turbo.json       [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m143:19[22m  [33mwarning[39m  BACKUP_STORAGE_TYPE is not listed as a dependency in root turbo.json               [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m145:24[22m  [33mwarning[39m  BACKUP_MAX_COUNT is not listed as a dependency in root turbo.json                  [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m146:23[22m  [33mwarning[39m  BACKUP_MAX_DAYS is not listed as a dependency in root turbo.json                   [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m149:7[22m   [33mwarning[39m  BACKUP_STORAGE_TYPE is not listed as a dependency in root turbo.json               [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m151:21[22m  [33mwarning[39m  BACKUP_S3_BUCKET is not listed as a dependency in root turbo.json                  [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m152:21[22m  [33mwarning[39m  BACKUP_S3_PREFIX is not listed as a dependency in root turbo.json                  [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m153:29[22m  [33mwarning[39m  BACKUP_AWS_ACCESS_KEY_ID is not listed as a dependency in root turbo.json          [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m154:33[22m  [33mwarning[39m  BACKUP_AWS_SECRET_ACCESS_KEY is not listed as a dependency in root turbo.json      [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m155:21[22m  [33mwarning[39m  BACKUP_AWS_REGION is not listed as a dependency in root turbo.json                 [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m156:23[22m  [33mwarning[39m  BACKUP_S3_ENDPOINT is not listed as a dependency in root turbo.json                [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m160:7[22m   [33mwarning[39m  BACKUP_STORAGE_TYPE is not listed as a dependency in root turbo.json               [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m162:19[22m  [33mwarning[39m  BACKUP_LOCAL_PATH is not listed as a dependency in root turbo.json                 [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m167:19[22m  [33mwarning[39m  ATTACHMENT_STORAGE_TYPE is not listed as a dependency in root turbo.json           [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m168:25[22m  [33mwarning[39m  ATTACHMENT_MAX_FILE_SIZE is not listed as a dependency in root turbo.json          [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m169:23[22m  [33mwarning[39m  ATTACHMENT_ALLOWED_MIME_TYPES is not listed as a dependency in root turbo.json     [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m170:9[22m   [33mwarning[39m  ATTACHMENT_ALLOWED_MIME_TYPES is not listed as a dependency in root turbo.json     [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m190:32[22m  [33mwarning[39m  ATTACHMENT_PRESIGNED_URL_EXPIRY is not listed as a dependency in root turbo.json   [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m192:7[22m   [33mwarning[39m  ATTACHMENT_STORAGE_TYPE is not listed as a dependency in root turbo.json           [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m194:19[22m  [33mwarning[39m  ATTACHMENT_LOCAL_PATH is not listed as a dependency in root turbo.json             [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m198:7[22m   [33mwarning[39m  ATTACHMENT_STORAGE_TYPE is not listed as a dependency in root turbo.json           [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m200:21[22m  [33mwarning[39m  ATTACHMENT_S3_BUCKET is not listed as a dependency in root turbo.json              [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m201:21[22m  [33mwarning[39m  ATTACHMENT_S3_PREFIX is not listed as a dependency in root turbo.json              [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m202:29[22m  [33mwarning[39m  ATTACHMENT_AWS_ACCESS_KEY_ID is not listed as a dependency in root turbo.json      [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m203:33[22m  [33mwarning[39m  ATTACHMENT_AWS_SECRET_ACCESS_KEY is not listed as a dependency in root turbo.json  [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m204:21[22m  [33mwarning[39m  ATTACHMENT_AWS_REGION is not listed as a dependency in root turbo.json             [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m205:23[22m  [33mwarning[39m  ATTACHMENT_S3_ENDPOINT is not listed as a dependency in root turbo.json            [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m206:23[22m  [33mwarning[39m  ATTACHMENT_S3_IS_PUBLIC is not listed as a dependency in root turbo.json           [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m211:25[22m  [33mwarning[39m  DB_OPTIMIZATION_CRON is not listed as a dependency in root turbo.json              [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m214:13[22m  [33mwarning[39m  OPENAI_API_KEY is not listed as a dependency in root turbo.json                    [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m215:12[22m  [33mwarning[39m  OPENAI_MODEL is not listed as a dependency in root turbo.json                      [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m216:14[22m  [33mwarning[39m  OPENAI_BASE_URL is not listed as a dependency in root turbo.json                   [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m217:33[22m  [33mwarning[39m  OPENAI_EMBEDDING_DIMENSIONS is not listed as a dependency in root turbo.json       [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m220:14[22m  [33mwarning[39m  MULTIMODAL_EMBEDDING_ENABLED is not listed as a dependency in root turbo.json      [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m221:12[22m  [33mwarning[39m  MULTIMODAL_EMBEDDING_MODEL is not listed as a dependency in root turbo.json        [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m222:13[22m  [33mwarning[39m  DASHSCOPE_API_KEY is not listed as a dependency in root turbo.json                 [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m223:14[22m  [33mwarning[39m  DASHSCOPE_BASE_URL is not listed as a dependency in root turbo.json                [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m224:23[22m  [33mwarning[39m  MULTIMODAL_EMBEDDING_DIMENSION is not listed as a dependency in root turbo.json    [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m225:17[22m  [33mwarning[39m  MULTIMODAL_EMBEDDING_OUTPUT_TYPE is not listed as a dependency in root turbo.json  [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m226:17[22m  [33mwarning[39m  MULTIMODAL_EMBEDDING_VIDEO_FPS is not listed as a dependency in root turbo.json    [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m229:15[22m  [33mwarning[39m  LOCALE_LANGUAGE is not listed as a dependency in root turbo.json                   [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m230:15[22m  [33mwarning[39m  LOCALE_TIMEZONE is not listed as a dependency in root turbo.json                   [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m232:8[22m   [33mwarning[39m  NODE_ENV is not listed as a dependency in root turbo.json                          [2mturbo/no-undeclared-env-vars[22m[0m
 [0m[0m
 [0m[4m/Users/ximing/project/mygithub/aimo/apps/server/src/config/env.ts[24m[0m
 [0m  [2m6:13[22m  [33mwarning[39m  NODE_ENV is not listed as a dependency in root turbo.json  [2mturbo/no-undeclared-env-vars[22m[0m
 [0m[0m
+[0m[4m/Users/ximing/project/mygithub/aimo/apps/server/src/controllers/v1/attachment.controller.ts[24m[0m
+[0m  [2m17:3[22m   [33mwarning[39m  'UploadedFile' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m69:32[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m88:42[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
 [0m[4m/Users/ximing/project/mygithub/aimo/apps/server/src/index.ts[24m[0m
-[0m  [2m3:1[22m  [33mwarning[39m  TZ is not listed as a dependency in root turbo.json  [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m8:1[22m   [33mwarning[39m  TZ is not listed as a dependency in root turbo.json               [2mturbo/no-undeclared-env-vars[22m[0m
+[0m  [2m8:18[22m  [33mwarning[39m  LOCALE_TIMEZONE is not listed as a dependency in root turbo.json  [2mturbo/no-undeclared-env-vars[22m[0m
 [0m[0m
 [0m[4m/Users/ximing/project/mygithub/aimo/apps/server/src/ioc.ts[24m[0m
 [0m  [2m28:23[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
@@ -67,22 +92,50 @@
 [0m[4m/Users/ximing/project/mygithub/aimo/apps/server/src/middlewares/error-handler.ts[24m[0m
 [0m  [2m4:73[22m  [33mwarning[39m  'next' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
 [0m[0m
+[0m[4m/Users/ximing/project/mygithub/aimo/apps/server/src/services/attachment.service.ts[24m[0m
+[0m  [2m120:61[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/ximing/project/mygithub/aimo/apps/server/src/services/category.service.ts[24m[0m
+[0m  [2m56:24[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m56:32[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
 [0m[4m/Users/ximing/project/mygithub/aimo/apps/server/src/services/embedding.service.ts[24m[0m
-[0m  [2m8:18[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m10:18[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m64:31[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/ximing/project/mygithub/aimo/apps/server/src/services/memo-relation.service.ts[24m[0m
+[0m  [2m53:35[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
 [0m[0m
 [0m[4m/Users/ximing/project/mygithub/aimo/apps/server/src/services/memo.service.ts[24m[0m
-[0m    [2m5:21[22m  [33mwarning[39m  'NewMemo' is defined but never used       [2m@typescript-eslint/no-unused-vars[22m[0m
-[0m  [2m135:19[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m135:27[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m271:46[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m    [2m7:21[22m  [33mwarning[39m  'NewMemo' is defined but never used                          [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m    [2m8:39[22m  [33mwarning[39m  'PaginatedMemoWithAttachmentsDto' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m51:53[22m  [33mwarning[39m  Unexpected any. Specify a different type                     [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m232:19[22m  [33mwarning[39m  Unexpected any. Specify a different type                     [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m232:27[22m  [33mwarning[39m  Unexpected any. Specify a different type                     [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m241:38[22m  [33mwarning[39m  Unexpected any. Specify a different type                     [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m286:19[22m  [33mwarning[39m  Unexpected any. Specify a different type                     [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m320:27[22m  [33mwarning[39m  Unexpected any. Specify a different type                     [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m366:42[22m  [33mwarning[39m  Unexpected any. Specify a different type                     [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m517:49[22m  [33mwarning[39m  Unexpected any. Specify a different type                     [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m557:33[22m  [33mwarning[39m  Unexpected any. Specify a different type                     [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m592:33[22m  [33mwarning[39m  Unexpected any. Specify a different type                     [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m613:13[22m  [33mwarning[39m  'memosTable' is assigned a value but never used              [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m614:40[22m  [33mwarning[39m  Unexpected any. Specify a different type                     [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4m/Users/ximing/project/mygithub/aimo/apps/server/src/services/multimodal-embedding.service.ts[24m[0m
+[0m  [2m99:31[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
 [0m[0m
 [0m[4m/Users/ximing/project/mygithub/aimo/apps/server/src/services/user.service.ts[24m[0m
 [0m  [2m9:34[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
 [0m[0m
+[0m[4m/Users/ximing/project/mygithub/aimo/apps/server/src/sources/lancedb.ts[24m[0m
+[0m  [2m298:21[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
 [0m[4m/Users/ximing/project/mygithub/aimo/apps/server/src/sources/storage-adapter/s3.adapter.ts[24m[0m
-[0m   [2m35:25[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m177:21[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m  [2m201:21[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m62:25[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m192:21[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m285:21[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m315:21[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
 [0m[0m
 [0m[4m/Users/ximing/project/mygithub/aimo/apps/server/src/types/express.ts[24m[0m
 [0m  [2m5:3[22m  [33mwarning[39m  ES2015 module syntax is preferred over namespaces  [2m@typescript-eslint/no-namespace[22m[0m
@@ -90,5 +143,5 @@
 [0m[4m/Users/ximing/project/mygithub/aimo/apps/server/src/types/response.ts[24m[0m
 [0m  [2m1:34[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
 [0m[0m
-[0m[33m[1m✖ 60 problems (0 errors, 60 warnings)[22m[39m[0m
+[0m[33m[1m✖ 101 problems (0 errors, 101 warnings)[22m[39m[0m
 [0m[33m[1m[22m[39m[0m

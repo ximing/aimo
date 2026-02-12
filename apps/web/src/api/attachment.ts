@@ -63,10 +63,7 @@ export const attachmentApi = {
    * 获取附件列表
    */
   async getAttachments(params?: GetAttachmentsParams): Promise<GetAttachmentsResponse> {
-    const response = await axios.get<ApiResponse<GetAttachmentsResponse>>(
-      API_BASE,
-      { params }
-    );
+    const response = await axios.get<ApiResponse<GetAttachmentsResponse>>(API_BASE, { params });
 
     if (response.data.code === 0) {
       return response.data.data;

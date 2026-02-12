@@ -1,7 +1,7 @@
 /**
  * Attachment Storage Service
  * Handles file storage operations for local and S3-compatible storage
- * 
+ *
  * Supports all S3-compatible services:
  * - AWS S3
  * - MinIO
@@ -12,7 +12,12 @@
  */
 
 import { Service } from 'typedi';
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { createWriteStream, createReadStream, existsSync, mkdirSync, unlinkSync } from 'fs';
 import { join } from 'path';
@@ -41,21 +46,22 @@ export class AttachmentStorageService {
     // This works with: AWS S3, MinIO, Aliyun OSS, DigitalOcean Spaces, etc.
     if (config.attachment.storageType === 's3' && config.attachment.s3) {
       const s3Config = config.attachment.s3;
-      
+
       // Determine if we should use path-style or virtual-hosted-style
       // Aliyun OSS requires virtual-hosted-style (don't use forcePathStyle)
       // MinIO and others typically use path-style
       const isAliyunOSS = s3Config.endpoint?.includes(s3Config.region || 'aliyuncs');
       const forcePathStyle = s3Config.endpoint && !isAliyunOSS ? true : undefined;
-      
+
       this.s3Client = new S3Client({
         region: s3Config.region || 'us-east-1',
-        credentials: s3Config.awsAccessKeyId && s3Config.awsSecretAccessKey
-          ? {
-              accessKeyId: s3Config.awsAccessKeyId,
-              secretAccessKey: s3Config.awsSecretAccessKey,
-            }
-          : undefined,
+        credentials:
+          s3Config.awsAccessKeyId && s3Config.awsSecretAccessKey
+            ? {
+                accessKeyId: s3Config.awsAccessKeyId,
+                secretAccessKey: s3Config.awsSecretAccessKey,
+              }
+            : undefined,
         endpoint: s3Config.endpoint,
         forcePathStyle, // true for MinIO, false for Aliyun OSS
       });
@@ -94,14 +100,14 @@ export class AttachmentStorageService {
     }
 
     const storagePath = config.attachment.local.path;
-    
+
     // Ensure storage directory exists
     if (!existsSync(storagePath)) {
       mkdirSync(storagePath, { recursive: true });
     }
 
     const filePath = join(storagePath, filename);
-    
+
     // Write file to disk
     await pipeline(
       (async function* () {
@@ -170,13 +176,13 @@ export class AttachmentStorageService {
       // e.g., MinIO: minio:9000 or http://minio:9000
       // e.g., Aliyun OSS: oss-cn-beijing.aliyuncs.com or https://delu-cdn.oss-cn-beijing.aliyuncs.com
       // Format: https://bucket.endpoint/key or https://endpoint/bucket/key
-      
+
       // For virtual-hosted-style endpoints (like Aliyun OSS)
       if (s3Config.endpoint.includes(s3Config.region || 'aliyuncs')) {
         // Aliyun OSS: use virtual-hosted-style
         // https://bucket.oss-cn-beijing.aliyuncs.com/prefix/filename
         // or https://delu-cdn.oss-cn-beijing.aliyuncs.com/prefix/filename
-        
+
         // Check if endpoint already has protocol prefix
         if (s3Config.endpoint.startsWith('http://') || s3Config.endpoint.startsWith('https://')) {
           // Endpoint already has protocol, extract domain part
@@ -189,8 +195,8 @@ export class AttachmentStorageService {
       } else {
         // For other S3-compatible services (MinIO, etc.)
         // Use path-style: https://endpoint/bucket/key
-        const baseUrl = s3Config.endpoint.startsWith('http') 
-          ? s3Config.endpoint 
+        const baseUrl = s3Config.endpoint.startsWith('http')
+          ? s3Config.endpoint
           : `https://${s3Config.endpoint}`;
         return `${baseUrl}/${bucket}/${key}`;
       }
@@ -209,7 +215,7 @@ export class AttachmentStorageService {
     }
 
     const filePath = join(config.attachment.local.path, filename);
-    
+
     if (!existsSync(filePath)) {
       throw new Error('File not found');
     }
@@ -217,7 +223,7 @@ export class AttachmentStorageService {
     // Read file as buffer
     const chunks: Buffer[] = [];
     const stream = createReadStream(filePath);
-    
+
     for await (const chunk of stream) {
       chunks.push(Buffer.from(chunk));
     }
@@ -234,17 +240,17 @@ export class AttachmentStorageService {
     }
 
     const s3Config = config.attachment.s3;
-    
+
     // Extract key from URL - handle different URL formats
     let key: string;
-    
+
     if (url.includes(s3Config.bucket)) {
       // Parse key from URL
       // Format 1: https://bucket.endpoint/prefix/filename (virtual-hosted)
       // Format 2: https://endpoint/bucket/prefix/filename (path-style)
       const bucketIndex = url.indexOf(s3Config.bucket);
       const afterBucket = url.substring(bucketIndex + s3Config.bucket.length);
-      
+
       // Remove leading '/' and extract the rest as key
       key = afterBucket.replace(/^\/+/, '').split('?')[0];
     } else {
@@ -299,7 +305,7 @@ export class AttachmentStorageService {
     }
 
     const s3Config = config.attachment.s3;
-    
+
     // If bucket is public, return the URL as-is without signing
     if (s3Config.isPublic) {
       return url;
@@ -309,17 +315,17 @@ export class AttachmentStorageService {
     if (!this.s3Client) {
       throw new Error('S3 client is not initialized');
     }
-    
+
     // Extract key from URL - handle different URL formats
     let key: string;
-    
+
     if (url.includes(s3Config.bucket)) {
       // Parse key from URL
       // Format 1: https://bucket.endpoint/prefix/filename (virtual-hosted)
       // Format 2: https://endpoint/bucket/prefix/filename (path-style)
       const bucketIndex = url.indexOf(s3Config.bucket);
       const afterBucket = url.substring(bucketIndex + s3Config.bucket.length);
-      
+
       // Remove leading '/' and extract the rest as key
       key = afterBucket.replace(/^\/+/, '').split('?')[0];
     } else {
@@ -365,7 +371,7 @@ export class AttachmentStorageService {
     }
 
     const filePath = join(config.attachment.local.path, filename);
-    
+
     if (existsSync(filePath)) {
       unlinkSync(filePath);
     }
@@ -380,10 +386,10 @@ export class AttachmentStorageService {
     }
 
     const s3Config = config.attachment.s3;
-    
+
     // Extract key from URL - handle different URL formats
     let key: string;
-    
+
     if (url.includes(s3Config.bucket)) {
       const bucketIndex = url.indexOf(s3Config.bucket);
       const afterBucket = url.substring(bucketIndex + s3Config.bucket.length);

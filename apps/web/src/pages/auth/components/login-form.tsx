@@ -54,7 +54,10 @@ export const LoginForm = view(() => {
       )}
 
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-dark-300 mb-2">
+        <label
+          htmlFor="email"
+          className="block text-sm font-medium text-gray-700 dark:text-dark-300 mb-2"
+        >
           Email
         </label>
         <input
@@ -69,7 +72,10 @@ export const LoginForm = view(() => {
       </div>
 
       <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-dark-300 mb-2">
+        <label
+          htmlFor="password"
+          className="block text-sm font-medium text-gray-700 dark:text-dark-300 mb-2"
+        >
           Password
         </label>
         <input

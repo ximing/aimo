@@ -51,9 +51,7 @@ export class AttachmentService extends Service {
     // Apply search filter
     if (this.searchQuery.trim()) {
       const query = this.searchQuery.toLowerCase();
-      filtered = filtered.filter((item) =>
-        item.filename.toLowerCase().includes(query)
-      );
+      filtered = filtered.filter((item) => item.filename.toLowerCase().includes(query));
     }
 
     return filtered;

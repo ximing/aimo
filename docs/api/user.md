@@ -49,11 +49,11 @@ curl -X GET http://localhost:3000/api/v1/user/info \
 
 **Error Responses:**
 
-| Status | Description |
-|--------|-------------|
-| 401 | 未授权，需要登录 |
-| 404 | 用户不存在 |
-| 500 | 数据库错误 |
+| Status | Description      |
+| ------ | ---------------- |
+| 401    | 未授权，需要登录 |
+| 404    | 用户不存在       |
+| 500    | 数据库错误       |
 
 ---
 
@@ -74,11 +74,11 @@ Content-Type: application/json
 
 **Body Parameters (JSON):**
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| email | string | No | 用户邮箱 |
-| nickname | string | No | 用户昵称 |
-| phone | string | No | 用户电话 |
+| Parameter | Type   | Required | Description |
+| --------- | ------ | -------- | ----------- |
+| email     | string | No       | 用户邮箱    |
+| nickname  | string | No       | 用户昵称    |
+| phone     | string | No       | 用户电话    |
 
 至少需要提供一个参数。
 
@@ -115,11 +115,11 @@ curl -X PUT http://localhost:3000/api/v1/user/info \
 
 **Error Responses:**
 
-| Status | Description |
-|--------|-------------|
-| 401 | 未授权，需要登录 |
-| 404 | 用户不存在 |
-| 500 | 数据库错误 |
+| Status | Description      |
+| ------ | ---------------- |
+| 401    | 未授权，需要登录 |
+| 404    | 用户不存在       |
+| 500    | 数据库错误       |
 
 ---
 
@@ -149,9 +149,8 @@ Cookie: aimo_token=<jwt_token>
 
 ## Error Codes Reference
 
-| Code | HTTP Status | Meaning |
-|------|-------------|---------|
-| 4004 | 404 | NOT_FOUND - 用户不存在 |
-| 4010 | 401 | UNAUTHORIZED - 未授权 |
-| 5001 | 500 | DB_ERROR - 数据库错误 |
-
+| Code | HTTP Status | Meaning                |
+| ---- | ----------- | ---------------------- |
+| 4004 | 404         | NOT_FOUND - 用户不存在 |
+| 4010 | 401         | UNAUTHORIZED - 未授权  |
+| 5001 | 500         | DB_ERROR - 数据库错误  |

@@ -5,7 +5,7 @@ import { S3StorageAdapter } from './s3.adapter.js';
 
 /**
  * Factory for creating storage adapters based on configuration
- * 
+ *
  * Supports:
  * - Local storage
  * - S3-compatible services (AWS S3, MinIO, Aliyun OSS, etc.)

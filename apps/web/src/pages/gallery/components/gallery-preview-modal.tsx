@@ -134,10 +134,7 @@ const GalleryPreviewModalContent = view(({ isOpen, onClose }: GalleryPreviewModa
             {(attachment.size / 1024 / 1024).toFixed(2)} MB
           </span>
         </div>
-        <button
-          onClick={onClose}
-          className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-        >
+        <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
           <X className="w-5 h-5" />
         </button>
       </div>
@@ -216,9 +213,7 @@ const GalleryPreviewModalContent = view(({ isOpen, onClose }: GalleryPreviewModa
             onClick={handlePrevious}
             disabled={!canGoPrev}
             className={`p-2 rounded-lg transition-colors ${
-              canGoPrev
-                ? 'hover:bg-white/10 text-white'
-                : 'text-gray-600 cursor-not-allowed'
+              canGoPrev ? 'hover:bg-white/10 text-white' : 'text-gray-600 cursor-not-allowed'
             }`}
             title="上一个 (← 键)"
           >
@@ -229,9 +224,7 @@ const GalleryPreviewModalContent = view(({ isOpen, onClose }: GalleryPreviewModa
             onClick={handleNext}
             disabled={!canGoNext}
             className={`p-2 rounded-lg transition-colors ${
-              canGoNext
-                ? 'hover:bg-white/10 text-white'
-                : 'text-gray-600 cursor-not-allowed'
+              canGoNext ? 'hover:bg-white/10 text-white' : 'text-gray-600 cursor-not-allowed'
             }`}
             title="下一个 (→ 键)"
           >

@@ -16,7 +16,7 @@ export default defineConfig({
     // Output to ../server/public for production builds
     outDir: '../server/public',
     emptyOutDir: true,
-    
+
     // Optimize chunk size
     rollupOptions: {
       output: {
@@ -34,7 +34,7 @@ export default defineConfig({
             }
             return 'vendor-other';
           }
-          
+
           // Separate page chunks
           if (id.includes('/pages/')) {
             const match = id.match(/\/pages\/(\w+)\//);
@@ -42,12 +42,12 @@ export default defineConfig({
               return `page-${match[1]}`;
             }
           }
-          
+
           // Services
           if (id.includes('/services/')) {
             return 'services';
           }
-          
+
           // Components
           if (id.includes('/components/')) {
             return 'components';
@@ -55,7 +55,7 @@ export default defineConfig({
         },
       },
     },
-    
+
     // Minimize
     minify: 'terser',
     terserOptions: {
@@ -64,19 +64,19 @@ export default defineConfig({
         drop_debugger: true,
       },
     },
-    
+
     // Inline small static imports
     assetsInlineLimit: 4096,
-    
+
     // CSS code splitting
     cssCodeSplit: true,
-    
+
     // Source map for production debugging
     sourcemap: false,
-    
+
     // Optimize chunk size threshold
     chunkSizeWarningLimit: 1000,
-    
+
     // Report compressed size
     reportCompressedSize: false,
   },

@@ -27,14 +27,14 @@ services:
       # ===== 基础配置 =====
       - NODE_ENV=production
       - PORT=3000
-      
+
       # ===== CORS 配置 =====
       - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:3000}
       - CORS_CREDENTIALS=${CORS_CREDENTIALS:-true}
-      
+
       # ===== JWT 配置 =====
       - JWT_SECRET=${JWT_SECRET:-your-secret-key-change-in-production}
-      
+
       # ===== LanceDB 配置 =====
       - LANCEDB_STORAGE_TYPE=${LANCEDB_STORAGE_TYPE:-local}
       - LANCEDB_PATH=${LANCEDB_PATH:-./lancedb_data}
@@ -43,7 +43,7 @@ services:
       # - LANCEDB_S3_BUCKET=${LANCEDB_S3_BUCKET}
       # - LANCEDB_S3_PREFIX=${LANCEDB_S3_PREFIX:-lancedb}
       # - LANCEDB_S3_ENDPOINT=${LANCEDB_S3_ENDPOINT}
-      
+
       # ===== 备份配置 =====
       - BACKUP_ENABLED=${BACKUP_ENABLED:-false}
       - BACKUP_STORAGE_TYPE=${BACKUP_STORAGE_TYPE:-local}
@@ -58,7 +58,7 @@ services:
       # - BACKUP_AWS_ACCESS_KEY_ID=${BACKUP_AWS_ACCESS_KEY_ID}
       # - BACKUP_AWS_SECRET_ACCESS_KEY=${BACKUP_AWS_SECRET_ACCESS_KEY}
       # - BACKUP_AWS_REGION=${BACKUP_AWS_REGION:-us-east-1}
-      
+
       # ===== 附件存储配置 =====
       - ATTACHMENT_STORAGE_TYPE=${ATTACHMENT_STORAGE_TYPE:-local}
       - ATTACHMENT_LOCAL_PATH=${ATTACHMENT_LOCAL_PATH:-./attachments}
@@ -74,18 +74,18 @@ services:
       # - ATTACHMENT_AWS_ACCESS_KEY_ID=${ATTACHMENT_AWS_ACCESS_KEY_ID}
       # - ATTACHMENT_AWS_SECRET_ACCESS_KEY=${ATTACHMENT_AWS_SECRET_ACCESS_KEY}
       # - ATTACHMENT_AWS_REGION=${ATTACHMENT_AWS_REGION:-us-east-1}
-      
+
       # ===== AWS 全局凭证配置 (所有 S3 服务共用) =====
       # - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       # - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       # - AWS_REGION=${AWS_REGION:-us-east-1}
-      
+
       # ===== OpenAI 配置 (文本 Embedding) =====
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPENAI_MODEL=${OPENAI_MODEL:-text-embedding-3-small}
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
       - OPENAI_EMBEDDING_DIMENSIONS=${OPENAI_EMBEDDING_DIMENSIONS:-1536}
-      
+
       # ===== 多模态 Embedding 配置 (图片/视频) =====
       - MULTIMODAL_EMBEDDING_ENABLED=${MULTIMODAL_EMBEDDING_ENABLED:-false}
       # - MULTIMODAL_EMBEDDING_MODEL=${MULTIMODAL_EMBEDDING_MODEL:-qwen3-vl-embedding}
@@ -94,16 +94,22 @@ services:
       # - MULTIMODAL_EMBEDDING_DIMENSION=${MULTIMODAL_EMBEDDING_DIMENSION:-1024}
       # - MULTIMODAL_EMBEDDING_OUTPUT_TYPE=${MULTIMODAL_EMBEDDING_OUTPUT_TYPE:-dense}
       # - MULTIMODAL_EMBEDDING_VIDEO_FPS=${MULTIMODAL_EMBEDDING_VIDEO_FPS:-0.5}
-      
+
       # ===== 定时任务配置 =====
       - DB_OPTIMIZATION_CRON=${DB_OPTIMIZATION_CRON:-0 2 * * *}
-      
+
       # ===== 本地化配置 =====
       - LOCALE_LANGUAGE=${LOCALE_LANGUAGE:-zh-cn}
       - LOCALE_TIMEZONE=${LOCALE_TIMEZONE:-Asia/Shanghai}
     restart: unless-stopped
     healthcheck:
-      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3000', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "require('http').get('http://localhost:3000', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3

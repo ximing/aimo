@@ -11,7 +11,11 @@ export class MemoRelationService {
   /**
    * Create a relation from sourceMemoId to targetMemoId
    */
-  async createRelation(uid: string, sourceMemoId: string, targetMemoId: string): Promise<MemoRelationRecord> {
+  async createRelation(
+    uid: string,
+    sourceMemoId: string,
+    targetMemoId: string
+  ): Promise<MemoRelationRecord> {
     try {
       if (sourceMemoId === targetMemoId) {
         throw new Error('A memo cannot be related to itself');
@@ -106,7 +110,11 @@ export class MemoRelationService {
   /**
    * Replace all relations for a source memo (update relations)
    */
-  async replaceRelations(uid: string, sourceMemoId: string, targetMemoIds: string[]): Promise<void> {
+  async replaceRelations(
+    uid: string,
+    sourceMemoId: string,
+    targetMemoIds: string[]
+  ): Promise<void> {
     try {
       // Delete existing relations
       await this.deleteRelationsBySourceMemo(uid, sourceMemoId);

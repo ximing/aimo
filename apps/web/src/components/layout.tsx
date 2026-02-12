@@ -157,7 +157,9 @@ export const Layout = view(({ children }: LayoutProps) => {
                 {/* User Info Section */}
                 <div className="px-4 py-3 border-b border-gray-200 dark:border-dark-700">
                   <p className="font-medium text-gray-900 dark:text-white text-sm">{userName}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-500 truncate mt-1">{userEmail}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-500 truncate mt-1">
+                    {userEmail}
+                  </p>
                 </div>
 
                 {/* Menu Items */}
@@ -178,9 +180,7 @@ export const Layout = view(({ children }: LayoutProps) => {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col overflow-hidden">
-        {children}
-      </main>
+      <main className="flex-1 flex flex-col overflow-hidden">{children}</main>
     </div>
   );
 });

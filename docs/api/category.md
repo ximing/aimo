@@ -68,9 +68,9 @@ curl -X GET http://localhost:3000/api/v1/categories \
 **Error Responses:**
 
 | HTTP Status | Description |
-|------------|-------------|
-| 401 | 未授权 |
-| 500 | 数据库错误 |
+| ----------- | ----------- |
+| 401         | 未授权      |
+| 500         | 数据库错误  |
 
 ---
 
@@ -90,9 +90,9 @@ Authorization: Bearer <jwt_token>
 
 **Path Parameters:**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| categoryId | string | 分类 ID |
+| Parameter  | Type   | Description |
+| ---------- | ------ | ----------- |
+| categoryId | string | 分类 ID     |
 
 **Example Request:**
 
@@ -127,10 +127,10 @@ curl -X GET http://localhost:3000/api/v1/categories/category_123456 \
 **Error Responses:**
 
 | HTTP Status | Description |
-|------------|-------------|
-| 401 | 未授权 |
-| 404 | 分类不存在 |
-| 500 | 数据库错误 |
+| ----------- | ----------- |
+| 401         | 未授权      |
+| 404         | 分类不存在  |
+| 500         | 数据库错误  |
 
 ---
 
@@ -151,11 +151,11 @@ Content-Type: application/json
 
 **Body Parameters (JSON):**
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| name | string | Yes | 分类名称 |
-| color | string | No | 分类颜色（十六进制格式如 #4CAF50） |
-| description | string | No | 分类描述 |
+| Parameter   | Type   | Required | Description                        |
+| ----------- | ------ | -------- | ---------------------------------- |
+| name        | string | Yes      | 分类名称                           |
+| color       | string | No       | 分类颜色（十六进制格式如 #4CAF50） |
+| description | string | No       | 分类描述                           |
 
 **Example Request:**
 
@@ -195,11 +195,11 @@ curl -X POST http://localhost:3000/api/v1/categories \
 
 **Error Responses:**
 
-| HTTP Status | Description |
-|------------|-------------|
-| 400 | 分类名称为空 |
-| 401 | 未授权 |
-| 500 | 数据库错误 |
+| HTTP Status | Description  |
+| ----------- | ------------ |
+| 400         | 分类名称为空 |
+| 401         | 未授权       |
+| 500         | 数据库错误   |
 
 ---
 
@@ -220,17 +220,17 @@ Content-Type: application/json
 
 **Path Parameters:**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| categoryId | string | 分类 ID |
+| Parameter  | Type   | Description |
+| ---------- | ------ | ----------- |
+| categoryId | string | 分类 ID     |
 
 **Body Parameters (JSON):**
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| name | string | No | 分类名称 |
-| color | string | No | 分类颜色（十六进制格式） |
-| description | string | No | 分类描述 |
+| Parameter   | Type   | Required | Description              |
+| ----------- | ------ | -------- | ------------------------ |
+| name        | string | No       | 分类名称                 |
+| color       | string | No       | 分类颜色（十六进制格式） |
+| description | string | No       | 分类描述                 |
 
 至少需要提供一个参数。
 
@@ -272,10 +272,10 @@ curl -X PUT http://localhost:3000/api/v1/categories/category_123456 \
 **Error Responses:**
 
 | HTTP Status | Description |
-|------------|-------------|
-| 401 | 未授权 |
-| 404 | 分类不存在 |
-| 500 | 数据库错误 |
+| ----------- | ----------- |
+| 401         | 未授权      |
+| 404         | 分类不存在  |
+| 500         | 数据库错误  |
 
 ---
 
@@ -295,9 +295,9 @@ Authorization: Bearer <jwt_token>
 
 **Path Parameters:**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| categoryId | string | 分类 ID |
+| Parameter  | Type   | Description |
+| ---------- | ------ | ----------- |
+| categoryId | string | 分类 ID     |
 
 **Example Request:**
 
@@ -323,10 +323,10 @@ curl -X DELETE http://localhost:3000/api/v1/categories/category_123456 \
 **Error Responses:**
 
 | HTTP Status | Description |
-|------------|-------------|
-| 401 | 未授权 |
-| 404 | 分类不存在 |
-| 500 | 数据库错误 |
+| ----------- | ----------- |
+| 401         | 未授权      |
+| 404         | 分类不存在  |
+| 500         | 数据库错误  |
 
 ---
 
@@ -351,15 +351,15 @@ Cookie: aimo_token=<jwt_token>
 常用的分类颜色建议：
 
 | 颜色 | 十六进制 | 用途 |
-|------|--------|------|
-| 绿色 | #4CAF50 | 工作 |
-| 蓝色 | #2196F3 | 学习 |
-| 橙色 | #FF9800 | 生活 |
-| 紫色 | #9C27B0 | 创意 |
-| 红色 | #F44336 | 紧急 |
-| 青色 | #00BCD4 | 项目 |
-| 粉色 | #E91E63 | 个人 |
-| 靛蓝 | #3F51B5 | 笔记 |
+| ---- | -------- | ---- |
+| 绿色 | #4CAF50  | 工作 |
+| 蓝色 | #2196F3  | 学习 |
+| 橙色 | #FF9800  | 生活 |
+| 紫色 | #9C27B0  | 创意 |
+| 红色 | #F44336  | 紧急 |
+| 青色 | #00BCD4  | 项目 |
+| 粉色 | #E91E63  | 个人 |
+| 靛蓝 | #3F51B5  | 笔记 |
 
 ---
 
@@ -373,10 +373,9 @@ Cookie: aimo_token=<jwt_token>
 
 ## Error Codes Reference
 
-| Code | HTTP Status | Meaning |
-|------|-------------|---------|
-| 4001 | 400 | PARAMS_ERROR - 参数错误 |
-| 4004 | 404 | NOT_FOUND - 资源不存在 |
-| 4010 | 401 | UNAUTHORIZED - 未授权 |
-| 5001 | 500 | DB_ERROR - 数据库错误 |
-
+| Code | HTTP Status | Meaning                 |
+| ---- | ----------- | ----------------------- |
+| 4001 | 400         | PARAMS_ERROR - 参数错误 |
+| 4004 | 404         | NOT_FOUND - 资源不存在  |
+| 4010 | 401         | UNAUTHORIZED - 未授权   |
+| 5001 | 500         | DB_ERROR - 数据库错误   |

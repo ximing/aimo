@@ -46,17 +46,12 @@ export class EmbeddingService {
   /**
    * Query cache for embedding
    */
-  private async queryCacheByHash(
-    modelHash: string,
-    contentHash: string
-  ): Promise<number[] | null> {
+  private async queryCacheByHash(modelHash: string, contentHash: string): Promise<number[] | null> {
     try {
       const cacheTable = await this.lanceDb.openTable('embedding_cache');
       const results = await cacheTable
         .query()
-        .where(
-          `modelHash = '${modelHash}' AND contentHash = '${contentHash}'`
-        )
+        .where(`modelHash = '${modelHash}' AND contentHash = '${contentHash}'`)
         .limit(1)
         .toArray();
 
@@ -115,10 +110,7 @@ export class EmbeddingService {
       const contentHash = this.generateContentHash(text);
 
       // Try to get from cache
-      const cachedEmbedding = await this.queryCacheByHash(
-        this.modelHash,
-        contentHash
-      );
+      const cachedEmbedding = await this.queryCacheByHash(this.modelHash, contentHash);
       if (cachedEmbedding) {
         console.log('Cache hit for embedding');
         return cachedEmbedding;
@@ -164,10 +156,7 @@ export class EmbeddingService {
       const indexesToGenerate: number[] = [];
 
       for (let i = 0; i < textWithHashes.length; i++) {
-        const cached = await this.queryCacheByHash(
-          this.modelHash,
-          textWithHashes[i].contentHash
-        );
+        const cached = await this.queryCacheByHash(this.modelHash, textWithHashes[i].contentHash);
         if (cached) {
           cachedResults[i] = cached;
         } else {

@@ -57,22 +57,22 @@ curl -X GET http://localhost:3000/api/v1/backup/status \
 
 **Response Fields:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| lastBackupTime | number | 最后一次备份时间戳（毫秒） |
-| lastBackupStatus | string | 最后一次备份状态（success/failed） |
-| backupCount | number | 备份文件总数 |
-| nextScheduledBackup | number | 下一次计划备份的时间戳（毫秒） |
-| isRunning | boolean | 备份是否正在进行中 |
-| backupPath | string | 备份存储路径 |
-| retentionDays | number | 备份保留天数 |
+| Field               | Type    | Description                        |
+| ------------------- | ------- | ---------------------------------- |
+| lastBackupTime      | number  | 最后一次备份时间戳（毫秒）         |
+| lastBackupStatus    | string  | 最后一次备份状态（success/failed） |
+| backupCount         | number  | 备份文件总数                       |
+| nextScheduledBackup | number  | 下一次计划备份的时间戳（毫秒）     |
+| isRunning           | boolean | 备份是否正在进行中                 |
+| backupPath          | string  | 备份存储路径                       |
+| retentionDays       | number  | 备份保留天数                       |
 
 **Error Responses:**
 
-| HTTP Status | Description |
-|------------|-------------|
-| 401 | 未授权或非管理员 |
-| 500 | 数据库或系统错误 |
+| HTTP Status | Description      |
+| ----------- | ---------------- |
+| 401         | 未授权或非管理员 |
+| 500         | 数据库或系统错误 |
 
 ---
 
@@ -115,10 +115,10 @@ curl -X POST http://localhost:3000/api/v1/backup/force \
 
 **Error Responses:**
 
-| HTTP Status | Description |
-|------------|-------------|
-| 401 | 未授权或非管理员 |
-| 500 | 备份启动失败 |
+| HTTP Status | Description      |
+| ----------- | ---------------- |
+| 401         | 未授权或非管理员 |
+| 500         | 备份启动失败     |
 
 ---
 
@@ -161,10 +161,10 @@ curl -X POST http://localhost:3000/api/v1/backup/cleanup \
 
 **Error Responses:**
 
-| HTTP Status | Description |
-|------------|-------------|
-| 401 | 未授权或非管理员 |
-| 500 | 清理失败 |
+| HTTP Status | Description      |
+| ----------- | ---------------- |
+| 401         | 未授权或非管理员 |
+| 500         | 清理失败         |
 
 ---
 
@@ -197,18 +197,21 @@ Cookie: aimo_token=<jwt_token>
 ### 自动备份
 
 系统通常会根据配置自动进行定期备份：
+
 - 可能每天执行一次
 - 或在关键操作后自动执行
 
 ### 手动备份
 
 通过 `/force` 端点可以随时触发备份，用于：
+
 - 在进行重要操作前手动备份
 - 绕过自动备份的频率限制
 
 ### 备份保留
 
 通过 `/cleanup` 端点清理旧备份：
+
 - 根据配置的 `retentionDays` 参数删除超期备份
 - 定期执行以节省存储空间
 
@@ -225,8 +228,7 @@ Cookie: aimo_token=<jwt_token>
 
 ## Error Codes Reference
 
-| Code | HTTP Status | Meaning |
-|------|-------------|---------|
-| 4010 | 401 | UNAUTHORIZED - 未授权或无管理员权限 |
-| 5001 | 500 | DB_ERROR - 数据库错误 |
-
+| Code | HTTP Status | Meaning                             |
+| ---- | ----------- | ----------------------------------- |
+| 4010 | 401         | UNAUTHORIZED - 未授权或无管理员权限 |
+| 5001 | 500         | DB_ERROR - 数据库错误               |

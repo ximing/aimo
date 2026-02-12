@@ -35,9 +35,7 @@ export const GalleryPage = view(() => {
         <div className="w-full max-w-7xl h-full flex flex-col">
           {/* Header - Fixed */}
           <header className="flex-shrink-0 sticky top-0 z-30 px-8 pt-4 pb-4 bg-white/80 dark:bg-dark-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-dark-700">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-4">
-              图廊
-            </h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-4">图廊</h1>
             <div className="flex gap-3 items-center">
               <GallerySearchBar />
               <GalleryFilter />
@@ -59,10 +57,7 @@ export const GalleryPage = view(() => {
               <GalleryTimeline
                 onSelectAttachment={handleSelectAttachment}
                 renderAttachment={(attachment: AttachmentDto, onSelect) => (
-                  <GalleryImageCard
-                    attachment={attachment}
-                    onClick={() => onSelect(attachment)}
-                  />
+                  <GalleryImageCard attachment={attachment} onClick={() => onSelect(attachment)} />
                 )}
               />
             )}

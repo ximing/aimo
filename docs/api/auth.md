@@ -18,12 +18,12 @@ Base URL: `/api/v1/auth`
 
 **Body Parameters (JSON):**
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| email | string | Yes | 用户邮箱 |
-| password | string | Yes | 用户密码 |
-| nickname | string | No | 用户昵称 |
-| phone | string | No | 用户电话 |
+| Parameter | Type   | Required | Description |
+| --------- | ------ | -------- | ----------- |
+| email     | string | Yes      | 用户邮箱    |
+| password  | string | Yes      | 用户密码    |
+| nickname  | string | No       | 用户昵称    |
+| phone     | string | No       | 用户电话    |
 
 **Example Request:**
 
@@ -58,11 +58,11 @@ curl -X POST http://localhost:3000/api/v1/auth/register \
 
 **Error Responses:**
 
-| Error Code | Status | Description |
-|-----------|--------|-------------|
-| 4001 | 400 | Email and password are required |
-| 4011 | 409 | User already exists |
-| 5001 | 500 | Database error |
+| Error Code | Status | Description                     |
+| ---------- | ------ | ------------------------------- |
+| 4001       | 400    | Email and password are required |
+| 4011       | 409    | User already exists             |
+| 5001       | 500    | Database error                  |
 
 ---
 
@@ -76,10 +76,10 @@ curl -X POST http://localhost:3000/api/v1/auth/register \
 
 **Body Parameters (JSON):**
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| email | string | Yes | 用户邮箱 |
-| password | string | Yes | 用户密码 |
+| Parameter | Type   | Required | Description |
+| --------- | ------ | -------- | ----------- |
+| email     | string | Yes      | 用户邮箱    |
+| password  | string | Yes      | 用户密码    |
 
 **Example Request:**
 
@@ -121,12 +121,12 @@ Token 会同时在响应体和 Cookie 中返回，有效期为 90 天。
 
 **Error Responses:**
 
-| Error Code | Status | Description |
-|-----------|--------|-------------|
-| 4001 | 400 | Email and password are required |
-| 4004 | 404 | User not found |
-| 4010 | 401 | Password error |
-| 5001 | 500 | Database error |
+| Error Code | Status | Description                     |
+| ---------- | ------ | ------------------------------- |
+| 4001       | 400    | Email and password are required |
+| 4004       | 404    | User not found                  |
+| 4010       | 401    | Password error                  |
+| 5001       | 500    | Database error                  |
 
 ---
 
@@ -149,11 +149,10 @@ curl -X GET http://localhost:3000/api/v1/user/info \
 
 ## Error Codes Reference
 
-| Code | Meaning |
-|------|---------|
-| 4001 | PARAMS_ERROR - 参数错误 |
-| 4004 | USER_NOT_FOUND - 用户不存在 |
-| 4010 | PASSWORD_ERROR - 密码错误 |
+| Code | Meaning                          |
+| ---- | -------------------------------- |
+| 4001 | PARAMS_ERROR - 参数错误          |
+| 4004 | USER_NOT_FOUND - 用户不存在      |
+| 4010 | PASSWORD_ERROR - 密码错误        |
 | 4011 | USER_ALREADY_EXISTS - 用户已存在 |
-| 5001 | DB_ERROR - 数据库错误 |
-
+| 5001 | DB_ERROR - 数据库错误            |

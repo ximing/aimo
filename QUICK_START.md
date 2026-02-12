@@ -51,16 +51,16 @@ docker stop aimo-app
 
 ## 常用命令
 
-| 命令 | 说明 |
-|------|------|
-| `./scripts/verify-production.sh` | 验证生产环境配置 |
-| `./scripts/deploy.sh` | 部署应用 |
-| `./scripts/deploy.sh logs` | 查看日志 |
-| `./scripts/deploy.sh stop` | 停止应用 |
-| `make build-docker` | 构建 Docker 镜像 |
-| `make docker-run` | 运行 Docker 容器 |
-| `make docker-stop` | 停止 Docker 容器 |
-| `make help` | 查看所有 Make 命令 |
+| 命令                             | 说明               |
+| -------------------------------- | ------------------ |
+| `./scripts/verify-production.sh` | 验证生产环境配置   |
+| `./scripts/deploy.sh`            | 部署应用           |
+| `./scripts/deploy.sh logs`       | 查看日志           |
+| `./scripts/deploy.sh stop`       | 停止应用           |
+| `make build-docker`              | 构建 Docker 镜像   |
+| `make docker-run`                | 运行 Docker 容器   |
+| `make docker-stop`               | 停止 Docker 容器   |
+| `make help`                      | 查看所有 Make 命令 |
 
 ## 环境变量配置
 
@@ -144,11 +144,11 @@ aimo/
 
 ### 自动触发条件
 
-| 工作流 | 触发条件 |
-|--------|---------|
-| CI | Push to main/master/develop, PR |
-| Docker 发布 | Push to branches, 创建标签 (v*.*.*) |
-| 部署 | 创建标签 (v*.*.*) |
+| 工作流      | 触发条件                             |
+| ----------- | ------------------------------------ |
+| CI          | Push to main/master/develop, PR      |
+| Docker 发布 | Push to branches, 创建标签 (v*.*.\*) |
+| 部署        | 创建标签 (v*.*.\*)                   |
 
 ### 标签策略
 
@@ -202,7 +202,7 @@ df -h
 ✅ **首次启动可能较慢** - 这是正常的，Docker 需要初始化  
 ✅ **使用健康检查** - 自动重启失败的容器  
 ✅ **启用缓存** - GitHub Actions 缓存加速构建  
-✅ **监控内存** - 监控容器资源占用  
+✅ **监控内存** - 监控容器资源占用
 
 ## 下一步
 

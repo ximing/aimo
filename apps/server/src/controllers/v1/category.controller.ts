@@ -39,10 +39,7 @@ export class CategoryV1Controller {
   }
 
   @Get('/:categoryId')
-  async getCategory(
-    @Param('categoryId') categoryId: string,
-    @CurrentUser() user: UserInfoDto
-  ) {
+  async getCategory(@Param('categoryId') categoryId: string, @CurrentUser() user: UserInfoDto) {
     try {
       if (!user?.uid) {
         return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
@@ -64,10 +61,7 @@ export class CategoryV1Controller {
   }
 
   @Post()
-  async createCategory(
-    @Body() categoryData: CreateCategoryDto,
-    @CurrentUser() user: UserInfoDto
-  ) {
+  async createCategory(@Body() categoryData: CreateCategoryDto, @CurrentUser() user: UserInfoDto) {
     try {
       if (!user?.uid) {
         return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
@@ -120,10 +114,7 @@ export class CategoryV1Controller {
   }
 
   @Delete('/:categoryId')
-  async deleteCategory(
-    @Param('categoryId') categoryId: string,
-    @CurrentUser() user: UserInfoDto
-  ) {
+  async deleteCategory(@Param('categoryId') categoryId: string, @CurrentUser() user: UserInfoDto) {
     try {
       if (!user?.uid) {
         return ResponseUtil.error(ErrorCode.UNAUTHORIZED);

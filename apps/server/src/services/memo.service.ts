@@ -5,7 +5,14 @@ import { BackupService } from './backup.service.js';
 import { AttachmentService } from './attachment.service.js';
 import { MemoRelationService } from './memo-relation.service.js';
 import type { Memo, NewMemo } from '../models/db/memo.schema.js';
-import type { MemoWithAttachmentsDto, PaginatedMemoWithAttachmentsDto, MemoListItemDto, PaginatedMemoListDto, MemoListItemWithScoreDto, PaginatedMemoListWithScoreDto } from '@aimo/dto';
+import type {
+  MemoWithAttachmentsDto,
+  PaginatedMemoWithAttachmentsDto,
+  MemoListItemDto,
+  PaginatedMemoListDto,
+  MemoListItemWithScoreDto,
+  PaginatedMemoListWithScoreDto,
+} from '@aimo/dto';
 import type { DenormalizedAttachment } from '../models/db/schema.js';
 import { generateTypeId } from '../utils/id.js';
 import { OBJECT_TYPE } from '../models/constant/type.js';
@@ -87,7 +94,15 @@ export class MemoService {
   /**
    * Create a new memo with automatic embedding and denormalized attachments
    */
-  async createMemo(uid: string, content: string, attachments?: string[], categoryId?: string, relationIds?: string[], createdAt?: number, updatedAt?: number): Promise<MemoWithAttachmentsDto> {
+  async createMemo(
+    uid: string,
+    content: string,
+    attachments?: string[],
+    categoryId?: string,
+    relationIds?: string[],
+    createdAt?: number,
+    updatedAt?: number
+  ): Promise<MemoWithAttachmentsDto> {
     try {
       if (!content || content.trim().length === 0) {
         throw new Error('Memo content cannot be empty');
@@ -145,7 +160,7 @@ export class MemoService {
       // Prepare record for LanceDB with denormalized attachments
       // Convert embedding to array if it's an Arrow object
       const embeddingArray = Array.isArray(embedding) ? embedding : Array.from(embedding || []);
-      
+
       const memoRecord = {
         ...memo,
         embedding: embeddingArray,
@@ -172,7 +187,7 @@ export class MemoService {
       return {
         ...memo,
         attachments: denormalizedAttachments,
-      } ;
+      };
     } catch (error) {
       console.error('Error creating memo:', error);
       throw error;
@@ -299,7 +314,14 @@ export class MemoService {
   /**
    * Update a memo
    */
-  async updateMemo(memoId: string, uid: string, content: string, attachments?: string[], categoryId?: string | null, relationIds?: string[]): Promise<MemoWithAttachmentsDto | null> {
+  async updateMemo(
+    memoId: string,
+    uid: string,
+    content: string,
+    attachments?: string[],
+    categoryId?: string | null,
+    relationIds?: string[]
+  ): Promise<MemoWithAttachmentsDto | null> {
     try {
       if (!content || content.trim().length === 0) {
         throw new Error('Memo content cannot be empty');
@@ -342,19 +364,19 @@ export class MemoService {
             })
           );
 
-           // Filter and convert to denormalized format
-           attachmentDetails.forEach((att) => {
-             if (att) {
-               denormalizedAttachments!.push({
-                 attachmentId: att.attachmentId,
-                 filename: att.filename,
-                 url: att.url,
-                 type: att.type,
-                 size: att.size,
-                 createdAt: att.createdAt,
-               });
-             }
-           });
+          // Filter and convert to denormalized format
+          attachmentDetails.forEach((att) => {
+            if (att) {
+              denormalizedAttachments!.push({
+                attachmentId: att.attachmentId,
+                filename: att.filename,
+                url: att.url,
+                type: att.type,
+                size: att.size,
+                createdAt: att.createdAt,
+              });
+            }
+          });
         }
       }
 
@@ -362,7 +384,7 @@ export class MemoService {
       const now = Date.now();
       // Convert embedding to array if it's an Arrow object
       const embeddingArray = Array.isArray(embedding) ? embedding : Array.from(embedding || []);
-      
+
       const updateValues: Record<string, any> = {
         content,
         embedding: embeddingArray,
@@ -408,14 +430,15 @@ export class MemoService {
       this.triggerBackup('memo_updated');
 
       // Build updated memo object with denormalized attachments
-      const finalAttachments = denormalizedAttachments !== undefined 
-        ? denormalizedAttachments 
-        : this.convertArrowAttachments(existingMemo.attachments);
+      const finalAttachments =
+        denormalizedAttachments !== undefined
+          ? denormalizedAttachments
+          : this.convertArrowAttachments(existingMemo.attachments);
       return {
         memoId,
         uid,
         content,
-        categoryId: categoryId !== undefined ? (categoryId || undefined) : existingMemo.categoryId,
+        categoryId: categoryId !== undefined ? categoryId || undefined : existingMemo.categoryId,
         attachments: finalAttachments,
         embedding,
         createdAt: existingMemo.createdAt,
@@ -448,10 +471,10 @@ export class MemoService {
         await this.memoRelationService.deleteRelationsByTargetMemo(uid, memoId);
       } catch (error) {
         console.warn('Failed to delete memo relations during memo deletion:', error);
-      // Don't throw - allow memo deletion even if relation cleanup fails
-    }
+        // Don't throw - allow memo deletion even if relation cleanup fails
+      }
 
-    // Trigger backup on memo deletion
+      // Trigger backup on memo deletion
       this.triggerBackup('memo_deleted');
 
       return true;
@@ -465,7 +488,7 @@ export class MemoService {
    * Vector search for memos using semantic search with pagination
    * Following LanceDB best practices: automatic prefiltering via BTREE index on uid
    * Results are automatically sorted by distance (ascending) = relevance descending
-   * 
+   *
    * Best practices from LanceDB official docs:
    * - Filter by uid BEFORE vector comparison using BTREE index (not full table scan)
    * - The BTREE index on uid column enables automatic prefiltering
@@ -488,7 +511,7 @@ export class MemoService {
       const queryEmbedding = await this.embeddingService.generateEmbedding(query);
 
       const memosTable = await this.lanceDb.openTable('memos');
-      
+
       const offset = (page - 1) * limit;
 
       // Execute vector search with uid filtering for optimal performance
@@ -526,7 +549,7 @@ export class MemoService {
         // Lower _distance = higher similarity
         // Normalize to relevance score: 0-1, where 1.0 = perfect match
         // For normalized vectors, _distance ranges from 0 to 2
-        relevanceScore: Math.max(0, Math.min(1, 1 - ((memo._distance || 0) / 2))),
+        relevanceScore: Math.max(0, Math.min(1, 1 - (memo._distance || 0) / 2)),
       })) as MemoListItemWithScoreDto[];
 
       return {
@@ -568,7 +591,11 @@ export class MemoService {
    * Find related memos based on vector similarity to a given memo
    * Excludes the memo itself and returns top N similar memos
    */
-  async findRelatedMemos(memoId: string, uid: string, limit: number = 10): Promise<MemoListItemDto[]> {
+  async findRelatedMemos(
+    memoId: string,
+    uid: string,
+    limit: number = 10
+  ): Promise<MemoListItemDto[]> {
     try {
       // Get the memo to find related ones
       const sourceMemo = await this.getMemoById(memoId, uid);
@@ -580,7 +607,7 @@ export class MemoService {
 
       // Use the memo's existing embedding to search for similar memos
       const sourceEmbedding = sourceMemo.embedding;
-      
+
       // Perform vector search with the memo's embedding
       const results = await memosTable
         .search(sourceEmbedding)
@@ -608,7 +635,10 @@ export class MemoService {
    * Enrich memo list items with their relation data
    * Fetch all related memos for each item
    */
-  private async enrichMemosWithRelations(uid: string, items: MemoListItemDto[]): Promise<MemoListItemDto[]> {
+  private async enrichMemosWithRelations(
+    uid: string,
+    items: MemoListItemDto[]
+  ): Promise<MemoListItemDto[]> {
     try {
       const memosTable = await this.lanceDb.openTable('memos');
       const memosMap = new Map<string, any>();

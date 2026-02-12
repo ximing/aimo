@@ -27,10 +27,10 @@ Content-Type: multipart/form-data
 
 **Form Data:**
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| file | binary | Yes | 要上传的文件 |
-| createdAt | number | No | 创建时间戳（毫秒），用于导入场景 |
+| Field     | Type   | Required | Description                      |
+| --------- | ------ | -------- | -------------------------------- |
+| file      | binary | Yes      | 要上传的文件                     |
+| createdAt | number | No       | 创建时间戳（毫秒），用于导入场景 |
 
 **Example Request:**
 
@@ -74,13 +74,13 @@ curl -X POST http://localhost:3000/api/v1/attachments/upload \
 
 **Error Responses:**
 
-| Error Code | HTTP Status | Description |
-|-----------|------------|-------------|
-| 4001 | 400 | 未上传文件 |
-| 4019 | 413 | 文件过大 |
-| 4018 | 415 | 不支持的文件类型 |
-| 5003 | 500 | 存储错误 |
-| 5000 | 500 | 系统错误 |
+| Error Code | HTTP Status | Description      |
+| ---------- | ----------- | ---------------- |
+| 4001       | 400         | 未上传文件       |
+| 4019       | 413         | 文件过大         |
+| 4018       | 415         | 不支持的文件类型 |
+| 5003       | 500         | 存储错误         |
+| 5000       | 500         | 系统错误         |
 
 **File Size Limit:** 取决于配置，默认值需参考后端 config
 
@@ -106,10 +106,10 @@ Authorization: Bearer <jwt_token>
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| page | number | 1 | 页码 |
-| limit | number | 20 | 每页记录数 |
+| Parameter | Type   | Default | Description |
+| --------- | ------ | ------- | ----------- |
+| page      | number | 1       | 页码        |
+| limit     | number | 20      | 每页记录数  |
 
 **Example Request:**
 
@@ -157,9 +157,9 @@ curl -X GET "http://localhost:3000/api/v1/attachments?page=1&limit=20" \
 **Error Responses:**
 
 | HTTP Status | Description |
-|------------|-------------|
-| 401 | 未授权 |
-| 500 | 数据库错误 |
+| ----------- | ----------- |
+| 401         | 未授权      |
+| 500         | 数据库错误  |
 
 ---
 
@@ -181,8 +181,8 @@ Authorization: Bearer <jwt_token>
 
 **Path Parameters:**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
+| Parameter    | Type   | Description                                                         |
+| ------------ | ------ | ------------------------------------------------------------------- |
 | attachmentId | string | 文件 ID（可以是 `attachmentId` 或 `attachments/attachmentId` 格式） |
 
 **Example Request:**
@@ -223,10 +223,10 @@ curl -X GET http://localhost:3000/api/v1/attachments/attachments/file_123456 \
 **Error Responses:**
 
 | HTTP Status | Description |
-|------------|-------------|
-| 401 | 未授权 |
-| 404 | 文件不存在 |
-| 500 | 数据库错误 |
+| ----------- | ----------- |
+| 401         | 未授权      |
+| 404         | 文件不存在  |
+| 500         | 数据库错误  |
 
 ---
 
@@ -248,8 +248,8 @@ Authorization: Bearer <jwt_token>
 
 **Path Parameters:**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
+| Parameter    | Type   | Description                                                         |
+| ------------ | ------ | ------------------------------------------------------------------- |
 | attachmentId | string | 文件 ID（可以是 `attachmentId` 或 `attachments/attachmentId` 格式） |
 
 **Example Request:**
@@ -276,10 +276,10 @@ curl -X DELETE http://localhost:3000/api/v1/attachments/file_123456 \
 **Error Responses:**
 
 | HTTP Status | Description |
-|------------|-------------|
-| 401 | 未授权 |
-| 404 | 文件不存在 |
-| 500 | 数据库错误 |
+| ----------- | ----------- |
+| 401         | 未授权      |
+| 404         | 文件不存在  |
+| 500         | 数据库错误  |
 
 ---
 
@@ -299,9 +299,9 @@ curl -X DELETE http://localhost:3000/api/v1/attachments/file_123456 \
 
 **Path Parameters:**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| filename | string | 文件名 |
+| Parameter | Type   | Description |
+| --------- | ------ | ----------- |
+| filename  | string | 文件名      |
 
 **Example Request:**
 
@@ -325,9 +325,9 @@ Cache-Control: public, max-age=31536000
 
 **Error Responses:**
 
-| HTTP Status | Description |
-|------------|-------------|
-| 404 | 文件不存在或存储类型不是 local |
+| HTTP Status | Description                    |
+| ----------- | ------------------------------ |
+| 404         | 文件不存在或存储类型不是 local |
 
 ---
 
@@ -360,15 +360,14 @@ Cookie: aimo_token=<jwt_token>
 
 ## Error Codes Reference
 
-| Code | HTTP Status | Meaning |
-|------|-------------|---------|
-| 4001 | 400 | PARAMS_ERROR - 参数错误 |
-| 4009 | 404 | ATTACHMENT_NOT_FOUND - 文件不存在 |
-| 4010 | 401 | UNAUTHORIZED - 未授权 |
-| 4018 | 415 | UNSUPPORTED_FILE_TYPE - 不支持的文件类型 |
-| 4019 | 413 | FILE_TOO_LARGE - 文件过大 |
-| 5000 | 500 | SYSTEM_ERROR - 系统错误 |
-| 5001 | 500 | DB_ERROR - 数据库错误 |
-| 5002 | 500 | FILE_UPLOAD_ERROR - 文件上传错误 |
-| 5003 | 500 | STORAGE_ERROR - 存储错误 |
-
+| Code | HTTP Status | Meaning                                  |
+| ---- | ----------- | ---------------------------------------- |
+| 4001 | 400         | PARAMS_ERROR - 参数错误                  |
+| 4009 | 404         | ATTACHMENT_NOT_FOUND - 文件不存在        |
+| 4010 | 401         | UNAUTHORIZED - 未授权                    |
+| 4018 | 415         | UNSUPPORTED_FILE_TYPE - 不支持的文件类型 |
+| 4019 | 413         | FILE_TOO_LARGE - 文件过大                |
+| 5000 | 500         | SYSTEM_ERROR - 系统错误                  |
+| 5001 | 500         | DB_ERROR - 数据库错误                    |
+| 5002 | 500         | FILE_UPLOAD_ERROR - 文件上传错误         |
+| 5003 | 500         | STORAGE_ERROR - 存储错误                 |

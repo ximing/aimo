@@ -66,8 +66,9 @@ export const MemoList = view(() => {
 
   // Check if results are from vector search (have relevanceScore field)
   // Vector search results should preserve relevance ordering, not group by date
-  const isVectorSearch = memoService.memos.length > 0 && 
-    'relevanceScore' in (memoService.memos[0] as any);
+  const isVectorSearch =
+    memoService.memos.length > 0 &&
+    'relevanceScore' in (memoService.memos[0] as MemoListItemWithScoreDto);
 
   return (
     <InfiniteScroll
@@ -121,7 +122,9 @@ export const MemoList = view(() => {
                   <div key={dateStr}>
                     {/* Date Header */}
                     <div className="mb-4 px-1">
-                      <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{dateStr}</h3>
+                      <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                        {dateStr}
+                      </h3>
                     </div>
 
                     {/* Memos for this date */}

@@ -80,56 +80,66 @@ const groupAttachmentsByDate = (attachments: AttachmentDto[]): TimelineGroup[] =
 
 interface GalleryTimelineProps {
   onSelectAttachment: (attachment: AttachmentDto) => void;
-  renderAttachment: (attachment: AttachmentDto, onSelect: (att: AttachmentDto) => void) => React.ReactNode;
+  renderAttachment: (
+    attachment: AttachmentDto,
+    onSelect: (att: AttachmentDto) => void
+  ) => React.ReactNode;
 }
 
-export const GalleryTimeline = view(({ onSelectAttachment, renderAttachment }: GalleryTimelineProps) => {
-  const attachmentService = useService(AttachmentService);
-  const filteredItems = attachmentService.filteredItems;
-  const timelineGroups = groupAttachmentsByDate(filteredItems);
+export const GalleryTimeline = view(
+  ({ onSelectAttachment, renderAttachment }: GalleryTimelineProps) => {
+    const attachmentService = useService(AttachmentService);
+    const filteredItems = attachmentService.filteredItems;
+    const timelineGroups = groupAttachmentsByDate(filteredItems);
 
-  if (filteredItems.length === 0) {
+    if (filteredItems.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="text-4xl mb-4">📭</div>
+          <p className="text-gray-600 dark:text-gray-400 text-sm">
+            {attachmentService.items.length === 0 ? '还没有附件' : '没有找到匹配的文件'}
+          </p>
+        </div>
+      );
+    }
+
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <div className="text-4xl mb-4">📭</div>
-        <p className="text-gray-600 dark:text-gray-400 text-sm">
-          {attachmentService.items.length === 0 ? '还没有附件' : '没有找到匹配的文件'}
-        </p>
+      <div className="w-full">
+        {timelineGroups.map((group) => (
+          <div key={group.date} className="mb-12">
+            {/* Timeline Marker */}
+            <div className="flex items-center gap-4 mb-6">
+              <div className="flex items-center gap-3 flex-1">
+                {/* Timeline Line */}
+                <div className="h-0.5 flex-1 bg-gradient-to-r from-primary-200 to-transparent dark:from-primary-800 dark:to-transparent" />
+
+                {/* Timeline Badge */}
+                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 whitespace-nowrap">
+                  <span className="w-2 h-2 rounded-full bg-primary-500 animate-pulse" />
+                  <span className="font-medium text-sm text-primary-700 dark:text-primary-300">
+                    {group.label}
+                  </span>
+                </div>
+
+                {/* Trailing Line */}
+                <div className="h-0.5 flex-1 bg-gradient-to-l from-primary-200 to-transparent dark:from-primary-800 dark:to-transparent" />
+              </div>
+            </div>
+
+            {/* Waterfall Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {group.attachments.map((attachment) => (
+                <div
+                  key={attachment.attachmentId}
+                  className="transition-all duration-300 hover:shadow-lg w-full"
+                >
+                  {renderAttachment(attachment, onSelectAttachment)}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
-
-  return (
-    <div className="w-full">
-      {timelineGroups.map((group) => (
-        <div key={group.date} className="mb-12">
-          {/* Timeline Marker */}
-          <div className="flex items-center gap-4 mb-6">
-            <div className="flex items-center gap-3 flex-1">
-              {/* Timeline Line */}
-              <div className="h-0.5 flex-1 bg-gradient-to-r from-primary-200 to-transparent dark:from-primary-800 dark:to-transparent" />
-              
-              {/* Timeline Badge */}
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 whitespace-nowrap">
-                <span className="w-2 h-2 rounded-full bg-primary-500 animate-pulse" />
-                <span className="font-medium text-sm text-primary-700 dark:text-primary-300">{group.label}</span>
-              </div>
-
-              {/* Trailing Line */}
-              <div className="h-0.5 flex-1 bg-gradient-to-l from-primary-200 to-transparent dark:from-primary-800 dark:to-transparent" />
-            </div>
-          </div>
-
-          {/* Waterfall Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {group.attachments.map((attachment) => (
-              <div key={attachment.attachmentId} className="transition-all duration-300 hover:shadow-lg w-full">
-                {renderAttachment(attachment, onSelectAttachment)}
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-});
+);

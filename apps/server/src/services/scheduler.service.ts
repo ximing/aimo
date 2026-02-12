@@ -60,7 +60,9 @@ export class SchedulerService {
     );
 
     this.tasks.push(task);
-    console.log(`Database optimization task scheduled: ${cronExpression} (${config.locale.timezone})`);
+    console.log(
+      `Database optimization task scheduled: ${cronExpression} (${config.locale.timezone})`
+    );
   }
 
   /**

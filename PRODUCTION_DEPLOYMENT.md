@@ -27,7 +27,7 @@ AIMO 应用采用整体化的构建和部署策略：
 ✅ 自动化 CI/CD 流程（GitHub Actions）  
 ✅ 代码分割和优化（Vite 配置）  
 ✅ 生产级别的静态资源缓存策略  
-✅ 健康检查支持  
+✅ 健康检查支持
 
 ## 前置要求
 
@@ -74,6 +74,7 @@ pnpm build
 ```
 
 这将：
+
 - 构建 `@aimo/dto` 包
 - 构建 `@aimo/web`（输出到 `apps/server/public/`）
 - 构建 `@aimo/server`（TypeScript → JavaScript）
@@ -96,6 +97,7 @@ test -f apps/server/public/index.html && echo "✅ Web built" || echo "❌ Web b
 Dockerfile 采用多阶段构建以优化最终镜像大小：
 
 **构建阶段（Builder）**
+
 ```
 - 安装 pnpm
 - 复制 package.json 和 pnpm-lock.yaml
@@ -106,6 +108,7 @@ Dockerfile 采用多阶段构建以优化最终镜像大小：
 ```
 
 **运行阶段（Production）**
+
 ```
 - 只安装生产依赖
 - 复制构建产物
@@ -153,6 +156,7 @@ OPENAI_API_KEY=your-production-api-key
 ```
 
 生产环境建议：
+
 - 使用强加密的 JWT_SECRET（至少 32 个字符）
 - 使用专用的生产 OpenAI 密钥
 - 不要在代码中提交实际的密钥
@@ -210,18 +214,21 @@ make docker-compose-logs
 项目已配置 GitHub Actions 工作流，支持：
 
 **CI 工作流** (`.github/workflows/ci.yml`)
+
 - 在每个 push 和 pull request 时运行
 - 执行 lint 检查
 - 构建 Web 和 Server
 - 测试 Docker 镜像构建
 
 **Docker 发布工作流** (`.github/workflows/docker-publish.yml`)
+
 - 在 push 到 `main`、`master`、`develop` 分支时自动构建和推送
 - 在创建版本标签时自动构建和推送（如 `v1.0.0`）
 - 自动标记镜像（latest、版本号、commit SHA 等）
 - 推送到 GitHub Container Registry (ghcr.io)
 
 **部署工作流** (`.github/workflows/deploy.yml`)
+
 - 在创建版本标签时触发
 - 构建并推送镜像到 GHCR
 - 提供部署指导
@@ -272,37 +279,37 @@ spec:
         app: aimo
     spec:
       containers:
-      - name: aimo
-        image: ghcr.io/your-org/aimo:latest
-        ports:
-        - containerPort: 3000
-        env:
-        - name: NODE_ENV
-          value: "production"
-        - name: PORT
-          value: "3000"
-        - name: JWT_SECRET
-          valueFrom:
-            secretKeyRef:
-              name: aimo-secrets
-              key: jwt-secret
-        - name: OPENAI_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: aimo-secrets
-              key: openai-api-key
-        livenessProbe:
-          httpGet:
-            path: /
-            port: 3000
-          initialDelaySeconds: 5
-          periodSeconds: 30
-        readinessProbe:
-          httpGet:
-            path: /
-            port: 3000
-          initialDelaySeconds: 5
-          periodSeconds: 10
+        - name: aimo
+          image: ghcr.io/your-org/aimo:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NODE_ENV
+              value: 'production'
+            - name: PORT
+              value: '3000'
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: aimo-secrets
+                  key: jwt-secret
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: aimo-secrets
+                  key: openai-api-key
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
 ```
 
 ## 验证部署
@@ -350,6 +357,7 @@ docker stats --no-stream aimo-app
 **症状**：`docker build` 命令失败
 
 **解决方案**：
+
 ```bash
 # 查看详细错误
 docker build -t aimo:latest . --progress=plain
@@ -367,6 +375,7 @@ ls -la apps/web/package.json
 **症状**：容器立即退出
 
 **解决方案**：
+
 ```bash
 # 查看容器日志
 docker logs aimo-app
@@ -383,6 +392,7 @@ cat .env
 **症状**：访问 `http://localhost:3000` 返回 404
 
 **解决方案**：
+
 ```bash
 # 检查静态文件是否正确复制
 docker exec aimo-app ls -la apps/server/public/
@@ -399,6 +409,7 @@ docker exec aimo-app find apps/server/public -type f | head -20
 **症状**：API 调用返回 500 错误
 
 **解决方案**：
+
 ```bash
 # 查看详细的服务器日志
 docker logs -f aimo-app
@@ -415,6 +426,7 @@ curl -v http://localhost:3000/api/v1/memos
 **症状**：容器内存占用很高
 
 **解决方案**：
+
 ```bash
 # 检查内存使用情况
 docker stats aimo-app
@@ -437,6 +449,7 @@ docker run -m 2g aimo:latest
 ### 1. 版本管理
 
 使用 Git 标签创建版本：
+
 ```bash
 git tag -a v1.0.0 -m "Release version 1.0.0"
 git push origin v1.0.0
@@ -468,6 +481,7 @@ docker run --rm -v aimo-data:/data -v $(pwd):/backup \
 ### 4. 监控和告警
 
 建议使用以下工具进行监控：
+
 - **Prometheus** + **Grafana**：性能监控
 - **ELK Stack**：日志聚合
 - **Sentry**：错误追踪
@@ -480,7 +494,7 @@ docker run --rm -v aimo-data:/data -v $(pwd):/backup \
 ✅ 定期更新依赖包  
 ✅ 使用网络隔离（防火墙规则）  
 ✅ 实施速率限制  
-✅ 启用安全头部（已在服务器配置）  
+✅ 启用安全头部（已在服务器配置）
 
 ## 常用命令速查表
 
@@ -509,6 +523,7 @@ make clean              # 清理构建产物
 ## 获取帮助
 
 如需更多帮助，请查看：
+
 - 项目 README.md
 - API 文档：`docs/api.md`
 - 服务器配置：`apps/server/src/config/`
@@ -517,6 +532,7 @@ make clean              # 清理构建产物
 ## 更新日志
 
 ### v1.0.0
+
 - ✅ 完整的 Docker 化部署
 - ✅ GitHub Actions CI/CD 工作流
 - ✅ 生产环境优化配置
