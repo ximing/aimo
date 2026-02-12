@@ -236,6 +236,12 @@ export class MemoService extends Service {
       if (response.code === 0 && response.data) {
         this.memos = response.data.items;
         this.total = response.data.count;
+        
+        // Set pagination info for vector search results
+        // Vector search returns all results at once, so we treat it as page 1 with 1 total page
+        this.page = 1;
+        this.totalPages = 1;
+        this.hasMore = false;
 
         return { success: true, items: response.data.items };
       } else {
