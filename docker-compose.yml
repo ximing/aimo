@@ -2,18 +2,105 @@ version: '3.8'
 
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: aimo:latest
+    # 使用预构建的镜像 (推荐生产环境使用 stable 标签)
+    image: ghcr.io/ximing/aimo:stable
+    # 其他可用标签:
+    # - ghcr.io/ximing/aimo:latest  (最新提交，可能不稳定)
+    # - ghcr.io/ximing/aimo:stable  (master 分支稳定版本)
+    # - ghcr.io/ximing/aimo:v1.0.0  (特定版本)
+    # 如果需要从源码构建，请注释上面一行，取消下面的注释
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+    # image: aimo:latest
     container_name: aimo-app
     ports:
       - '3000:3000'
+    volumes:
+      # 数据库文件映射到外部磁盘
+      - ./data/lancedb:/app/lancedb_data
+      # 附件文件映射到外部磁盘
+      - ./data/attachments:/app/attachments
+      # 备份文件映射到外部磁盘
+      - ./data/backups:/app/backups
     environment:
+      # ===== 基础配置 =====
       - NODE_ENV=production
       - PORT=3000
+      
+      # ===== CORS 配置 =====
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:3000}
+      - CORS_CREDENTIALS=${CORS_CREDENTIALS:-true}
+      
+      # ===== JWT 配置 =====
+      - JWT_SECRET=${JWT_SECRET:-your-secret-key-change-in-production}
+      
+      # ===== LanceDB 配置 =====
+      - LANCEDB_STORAGE_TYPE=${LANCEDB_STORAGE_TYPE:-local}
+      - LANCEDB_PATH=${LANCEDB_PATH:-./lancedb_data}
+      - LANCEDB_VERSION_RETENTION_DAYS=${LANCEDB_VERSION_RETENTION_DAYS:-7}
+      # LanceDB S3 配置 (当 LANCEDB_STORAGE_TYPE=s3 时使用)
+      # - LANCEDB_S3_BUCKET=${LANCEDB_S3_BUCKET}
+      # - LANCEDB_S3_PREFIX=${LANCEDB_S3_PREFIX:-lancedb}
+      # - LANCEDB_S3_ENDPOINT=${LANCEDB_S3_ENDPOINT}
+      
+      # ===== 备份配置 =====
+      - BACKUP_ENABLED=${BACKUP_ENABLED:-false}
+      - BACKUP_STORAGE_TYPE=${BACKUP_STORAGE_TYPE:-local}
+      - BACKUP_THROTTLE_INTERVAL_MS=${BACKUP_THROTTLE_INTERVAL_MS:-3600000}
+      - BACKUP_MAX_COUNT=${BACKUP_MAX_COUNT:-10}
+      - BACKUP_MAX_DAYS=${BACKUP_MAX_DAYS:-30}
+      - BACKUP_LOCAL_PATH=${BACKUP_LOCAL_PATH:-./backups}
+      # 备份 S3 配置 (当 BACKUP_STORAGE_TYPE=s3 时使用)
+      # - BACKUP_S3_BUCKET=${BACKUP_S3_BUCKET}
+      # - BACKUP_S3_PREFIX=${BACKUP_S3_PREFIX:-backups}
+      # - BACKUP_S3_ENDPOINT=${BACKUP_S3_ENDPOINT}
+      # - BACKUP_AWS_ACCESS_KEY_ID=${BACKUP_AWS_ACCESS_KEY_ID}
+      # - BACKUP_AWS_SECRET_ACCESS_KEY=${BACKUP_AWS_SECRET_ACCESS_KEY}
+      # - BACKUP_AWS_REGION=${BACKUP_AWS_REGION:-us-east-1}
+      
+      # ===== 附件存储配置 =====
+      - ATTACHMENT_STORAGE_TYPE=${ATTACHMENT_STORAGE_TYPE:-local}
+      - ATTACHMENT_LOCAL_PATH=${ATTACHMENT_LOCAL_PATH:-./attachments}
+      - ATTACHMENT_MAX_FILE_SIZE=${ATTACHMENT_MAX_FILE_SIZE:-52428800}
+      - ATTACHMENT_PRESIGNED_URL_EXPIRY=${ATTACHMENT_PRESIGNED_URL_EXPIRY:-3600}
+      # 附件允许的 MIME 类型 (逗号分隔)
+      # - ATTACHMENT_ALLOWED_MIME_TYPES=${ATTACHMENT_ALLOWED_MIME_TYPES}
+      # 附件 S3 配置 (当 ATTACHMENT_STORAGE_TYPE=s3 时使用)
+      # - ATTACHMENT_S3_BUCKET=${ATTACHMENT_S3_BUCKET}
+      # - ATTACHMENT_S3_PREFIX=${ATTACHMENT_S3_PREFIX:-attachments}
+      # - ATTACHMENT_S3_ENDPOINT=${ATTACHMENT_S3_ENDPOINT}
+      # - ATTACHMENT_S3_IS_PUBLIC=${ATTACHMENT_S3_IS_PUBLIC:-false}
+      # - ATTACHMENT_AWS_ACCESS_KEY_ID=${ATTACHMENT_AWS_ACCESS_KEY_ID}
+      # - ATTACHMENT_AWS_SECRET_ACCESS_KEY=${ATTACHMENT_AWS_SECRET_ACCESS_KEY}
+      # - ATTACHMENT_AWS_REGION=${ATTACHMENT_AWS_REGION:-us-east-1}
+      
+      # ===== AWS 全局凭证配置 (所有 S3 服务共用) =====
+      # - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      # - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      # - AWS_REGION=${AWS_REGION:-us-east-1}
+      
+      # ===== OpenAI 配置 (文本 Embedding) =====
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - JWT_SECRET=${JWT_SECRET:-your-secret-key}
+      - OPENAI_MODEL=${OPENAI_MODEL:-text-embedding-3-small}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      - OPENAI_EMBEDDING_DIMENSIONS=${OPENAI_EMBEDDING_DIMENSIONS:-1536}
+      
+      # ===== 多模态 Embedding 配置 (图片/视频) =====
+      - MULTIMODAL_EMBEDDING_ENABLED=${MULTIMODAL_EMBEDDING_ENABLED:-false}
+      # - MULTIMODAL_EMBEDDING_MODEL=${MULTIMODAL_EMBEDDING_MODEL:-qwen3-vl-embedding}
+      # - DASHSCOPE_API_KEY=${DASHSCOPE_API_KEY}
+      # - DASHSCOPE_BASE_URL=${DASHSCOPE_BASE_URL:-https://dashscope.aliyuncs.com/api/v1}
+      # - MULTIMODAL_EMBEDDING_DIMENSION=${MULTIMODAL_EMBEDDING_DIMENSION:-1024}
+      # - MULTIMODAL_EMBEDDING_OUTPUT_TYPE=${MULTIMODAL_EMBEDDING_OUTPUT_TYPE:-dense}
+      # - MULTIMODAL_EMBEDDING_VIDEO_FPS=${MULTIMODAL_EMBEDDING_VIDEO_FPS:-0.5}
+      
+      # ===== 定时任务配置 =====
+      - DB_OPTIMIZATION_CRON=${DB_OPTIMIZATION_CRON:-0 2 * * *}
+      
+      # ===== 本地化配置 =====
+      - LOCALE_LANGUAGE=${LOCALE_LANGUAGE:-zh-cn}
+      - LOCALE_TIMEZONE=${LOCALE_TIMEZONE:-Asia/Shanghai}
     restart: unless-stopped
     healthcheck:
       test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3000', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
