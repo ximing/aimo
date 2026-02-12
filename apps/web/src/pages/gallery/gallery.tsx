@@ -32,7 +32,7 @@ export const GalleryPage = view(() => {
   return (
     <Layout>
       <div className="flex-1 overflow-hidden flex justify-center w-full">
-        <div className="w-full max-w-2xl h-full flex flex-col">
+        <div className="w-full max-w-7xl h-full flex flex-col">
           {/* Header - Fixed */}
           <header className="flex-shrink-0 sticky top-0 z-30 px-8 pt-4 pb-4 bg-white/80 dark:bg-dark-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-dark-700">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-4">

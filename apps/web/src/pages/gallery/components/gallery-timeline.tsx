@@ -121,9 +121,9 @@ export const GalleryTimeline = view(({ onSelectAttachment, renderAttachment }: G
           </div>
 
           {/* Waterfall Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 auto-rows-max">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {group.attachments.map((attachment) => (
-              <div key={attachment.attachmentId} className="transition-all duration-300 hover:shadow-lg">
+              <div key={attachment.attachmentId} className="transition-all duration-300 hover:shadow-lg w-full">
                 {renderAttachment(attachment, onSelectAttachment)}
               </div>
             ))}
