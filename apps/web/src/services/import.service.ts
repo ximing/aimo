@@ -194,7 +194,10 @@ export class ImportService extends Service {
           continue;
         }
 
-        const uploadedAttachment = await attachmentApi.upload(file);
+        // Parse attachment created_at to timestamp in milliseconds
+        const attachmentCreatedAtMs = new Date(attachment.created_at).getTime();
+
+        const uploadedAttachment = await attachmentApi.upload(file, attachmentCreatedAtMs);
         attachmentIds.push(uploadedAttachment.attachmentId);
       } catch (error) {
         console.warn(

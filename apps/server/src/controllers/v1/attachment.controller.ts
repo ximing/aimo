@@ -83,6 +83,16 @@ export class AttachmentV1Controller {
           }
 
           try {
+            // Parse optional createdAt parameter from FormData (for imports)
+            let createdAt: number | undefined;
+            const createdAtStr = (req as any).body?.createdAt;
+            if (createdAtStr) {
+              const parsed = parseInt(createdAtStr as string, 10);
+              if (!isNaN(parsed) && parsed > 0) {
+                createdAt = parsed;
+              }
+            }
+
             // Create attachment
             const attachment = await this.attachmentService.createAttachment({
               uid: user.uid,
@@ -90,6 +100,7 @@ export class AttachmentV1Controller {
               filename: file.originalname,
               mimeType: file.mimetype,
               size: file.size,
+              createdAt,
             });
 
             return resolve(

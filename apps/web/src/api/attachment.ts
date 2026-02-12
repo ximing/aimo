@@ -24,10 +24,15 @@ export interface GetAttachmentsResponse {
 export const attachmentApi = {
   /**
    * 上传附件
+   * @param file - 文件对象
+   * @param createdAt - 可选的创建时间戳 (毫秒)，用于导入时保持原始时间
    */
-  async upload(file: File): Promise<AttachmentDto> {
+  async upload(file: File, createdAt?: number): Promise<AttachmentDto> {
     const formData = new FormData();
     formData.append('file', file);
+    if (createdAt) {
+      formData.append('createdAt', createdAt.toString());
+    }
 
     const response = await axios.post<ApiResponse<UploadAttachmentResponseDto>>(
       `${API_BASE}/upload`,

@@ -16,6 +16,7 @@ export interface CreateAttachmentOptions {
   filename: string;
   mimeType: string;
   size: number;
+  createdAt?: number; // Optional timestamp in milliseconds (for imports)
 }
 
 export interface GetAttachmentsOptions {
@@ -35,9 +36,10 @@ export class AttachmentService {
   /**
    * Create a new attachment
    * For images and videos, generate multimodal embedding asynchronously if enabled
+   * @param options - Options for creating the attachment, including optional createdAt for imports
    */
   async createAttachment(options: CreateAttachmentOptions): Promise<AttachmentDto> {
-    const { uid, buffer, filename, mimeType, size } = options;
+    const { uid, buffer, filename, mimeType, size, createdAt } = options;
 
     // Save file to storage
     const { attachmentId, url, storageType } = await this.storageService.saveFile({
@@ -46,8 +48,8 @@ export class AttachmentService {
       mimeType,
     });
 
-    // Prepare record - use timestamp in milliseconds
-    const now = Date.now();
+    // Prepare record - use provided createdAt or current timestamp
+    const attachmentCreatedAt = createdAt || Date.now();
     const record: AttachmentRecord = {
       attachmentId,
       uid,
@@ -56,7 +58,7 @@ export class AttachmentService {
       type: mimeType,
       size,
       storageType,
-      createdAt: now,
+      createdAt: attachmentCreatedAt,
     };
 
     // Save to database
@@ -91,7 +93,7 @@ export class AttachmentService {
       url: accessUrl,
       type: mimeType,
       size,
-      createdAt: now,
+      createdAt: attachmentCreatedAt,
     };
   }
 
