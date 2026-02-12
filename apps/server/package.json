@@ -38,6 +38,7 @@
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
+    "multer": "^2.0.2",
     "nanoid": "^5.1.5",
     "node-cron": "^4.2.1",
     "p-memoize": "^4.0.0",
