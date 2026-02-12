@@ -226,6 +226,69 @@ export class AttachmentStorageService {
   }
 
   /**
+   * Get file from S3-compatible storage
+   */
+  async getS3File(url: string): Promise<Buffer> {
+    if (!this.s3Client || !config.attachment.s3) {
+      throw new Error('S3 client is not initialized');
+    }
+
+    const s3Config = config.attachment.s3;
+    
+    // Extract key from URL - handle different URL formats
+    let key: string;
+    
+    if (url.includes(s3Config.bucket)) {
+      // Parse key from URL
+      // Format 1: https://bucket.endpoint/prefix/filename (virtual-hosted)
+      // Format 2: https://endpoint/bucket/prefix/filename (path-style)
+      const bucketIndex = url.indexOf(s3Config.bucket);
+      const afterBucket = url.substring(bucketIndex + s3Config.bucket.length);
+      
+      // Remove leading '/' and extract the rest as key
+      key = afterBucket.replace(/^\/+/, '').split('?')[0];
+    } else {
+      // Assume it's already a key
+      key = url;
+    }
+
+    const command = new GetObjectCommand({
+      Bucket: s3Config.bucket,
+      Key: key,
+    });
+
+    const response = await this.s3Client.send(command);
+
+    if (!response.Body) {
+      throw new Error('Empty response body from S3');
+    }
+
+    // Convert readable stream to buffer
+    const chunks: Uint8Array[] = [];
+    for await (const chunk of response.Body as AsyncIterable<Uint8Array>) {
+      chunks.push(chunk);
+    }
+
+    return Buffer.concat(chunks);
+  }
+
+  /**
+   * Get file buffer from storage (local or S3)
+   */
+  async getFile(url: string, storageType: 'local' | 's3'): Promise<Buffer> {
+    if (storageType === 's3') {
+      return await this.getS3File(url);
+    } else {
+      // Extract filename from URL (format: attachments/filename)
+      const filename = url.split('/').pop();
+      if (!filename) {
+        throw new Error('Invalid file URL');
+      }
+      return await this.getLocalFile(filename);
+    }
+  }
+
+  /**
    * Generate presigned URL for S3-compatible file access
    * For public buckets, returns the direct URL without signing
    * For private buckets, generates a presigned URL with expiration

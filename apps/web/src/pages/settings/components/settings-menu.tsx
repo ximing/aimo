@@ -1,4 +1,4 @@
-import { User, Import } from 'lucide-react';
+import { User, Import, Download } from 'lucide-react';
 import type { SettingsTab } from '../settings';
 
 interface SettingsMenuProps {
@@ -17,6 +17,11 @@ export const SettingsMenu = ({ activeTab, onTabChange }: SettingsMenuProps) => {
       id: 'import',
       label: '数据导入',
       icon: <Import className="w-5 h-5" />,
+    },
+    {
+      id: 'export',
+      label: '数据导出',
+      icon: <Download className="w-5 h-5" />,
     },
   ];
 

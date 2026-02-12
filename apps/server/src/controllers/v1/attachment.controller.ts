@@ -206,6 +206,45 @@ export class AttachmentV1Controller {
       return ResponseUtil.error(ErrorCode.DB_ERROR);
     }
   }
+
+  /**
+   * Download attachment (secure proxy for export)
+   * GET /api/v1/attachments/:attachmentId/download
+   */
+  @Get('/:attachmentId/download')
+  async downloadAttachment(
+    @Param('attachmentId') attachmentId: string,
+    @CurrentUser() user: UserInfoDto,
+    @Res() response: Response
+  ) {
+    try {
+      if (!user?.uid) {
+        return response.status(401).json(ResponseUtil.error(ErrorCode.UNAUTHORIZED));
+      }
+
+      // attachmentId format: "attachments/xxxxx" or just the ID
+      const fullId = attachmentId.includes('attachments/') ? attachmentId : `attachments/${attachmentId}`;
+
+      // Get attachment buffer with permission check
+      const result = await this.attachmentService.getAttachmentBuffer(fullId, user.uid);
+      
+      if (!result) {
+        return response.status(404).json(ResponseUtil.error(ErrorCode.ATTACHMENT_NOT_FOUND));
+      }
+
+      // Set response headers
+      response.setHeader('Content-Type', result.mimeType);
+      response.setHeader('Content-Length', result.buffer.length);
+      response.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(result.filename)}"`);
+      response.setHeader('Cache-Control', 'private, max-age=3600'); // Cache for 1 hour
+
+      // Send file buffer
+      return response.send(result.buffer);
+    } catch (error) {
+      console.error('Download attachment error:', error);
+      return response.status(500).json(ResponseUtil.error(ErrorCode.SYSTEM_ERROR));
+    }
+  }
 }
 
 /**

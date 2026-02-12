@@ -4,8 +4,9 @@ import { Layout } from '../../components/layout';
 import { SettingsMenu } from './components/settings-menu';
 import { AccountSettings } from './components/account-settings';
 import { ImportData } from './components/import-data';
+import { ExportData } from './components/export-data';
 
-export type SettingsTab = 'account' | 'import';
+export type SettingsTab = 'account' | 'import' | 'export';
 
 export const SettingsPage = view(() => {
   const [activeTab, setActiveTab] = useState<SettingsTab>('account');
@@ -22,6 +23,7 @@ export const SettingsPage = view(() => {
             <div className="px-12 py-8">
               {activeTab === 'account' && <AccountSettings />}
               {activeTab === 'import' && <ImportData />}
+              {activeTab === 'export' && <ExportData />}
             </div>
           </div>
         </div>

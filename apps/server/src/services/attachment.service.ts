@@ -284,6 +284,44 @@ export class AttachmentService {
   }
 
   /**
+   * Get attachment file buffer for download (with permission check)
+   */
+  async getAttachmentBuffer(attachmentId: string, uid: string): Promise<{
+    buffer: Buffer;
+    filename: string;
+    mimeType: string;
+  } | null> {
+    // Verify attachment ownership
+    const attachment = await this.getAttachment(attachmentId, uid);
+    if (!attachment) {
+      return null;
+    }
+
+    // Get the record to access storage info
+    const table = await this.lanceDbService.openTable('attachments');
+    const results = await table
+      .query()
+      .where(`attachmentId = '${attachmentId}' AND uid = '${uid}'`)
+      .limit(1)
+      .toArray();
+
+    if (!results || results.length === 0) {
+      return null;
+    }
+
+    const record = results[0] as unknown as AttachmentRecord;
+
+    // Get file buffer from storage
+    const buffer = await this.storageService.getFile(record.url, record.storageType);
+
+    return {
+      buffer,
+      filename: record.filename,
+      mimeType: record.type,
+    };
+  }
+
+  /**
    * Get attachment record by filename (for access control)
    */
   async getAttachmentByFilename(filename: string): Promise<AttachmentRecord | null> {
