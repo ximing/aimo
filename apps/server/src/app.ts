@@ -53,7 +53,20 @@ export async function createApp() {
   const app: any = express();
 
   // 中间件配置
-  app.use(helmet());
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", 'data:', 'https:', 'http:'],
+          fontSrc: ["'self'", 'data:'],
+          connectSrc: ["'self'", 'http:', 'https:'],
+        },
+      },
+    })
+  );
   app.use(cors());
   app.use(cookieParser());
   app.use(morgan('dev'));
