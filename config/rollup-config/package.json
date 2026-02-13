@@ -2,6 +2,7 @@
   "name": "@aimo/rollup-config",
   "version": "0.0.0",
   "private": true,
+  "license": "BSL-1.1",
   "type": "module",
   "main": "index.js",
   "files": [

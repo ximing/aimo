@@ -2,6 +2,7 @@
   "name": "@aimo/web",
   "private": true,
   "version": "0.0.0",
+  "license": "BSL-1.1",
   "type": "module",
   "scripts": {
     "dev": "vite",

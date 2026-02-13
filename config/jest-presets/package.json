@@ -2,7 +2,7 @@
   "name": "@aimo/jest-presets",
   "version": "0.0.0",
   "private": true,
-  "license": "MIT",
+  "license": "BSL-1.1",
   "files": [
     "browser/jest-preset.js",
     "node/jest-preset.js"

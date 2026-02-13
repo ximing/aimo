@@ -2,6 +2,7 @@
   "name": "@aimo/dto",
   "version": "0.0.0",
   "private": true,
+  "license": "BSL-1.1",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",

@@ -1,0 +1,143 @@
+Business Source License 1.1
+
+Parameters:
+- Licensor: AIMO Contributors
+- Licensed Work: AIMO (AI Memo)
+- Change Date: The earlier of (a) the date that is four (4) years from the date the Licensed Work is first distributed under this License, or (b) the date of the first commercial release or deployment
+- Change License: MIT License
+
+For information purposes, the text of the Change License is included below.
+
+---
+
+LICENSE AGREEMENT
+
+This Business Source License (this "Agreement") is entered into as of the date
+this Licensed Work is first made available (the "Effective Date") by and between
+the Licensor and any person or entity exercising permissions granted by this
+Agreement (each an "Licensee").
+
+1. DEFINITIONS
+
+"Licensor" means the entity or person who offers the Licensed Work under the
+terms and conditions of this Agreement.
+
+"Licensed Work" means the software or work, including any updates or patches,
+made available under this Agreement.
+
+"Change Date" means the first date upon which the Licensed Work is made
+available under the Change License as stated in the Parameters above.
+
+"Change License" means the license identified in the Parameters above.
+
+2. GRANT OF RIGHTS
+
+Subject to the terms and conditions of this Agreement, the Licensor hereby
+grants you a non-exclusive, non-transferable license to use the Licensed Work
+for:
+
+a) Non-Commercial Use: Personal use, development, testing, and other purposes
+   that are not undertaken for the purpose of generating revenue or any
+   commercial advantage.
+
+b) Commercial Evaluation: A limited right to evaluate the Licensed Work in
+   a production-like environment for the purpose of assessing whether to
+   engage with the Licensor regarding a Commercial License Agreement.
+
+3. COMMERCIAL USE RESTRICTION
+
+You may NOT use the Licensed Work for any Commercial Purpose (i.e., to provide
+goods or services that generate revenue), unless you have entered into a
+separate written Commercial License Agreement with the Licensor.
+
+"Commercial Purpose" includes, but is not limited to:
+
+- Offering the Licensed Work as a service to customers (SaaS, hosted services)
+- Using the Licensed Work to build commercial products or services
+- Integrating the Licensed Work into commercial applications
+- Using the Licensed Work in any manner intended to generate revenue
+- Using the Licensed Work for business operations that generate or support revenue
+
+4. RESTRICTIONS
+
+You may not:
+
+a) Sublicense, sell, rent, lease, transfer, assign, or otherwise dispose of
+   the Licensed Work or any copy thereof;
+
+b) Remove or alter any proprietary notice, label, or mark on the Licensed Work;
+
+c) Decompile, disassemble, or reverse engineer the Licensed Work (except as
+   permitted by law);
+
+d) Use the Licensed Work for competitive analysis or to develop competing
+   products or services.
+
+5. CHANGE OF LICENSE
+
+Effective upon the earlier of (a) the Change Date or (b) the date of the
+first commercial release, the Licensed Work shall be made available under the
+Change License. Upon and after such date, you may use the Licensed Work under
+the terms of the Change License (for the foregoing, it is sufficient that you
+comply with the terms of the Change License).
+
+6. COMMERCIAL LICENSE
+
+To use the Licensed Work for Commercial Purposes, you must obtain a Commercial
+License Agreement from the Licensor. Please contact the Licensor at
+support@example.com or visit the GitHub repository for licensing inquiries.
+
+Commercial licenses typically include:
+- Commercial use rights
+- Priority support
+- Custom terms and conditions
+- Service level agreements (if applicable)
+
+7. NO WARRANTY
+
+The Licensed Work is provided "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+
+8. LIMITATION OF LIABILITY
+
+In no event shall the Licensor be liable for any damages (including, without
+limitation, lost profits, business interruption, or lost information) arising
+out of the use or inability to use the Licensed Work, even if the Licensor has
+been advised of the possibility of such damages.
+
+9. TERMINATION
+
+Your rights under this Agreement will terminate automatically and without
+notice if you fail to comply with any of its terms. Upon termination, you must
+cease all use of the Licensed Work and destroy all copies in your possession.
+
+10. GOVERNING LAW
+
+This Agreement shall be governed by and construed in accordance with the laws
+of the jurisdiction in which the Licensor is located, without regard to its
+conflict of law provisions.
+
+11. ENTIRE AGREEMENT
+
+This Agreement, together with any Commercial License Agreement, constitutes
+the entire agreement between the parties concerning the Licensed Work and
+supersedes all prior agreements or understandings, whether written or oral.
+
+---
+
+CHANGE LICENSE (MIT)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.

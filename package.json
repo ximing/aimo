@@ -2,6 +2,7 @@
   "name": "aimo",
   "version": "1.0.0",
   "private": true,
+  "license": "BSL-1.1",
   "scripts": {
     "dev": "pnpm -r dev",
     "dev:web": "pnpm --filter @aimo/web dev",

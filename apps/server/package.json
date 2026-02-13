@@ -2,6 +2,7 @@
   "name": "@aimo/server",
   "version": "0.0.0",
   "private": true,
+  "license": "BSL-1.1",
   "scripts": {
     "dev": "cross-env NODE_ENV=development nodemon --exec node --loader ts-node/esm ./src/index.ts",
     "dev:old": "NODE_ENV=development tsx watch src/index.ts",
