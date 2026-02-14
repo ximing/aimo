@@ -10,7 +10,7 @@ interface MemoCardProps {
 }
 
 // Extract plain text without markdown syntax
-const extractPlainText = (content: string, maxLength = 150): string => {
+const extractPlainText = (content: string): string => {
   // Remove markdown image syntax
   const withoutImages = content.replace(/!\[.*?\]\((.*?)\)/g, '');
   // Remove markdown link syntax but keep the text
@@ -22,7 +22,7 @@ const extractPlainText = (content: string, maxLength = 150): string => {
     .replace(/\*(.*?)\*/g, '$1')
     .replace(/_(.*?)_/g, '$1');
 
-  return plainText.length > maxLength ? plainText.substring(0, maxLength) + '...' : plainText;
+  return plainText;
 };
 
 export const MemoCard = view(({ memo }: MemoCardProps) => {
@@ -31,6 +31,7 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
   const [loading, setLoading] = useState(false);
   const [showRelatedModal, setShowRelatedModal] = useState(false);
   const [selectedRelationMemo, setSelectedRelationMemo] = useState<MemoListItemDto | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const memoService = useService(MemoService);
 
@@ -81,7 +82,10 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
     });
   };
 
-  const plainText = extractPlainText(memo.content, 120);
+  const plainText = extractPlainText(memo.content);
+  const TRUNCATE_LENGTH = 150;
+  const shouldTruncate = plainText.length > TRUNCATE_LENGTH;
+  const displayText = isExpanded ? plainText : plainText.substring(0, TRUNCATE_LENGTH);
 
   // 渲染附件网格
   const renderAttachments = () => {
@@ -173,7 +177,37 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
             {/* Content Section */}
             <div>
               <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
-                {plainText}
+                {displayText}
+                {shouldTruncate && !isExpanded && (
+                  <>
+                    <span>...</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsExpanded(true);
+                      }}
+                      className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 cursor-pointer font-medium ml-1 transition-colors"
+                      aria-label="Expand memo content"
+                    >
+                      展开
+                    </button>
+                  </>
+                )}
+                {isExpanded && shouldTruncate && (
+                  <>
+                    <span> </span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsExpanded(false);
+                      }}
+                      className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 cursor-pointer font-medium transition-colors"
+                      aria-label="Collapse memo content"
+                    >
+                      收起
+                    </button>
+                  </>
+                )}
               </p>
 
               {/* Attachments (九宫格) */}
