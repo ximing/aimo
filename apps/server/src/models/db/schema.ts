@@ -242,3 +242,23 @@ export interface AttachmentRecord {
   multimodalModelHash?: string; // optional model hash for multimodal embedding
   createdAt: number; // timestamp in milliseconds
 }
+
+/**
+ * Table Migrations Metadata schema
+ * Stores version information for each table's schema
+ * Used by migration system to track which versions have been applied
+ */
+export const tableMigrationsSchema = new Schema([
+  new Field('tableName', new Utf8(), false), // non-nullable unique table name
+  new Field('currentVersion', new Int32(), false), // non-nullable current schema version
+  new Field('lastMigratedAt', new Timestamp(TimeUnit.MILLISECOND), false), // non-nullable last migration timestamp in milliseconds
+]);
+
+/**
+ * Type definition for table migration records
+ */
+export interface TableMigrationRecord {
+  tableName: string;
+  currentVersion: number;
+  lastMigratedAt: number; // timestamp in milliseconds
+}
