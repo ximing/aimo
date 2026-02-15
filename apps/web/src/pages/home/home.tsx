@@ -1,5 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { view, useService } from '@rabjs/react';
+import { ArrowUp } from 'lucide-react';
 import { MemoService } from '../../services/memo.service';
 import { MemoEditor } from './components/memo-editor';
 import { MemoList } from './components/memo-list';
@@ -8,11 +9,26 @@ import { Layout } from '../../components/layout';
 
 export const HomePage = view(() => {
   const memoService = useService(MemoService);
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   // Fetch memos on mount (only once)
   useEffect(() => {
     memoService.fetchMemos();
   }, []);
+
+  // Handle scroll event to show/hide the scroll-to-top button
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const scrollDistance = e.currentTarget.scrollTop;
+    setShowScrollTop(scrollDistance > 200);
+  };
+
+  // Scroll to top smoothly
+  const scrollToTop = () => {
+    const container = document.getElementById('memo-list-container');
+    if (container) {
+      container.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   return (
     <Layout>
@@ -35,10 +51,25 @@ export const HomePage = view(() => {
           </div>
 
           {/* Memos List - Scrollable */}
-          <div id="memo-list-container" className="flex-1 overflow-y-auto mt-6 pb-8 min-h-0 px-8">
+          <div
+            id="memo-list-container"
+            className="flex-1 overflow-y-auto mt-6 pb-8 min-h-0 px-8 relative"
+            onScroll={handleScroll}
+          >
             <section aria-label="Your memos">
               <MemoList />
             </section>
+
+            {/* Scroll to Top Button */}
+            {showScrollTop && (
+              <button
+                onClick={scrollToTop}
+                className="fixed bottom-8 right-8 p-3 bg-primary-500 hover:bg-primary-600 dark:bg-primary-600 dark:hover:bg-primary-500 text-white rounded-full shadow-lg transition-all duration-300 hover:scale-110 animate-fade-in"
+                aria-label="Scroll to top"
+              >
+                <ArrowUp size={20} />
+              </button>
+            )}
           </div>
         </div>
       </div>
