@@ -23,6 +23,7 @@
     "@aws-sdk/s3-request-presigner": "^3.987.0",
     "@lancedb/lancedb": "^0.26.2",
     "ai": "^3.4.11",
+    "ali-oss": "^6.23.0",
     "apache-arrow": "18.1.0",
     "archiver": "^6.0.0",
     "bcrypt": "^5.1.1",

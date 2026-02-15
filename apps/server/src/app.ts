@@ -60,9 +60,10 @@ export async function createApp() {
           defaultSrc: ["'self'"],
           scriptSrc: ["'self'", "'unsafe-inline'"],
           styleSrc: ["'self'", "'unsafe-inline'"],
-          imgSrc: ["'self'", 'data:', 'https:', 'http:'],
+          imgSrc: ["'self'", 'data:', 'https:', 'http:', 'blob:'],
           fontSrc: ["'self'", 'data:'],
           connectSrc: ["'self'", 'http:', 'https:'],
+          mediaSrc: ["'self'", 'https:', 'http:', 'blob:'],
         },
       },
     })

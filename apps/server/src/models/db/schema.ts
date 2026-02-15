@@ -46,7 +46,7 @@ export const usersSchema = new Schema([
 /**
  * Memos table schema
  * Stores memo content with embedding vectors for semantic search
- * Attachments are denormalized as a list of objects for performance (immutable after creation)
+ * Attachments are stored as a list of attachment IDs only (URLs are generated at runtime)
  * Embedding dimensions are configured from OPENAI_EMBEDDING_DIMENSIONS environment variable
  */
 export const memosSchema = new Schema([
@@ -56,22 +56,9 @@ export const memosSchema = new Schema([
   new Field('content', new Utf8(), false), // non-nullable memo content
   new Field(
     'attachments',
-    new List(
-      new Field(
-        'item',
-        new Struct([
-          new Field('attachmentId', new Utf8(), false),
-          new Field('filename', new Utf8(), false),
-          new Field('url', new Utf8(), false),
-          new Field('type', new Utf8(), false),
-          new Field('size', new Int32(), false),
-          new Field('createdAt', new Timestamp(TimeUnit.MILLISECOND), false), // timestamp in milliseconds
-        ]),
-        true
-      )
-    ),
+    new List(new Field('item', new Utf8(), true)),
     true
-  ), // nullable list of denormalized attachment objects
+  ), // nullable list of attachment IDs (URLs generated at runtime)
   new Field(
     'embedding',
     new FixedSizeList(getEmbeddingDimensions(), new Field('item', new Float32(), true)),
@@ -97,21 +84,12 @@ export interface UserRecord {
   updatedAt: number; // timestamp in milliseconds
 }
 
-export interface DenormalizedAttachment {
-  attachmentId: string;
-  filename: string;
-  url: string;
-  type: string;
-  size: number;
-  createdAt: number; // timestamp in milliseconds
-}
-
 export interface MemoRecord {
   memoId: string;
   uid: string;
   categoryId?: string; // optional category id (undefined = uncategorized)
   content: string;
-  attachments?: DenormalizedAttachment[]; // denormalized attachment objects array (immutable)
+  attachments?: string[]; // attachment IDs array (URLs generated at runtime)
   embedding: number[];
   createdAt: number; // timestamp in milliseconds
   updatedAt: number; // timestamp in milliseconds
@@ -196,15 +174,22 @@ export const categoriesSchema = new Schema([
  * Attachments table schema
  * Stores file attachments with metadata
  * For images and videos, multimodalEmbedding stores the fusion vector from multimodal embedding service
+ * Storage metadata (bucket, prefix, endpoint, region, isPublicBucket) is stored for URL reconstruction and link generation
+ * URLs are generated dynamically at runtime based on storage type and bucket configuration
  */
 export const attachmentsSchema = new Schema([
   new Field('attachmentId', new Utf8(), false), // non-nullable unique attachment id
   new Field('uid', new Utf8(), false), // non-nullable user id
   new Field('filename', new Utf8(), false), // non-nullable original filename
-  new Field('url', new Utf8(), false), // non-nullable S3 address or local relative path
   new Field('type', new Utf8(), false), // non-nullable MIME type
   new Field('size', new Int32(), false), // non-nullable file size in bytes
-  new Field('storageType', new Utf8(), false), // non-nullable storage type: 'local' | 's3'
+  new Field('storageType', new Utf8(), false), // non-nullable storage type: 'local' | 's3' | 'oss'
+  new Field('path', new Utf8(), false), // non-nullable full storage path: {type}/{uid}/{YYYY-MM-DD}/{nanoid24}.{ext}
+  new Field('bucket', new Utf8(), true), // nullable bucket name (for s3/oss)
+  new Field('prefix', new Utf8(), true), // nullable prefix/folder name (for s3/oss)
+  new Field('endpoint', new Utf8(), true), // nullable endpoint URL (for s3/oss custom endpoints)
+  new Field('region', new Utf8(), true), // nullable region (for s3/oss)
+  new Field('isPublicBucket', new Utf8(), true), // nullable: 'true' | 'false' - whether bucket is public (for URL generation)
   new Field(
     'multimodalEmbedding',
     new FixedSizeList(1024, new Field('item', new Float32(), true)),
@@ -244,10 +229,15 @@ export interface AttachmentRecord {
   attachmentId: string;
   uid: string;
   filename: string;
-  url: string;
-  type: string;
-  size: number;
-  storageType: 'local' | 's3';
+  type: string; // MIME type
+  size: number; // file size in bytes
+  storageType: 'local' | 's3' | 'oss'; // storage type
+  path: string; // full storage path: {type}/{uid}/{YYYY-MM-DD}/{nanoid24}.{ext}
+  bucket?: string; // bucket name (for s3/oss)
+  prefix?: string; // prefix/folder name (for s3/oss)
+  endpoint?: string; // endpoint URL (for s3/oss custom endpoints)
+  region?: string; // region (for s3/oss)
+  isPublicBucket?: string; // 'true' | 'false' - whether bucket is public
   multimodalEmbedding?: number[]; // optional multimodal embedding vector for images and videos
   multimodalModelHash?: string; // optional model hash for multimodal embedding
   createdAt: number; // timestamp in milliseconds

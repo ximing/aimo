@@ -1,11 +1,11 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { BaseStorageAdapter } from './base.adapter.js';
+import { BaseUnifiedStorageAdapter, type StorageMetadata } from './base.adapter.js';
 
 /**
- * Local file system storage adapter for backups
+ * Local file system storage adapter for attachments and backups
  */
-export class LocalStorageAdapter extends BaseStorageAdapter {
+export class LocalUnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
   constructor(private basePath: string) {
     super();
     this.ensureBasePath();
@@ -66,35 +66,27 @@ export class LocalStorageAdapter extends BaseStorageAdapter {
     try {
       const searchPath = prefix ? path.join(this.basePath, prefix) : this.basePath;
 
-      // Check if directory exists
-      try {
-        await fs.access(searchPath);
-      } catch {
+      const stat = await fs.stat(searchPath).catch(() => null);
+      if (!stat || !stat.isDirectory()) {
         return [];
       }
 
       const files: string[] = [];
+      const entries = await fs.readdir(searchPath, { recursive: true });
 
-      const walk = async (dir: string, relative: string = ''): Promise<void> => {
-        const entries = await fs.readdir(dir, { withFileTypes: true });
-
-        for (const entry of entries) {
-          const fullPath = path.join(dir, entry.name);
-          const relativePath = relative ? `${relative}/${entry.name}` : entry.name;
-
-          if (entry.isDirectory()) {
-            await walk(fullPath, relativePath);
-          } else {
-            files.push(relativePath);
-          }
+      for (const entry of entries) {
+        const fullPath = path.join(searchPath, entry as string);
+        const stat = await fs.stat(fullPath);
+        if (stat.isFile()) {
+          const relativePath = path.relative(this.basePath, fullPath);
+          files.push(relativePath);
         }
-      };
+      }
 
-      await walk(searchPath);
       return files;
     } catch (error) {
-      console.error(`Failed to list files from local storage with prefix: ${prefix}`, error);
-      throw error;
+      console.error(`Failed to list files from local storage with prefix ${prefix}:`, error);
+      return [];
     }
   }
 
@@ -108,18 +100,35 @@ export class LocalStorageAdapter extends BaseStorageAdapter {
     }
   }
 
-  async getFileMetadata(key: string): Promise<{ size: number; lastModified: Date } | null> {
+  async getFileMetadata(
+    key: string
+  ): Promise<{
+    size: number;
+    lastModified: Date;
+  } | null> {
     try {
       const filePath = path.join(this.basePath, key);
-      const stats = await fs.stat(filePath);
-
+      const stat = await fs.stat(filePath);
       return {
-        size: stats.size,
-        lastModified: stats.mtime,
+        size: stat.size,
+        lastModified: stat.mtime,
       };
     } catch (error) {
       console.error(`Failed to get file metadata from local storage: ${key}`, error);
       return null;
     }
+  }
+
+  /**
+   * For local storage, generate access URL as relative path
+   * The application's HTTP endpoint will handle serving these files
+   * @param key - Storage path/key
+   * @param metadata - Storage metadata (ignored for local storage)
+   * @param _expiresIn - Expiry time in seconds (ignored for local storage)
+   */
+  async generateAccessUrl(key: string, _metadata?: StorageMetadata, _expiresIn?: number): Promise<string> {
+    // For local storage, return the key as-is (relative path)
+    // The caller will use this with an HTTP endpoint
+    return key;
   }
 }

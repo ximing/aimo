@@ -3,10 +3,11 @@
  * Displays full preview of images or videos with navigation and delete functionality
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { view, useService } from '@rabjs/react';
 import { X, ChevronLeft, ChevronRight, Trash2, ZoomIn, ZoomOut } from 'lucide-react';
 import { AttachmentService } from '../../../services/attachment.service';
+import { ConfirmDeleteModal } from '../../home/components/confirm-delete-modal';
 
 interface GalleryPreviewModalProps {
   isOpen: boolean;
@@ -18,6 +19,8 @@ const GalleryPreviewModalContent = view(({ isOpen, onClose }: GalleryPreviewModa
   const imageRef = useRef<HTMLImageElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const zoomLevelRef = useRef<number>(1);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const attachment = attachmentService.selectedAttachment;
   if (!attachment) return null;
@@ -78,15 +81,18 @@ const GalleryPreviewModalContent = view(({ isOpen, onClose }: GalleryPreviewModa
     }
   };
 
-  const handleDelete = async () => {
-    if (!window.confirm('确定要删除这个文件吗？')) {
-      return;
-    }
+  const handleDeleteClick = () => {
+    setShowDeleteModal(true);
+  };
 
+  const handleDeleteConfirm = async () => {
+    setIsDeleting(true);
     try {
       const next = attachmentService.getNextAttachment();
       const prev = attachmentService.getPrevAttachment();
       await attachmentService.deleteAttachment(attachment.attachmentId);
+
+      setShowDeleteModal(false);
 
       if (next) {
         attachmentService.setSelectedAttachment(next);
@@ -98,6 +104,8 @@ const GalleryPreviewModalContent = view(({ isOpen, onClose }: GalleryPreviewModa
     } catch (err) {
       console.error('Failed to delete attachment:', err);
       alert('删除失败，请重试');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -202,8 +210,9 @@ const GalleryPreviewModalContent = view(({ isOpen, onClose }: GalleryPreviewModa
         {/* Navigation and Delete */}
         <div className="flex items-center gap-2">
           <button
-            onClick={handleDelete}
-            className="p-2 hover:bg-red-500/20 rounded-lg transition-colors text-red-400 hover:text-red-300"
+            onClick={handleDeleteClick}
+            disabled={isDeleting}
+            className="p-2 hover:bg-red-500/20 rounded-lg transition-colors text-red-400 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed"
             title="删除 (Del)"
           >
             <Trash2 className="w-5 h-5" />
@@ -232,6 +241,16 @@ const GalleryPreviewModalContent = view(({ isOpen, onClose }: GalleryPreviewModa
           </button>
         </div>
       </div>
+
+      {/* Confirm Delete Modal */}
+      <ConfirmDeleteModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteConfirm}
+        loading={isDeleting}
+        title="确认删除"
+        message="确定要删除这个文件吗？此操作无法撤销。"
+      />
     </div>
   );
 });

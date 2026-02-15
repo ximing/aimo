@@ -132,9 +132,14 @@ export class MemoService extends Service {
   /**
    * Update a memo
    */
-  async updateMemo(memoId: string, content: string, attachments?: string[]) {
+  async updateMemo(
+    memoId: string,
+    content: string,
+    attachments?: string[],
+    relationIds?: string[]
+  ) {
     try {
-      const data: UpdateMemoDto = { content, attachments };
+      const data: UpdateMemoDto = { content, attachments, relationIds };
       const response = await memoApi.updateMemo(memoId, data);
 
       if (response.code === 0 && response.data) {

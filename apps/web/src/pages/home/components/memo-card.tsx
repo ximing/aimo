@@ -4,6 +4,8 @@ import type { MemoListItemDto, MemoListItemWithScoreDto } from '@aimo/dto';
 import { MemoService } from '../../../services/memo.service';
 import { FileText, Film, Edit2, Trash2, Link } from 'lucide-react';
 import { RelatedMemosModal } from './related-memos-modal';
+import { ConfirmDeleteModal } from './confirm-delete-modal';
+import { MemoEditorForm } from '../../../components/memo-editor-form';
 
 interface MemoCardProps {
   memo: MemoListItemDto | MemoListItemWithScoreDto;
@@ -27,37 +29,23 @@ const extractPlainText = (content: string): string => {
 
 export const MemoCard = view(({ memo }: MemoCardProps) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [editContent, setEditContent] = useState(memo.content);
   const [loading, setLoading] = useState(false);
   const [showRelatedModal, setShowRelatedModal] = useState(false);
   const [selectedRelationMemo, setSelectedRelationMemo] = useState<MemoListItemDto | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const memoService = useService(MemoService);
 
-  const handleUpdate = async () => {
-    if (!editContent.trim()) return;
-
-    setLoading(true);
-    const result = await memoService.updateMemo(memo.memoId, editContent);
-    setLoading(false);
-
-    if (result.success) {
-      setIsEditing(false);
-    }
+  const handleDeleteClick = () => {
+    setShowDeleteModal(true);
   };
 
-  const handleDelete = async () => {
-    if (!confirm('确定删除这条备忘录吗？')) return;
-
+  const handleDeleteConfirm = async () => {
     setLoading(true);
     await memoService.deleteMemo(memo.memoId);
     setLoading(false);
-  };
-
-  const handleCancel = () => {
-    setEditContent(memo.content);
-    setIsEditing(false);
+    setShowDeleteModal(false);
   };
 
   const formatDate = (timestamp: number) => {
@@ -143,39 +131,20 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
         role="article"
       >
         {isEditing ? (
-          <div className="space-y-3">
-            <textarea
-              value={editContent}
-              onChange={(e) => setEditContent(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-200 dark:border-dark-700 bg-white dark:bg-dark-800 text-gray-900 dark:text-gray-50 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all resize-none placeholder-gray-400 dark:placeholder-gray-600"
-              rows={5}
-              disabled={loading}
-            />
-
-            <div className="flex items-center gap-2 justify-end">
-              <button
-                onClick={handleUpdate}
-                disabled={loading || !editContent.trim()}
-                className="px-4 py-2 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white text-sm font-medium rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                aria-label="Save memo changes"
-              >
-                {loading ? '保存中...' : '保存'}
-              </button>
-
-              <button
-                onClick={handleCancel}
-                disabled={loading}
-                className="px-4 py-2 border border-gray-200 dark:border-dark-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors disabled:opacity-50 cursor-pointer"
-                aria-label="Cancel editing"
-              >
-                取消
-              </button>
-            </div>
-          </div>
+          <MemoEditorForm
+            mode="edit"
+            initialMemo={memo}
+            onSave={() => {
+              setIsEditing(false);
+            }}
+            onCancel={() => {
+              setIsEditing(false);
+            }}
+          />
         ) : (
           <div className="space-y-2">
             {/* Content Section */}
-            <div>
+            <div className="space-y-3">
               <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
                 {displayText}
                 {shouldTruncate && !isExpanded && (
@@ -225,7 +194,7 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
                       setSelectedRelationMemo(relation);
                       setShowRelatedModal(true);
                     }}
-                    className="w-full flex items-start gap-2 px-2 py-1 hover:bg-gray-100 dark:hover:bg-dark-700 border border-transparent hover:border-primary-200 dark:hover:border-primary-900/30 rounded transition-all duration-150 cursor-pointer group text-left"
+                    className="w-full flex items-start gap-2 px-2 py-1.5 bg-gray-50 dark:bg-dark-800/50 hover:bg-primary-50 dark:hover:bg-primary-950/20 border border-transparent hover:border-primary-200 dark:hover:border-primary-900/50 rounded transition-all duration-150 cursor-pointer group text-left"
                     title={relation.content}
                   >
                     <div className="flex-shrink-0 mt-0.5">
@@ -300,7 +269,7 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleDelete();
+                    handleDeleteClick();
                   }}
                   disabled={loading}
                   className="p-1.5 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-dark-700 rounded hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-900/50 transition-colors cursor-pointer disabled:opacity-50"
@@ -323,6 +292,14 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
           setSelectedRelationMemo(null);
         }}
         memo={selectedRelationMemo || memo}
+      />
+
+      {/* Confirm Delete Modal */}
+      <ConfirmDeleteModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteConfirm}
+        loading={loading}
       />
     </>
   );
