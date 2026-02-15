@@ -41,8 +41,9 @@ export class AttachmentService {
   async createAttachment(options: CreateAttachmentOptions): Promise<AttachmentDto> {
     const { uid, buffer, filename, mimeType, size, createdAt } = options;
 
-    // Save file to storage
+    // Save file to storage (with uid for path generation)
     const { attachmentId, url, storageType } = await this.storageService.saveFile({
+      uid,
       buffer,
       filename,
       mimeType,
@@ -346,6 +347,9 @@ export class AttachmentService {
    * For S3:
    * - Public buckets: Returns direct URL without signing
    * - Private buckets: Returns presigned URL with expiration
+   *
+   * For Local:
+   * - Returns the raw URL for use by authenticated API endpoints
    */
   private async generateAccessUrl(url: string, storageType: 'local' | 's3'): Promise<string> {
     if (storageType === 's3') {
@@ -353,9 +357,9 @@ export class AttachmentService {
       // For private S3 buckets: generates and returns presigned URL
       return await this.storageService.generatePresignedUrl(url);
     } else {
-      // For local storage, return API endpoint path
-      const filename = url.split('/').pop();
-      return `/api/v1/attachments/file/${filename}`;
+      // For local storage, return the URL as-is (attachments/{uid}/{YYYYMMDD}/{nanoid24}.{ext})
+      // The download endpoint will handle retrieval with proper authentication
+      return url;
     }
   }
 }

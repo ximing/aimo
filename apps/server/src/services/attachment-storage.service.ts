@@ -24,8 +24,10 @@ import { join } from 'path';
 import { pipeline } from 'stream/promises';
 import { config } from '../config/config.js';
 import { nanoid } from 'nanoid';
+import dayjs from 'dayjs';
 
 export interface SaveFileOptions {
+  uid: string;
   buffer: Buffer;
   filename: string;
   mimeType: string;
@@ -70,29 +72,39 @@ export class AttachmentStorageService {
 
   /**
    * Save file to storage (local or S3-compatible)
+   * File path format: {uid}/{YYYYMMDD}/{nanoid24}.{ext}
    */
   async saveFile(options: SaveFileOptions): Promise<SaveFileResult> {
-    const { buffer, filename, mimeType } = options;
-    const fileId = nanoid();
+    const { uid, buffer, filename, mimeType } = options;
+
+    // Generate unique ID (24 characters for nanoid)
+    const fileId = nanoid(24);
     const attachmentId = fileId; // Just the ID, no prefix
 
     // Get file extension from original filename
     const ext = filename.split('.').pop() || '';
-    const storedFilename = ext ? `${fileId}.${ext}` : fileId;
+    const baseFilename = ext ? `${fileId}.${ext}` : fileId;
+
+    // Generate date in YYYYMMDD format
+    const dateStr = dayjs().format('YYYYMMDD');
+
+    // Create full path: {uid}/{YYYYMMDD}/{nanoid24}.{ext}
+    const filePath = `${uid}/${dateStr}/${baseFilename}`;
 
     if (config.attachment.storageType === 's3') {
-      return await this.saveToS3(buffer, storedFilename, mimeType, attachmentId);
+      return await this.saveToS3(buffer, filePath, mimeType, attachmentId);
     } else {
-      return await this.saveToLocal(buffer, storedFilename, attachmentId);
+      return await this.saveToLocal(buffer, filePath, attachmentId);
     }
   }
 
   /**
    * Save file to local storage
+   * Creates directory structure: {uid}/{YYYYMMDD}/
    */
   private async saveToLocal(
     buffer: Buffer,
-    filename: string,
+    filePath: string,
     attachmentId: string
   ): Promise<SaveFileResult> {
     if (!config.attachment.local) {
@@ -100,25 +112,25 @@ export class AttachmentStorageService {
     }
 
     const storagePath = config.attachment.local.path;
+    const fullPath = join(storagePath, filePath);
+    const dirPath = fullPath.substring(0, fullPath.lastIndexOf('/'));
 
     // Ensure storage directory exists
-    if (!existsSync(storagePath)) {
-      mkdirSync(storagePath, { recursive: true });
+    if (!existsSync(dirPath)) {
+      mkdirSync(dirPath, { recursive: true });
     }
-
-    const filePath = join(storagePath, filename);
 
     // Write file to disk
     await pipeline(
       (async function* () {
         yield buffer;
       })(),
-      createWriteStream(filePath)
+      createWriteStream(fullPath)
     );
 
     return {
       attachmentId,
-      url: `attachments/${filename}`, // Relative path for local storage
+      url: `attachments/${filePath}`, // Relative path for local storage
       storageType: 'local',
     };
   }
@@ -126,10 +138,11 @@ export class AttachmentStorageService {
   /**
    * Save file to S3-compatible storage
    * Works with: AWS S3, MinIO, Aliyun OSS, DigitalOcean Spaces, etc.
+   * File path format: {prefix}/{uid}/{YYYYMMDD}/{nanoid24}.{ext}
    */
   private async saveToS3(
     buffer: Buffer,
-    filename: string,
+    filePath: string,
     mimeType: string,
     attachmentId: string
   ): Promise<SaveFileResult> {
@@ -138,7 +151,7 @@ export class AttachmentStorageService {
     }
 
     const s3Config = config.attachment.s3;
-    const key = `${s3Config.prefix}/${filename}`;
+    const key = `${s3Config.prefix}/${filePath}`;
 
     const command = new PutObjectCommand({
       Bucket: s3Config.bucket,
@@ -285,12 +298,14 @@ export class AttachmentStorageService {
     if (storageType === 's3') {
       return await this.getS3File(url);
     } else {
-      // Extract filename from URL (format: attachments/filename)
-      const filename = url.split('/').pop();
-      if (!filename) {
+      // Extract file path from URL (format: attachments/{uid}/{YYYYMMDD}/{nanoid24}.{ext})
+      const urlParts = url.split('/');
+      if (urlParts.length < 4 || urlParts[0] !== 'attachments') {
         throw new Error('Invalid file URL');
       }
-      return await this.getLocalFile(filename);
+      // Remove 'attachments' prefix and reconstruct the path
+      const filePath = urlParts.slice(1).join('/');
+      return await this.getLocalFile(filePath);
     }
   }
 
@@ -364,16 +379,18 @@ export class AttachmentStorageService {
       throw new Error('Local storage configuration is missing');
     }
 
-    // Extract filename from URL (format: attachments/filename)
-    const filename = url.split('/').pop();
-    if (!filename) {
+    // Extract file path from URL (format: attachments/{uid}/{YYYYMMDD}/{nanoid24}.{ext})
+    const urlParts = url.split('/');
+    if (urlParts.length < 4 || urlParts[0] !== 'attachments') {
       throw new Error('Invalid file URL');
     }
 
-    const filePath = join(config.attachment.local.path, filename);
+    // Remove 'attachments' prefix and reconstruct the path
+    const filePath = urlParts.slice(1).join('/');
+    const fullPath = join(config.attachment.local.path, filePath);
 
-    if (existsSync(filePath)) {
-      unlinkSync(filePath);
+    if (existsSync(fullPath)) {
+      unlinkSync(fullPath);
     }
   }
 
