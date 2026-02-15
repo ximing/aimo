@@ -57,14 +57,14 @@ export const GalleryImageCard = view(({ attachment, onClick, onDelete }: Gallery
     <>
       <button
         onClick={onClick}
-        className="relative group overflow-hidden rounded-xl bg-gray-200 dark:bg-dark-700 aspect-square hover:shadow-xl hover:scale-102 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-0 cursor-pointer"
+        className="relative group w-full aspect-square overflow-hidden rounded-xl bg-gray-200 dark:bg-dark-700 hover:shadow-xl hover:scale-102 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-0 cursor-pointer flex items-center justify-center p-2"
       >
         {/* Image/Video Thumbnail */}
         {(isImage || isVideo) && (
           <img
             src={attachment.url}
             alt={attachment.filename}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain rounded-lg"
             loading="lazy"
           />
         )}
