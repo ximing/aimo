@@ -5,6 +5,7 @@ import { X, ArrowRight, Link2, GitBranch, Network, Sparkles } from 'lucide-react
 import { view, useService } from '@rabjs/react';
 import type { MemoListItemDto } from '@aimo/dto';
 import { MemoService } from '../../../services/memo.service';
+import { RelationGraph } from './relation-graph';
 
 interface RelatedMemosModalProps {
   isOpen: boolean;
@@ -263,17 +264,15 @@ export const RelatedMemosModal = view(({ isOpen, onClose, memo, onMemoClick }: R
         );
 
       case 'graph':
+        if (!memo) return null;
         return (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="w-16 h-16 rounded-full bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center mb-4">
-              <Network className="w-8 h-8 text-primary-500" />
-            </div>
-            <h3 className="text-base font-medium text-gray-900 dark:text-white mb-2">关联图谱</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">
-              可视化展示笔记间的关联关系
-              <br />
-              <span className="text-xs text-gray-400">（即将推出）</span>
-            </p>
+          <div className="h-[400px] w-full">
+            <RelationGraph
+              centerMemo={memo}
+              forwardMemos={forwardData.items}
+              backlinkMemos={backlinksData.items}
+              onNodeClick={handleMemoClick}
+            />
           </div>
         );
 
