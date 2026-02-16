@@ -658,6 +658,51 @@ export class MemoService {
   }
 
   /**
+   * Get multiple memos by their IDs
+   * Returns memos that belong to the specified user
+   */
+  async getMemosByIds(memoIds: string[], uid: string): Promise<MemoListItemDto[]> {
+    try {
+      if (!memoIds || memoIds.length === 0) {
+        return [];
+      }
+
+      const memosTable = await this.lanceDb.openTable('memos');
+
+      // Build filter for memo IDs
+      const idConditions = memoIds.map((id) => `memoId = '${id}'`).join(' OR ');
+      const whereClause = `uid = '${uid}' AND (${idConditions})`;
+
+      const results = await memosTable.query().where(whereClause).toArray();
+
+      // Convert to DTOs
+      const items: MemoListItemDto[] = [];
+      for (const memo of results) {
+        const attachmentIds = this.convertArrowAttachments(memo.attachments);
+        const attachmentDtos: AttachmentDto[] =
+          attachmentIds.length > 0
+            ? await this.attachmentService.getAttachmentsByIds(attachmentIds, uid)
+            : [];
+
+        items.push({
+          memoId: memo.memoId,
+          uid: memo.uid,
+          content: memo.content,
+          categoryId: memo.categoryId,
+          attachments: attachmentDtos,
+          createdAt: memo.createdAt,
+          updatedAt: memo.updatedAt,
+        });
+      }
+
+      return items;
+    } catch (error) {
+      console.error('Error getting memos by IDs:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Enrich memo list items with their relation data
    * Fetch all related memos for each item
    */

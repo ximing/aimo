@@ -245,6 +245,14 @@ Embeddings are auto-generated via `EmbeddingService`. The flow:
 2. Vector stored in LanceDB alongside memo data
 3. Search uses `SearchService.semanticSearch()` to query by vector similarity
 
+### Working with Memo Relations
+Memo relations are stored in a separate `memo_relations` table in LanceDB:
+- `sourceMemoId` → `targetMemoId` (directed relation)
+- Use `MemoRelationService` for relation operations
+- **Forward relations**: `getRelatedMemos()` returns targets of a source memo
+- **Backlinks**: `getBacklinks()` returns sources that target a memo (reverse lookup)
+- Relations are enriched on read in `enrichMemosWithRelations()`
+
 ## TypeScript Configuration
 
 - **Target**: ES2022
