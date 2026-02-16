@@ -204,6 +204,7 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
   return (
     <>
       <div
+        id={`memo-${memo.memoId}`}
         onClick={handleCardClick}
         className="bg-white dark:bg-dark-800 rounded-lg p-3 animate-fade-in transition-all hover:bg-gray-100 dark:hover:bg-dark-700 cursor-pointer group"
         role="article"
@@ -370,6 +371,18 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
           setSelectedRelationMemo(null);
         }}
         memo={selectedRelationMemo || memo}
+        onMemoClick={(memoId) => {
+          // Scroll to the memo in the list
+          const element = document.getElementById(`memo-${memoId}`);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Add a highlight effect
+            element.classList.add('ring-2', 'ring-primary-500', 'ring-offset-2');
+            setTimeout(() => {
+              element.classList.remove('ring-2', 'ring-primary-500', 'ring-offset-2');
+            }, 2000);
+          }
+        }}
       />
 
       {/* Confirm Delete Modal */}

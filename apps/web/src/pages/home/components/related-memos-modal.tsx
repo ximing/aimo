@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
-import { Dialog, Transition } from '@headlessui/react';
+import { useEffect, useState, useCallback } from 'react';
+import { Dialog, Transition, Tab } from '@headlessui/react';
 import { Fragment } from 'react';
-import { X, ArrowRight } from 'lucide-react';
+import { X, ArrowRight, Link2, GitBranch, Network, Sparkles } from 'lucide-react';
 import { view, useService } from '@rabjs/react';
 import type { MemoListItemDto } from '@aimo/dto';
 import { MemoService } from '../../../services/memo.service';
@@ -10,6 +10,15 @@ interface RelatedMemosModalProps {
   isOpen: boolean;
   onClose: () => void;
   memo: MemoListItemDto | null;
+  onMemoClick?: (memoId: string) => void;
+}
+
+type TabType = 'semantic' | 'forward' | 'backlinks' | 'graph';
+
+interface TabData {
+  items: MemoListItemDto[];
+  loading: boolean;
+  error?: string;
 }
 
 // Extract plain text without markdown syntax
@@ -46,37 +55,231 @@ const formatDate = (timestamp: number) => {
   });
 };
 
-export const RelatedMemosModal = view(({ isOpen, onClose, memo }: RelatedMemosModalProps) => {
+const EmptyState = ({ message, icon: Icon }: { message: string; icon: React.ElementType }) => (
+  <div className="flex flex-col items-center justify-center py-12 text-center">
+    <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-dark-700 flex items-center justify-center mb-3">
+      <Icon className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+    </div>
+    <p className="text-sm text-gray-500 dark:text-gray-400">{message}</p>
+  </div>
+);
+
+const MemoListItem = ({
+  memo,
+  index,
+  onClick,
+}: {
+  memo: MemoListItemDto;
+  index?: number;
+  onClick: () => void;
+}) => (
+  <button
+    onClick={onClick}
+    className="w-full text-left px-4 py-3 rounded-lg border border-gray-200 dark:border-dark-700 bg-white dark:bg-dark-700/50 hover:border-primary-300 dark:hover:border-primary-700 hover:bg-gray-50 dark:hover:bg-dark-700 transition-all duration-200 cursor-pointer group"
+  >
+    <div className="flex items-start gap-3">
+      {index !== undefined && (
+        <div className="flex-shrink-0 text-xs font-medium text-gray-400 dark:text-gray-500 mt-0.5 w-5">
+          {index + 1}
+        </div>
+      )}
+      <div className="flex-1 min-w-0">
+        <p className="text-sm text-gray-900 dark:text-gray-100 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors leading-relaxed line-clamp-3">
+          {extractPlainText(memo.content, 200)}
+        </p>
+        <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
+          {formatDate(memo.createdAt)}
+        </p>
+      </div>
+      <ArrowRight className="w-4 h-4 text-gray-300 dark:text-gray-600 flex-shrink-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+    </div>
+  </button>
+);
+
+const LoadingState = () => (
+  <div className="flex flex-col items-center justify-center py-12">
+    <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600 mb-3"></div>
+    <p className="text-sm text-gray-500 dark:text-gray-400">加载中...</p>
+  </div>
+);
+
+export const RelatedMemosModal = view(({ isOpen, onClose, memo, onMemoClick }: RelatedMemosModalProps) => {
   const memoService = useService(MemoService);
-  const [relatedMemos, setRelatedMemos] = useState<MemoListItemDto[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabType>('semantic');
 
-  useEffect(() => {
-    if (isOpen && memo) {
-      loadRelatedMemos();
-    }
-  }, [isOpen, memo]);
+  const [semanticData, setSemanticData] = useState<TabData>({ items: [], loading: false });
+  const [forwardData, setForwardData] = useState<TabData>({ items: [], loading: false });
+  const [backlinksData, setBacklinksData] = useState<TabData>({ items: [], loading: false });
 
-  const loadRelatedMemos = async () => {
+  // Load semantic data from API
+  const loadSemanticData = useCallback(async () => {
     if (!memo) return;
-
-    setLoading(true);
+    setSemanticData((prev) => ({ ...prev, loading: true, error: undefined }));
     try {
       const result = await memoService.findRelatedMemos(memo.memoId, 10);
       if (result.success) {
-        setRelatedMemos(result.items || []);
+        setSemanticData({ items: result.items || [], loading: false });
+      } else {
+        setSemanticData({ items: [], loading: false, error: result.message });
       }
-    } catch (error) {
-      console.error('Failed to load related memos:', error);
-    } finally {
-      setLoading(false);
+    } catch {
+      setSemanticData({ items: [], loading: false, error: '加载失败' });
+    }
+  }, [memo, memoService]);
+
+  // Load forward relations from memo.relations
+  const loadForwardData = useCallback(async () => {
+    if (!memo) return;
+    setForwardData((prev) => ({ ...prev, loading: true, error: undefined }));
+    // Forward relations are already in memo.relations
+    const relations = memo.relations || [];
+    // Simulate a small delay for consistent UX
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    setForwardData({ items: relations, loading: false });
+  }, [memo]);
+
+  // Load backlinks from API
+  const loadBacklinksData = useCallback(async () => {
+    if (!memo) return;
+    setBacklinksData((prev) => ({ ...prev, loading: true, error: undefined }));
+    try {
+      const result = await memoService.getBacklinks(memo.memoId, 1, 20);
+      if (result.success) {
+        setBacklinksData({ items: result.items || [], loading: false });
+      } else {
+        setBacklinksData({ items: [], loading: false, error: result.message });
+      }
+    } catch {
+      setBacklinksData({ items: [], loading: false, error: '加载失败' });
+    }
+  }, [memo, memoService]);
+
+  // Reset data when modal opens/closes
+  useEffect(() => {
+    if (isOpen && memo) {
+      setActiveTab('semantic');
+      setSemanticData({ items: [], loading: false });
+      setForwardData({ items: [], loading: false });
+      setBacklinksData({ items: [], loading: false });
+      // Load semantic data immediately
+      loadSemanticData();
+    }
+  }, [isOpen, memo, loadSemanticData]);
+
+  // Load data when tab changes
+  useEffect(() => {
+    if (!isOpen || !memo) return;
+
+    switch (activeTab) {
+      case 'semantic':
+        if (semanticData.items.length === 0 && !semanticData.loading) {
+          loadSemanticData();
+        }
+        break;
+      case 'forward':
+        if (forwardData.items.length === 0 && !forwardData.loading) {
+          loadForwardData();
+        }
+        break;
+      case 'backlinks':
+        if (backlinksData.items.length === 0 && !backlinksData.loading) {
+          loadBacklinksData();
+        }
+        break;
+    }
+  }, [
+    activeTab,
+    isOpen,
+    memo,
+    semanticData.items.length,
+    semanticData.loading,
+    forwardData.items.length,
+    forwardData.loading,
+    backlinksData.items.length,
+    backlinksData.loading,
+    loadSemanticData,
+    loadForwardData,
+    loadBacklinksData,
+  ]);
+
+  const handleMemoClick = (memoId: string) => {
+    if (onMemoClick) {
+      onMemoClick(memoId);
+      onClose();
     }
   };
 
-  const handleMemoClick = (relatedMemo: MemoListItemDto) => {
-    // Trigger scroll to this memo if it's in the list
-    // or could open another modal for this memo
-    console.log('Selected related memo:', relatedMemo.memoId);
+  const tabs = [
+    { id: 'semantic' as TabType, label: '语义相关', icon: Sparkles, count: semanticData.items.length },
+    { id: 'forward' as TabType, label: '关联了', icon: Link2, count: forwardData.items.length },
+    { id: 'backlinks' as TabType, label: '被关联', icon: GitBranch, count: backlinksData.items.length },
+    { id: 'graph' as TabType, label: '关联图谱', icon: Network, count: undefined },
+  ];
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'semantic':
+        if (semanticData.loading) return <LoadingState />;
+        if (semanticData.items.length === 0) {
+          return <EmptyState message="暂无语义相关的笔记" icon={Sparkles} />;
+        }
+        return (
+          <div className="space-y-2">
+            {semanticData.items.map((item, index) => (
+              <MemoListItem
+                key={item.memoId}
+                memo={item}
+                index={index}
+                onClick={() => handleMemoClick(item.memoId)}
+              />
+            ))}
+          </div>
+        );
+
+      case 'forward':
+        if (forwardData.loading) return <LoadingState />;
+        if (forwardData.items.length === 0) {
+          return <EmptyState message="此笔记没有主动关联其他笔记" icon={Link2} />;
+        }
+        return (
+          <div className="space-y-2">
+            {forwardData.items.map((item) => (
+              <MemoListItem key={item.memoId} memo={item} onClick={() => handleMemoClick(item.memoId)} />
+            ))}
+          </div>
+        );
+
+      case 'backlinks':
+        if (backlinksData.loading) return <LoadingState />;
+        if (backlinksData.items.length === 0) {
+          return <EmptyState message="暂无笔记引用此笔记" icon={GitBranch} />;
+        }
+        return (
+          <div className="space-y-2">
+            {backlinksData.items.map((item) => (
+              <MemoListItem key={item.memoId} memo={item} onClick={() => handleMemoClick(item.memoId)} />
+            ))}
+          </div>
+        );
+
+      case 'graph':
+        return (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-16 h-16 rounded-full bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center mb-4">
+              <Network className="w-8 h-8 text-primary-500" />
+            </div>
+            <h3 className="text-base font-medium text-gray-900 dark:text-white mb-2">关联图谱</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">
+              可视化展示笔记间的关联关系
+              <br />
+              <span className="text-xs text-gray-400">（即将推出）</span>
+            </p>
+          </div>
+        );
+
+      default:
+        return null;
+    }
   };
 
   return (
@@ -107,99 +310,65 @@ export const RelatedMemosModal = view(({ isOpen, onClose, memo }: RelatedMemosMo
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-lg bg-white dark:bg-dark-800 shadow-lg transition-all">
-                {/* Compact Header */}
-                <div className="flex items-center justify-between px-6 py-3 border-b border-gray-200 dark:border-dark-700">
+              <Dialog.Panel className="w-full max-w-3xl transform overflow-hidden rounded-xl bg-white dark:bg-dark-800 shadow-xl transition-all">
+                {/* Header */}
+                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-dark-700">
                   <div className="flex-1 min-w-0">
-                    <Dialog.Title className="text-sm font-semibold text-gray-900 dark:text-white">
-                      相关笔记
+                    <Dialog.Title className="text-base font-semibold text-gray-900 dark:text-white">
+                      笔记关联
                     </Dialog.Title>
+                    {memo && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                        {extractPlainText(memo.content, 60)}
+                      </p>
+                    )}
                   </div>
                   <button
                     onClick={onClose}
                     className="ml-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer flex-shrink-0"
                     aria-label="Close modal"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-5 h-5" />
                   </button>
                 </div>
 
-                {/* Content with Sticky Header */}
-                <div className="max-h-[65vh] overflow-y-auto">
-                  {/* Sticky Original Memo Reference */}
-                  {memo && (
-                    <div className="sticky top-0 z-20 bg-white dark:bg-dark-800 px-6 py-4 border-b border-gray-100 dark:border-dark-700/50 shadow-sm">
-                      <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">
-                        原始笔记
-                      </div>
-                      <div className="bg-gradient-to-r from-primary-50 to-primary-100/50 dark:from-primary-950/40 dark:to-primary-900/20 px-3 py-2.5 rounded border border-primary-200/50 dark:border-primary-900/40">
-                        <p className="text-sm text-primary-900 dark:text-primary-100 leading-relaxed">
-                          {extractPlainText(memo.content, 500)}
-                        </p>
-                        <p className="text-xs text-primary-700 dark:text-primary-300 mt-2 opacity-75">
-                          {formatDate(memo.createdAt)}
-                        </p>
-                      </div>
+                {/* Tabs */}
+                <Tab.Group selectedIndex={tabs.findIndex((t) => t.id === activeTab)} onChange={(index) => setActiveTab(tabs[index].id)}>
+                  <Tab.List className="flex border-b border-gray-200 dark:border-dark-700 px-6">
+                    {tabs.map((tab) => (
+                      <Tab
+                        key={tab.id}
+                        className={({ selected }) =>
+                          `flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors focus:outline-none ${
+                            selected
+                              ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                          }`
+                        }
+                      >
+                        <tab.icon className="w-4 h-4" />
+                        <span>{tab.label}</span>
+                        {tab.count !== undefined && tab.count > 0 && (
+                          <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-dark-700 text-gray-600 dark:text-gray-300">
+                            {tab.count}
+                          </span>
+                        )}
+                      </Tab>
+                    ))}
+                  </Tab.List>
+
+                  <Tab.Panels className="p-6">
+                    <div className="min-h-[300px] max-h-[50vh] overflow-y-auto">
+                      {renderTabContent()}
                     </div>
-                  )}
+                  </Tab.Panels>
+                </Tab.Group>
 
-                  {/* Relationship Indicator */}
-                  <div className="flex justify-center py-3 px-6">
-                    <div className="flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-gray-600"></div>
-                      <ArrowRight className="w-3.5 h-3.5 text-gray-400 dark:text-gray-600" />
-                      <div className="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-gray-600"></div>
-                    </div>
-                  </div>
-
-                  {/* Related Memos List */}
-                  <div className="px-6 py-4">
-                    <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wide">
-                      相关内容 ({relatedMemos.length})
-                    </div>
-
-                    {loading ? (
-                      <div className="flex flex-col items-center justify-center py-8">
-                        <div className="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-primary-600 mb-3"></div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">加载中...</p>
-                      </div>
-                    ) : relatedMemos.length === 0 ? (
-                      <div className="text-center py-6">
-                        <p className="text-sm text-gray-500 dark:text-gray-400">未找到相关笔记</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {relatedMemos.map((relatedMemo, index) => (
-                          <button
-                            key={relatedMemo.memoId}
-                            onClick={() => handleMemoClick(relatedMemo)}
-                            className="w-full text-left px-3 py-2.5 rounded border border-gray-200 dark:border-dark-700 bg-white dark:bg-dark-700/50 hover:border-primary-300 dark:hover:border-primary-700 hover:bg-gray-50 dark:hover:bg-dark-700 transition-all duration-200 cursor-pointer group"
-                          >
-                            <div className="flex items-start gap-3">
-                              <div className="flex-shrink-0 text-xs font-medium text-gray-400 dark:text-gray-500 mt-0.5 w-5">
-                                {index + 1}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs text-gray-900 dark:text-gray-100 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors leading-relaxed">
-                                  {extractPlainText(relatedMemo.content, 500)}
-                                </p>
-                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">
-                                  {formatDate(relatedMemo.createdAt)}
-                                </p>
-                              </div>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Minimal Footer */}
-                <div className="border-t border-gray-200 dark:border-dark-700 px-6 py-2.5 flex justify-end">
+                {/* Footer */}
+                <div className="border-t border-gray-200 dark:border-dark-700 px-6 py-3 flex justify-end">
                   <button
                     onClick={onClose}
-                    className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                    className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors cursor-pointer"
                   >
                     关闭
                   </button>
