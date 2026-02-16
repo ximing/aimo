@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { view, useService } from '@rabjs/react';
 import type { MemoListItemDto, MemoListItemWithScoreDto } from '@aimo/dto';
 import { MemoService } from '../../../services/memo.service';
-import { FileText, Film, Edit2, Trash2, Link } from 'lucide-react';
+import { AttachmentService } from '../../../services/attachment.service';
+import { FileText, Film, Edit2, Trash2, Link, Download } from 'lucide-react';
 import { RelatedMemosModal } from './related-memos-modal';
 import { ConfirmDeleteModal } from './confirm-delete-modal';
 import { MemoEditorForm } from '../../../components/memo-editor-form';
+import { AttachmentPreviewModal } from '../../../components/attachment-preview-modal';
+import { downloadFileFromUrl } from '../../../utils/download';
 
 interface MemoCardProps {
   memo: MemoListItemDto | MemoListItemWithScoreDto;
@@ -34,8 +37,15 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
   const [selectedRelationMemo, setSelectedRelationMemo] = useState<MemoListItemDto | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isDownloading, setIsDownloading] = useState<string | null>(null);
 
   const memoService = useService(MemoService);
+  const attachmentService = useService(AttachmentService);
+
+  const handleClosePreview = useCallback(() => {
+    setIsPreviewOpen(false);
+  }, []);
 
   const handleDeleteClick = () => {
     setShowDeleteModal(true);
@@ -46,6 +56,40 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
     await memoService.deleteMemo(memo.memoId);
     setLoading(false);
     setShowDeleteModal(false);
+  };
+
+  const handleAttachmentClick = (attachment: any) => {
+    const isImage = attachment.type.startsWith('image/');
+    const isVideo = attachment.type.startsWith('video/');
+
+    if (isImage || isVideo) {
+      // Set up attachment service with current memo's attachments for preview
+      // This allows next/prev navigation within the memo's attachments
+      if (memo.attachments && memo.attachments.length > 0) {
+        attachmentService.items = memo.attachments;
+        attachmentService.total = memo.attachments.length;
+        attachmentService.filter = 'all'; // Reset filter to show all attachments
+        attachmentService.searchQuery = ''; // Clear search
+      }
+      // Set selected attachment and open preview
+      attachmentService.setSelectedAttachment(attachment);
+      setIsPreviewOpen(true);
+    } else {
+      // Download other file types
+      handleDownloadAttachment(attachment);
+    }
+  };
+
+  const handleDownloadAttachment = async (attachment: any) => {
+    setIsDownloading(attachment.attachmentId);
+    try {
+      await downloadFileFromUrl(attachment.url, attachment.filename);
+    } catch (error) {
+      console.error('Download failed:', error);
+      alert('下载失败，请重试');
+    } finally {
+      setIsDownloading(null);
+    }
   };
 
   const formatDate = (timestamp: number) => {
@@ -84,11 +128,19 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
         {memo.attachments.map((attachment) => {
           const isImage = attachment.type.startsWith('image/');
           const isVideo = attachment.type.startsWith('video/');
+          const isDocument = !isImage && !isVideo;
+          const isAttachmentDownloading = isDownloading === attachment.attachmentId;
 
           return (
-            <div
+            <button
               key={attachment.attachmentId}
-              className="relative aspect-square bg-gray-100 dark:bg-dark-800 rounded overflow-hidden"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAttachmentClick(attachment);
+              }}
+              disabled={isAttachmentDownloading}
+              className="relative aspect-square bg-gray-100 dark:bg-dark-800 rounded overflow-hidden hover:shadow-lg hover:scale-105 transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50"
+              title={`点击${isDocument ? '下载' : '预览'}: ${attachment.filename}`}
             >
               {isImage ? (
                 <img
@@ -98,9 +150,19 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
                   loading="lazy"
                 />
               ) : isVideo ? (
-                <div className="w-full h-full flex items-center justify-center">
-                  <Film className="w-6 h-6 text-gray-400 dark:text-gray-600" />
-                </div>
+                <>
+                  <img
+                    src={attachment.url}
+                    alt={attachment.filename}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+                      <Film className="w-5 h-5 text-gray-900 fill-current" />
+                    </div>
+                  </div>
+                </>
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center gap-1">
                   <FileText className="w-6 h-6 text-gray-400 dark:text-gray-600" />
@@ -109,7 +171,23 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
                   </span>
                 </div>
               )}
-            </div>
+
+              {/* Download indicator overlay for documents */}
+              {isDocument && (
+                <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+                    <Download className="w-5 h-5 text-gray-900 fill-current" />
+                  </div>
+                </div>
+              )}
+
+              {/* Loading indicator */}
+              {isAttachmentDownloading && (
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+            </button>
           );
         })}
       </div>
@@ -301,6 +379,9 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
         onConfirm={handleDeleteConfirm}
         loading={loading}
       />
+
+      {/* Attachment Preview Modal */}
+      <AttachmentPreviewModal isOpen={isPreviewOpen} onClose={handleClosePreview} />
     </>
   );
 });

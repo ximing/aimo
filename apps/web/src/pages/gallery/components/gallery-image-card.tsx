@@ -88,14 +88,20 @@ export const GalleryImageCard = view(({ attachment, onClick, onDelete }: Gallery
         {/* Elegant Hover Overlay with Delete Button */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-4">
           <div className="flex justify-end">
-            <button
+            <div
               onClick={handleDeleteClick}
-              disabled={isDeleting}
-              className="p-2 bg-red-500/80 hover:bg-red-600 rounded-lg transition-colors text-white disabled:opacity-50 disabled:cursor-not-allowed"
+              className="p-2 bg-red-500/80 hover:bg-red-600 rounded-lg transition-colors text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               title="删除文件"
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  handleDeleteClick(e as unknown as React.MouseEvent);
+                }
+              }}
             >
               <Trash2 className="w-4 h-4" />
-            </button>
+            </div>
           </div>
           <div>
             <p className="text-white text-xs font-medium truncate font-serif">{attachment.filename}</p>

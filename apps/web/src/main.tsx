@@ -6,12 +6,14 @@ import App from './App.tsx';
 import { AuthService } from './services/auth.service';
 import { MemoService } from './services/memo.service.ts';
 import { ThemeService } from './services/theme.service';
+import { AttachmentService } from './services/attachment.service';
 
 /**
  * Register services globally
  * These are accessible throughout the entire application
  */
 const AppWithServices = bindServices(App, []);
+register(AttachmentService);
 register(AuthService);
 register(MemoService);
 register(ThemeService);
