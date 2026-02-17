@@ -50,4 +50,28 @@
   - The memo.relations array contains forward relations (notes this memo links to)
   - For scroll-to-memo functionality, add id={`memo-${memo.memoId}`} to the card element
   - Tab counts update reactively as data loads
+
+## 2026-02-17T19:30:00Z - US-003
+- 新增关联图谱视图，使用 D3.js 力导向图实现
+- 创建 RelationGraph 组件，支持以下功能：
+  - 力导向图布局 (force-directed graph)
+  - 中心节点高亮显示当前笔记（橙色）
+  - 主动关联笔记用蓝色实线箭头表示
+  - 被关联笔记用绿色虚线箭头表示
+  - 支持节点拖拽、画布缩放（滚轮）、点击查看详情
+  - 节点显示笔记内容前30字
+  - 限制节点总数不超过50个（平均分配给正向/反向关联）
+  - 添加图例和操作提示
+- 集成到 RelatedMemosModal 的关联图谱标签页
+- Files changed:
+  - apps/web/package.json (added d3 and @types/d3)
+  - apps/web/src/pages/home/components/relation-graph.tsx (new)
+  - apps/web/src/pages/home/components/related-memos-modal.tsx
+- **Learnings for future iterations:**
+  - D3.js v7 with TypeScript requires careful type handling for drag behavior
+  - Use `d3.drag<SVGGElement, GraphNode>()` with explicit event types
+  - Force simulation needs cleanup in useEffect return function to prevent memory leaks
+  - SVG markers for arrowheads need proper `refX` to not overlap with nodes
+  - Use `selectAll<SVGGElement, GraphNode>()` for proper TypeScript type inference
+  - Dark mode support: use Tailwind dark: prefixes for legend/tooltip styling
 ---

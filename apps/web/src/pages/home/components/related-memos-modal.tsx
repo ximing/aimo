@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Dialog, Transition, Tab } from '@headlessui/react';
 import { Fragment } from 'react';
 import { X, ArrowRight, Link2, GitBranch, Network, Sparkles } from 'lucide-react';
@@ -112,6 +112,9 @@ export const RelatedMemosModal = view(({ isOpen, onClose, memo, onMemoClick }: R
   const [forwardData, setForwardData] = useState<TabData>({ items: [], loading: false });
   const [backlinksData, setBacklinksData] = useState<TabData>({ items: [], loading: false });
 
+  // Track which tabs have loaded data to prevent infinite requests when server returns empty
+  const loadedTabsRef = useRef<Set<TabType>>(new Set());
+
   // Load semantic data from API
   const loadSemanticData = useCallback(async () => {
     if (!memo) return;
@@ -162,6 +165,8 @@ export const RelatedMemosModal = view(({ isOpen, onClose, memo, onMemoClick }: R
       setSemanticData({ items: [], loading: false });
       setForwardData({ items: [], loading: false });
       setBacklinksData({ items: [], loading: false });
+      // Reset loaded tabs tracking
+      loadedTabsRef.current.clear();
       // Load semantic data immediately
       loadSemanticData();
     }
@@ -171,19 +176,25 @@ export const RelatedMemosModal = view(({ isOpen, onClose, memo, onMemoClick }: R
   useEffect(() => {
     if (!isOpen || !memo) return;
 
+    // Prevent duplicate requests using ref tracking (handles empty server responses)
+    if (loadedTabsRef.current.has(activeTab)) return;
+
     switch (activeTab) {
       case 'semantic':
-        if (semanticData.items.length === 0 && !semanticData.loading) {
+        if (!semanticData.loading) {
+          loadedTabsRef.current.add('semantic');
           loadSemanticData();
         }
         break;
       case 'forward':
-        if (forwardData.items.length === 0 && !forwardData.loading) {
+        if (!forwardData.loading) {
+          loadedTabsRef.current.add('forward');
           loadForwardData();
         }
         break;
       case 'backlinks':
-        if (backlinksData.items.length === 0 && !backlinksData.loading) {
+        if (!backlinksData.loading) {
+          loadedTabsRef.current.add('backlinks');
           loadBacklinksData();
         }
         break;
@@ -192,11 +203,8 @@ export const RelatedMemosModal = view(({ isOpen, onClose, memo, onMemoClick }: R
     activeTab,
     isOpen,
     memo,
-    semanticData.items.length,
     semanticData.loading,
-    forwardData.items.length,
     forwardData.loading,
-    backlinksData.items.length,
     backlinksData.loading,
     loadSemanticData,
     loadForwardData,

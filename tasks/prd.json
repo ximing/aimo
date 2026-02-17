@@ -56,8 +56,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented in commit 9a5e27f. Browser verification pending."
     }
   ]
 }
