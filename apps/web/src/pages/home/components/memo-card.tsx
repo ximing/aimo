@@ -3,7 +3,8 @@ import { view, useService } from '@rabjs/react';
 import type { MemoListItemDto, MemoListItemWithScoreDto, AttachmentDto } from '@aimo/dto';
 import { MemoService } from '../../../services/memo.service';
 import { AttachmentService } from '../../../services/attachment.service';
-import { FileText, Film, Edit2, Trash2, Link, Download } from 'lucide-react';
+import { CategoryService } from '../../../services/category.service';
+import { FileText, Film, Edit2, Trash2, Link, Download, Tag } from 'lucide-react';
 import { RelatedMemosModal } from './related-memos-modal';
 import { ConfirmDeleteModal } from './confirm-delete-modal';
 import { MemoEditorForm } from '../../../components/memo-editor-form';
@@ -42,6 +43,7 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
 
   const memoService = useService(MemoService);
   const attachmentService = useService(AttachmentService);
+  const categoryService = useService(CategoryService);
 
   const handleClosePreview = useCallback(() => {
     setIsPreviewOpen(false);
@@ -308,6 +310,13 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
                 <span className="text-xs text-gray-500 dark:text-gray-500">
                   {formatDate(memo.createdAt)}
                 </span>
+                {/* Category Tag */}
+                {memo.categoryId && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary-50 dark:bg-primary-950/30 text-primary-700 dark:text-primary-400 text-xs rounded-full">
+                    <Tag className="w-3 h-3" />
+                    {categoryService.getCategoryName(memo.categoryId) || '...'}
+                  </span>
+                )}
                 {/* Show relevance score if available (from vector search) */}
                 {'relevanceScore' in memo &&
                   (memo as MemoListItemWithScoreDto).relevanceScore !== undefined && (

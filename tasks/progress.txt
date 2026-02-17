@@ -29,9 +29,10 @@
 - US-007: 创建memo时选择类别
 - US-008: 创建memo时快捷创建类别
 - US-009: 根据筛选状态默认选中类别
+- US-010: 显示memo的类别标签
 
 ## Current Story
-US-010: 显示memo的类别标签
+US-011: 编辑memo时修改类别
 
 ## Blockers/Issues
 
@@ -193,6 +194,24 @@ US-010: 显示memo的类别标签
   - defaultCategoryId prop allows parent components to pre-select a category (e.g., from current filter)
   - When editing, initialize selectedCategoryId from initialMemo.categoryId
   - The category dropdown uses the same UI pattern as the category-filter component
+---
+
+## 2026-02-18T00:15:00Z - US-010
+- Implemented category tag display on memo cards
+- Files changed:
+  - apps/web/src/pages/home/components/memo-card.tsx
+    - Added CategoryService import and Tag icon from lucide-react
+    - Added categoryService instance via useService hook
+    - Added category tag display in footer section, next to date
+    - Tag shows category name with Tag icon, styled with primary color background
+    - Only displays if memo has a categoryId assigned
+- Build and lint pass successfully
+- **Learnings for future iterations:**
+  - Pattern for displaying category info: Use CategoryService.getCategoryName() to look up category name by ID
+  - The memo DTO only contains categoryId, not the category name, so a lookup is needed
+  - Category tag styling: Use primary-50 background with primary-700 text for light mode, primary-950/30 with primary-400 for dark mode
+  - Place category tag in the footer next to the date for a clean, unobtrusive look
+  - Only show tag when categoryId exists (conditional rendering)
 ---
 
 ## 2026-02-17T23:45:00Z - US-008
