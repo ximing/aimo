@@ -10,9 +10,10 @@
 ## Feature: category-filter
 
 ## Completed Stories
+- US-001: 获取类别列表API
 
 ## Current Story
-US-001: 获取类别列表API
+US-002: 创建类别API
 
 ## Blockers/Issues
 
@@ -36,4 +37,18 @@ US-001: 获取类别列表API
   - CategoryService.getCategoriesByUid() returns categories sorted by createdAt
   - The API returns { code: 0, msg: "...", data: { categories: [...] } }
   - Need to check if sorting by name is required (currently sorted by createdAt)
+---
+
+## 2026-02-17T11:00:00Z - US-002
+- Implemented duplicate category name check for POST /categories API
+- Files changed:
+  - apps/server/src/constants/error-codes.ts (added CATEGORY_ALREADY_EXISTS: 3001)
+  - apps/server/src/services/category.service.ts (added getCategoryByName(), duplicate check in createCategory())
+  - apps/server/src/controllers/v1/category.controller.ts (catch duplicate error, return CATEGORY_ALREADY_EXISTS)
+- Build and lint pass successfully
+- **Learnings for future iterations:**
+  - Pattern for handling duplicate name errors: throw error with "already exists" message in service, catch in controller and return specific error code
+  - Error codes follow ranges: 3000-3999 for business logic errors
+  - Case-insensitive name comparison is done by querying all user categories and filtering in memory (LanceDB doesn't support case-insensitive queries directly)
+  - The API returns { code: 3001, msg: "类别已存在", data: null } for duplicates
 ---

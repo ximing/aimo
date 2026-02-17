@@ -18,13 +18,21 @@ export class CategoryService {
         throw new Error('Category name cannot be empty');
       }
 
+      const trimmedName = data.name.trim();
+
+      // Check for duplicate category name for this user
+      const existingCategory = await this.getCategoryByName(uid, trimmedName);
+      if (existingCategory) {
+        throw new Error('Category with this name already exists');
+      }
+
       const categoryId = generateTypeId(OBJECT_TYPE.CATEGORY);
       const now = Date.now();
 
       const category: CategoryRecord = {
         categoryId,
         uid,
-        name: data.name.trim(),
+        name: trimmedName,
         color: data.color?.trim() || undefined,
         createdAt: now,
         updatedAt: now,
@@ -55,6 +63,28 @@ export class CategoryService {
       return results.map((record) => this.toCategoryDto(record as CategoryRecord));
     } catch (error) {
       console.error('Failed to get categories:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get a category by name (case-insensitive)
+   */
+  async getCategoryByName(uid: string, name: string): Promise<CategoryDto | null> {
+    try {
+      const table = await this.lanceDb.openTable('categories');
+
+      // Query all categories for this user and filter by name (case-insensitive)
+      const results = await table.query().where(`uid = '${uid}'`).toArray();
+
+      const normalizedName = name.toLowerCase();
+      const matchingCategory = results.find(
+        (record: any) => record.name.toLowerCase() === normalizedName
+      );
+
+      return matchingCategory ? this.toCategoryDto(matchingCategory as CategoryRecord) : null;
+    } catch (error) {
+      console.error('Failed to get category by name:', error);
       throw error;
     }
   }

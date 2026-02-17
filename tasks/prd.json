@@ -29,8 +29,8 @@
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented duplicate name check with CATEGORY_ALREADY_EXISTS (3001) error code"
     },
     {
       "id": "US-003",
