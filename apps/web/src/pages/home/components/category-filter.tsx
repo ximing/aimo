@@ -2,12 +2,14 @@ import { useState, useRef, useEffect } from 'react';
 import { view, useService } from '@rabjs/react';
 import { CategoryService } from '../../../services/category.service';
 import { MemoService } from '../../../services/memo.service';
-import { FolderOpen, Check, ChevronDown } from 'lucide-react';
+import { FolderOpen, Check, ChevronDown, Plus } from 'lucide-react';
+import { CreateCategoryModal } from './create-category-modal';
 
 export const CategoryFilter = view(() => {
   const categoryService = useService(CategoryService);
   const memoService = useService(MemoService);
   const [isOpen, setIsOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Fetch categories on mount
@@ -32,6 +34,16 @@ export const CategoryFilter = view(() => {
   const handleSelectCategory = (categoryId: string | null) => {
     memoService.setCategoryFilter(categoryId);
     setIsOpen(false);
+  };
+
+  const handleOpenCreateModal = () => {
+    setIsOpen(false);
+    setIsCreateModalOpen(true);
+  };
+
+  const handleCategoryCreated = (categoryId: string) => {
+    // Auto-select the newly created category
+    memoService.setCategoryFilter(categoryId);
   };
 
   // Get current selected category name
@@ -112,8 +124,27 @@ export const CategoryFilter = view(() => {
               加载中...
             </div>
           )}
+
+          {/* Divider */}
+          <div className="my-1 border-t border-gray-200 dark:border-dark-700" />
+
+          {/* Create New Category Button */}
+          <button
+            onClick={handleOpenCreateModal}
+            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
+          >
+            <Plus size={14} />
+            <span>新建类别</span>
+          </button>
         </div>
       )}
+
+      {/* Create Category Modal */}
+      <CreateCategoryModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onCategoryCreated={handleCategoryCreated}
+      />
     </div>
   );
 });
