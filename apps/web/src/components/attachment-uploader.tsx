@@ -27,7 +27,6 @@ export const AttachmentUploader = ({
   onAttachmentsChange,
   onRemove,
   uploadingFiles = new Set(),
-  maxCount = 9,
   disabled = false,
 }: AttachmentUploaderProps) => {
   const handleRemove = async (id: string) => {

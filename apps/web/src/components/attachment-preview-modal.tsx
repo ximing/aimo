@@ -80,6 +80,7 @@ const AttachmentPreviewModalContent = view(({ isOpen, onClose }: AttachmentPrevi
   };
 
   const handleDeleteConfirm = async () => {
+    if (!attachment) return;
     setIsDeleting(true);
     try {
       const next = attachmentService.getNextAttachment();
