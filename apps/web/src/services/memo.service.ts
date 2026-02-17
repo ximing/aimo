@@ -33,6 +33,7 @@ export class MemoService extends Service {
   sortOrder: 'asc' | 'desc' = 'desc';
   startDate: Date | null = null;
   endDate: Date | null = null;
+  categoryFilter: string | null = null;
 
   /**
    * Computed: Get filtered memos (for client-side filtering if needed)
@@ -72,6 +73,10 @@ export class MemoService extends Service {
 
       if (this.endDate) {
         params.endDate = this.endDate;
+      }
+
+      if (this.categoryFilter) {
+        params.categoryId = this.categoryFilter;
       }
 
       const response = await memoApi.getMemos(params);
@@ -223,6 +228,14 @@ export class MemoService extends Service {
   setDateRange(startDate: Date | null, endDate: Date | null) {
     this.startDate = startDate;
     this.endDate = endDate;
+    this.fetchMemos(true);
+  }
+
+  /**
+   * Set category filter
+   */
+  setCategoryFilter(categoryId: string | null) {
+    this.categoryFilter = categoryId;
     this.fetchMemos(true);
   }
 
