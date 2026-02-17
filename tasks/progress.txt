@@ -15,9 +15,10 @@
 - US-003: 更新删除类别API
 - US-004: 类别筛选器组件
 - US-005: 本地持久化筛选状态
+- US-006: 筛选器创建新类别
 
 ## Current Story
-US-006: 筛选器创建新类别
+US-007: 创建memo时选择类别
 
 ## Blockers/Issues
 
@@ -109,4 +110,30 @@ US-006: 筛选器创建新类别
   - The 'null' string is stored when "all categories" is selected, which is correctly parsed back to null
   - Service initialization can safely read from localStorage - it runs in browser context
   - Always wrap localStorage access in try-catch to handle private browsing mode or SSR scenarios
+---
+
+## 2026-02-17T23:00:00Z - US-006
+- Implemented create new category from filter dropdown
+- Files changed:
+  - apps/web/src/pages/home/components/category-filter.tsx
+    - Added Plus icon import and CreateCategoryModal import
+    - Added isCreateModalOpen state
+    - Added handleOpenCreateModal and handleCategoryCreated handlers
+    - Added + 新建类别 button at bottom of dropdown
+    - Integrated CreateCategoryModal component
+  - apps/web/src/pages/home/components/create-category-modal.tsx (new)
+    - Created modal using @headlessui/react Dialog and Transition
+    - Form with category name input, validation (required, max 50 chars)
+    - Character counter and error display
+    - Loading state handling
+    - Uses CategoryService.createCategory() API
+    - Calls onCategoryCreated callback with new category ID on success
+- Build and lint pass successfully
+- **Learnings for future iterations:**
+  - Pattern for modal dialogs: Use @headlessui/react Dialog with Transition for animations
+  - Form validation pattern: validate on submit, clear errors on input change
+  - Character counter pattern: Show current/max below input
+  - Auto-focus input using autoFocus prop
+  - Callback pattern: onCategoryCreated passes categoryId to parent for auto-selection
+  - Modal closes dropdown first (setIsOpen(false)), then opens modal to avoid UI overlap
 ---

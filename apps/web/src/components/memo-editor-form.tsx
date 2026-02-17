@@ -1,21 +1,24 @@
 import { useState, useRef, useEffect } from 'react';
 import { view, useService } from '@rabjs/react';
 import { MemoService } from '../services/memo.service';
+import { CategoryService } from '../services/category.service';
 import { AttachmentUploader, type AttachmentItem } from './attachment-uploader';
 import { attachmentApi } from '../api/attachment';
 import * as memoApi from '../api/memo';
-import { Paperclip, X } from 'lucide-react';
+import { Paperclip, X, FolderOpen, Check, ChevronDown, Plus } from 'lucide-react';
 import type { MemoListItemDto, MemoWithAttachmentsDto } from '@aimo/dto';
+import { CreateCategoryModal } from '../pages/home/components/create-category-modal';
 
 interface MemoEditorFormProps {
   mode: 'create' | 'edit';
   initialMemo?: MemoListItemDto; // 编辑模式必需
   onSave?: (memo: MemoWithAttachmentsDto) => void;
   onCancel?: () => void;
+  defaultCategoryId?: string | null; // 默认选中的类别ID
 }
 
 export const MemoEditorForm = view(
-  ({ mode, initialMemo, onSave, onCancel }: MemoEditorFormProps) => {
+  ({ mode, initialMemo, onSave, onCancel, defaultCategoryId }: MemoEditorFormProps) => {
     const [content, setContent] = useState(initialMemo?.content || '');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -26,12 +29,19 @@ export const MemoEditorForm = view(
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [searchingRelations, setSearchingRelations] = useState(false);
     const [uploadingFiles, setUploadingFiles] = useState<Set<string>>(new Set());
+    const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
+      initialMemo?.categoryId || defaultCategoryId || null
+    );
+    const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
+    const [isCreateCategoryModalOpen, setIsCreateCategoryModalOpen] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const suggestionsRef = useRef<HTMLDivElement>(null);
+    const categoryDropdownRef = useRef<HTMLDivElement>(null);
     const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
     const memoService = useService(MemoService);
+    const categoryService = useService(CategoryService);
 
     // 初始化编辑模式的数据
     useEffect(() => {
@@ -51,8 +61,35 @@ export const MemoEditorForm = view(
         if (initialMemo.relations && initialMemo.relations.length > 0) {
           setSelectedRelations(initialMemo.relations);
         }
+
+        // 初始化类别
+        if (initialMemo.categoryId) {
+          setSelectedCategoryId(initialMemo.categoryId);
+        }
       }
     }, [mode, initialMemo]);
+
+    // 获取类别列表
+    useEffect(() => {
+      categoryService.fetchCategories();
+    }, []);
+
+    // 点击外部关闭类别下拉框
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (
+          categoryDropdownRef.current &&
+          !categoryDropdownRef.current.contains(event.target as Node)
+        ) {
+          setIsCategoryDropdownOpen(false);
+        }
+      };
+
+      if (isCategoryDropdownOpen) {
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+      }
+    }, [isCategoryDropdownOpen]);
 
     // 清理防抖计时器
     useEffect(() => {
@@ -86,6 +123,7 @@ export const MemoEditorForm = view(
           // 创建 memo
           result = await memoService.createMemo(
             content,
+            selectedCategoryId || undefined,
             attachmentIds.length > 0 ? attachmentIds : undefined,
             relationIds.length > 0 ? relationIds : undefined
           );
@@ -97,6 +135,7 @@ export const MemoEditorForm = view(
           result = await memoService.updateMemo(
             initialMemo.memoId,
             content,
+            selectedCategoryId,
             attachmentIds.length > 0 ? attachmentIds : undefined,
             relationIds.length > 0 ? relationIds : undefined
           );
@@ -311,7 +350,28 @@ export const MemoEditorForm = view(
       }
     };
 
+    const handleSelectCategory = (categoryId: string | null) => {
+      setSelectedCategoryId(categoryId);
+      setIsCategoryDropdownOpen(false);
+    };
+
+    const handleOpenCreateCategoryModal = () => {
+      setIsCategoryDropdownOpen(false);
+      setIsCreateCategoryModalOpen(true);
+    };
+
+    const handleCategoryCreated = (categoryId: string) => {
+      // Auto-select the newly created category
+      setSelectedCategoryId(categoryId);
+    };
+
+    // Get selected category name
+    const selectedCategoryName = selectedCategoryId
+      ? categoryService.getCategoryName(selectedCategoryId) || '选择类别'
+      : '无类别';
+
     return (
+      <>
       <form onSubmit={handleSubmit} noValidate className="space-y-2">
         {error && (
           <div
@@ -424,6 +484,94 @@ export const MemoEditorForm = view(
             disabled={loading}
           />
 
+          {/* 类别选择器 */}
+          <div className="flex items-center gap-2">
+            <div className="relative" ref={categoryDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
+                disabled={loading}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg border transition-all duration-200 ${
+                  selectedCategoryId
+                    ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-300 dark:border-primary-700 text-primary-700 dark:text-primary-300'
+                    : 'bg-gray-50 dark:bg-dark-700 border-gray-200 dark:border-dark-600 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-600'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                aria-expanded={isCategoryDropdownOpen}
+                aria-haspopup="listbox"
+              >
+                <FolderOpen size={14} />
+                <span className="max-w-[100px] truncate">{selectedCategoryName}</span>
+                <ChevronDown
+                  size={14}
+                  className={`transition-transform duration-200 ${isCategoryDropdownOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
+
+              {/* Category Dropdown Menu */}
+              {isCategoryDropdownOpen && (
+                <div className="absolute left-0 bottom-full mb-1 w-48 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg shadow-lg z-50 py-1">
+                  {/* No Category Option */}
+                  <button
+                    type="button"
+                    onClick={() => handleSelectCategory(null)}
+                    className={`w-full flex items-center justify-between px-4 py-2 text-sm transition-colors ${
+                      !selectedCategoryId
+                        ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700'
+                    }`}
+                  >
+                    <span>无类别</span>
+                    {!selectedCategoryId && <Check size={14} />}
+                  </button>
+
+                  {/* Divider */}
+                  {categoryService.categories.length > 0 && (
+                    <div className="my-1 border-t border-gray-200 dark:border-dark-700" />
+                  )}
+
+                  {/* Category List */}
+                  <div className="max-h-40 overflow-y-auto">
+                    {categoryService.categories.map((category) => (
+                      <button
+                        key={category.categoryId}
+                        type="button"
+                        onClick={() => handleSelectCategory(category.categoryId)}
+                        className={`w-full flex items-center justify-between px-4 py-2 text-sm transition-colors ${
+                          selectedCategoryId === category.categoryId
+                            ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
+                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700'
+                        }`}
+                      >
+                        <span className="truncate">{category.name}</span>
+                        {selectedCategoryId === category.categoryId && <Check size={14} />}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Empty State */}
+                  {categoryService.categories.length === 0 && !categoryService.loading && (
+                    <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
+                      暂无类别
+                    </div>
+                  )}
+
+                  {/* Divider */}
+                  <div className="my-1 border-t border-gray-200 dark:border-dark-700" />
+
+                  {/* Create New Category Button */}
+                  <button
+                    type="button"
+                    onClick={handleOpenCreateCategoryModal}
+                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
+                  >
+                    <Plus size={14} />
+                    <span>新建类别</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* 操作栏：附件按钮和保存按钮 */}
           <div className="flex items-center justify-between">
             {/* 左侧：附件按钮 */}
@@ -463,6 +611,13 @@ export const MemoEditorForm = view(
           </div>
         </div>
       </form>
-    );
-  }
-);
+
+      {/* Create Category Modal */}
+      <CreateCategoryModal
+        isOpen={isCreateCategoryModalOpen}
+        onClose={() => setIsCreateCategoryModalOpen(false)}
+        onCategoryCreated={handleCategoryCreated}
+      />
+    </>
+  );
+});
