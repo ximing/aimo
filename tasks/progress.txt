@@ -13,9 +13,11 @@
 - US-001: 获取类别列表API
 - US-002: 创建类别API
 - US-003: 更新删除类别API
+- US-004: 类别筛选器组件
+- US-005: 本地持久化筛选状态
 
 ## Current Story
-US-004: 类别筛选器组件
+US-006: 筛选器创建新类别
 
 ## Blockers/Issues
 
@@ -71,4 +73,40 @@ US-004: 类别筛选器组件
   - LanceDB update() method can set fields to null using { field: null }
   - The delete-then-add pattern for categories preserves all fields while updating updatedAt
   - Error handling pattern: throw specific error messages in service, catch and map to error codes in controller
+---
+
+## 2026-02-17T22:00:00Z - US-004
+- Implemented category filter component for memo list page
+- Files changed:
+  - apps/web/src/api/category.ts (new - category API client)
+  - apps/web/src/services/category.service.ts (new - CategoryService for state management)
+  - apps/web/src/pages/home/components/category-filter.tsx (new - CategoryFilter UI component)
+  - apps/web/src/pages/home/components/search-sort-bar.tsx (integrated CategoryFilter)
+  - apps/web/src/services/memo.service.ts (added categoryFilter state and filtering logic)
+- Build and lint pass successfully
+- **Learnings for future iterations:**
+  - Frontend service pattern: Use @rabjs/react Service class with observable state
+  - API pattern: Create separate API files in src/api/ that use the shared request utility
+  - Component pattern: Use view() HOC from @rabjs/react for reactive components
+  - Dropdown pattern: Use useRef and mousedown event listener for click-outside handling
+  - The category filter integrates with existing MemoService filtering (search, sort, date range)
+  - UI styling follows existing patterns: Tailwind with dark mode support using dark: prefixes
+  - The filter button shows active state with primary color when a category is selected
+---
+
+## 2026-02-17T22:30:00Z - US-005
+- Implemented localStorage persistence for category filter state
+- Files changed:
+  - apps/web/src/services/memo.service.ts
+    - Added CATEGORY_FILTER_STORAGE_KEY constant ('aimo_memo_category_filter')
+    - Added loadCategoryFilterFromStorage() helper function
+    - Added saveCategoryFilterToStorage() helper function
+    - Initialized categoryFilter from localStorage on service creation
+    - Updated setCategoryFilter() to persist to localStorage
+- Build and lint pass successfully
+- **Learnings for future iterations:**
+  - Pattern for localStorage persistence: Create load/save helper functions with try-catch for SSR/private mode safety
+  - The 'null' string is stored when "all categories" is selected, which is correctly parsed back to null
+  - Service initialization can safely read from localStorage - it runs in browser context
+  - Always wrap localStorage access in try-catch to handle private browsing mode or SSR scenarios
 ---

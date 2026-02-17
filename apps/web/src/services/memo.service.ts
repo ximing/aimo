@@ -9,6 +9,37 @@ import type {
 } from '@aimo/dto';
 import * as memoApi from '../api/memo';
 
+// LocalStorage key for category filter persistence
+const CATEGORY_FILTER_STORAGE_KEY = 'aimo_memo_category_filter';
+
+/**
+ * Load category filter from localStorage
+ */
+function loadCategoryFilterFromStorage(): string | null {
+  try {
+    const saved = localStorage.getItem(CATEGORY_FILTER_STORAGE_KEY);
+    // 'null' string represents "all categories" (no filter)
+    if (saved === 'null' || saved === null) {
+      return null;
+    }
+    return saved;
+  } catch {
+    // localStorage might not be available (e.g., SSR or private mode)
+    return null;
+  }
+}
+
+/**
+ * Save category filter to localStorage
+ */
+function saveCategoryFilterToStorage(categoryId: string | null): void {
+  try {
+    localStorage.setItem(CATEGORY_FILTER_STORAGE_KEY, String(categoryId));
+  } catch {
+    // localStorage might not be available
+  }
+}
+
 /**
  * Memo Service
  * Manages memo data and operations
@@ -33,7 +64,7 @@ export class MemoService extends Service {
   sortOrder: 'asc' | 'desc' = 'desc';
   startDate: Date | null = null;
   endDate: Date | null = null;
-  categoryFilter: string | null = null;
+  categoryFilter: string | null = loadCategoryFilterFromStorage();
 
   /**
    * Computed: Get filtered memos (for client-side filtering if needed)
@@ -236,6 +267,7 @@ export class MemoService extends Service {
    */
   setCategoryFilter(categoryId: string | null) {
     this.categoryFilter = categoryId;
+    saveCategoryFilterToStorage(categoryId);
     this.fetchMemos(true);
   }
 
