@@ -1,0 +1,256 @@
+## Codebase Patterns
+- Backend services use TypeDI @Service() decorator for dependency injection
+- Controllers use routing-controllers decorators (@Get, @Post, etc.)
+- LanceDB tables are accessed via LanceDbService.openTable()
+- All queries must filter by uid for user isolation
+- Timestamps are stored in milliseconds (Date.now())
+- DTOs are shared between frontend/backend via @aimo/dto package
+- IDs use type prefixes: 'c' for categories, 'm' for memos, etc.
+
+## Feature: category-filter
+
+## Completed Stories
+- US-001: 获取类别列表API
+- US-002: 创建类别API
+- US-003: 更新删除类别API
+- US-004: 类别筛选器组件
+- US-005: 本地持久化筛选状态
+- US-006: 筛选器创建新类别
+- US-007: 创建memo时选择类别
+- US-008: 创建memo时快捷创建类别
+
+## Completed Stories
+- US-001: 获取类别列表API
+- US-002: 创建类别API
+- US-003: 更新删除类别API
+- US-004: 类别筛选器组件
+- US-005: 本地持久化筛选状态
+- US-006: 筛选器创建新类别
+- US-007: 创建memo时选择类别
+- US-008: 创建memo时快捷创建类别
+- US-009: 根据筛选状态默认选中类别
+- US-010: 显示memo的类别标签
+- US-011: 编辑memo时修改类别
+
+## Current Story
+All stories completed!
+
+## Blockers/Issues
+
+## Notes
+
+---
+
+## 2026-02-18T00:00:00Z - US-009
+- Verified US-009 was already implemented as part of previous stories
+- Implementation flow:
+  1. memo-editor.tsx passes `defaultCategoryId={memoService.categoryFilter}` to MemoEditorForm
+  2. MemoEditorForm initializes `selectedCategoryId` with `initialMemo?.categoryId || defaultCategoryId || null`
+  3. The categoryFilter is persisted in localStorage (from US-005), so it survives page refreshes
+- Files involved (already implemented):
+  - apps/web/src/pages/home/components/memo-editor.tsx
+  - apps/web/src/components/memo-editor-form.tsx
+- Build and lint pass successfully
+- **Learnings for future iterations:**
+  - US-009 was completed as part of US-007 implementation
+  - The pattern for default values: pass via props from parent, use as fallback in state initialization
+  - When editing, initialMemo.categoryId takes precedence over defaultCategoryId
+  - When creating, defaultCategoryId (from current filter) is used
+  - If filter is "all categories" (null), defaults to no category (null)
+---
+
+## 2026-02-17T10:30:00Z - US-001
+- Verified backend implementation for GET /categories API
+- Files involved:
+  - packages/dto/src/category.ts (DTO definitions)
+  - apps/server/src/services/category.service.ts (business logic)
+  - apps/server/src/controllers/v1/category.controller.ts (REST endpoint)
+  - apps/server/src/models/db/schema.ts (categoriesSchema)
+  - apps/server/src/migrations/scripts/001-init.ts (table migration)
+  - apps/server/src/migrations/scripts/002-create-indexes.ts (indexes)
+  - apps/server/src/controllers/index.ts (controller registration)
+- Build and lint pass successfully
+- **Learnings for future iterations:**
+  - The backend category API is already fully implemented
+  - CategoryService.getCategoriesByUid() returns categories sorted by createdAt
+  - The API returns { code: 0, msg: "...", data: { categories: [...] } }
+  - Need to check if sorting by name is required (currently sorted by createdAt)
+---
+
+## 2026-02-17T11:00:00Z - US-002
+- Implemented duplicate category name check for POST /categories API
+- Files changed:
+  - apps/server/src/constants/error-codes.ts (added CATEGORY_ALREADY_EXISTS: 3001)
+  - apps/server/src/services/category.service.ts (added getCategoryByName(), duplicate check in createCategory())
+  - apps/server/src/controllers/v1/category.controller.ts (catch duplicate error, return CATEGORY_ALREADY_EXISTS)
+- Build and lint pass successfully
+- **Learnings for future iterations:**
+  - Pattern for handling duplicate name errors: throw error with "already exists" message in service, catch in controller and return specific error code
+  - Error codes follow ranges: 3000-3999 for business logic errors
+  - Case-insensitive name comparison is done by querying all user categories and filtering in memory (LanceDB doesn't support case-insensitive queries directly)
+  - The API returns { code: 3001, msg: "类别已存在", data: null } for duplicates
+---
+
+## 2026-02-17T21:20:00Z - US-003
+- Implemented PUT and DELETE category APIs with proper business logic
+- Files changed:
+  - apps/server/src/services/category.service.ts
+    - Added duplicate name check in updateCategory() method
+    - Added clearCategoryFromMemos() helper method to clear categoryId from memos
+    - Updated deleteCategory() to call clearCategoryFromMemos() before deleting
+  - apps/server/src/controllers/v1/category.controller.ts
+    - Added error handling for duplicate name in updateCategory endpoint
+- Build and lint pass successfully
+- **Learnings for future iterations:**
+  - Pattern for updating records in LanceDB: delete old record then add new one (no native update)
+  - Pattern for clearing references: query all records with the foreign key, then update each one
+  - LanceDB update() method can set fields to null using { field: null }
+  - The delete-then-add pattern for categories preserves all fields while updating updatedAt
+  - Error handling pattern: throw specific error messages in service, catch and map to error codes in controller
+---
+
+## 2026-02-17T22:00:00Z - US-004
+- Implemented category filter component for memo list page
+- Files changed:
+  - apps/web/src/api/category.ts (new - category API client)
+  - apps/web/src/services/category.service.ts (new - CategoryService for state management)
+  - apps/web/src/pages/home/components/category-filter.tsx (new - CategoryFilter UI component)
+  - apps/web/src/pages/home/components/search-sort-bar.tsx (integrated CategoryFilter)
+  - apps/web/src/services/memo.service.ts (added categoryFilter state and filtering logic)
+- Build and lint pass successfully
+- **Learnings for future iterations:**
+  - Frontend service pattern: Use @rabjs/react Service class with observable state
+  - API pattern: Create separate API files in src/api/ that use the shared request utility
+  - Component pattern: Use view() HOC from @rabjs/react for reactive components
+  - Dropdown pattern: Use useRef and mousedown event listener for click-outside handling
+  - The category filter integrates with existing MemoService filtering (search, sort, date range)
+  - UI styling follows existing patterns: Tailwind with dark mode support using dark: prefixes
+  - The filter button shows active state with primary color when a category is selected
+---
+
+## 2026-02-17T22:30:00Z - US-005
+- Implemented localStorage persistence for category filter state
+- Files changed:
+  - apps/web/src/services/memo.service.ts
+    - Added CATEGORY_FILTER_STORAGE_KEY constant ('aimo_memo_category_filter')
+    - Added loadCategoryFilterFromStorage() helper function
+    - Added saveCategoryFilterToStorage() helper function
+    - Initialized categoryFilter from localStorage on service creation
+    - Updated setCategoryFilter() to persist to localStorage
+- Build and lint pass successfully
+- **Learnings for future iterations:**
+  - Pattern for localStorage persistence: Create load/save helper functions with try-catch for SSR/private mode safety
+  - The 'null' string is stored when "all categories" is selected, which is correctly parsed back to null
+  - Service initialization can safely read from localStorage - it runs in browser context
+  - Always wrap localStorage access in try-catch to handle private browsing mode or SSR scenarios
+---
+
+## 2026-02-17T23:00:00Z - US-006
+- Implemented create new category from filter dropdown
+- Files changed:
+  - apps/web/src/pages/home/components/category-filter.tsx
+    - Added Plus icon import and CreateCategoryModal import
+    - Added isCreateModalOpen state
+    - Added handleOpenCreateModal and handleCategoryCreated handlers
+    - Added + 新建类别 button at bottom of dropdown
+    - Integrated CreateCategoryModal component
+  - apps/web/src/pages/home/components/create-category-modal.tsx (new)
+    - Created modal using @headlessui/react Dialog and Transition
+    - Form with category name input, validation (required, max 50 chars)
+    - Character counter and error display
+    - Loading state handling
+    - Uses CategoryService.createCategory() API
+    - Calls onCategoryCreated callback with new category ID on success
+- Build and lint pass successfully
+- **Learnings for future iterations:**
+  - Pattern for modal dialogs: Use @headlessui/react Dialog with Transition for animations
+  - Form validation pattern: validate on submit, clear errors on input change
+  - Character counter pattern: Show current/max below input
+  - Auto-focus input using autoFocus prop
+  - Callback pattern: onCategoryCreated passes categoryId to parent for auto-selection
+  - Modal closes dropdown first (setIsOpen(false)), then opens modal to avoid UI overlap
+---
+
+## 2026-02-17T23:30:00Z - US-007
+- Implemented category selector in memo creation dialog
+- Files changed:
+  - apps/web/src/components/memo-editor-form.tsx
+    - Added CategoryService import and usage
+    - Added selectedCategoryId state with defaultCategoryId prop support
+    - Added category dropdown UI with all existing categories
+    - Added "No Category" option
+    - Added "+ New Category" button that opens CreateCategoryModal
+    - Updated handleSubmit to pass categoryId to createMemo/updateMemo
+    - Added handlers: handleSelectCategory, handleOpenCreateCategoryModal, handleCategoryCreated
+  - apps/web/src/pages/home/components/memo-editor.tsx
+    - Added useService(MemoService) to get current categoryFilter
+    - Passed defaultCategoryId={memoService.categoryFilter} to MemoEditorForm
+  - apps/web/src/services/memo.service.ts
+    - Updated createMemo signature to accept categoryId parameter
+    - Updated updateMemo signature to accept categoryId parameter
+- Build and lint pass successfully
+- **Learnings for future iterations:**
+  - Pattern for adding category selection: Use CategoryService to fetch categories, maintain selectedCategoryId state
+  - The CreateCategoryModal component is reusable across different parts of the app
+  - defaultCategoryId prop allows parent components to pre-select a category (e.g., from current filter)
+  - When editing, initialize selectedCategoryId from initialMemo.categoryId
+  - The category dropdown uses the same UI pattern as the category-filter component
+---
+
+## 2026-02-18T00:15:00Z - US-010
+- Implemented category tag display on memo cards
+- Files changed:
+  - apps/web/src/pages/home/components/memo-card.tsx
+    - Added CategoryService import and Tag icon from lucide-react
+    - Added categoryService instance via useService hook
+    - Added category tag display in footer section, next to date
+    - Tag shows category name with Tag icon, styled with primary color background
+    - Only displays if memo has a categoryId assigned
+- Build and lint pass successfully
+- **Learnings for future iterations:**
+  - Pattern for displaying category info: Use CategoryService.getCategoryName() to look up category name by ID
+  - The memo DTO only contains categoryId, not the category name, so a lookup is needed
+  - Category tag styling: Use primary-50 background with primary-700 text for light mode, primary-950/30 with primary-400 for dark mode
+  - Place category tag in the footer next to the date for a clean, unobtrusive look
+  - Only show tag when categoryId exists (conditional rendering)
+---
+
+## 2026-02-17T23:45:00Z - US-008
+- Verified US-008 was already implemented as part of US-007
+- The memo-editor-form component already has:
+  - "+ 新建类别" button in the category dropdown (line 562-569)
+  - handleOpenCreateCategoryModal function that closes dropdown and opens modal
+  - handleCategoryCreated callback that auto-selects the new category
+  - CreateCategoryModal integration without closing the memo dialog
+- Files involved (already implemented):
+  - apps/web/src/components/memo-editor-form.tsx
+  - apps/web/src/pages/home/components/create-category-modal.tsx
+- Build and lint pass successfully
+- **Learnings for future iterations:**
+  - US-008 was completed as part of US-007 implementation
+  - The pattern for inline category creation: close dropdown first, open modal, then auto-select new category
+  - The memo dialog stays open throughout the category creation flow
+  - This provides a seamless UX for users who need a new category while creating a memo
+---
+
+## 2026-02-18T01:00:00Z - US-011
+- Verified US-011 was already implemented as part of US-007
+- Implementation flow:
+  1. memo-editor-form.tsx initializes `selectedCategoryId` from `initialMemo?.categoryId` when in edit mode (line 32-34, 66-68)
+  2. The category dropdown shows all existing categories with current selection highlighted
+  3. "No Category" option allows removing category (setting to null)
+  4. "+ New Category" button allows quick category creation
+  5. On save, `selectedCategoryId` is passed to `memoService.updateMemo()` (line 135-141)
+  6. MemoService.updateMemo passes categoryId to the backend API (memo.service.ts line 179)
+- Files involved (already implemented):
+  - apps/web/src/components/memo-editor-form.tsx
+  - apps/web/src/services/memo.service.ts
+  - apps/web/src/pages/home/components/memo-card.tsx (uses MemoEditorForm in edit mode)
+- Build and lint pass successfully
+- **Learnings for future iterations:**
+  - US-011 was completed as part of US-007 implementation
+  - The same MemoEditorForm component handles both create and edit modes
+  - When editing, initialMemo.categoryId is used to initialize the selected category
+  - The category can be changed, removed (set to null), or a new one created during editing
+  - The updateMemo API properly handles categoryId updates on the backend
+---
