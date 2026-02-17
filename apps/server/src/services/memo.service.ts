@@ -13,6 +13,8 @@ import type {
   MemoListItemWithScoreDto,
   PaginatedMemoListWithScoreDto,
   AttachmentDto,
+  MemoActivityStatsDto,
+  MemoActivityStatsItemDto,
 } from '@aimo/dto';
 import { generateTypeId } from '../utils/id.js';
 import { OBJECT_TYPE } from '../models/constant/type.js';
@@ -757,6 +759,59 @@ export class MemoService {
       console.error('Error enriching memos with relations:', error);
       // Return original items if enrichment fails
       return items;
+    }
+  }
+
+  /**
+   * Get activity stats for calendar heatmap
+   * Returns daily memo counts for the last 90 days
+   */
+  async getActivityStats(uid: string, days: number = 90): Promise<MemoActivityStatsDto> {
+    try {
+      const memosTable = await this.lanceDb.openTable('memos');
+
+      // Calculate date range
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(endDate.getDate() - days);
+
+      // Get all memos for the user within the date range
+      const startTimestamp = startDate.getTime();
+      const endTimestamp = endDate.getTime();
+
+      const results = await memosTable
+        .query()
+        .where(`uid = '${uid}' AND createdAt >= ${startTimestamp} AND createdAt <= ${endTimestamp}`)
+        .toArray();
+
+      // Group memos by date (YYYY-MM-DD)
+      const dateCountMap = new Map<string, number>();
+
+      for (const memo of results) {
+        const createdAt = memo.createdAt as number;
+        const date = new Date(createdAt);
+        const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD
+
+        dateCountMap.set(dateKey, (dateCountMap.get(dateKey) || 0) + 1);
+      }
+
+      // Convert to array format
+      const items: MemoActivityStatsItemDto[] = [];
+      for (const [date, count] of dateCountMap) {
+        items.push({ date, count });
+      }
+
+      // Sort by date
+      items.sort((a, b) => a.date.localeCompare(b.date));
+
+      return {
+        items,
+        startDate: startDate.toISOString().split('T')[0],
+        endDate: endDate.toISOString().split('T')[0],
+      };
+    } catch (error) {
+      console.error('Error getting activity stats:', error);
+      throw error;
     }
   }
 }

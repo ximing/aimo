@@ -135,3 +135,20 @@ export interface PaginatedMemoListWithScoreDto {
     totalPages: number;
   };
 }
+
+/**
+ * Activity stats item for calendar heatmap
+ */
+export interface MemoActivityStatsItemDto {
+  date: string; // ISO date string (YYYY-MM-DD)
+  count: number; // Number of memos created on this date
+}
+
+/**
+ * Memo activity stats response for heatmap
+ */
+export interface MemoActivityStatsDto {
+  items: MemoActivityStatsItemDto[];
+  startDate: string; // ISO date string
+  endDate: string; // ISO date string
+}

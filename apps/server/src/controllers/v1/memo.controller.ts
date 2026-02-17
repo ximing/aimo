@@ -260,4 +260,26 @@ export class MemoV1Controller {
       return ResponseUtil.error(ErrorCode.DB_ERROR);
     }
   }
+
+  @Get('/stats/activity')
+  async getActivityStats(
+    @QueryParam('days') days: number = 90,
+    @CurrentUser() user: UserInfoDto
+  ) {
+    try {
+      if (!user?.uid) {
+        return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
+      }
+
+      // Validate days parameter
+      const validDays = Math.min(Math.max(days, 1), 365);
+
+      const stats = await this.memoService.getActivityStats(user.uid, validDays);
+
+      return ResponseUtil.success(stats);
+    } catch (error) {
+      console.error('Get activity stats error:', error);
+      return ResponseUtil.error(ErrorCode.DB_ERROR);
+    }
+  }
 }
