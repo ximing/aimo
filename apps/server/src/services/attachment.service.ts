@@ -4,11 +4,15 @@
  */
 
 import { Service } from 'typedi';
-import { LanceDbService, type AttachmentRecord } from '../sources/lancedb.js';
-import { AttachmentStorageService } from './attachment-storage.service.js';
+import { LanceDbService } from '../sources/lancedb.js';
+import { UnifiedStorageAdapterFactory } from '../sources/unified-storage-adapter/index.js';
+import type { UnifiedStorageAdapter } from '../sources/unified-storage-adapter/index.js';
 import { MultimodalEmbeddingService } from './multimodal-embedding.service.js';
 import { config } from '../config/config.js';
 import type { AttachmentDto } from '@aimo/dto';
+import dayjs from 'dayjs';
+import { nanoid } from 'nanoid';
+import type { AttachmentRecord } from '../models/db/schema.js';
 
 export interface CreateAttachmentOptions {
   uid: string;
@@ -27,11 +31,17 @@ export interface GetAttachmentsOptions {
 
 @Service()
 export class AttachmentService {
+  private storageAdapter: UnifiedStorageAdapter;
+
   constructor(
     private lanceDbService: LanceDbService,
-    private storageService: AttachmentStorageService,
     private multimodalEmbeddingService: MultimodalEmbeddingService
-  ) {}
+  ) {
+    // Create storage adapter for attachments
+    this.storageAdapter = UnifiedStorageAdapterFactory.createAttachmentAdapter(
+      config.attachment
+    );
+  }
 
   /**
    * Create a new attachment
@@ -41,23 +51,33 @@ export class AttachmentService {
   async createAttachment(options: CreateAttachmentOptions): Promise<AttachmentDto> {
     const { uid, buffer, filename, mimeType, size, createdAt } = options;
 
-    // Save file to storage
-    const { attachmentId, url, storageType } = await this.storageService.saveFile({
-      buffer,
-      filename,
-      mimeType,
-    });
+    // Generate storage path: {uid}/{YYYY-MM-DD}/{nanoid24}.{ext}
+    // Note: prefix (e.g., 'attachments') is added by the storage adapter
+    const fileId = nanoid(24);
+    const ext = filename.split('.').pop() || '';
+    const dateStr = dayjs().format('YYYY-MM-DD');
+    const path = `${uid}/${dateStr}/${fileId}.${ext}`;
 
-    // Prepare record - use provided createdAt or current timestamp
+    // Upload file to storage
+    await this.storageAdapter.uploadFile(path, buffer);
+
+    // Prepare attachment record with storage metadata
     const attachmentCreatedAt = createdAt || Date.now();
+    const attachmentConfig = config.attachment;
+
     const record: AttachmentRecord = {
-      attachmentId,
+      attachmentId: fileId,
       uid,
       filename,
-      url,
       type: mimeType,
       size,
-      storageType,
+      storageType: attachmentConfig.storageType,
+      path, // Store full storage path for URL reconstruction
+      bucket: this.getStorageMetadata('bucket', attachmentConfig),
+      prefix: this.getStorageMetadata('prefix', attachmentConfig),
+      endpoint: this.getStorageMetadata('endpoint', attachmentConfig),
+      region: this.getStorageMetadata('region', attachmentConfig),
+      isPublicBucket: this.getStorageMetadata('isPublicBucket', attachmentConfig),
       createdAt: attachmentCreatedAt,
     };
 
@@ -74,8 +94,8 @@ export class AttachmentService {
       if (isImage || isVideo) {
         // Fire and forget - do not await
         this.generateAndUpdateMultimodalEmbedding(
-          attachmentId,
-          url,
+          record.attachmentId,
+          path,
           isImage ? 'image' : 'video',
           filename
         ).catch((error) => {
@@ -87,11 +107,11 @@ export class AttachmentService {
       }
     }
 
-    // Generate access URL
-    const accessUrl = await this.generateAccessUrl(url, storageType);
+    // Generate access URL for immediate return
+    const accessUrl = await this.generateAccessUrl(record);
 
     return {
-      attachmentId,
+      attachmentId: record.attachmentId,
       filename,
       url: accessUrl,
       type: mimeType,
@@ -182,7 +202,7 @@ export class AttachmentService {
     }
 
     const record = results[0] as unknown as AttachmentRecord;
-    const accessUrl = await this.generateAccessUrl(record.url, record.storageType);
+    const accessUrl = await this.generateAccessUrl(record);
 
     return {
       attachmentId: record.attachmentId,
@@ -221,7 +241,7 @@ export class AttachmentService {
     const items = await Promise.all(
       paginatedResults.map(async (record) => {
         const r = record as unknown as AttachmentRecord;
-        const accessUrl = await this.generateAccessUrl(r.url, r.storageType);
+        const accessUrl = await this.generateAccessUrl(r);
         return {
           attachmentId: r.attachmentId,
           filename: r.filename,
@@ -262,7 +282,7 @@ export class AttachmentService {
 
     // Delete from storage
     try {
-      await this.storageService.deleteFile(record.url, record.storageType);
+      await this.storageAdapter.deleteFile(record.path);
     } catch (error) {
       console.error('Failed to delete file from storage:', error);
       // Continue with database deletion even if storage deletion fails
@@ -275,10 +295,43 @@ export class AttachmentService {
   }
 
   /**
-   * Get file buffer from local storage
+   * Get multiple attachments by IDs with access URLs generated
+   * @param attachmentIds - Array of attachment IDs to fetch
+   * @param uid - User ID for permission check
+   * @returns Array of AttachmentDto with generated access URLs
    */
-  async getLocalFileBuffer(filename: string): Promise<Buffer> {
-    return await this.storageService.getLocalFile(filename);
+  async getAttachmentsByIds(attachmentIds: string[], uid: string): Promise<AttachmentDto[]> {
+    if (!attachmentIds || attachmentIds.length === 0) {
+      return [];
+    }
+
+    const table = await this.lanceDbService.openTable('attachments');
+
+    // Fetch all attachments in a single query
+    const whereConditions = attachmentIds.map((id) => `attachmentId = '${id}'`).join(' OR ');
+    const query = `(${whereConditions}) AND uid = '${uid}'`;
+
+    const results = await table.query().where(query).toArray();
+
+    // Convert records to DTOs with generated URLs, preserving order
+    const attachmentMap = new Map<string, AttachmentDto>();
+    for (const record of results) {
+      const r = record as unknown as AttachmentRecord;
+      const accessUrl = await this.generateAccessUrl(r);
+      attachmentMap.set(r.attachmentId, {
+        attachmentId: r.attachmentId,
+        filename: r.filename,
+        url: accessUrl,
+        type: r.type,
+        size: r.size,
+        createdAt: r.createdAt,
+      });
+    }
+
+    // Return in the original order of attachmentIds
+    return attachmentIds
+      .map((id) => attachmentMap.get(id))
+      .filter((att): att is AttachmentDto => att !== undefined);
   }
 
   /**
@@ -313,7 +366,7 @@ export class AttachmentService {
     const record = results[0] as unknown as AttachmentRecord;
 
     // Get file buffer from storage
-    const buffer = await this.storageService.getFile(record.url, record.storageType);
+    const buffer = await this.storageAdapter.downloadFile(record.path);
 
     return {
       buffer,
@@ -323,39 +376,59 @@ export class AttachmentService {
   }
 
   /**
-   * Get attachment record by filename (for access control)
+   * Generate access URL for an attachment record
+   * Uses attachment metadata to ensure URLs are generated based on the attachment's
+   * original storage configuration, not the current global configuration.
+   * This allows old attachments to remain accessible even if storage backend is changed.
+   *
+   * Dynamically generates presigned URLs for S3/OSS private buckets
+   * Returns direct URLs for public buckets or local paths
    */
-  async getAttachmentByFilename(filename: string): Promise<AttachmentRecord | null> {
-    const table = await this.lanceDbService.openTable('attachments');
+  private async generateAccessUrl(record: AttachmentRecord): Promise<string> {
+    const storageType = record.storageType;
 
-    // Extract filename from path if needed
-    const cleanFilename = filename.includes('/') ? filename.split('/').pop()! : filename;
+    // Build metadata from attachment record
+    const metadata = {
+      bucket: record.bucket,
+      prefix: record.prefix,
+      endpoint: record.endpoint,
+      region: record.region,
+      isPublicBucket: record.isPublicBucket,
+    };
 
-    const results = await table.query().where(`url LIKE '%${cleanFilename}%'`).limit(1).toArray();
-
-    if (!results || results.length === 0) {
-      return null;
+    if (storageType === 'local') {
+      // For local storage, return the path as-is
+      return record.path;
+    } else if (storageType === 's3' || storageType === 'oss') {
+      // For S3/OSS, generate access URL (presigned/signed if private, direct if public)
+      // Pass attachment metadata to ensure consistent URL generation
+      return await this.storageAdapter.generateAccessUrl(
+        record.path,
+        metadata,
+        config.attachment.presignedUrlExpiry
+      );
+    } else {
+      // Fallback
+      return record.path;
     }
-
-    return results[0] as unknown as AttachmentRecord;
   }
 
   /**
-   * Generate access URL based on storage type
-   *
-   * For S3:
-   * - Public buckets: Returns direct URL without signing
-   * - Private buckets: Returns presigned URL with expiration
+   * Extract storage metadata from configuration
    */
-  private async generateAccessUrl(url: string, storageType: 'local' | 's3'): Promise<string> {
-    if (storageType === 's3') {
-      // For public S3 buckets: returns direct URL
-      // For private S3 buckets: generates and returns presigned URL
-      return await this.storageService.generatePresignedUrl(url);
-    } else {
-      // For local storage, return API endpoint path
-      const filename = url.split('/').pop();
-      return `/api/v1/attachments/file/${filename}`;
+  private getStorageMetadata(
+    key: 'bucket' | 'prefix' | 'endpoint' | 'region' | 'isPublicBucket',
+    attachmentConfig: typeof import('../config/config.js').config.attachment
+  ): string | undefined {
+    const storageConfig =
+      attachmentConfig.storageType === 's3' ? attachmentConfig.s3 : attachmentConfig.oss;
+
+    if (!storageConfig) return undefined;
+
+    if (key === 'isPublicBucket') {
+      return storageConfig.isPublic ? 'true' : 'false';
     }
+
+    return storageConfig[key as 'bucket' | 'prefix' | 'endpoint' | 'region'];
   }
 }

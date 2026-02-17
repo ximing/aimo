@@ -130,4 +130,24 @@ export class MemoRelationService {
       throw error;
     }
   }
+
+  /**
+   * Get all memos that link to the given target memo (backlinks)
+   * Returns array of source memo IDs that have relations pointing to targetMemoId
+   */
+  async getBacklinks(uid: string, targetMemoId: string): Promise<string[]> {
+    try {
+      const table = await this.lanceDb.openTable('memo_relations');
+
+      const results = await table
+        .query()
+        .where(`uid = '${uid}' AND targetMemoId = '${targetMemoId}'`)
+        .toArray();
+
+      return results.map((record: any) => record.sourceMemoId);
+    } catch (error) {
+      console.error('Failed to get backlinks:', error);
+      throw error;
+    }
+  }
 }

@@ -132,9 +132,14 @@ export class MemoService extends Service {
   /**
    * Update a memo
    */
-  async updateMemo(memoId: string, content: string, attachments?: string[]) {
+  async updateMemo(
+    memoId: string,
+    content: string,
+    attachments?: string[],
+    relationIds?: string[]
+  ) {
     try {
-      const data: UpdateMemoDto = { content, attachments };
+      const data: UpdateMemoDto = { content, attachments, relationIds };
       const response = await memoApi.updateMemo(memoId, data);
 
       if (response.code === 0 && response.data) {
@@ -301,6 +306,31 @@ export class MemoService extends Service {
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Failed to find related memos',
+      };
+    }
+  }
+
+  /**
+   * Get backlinks - memos that reference the current memo
+   */
+  async getBacklinks(memoId: string, page: number = 1, limit: number = 20) {
+    try {
+      const response = await memoApi.getBacklinks(memoId, page, limit);
+
+      if (response.code === 0 && response.data) {
+        return {
+          success: true,
+          items: response.data.items,
+          pagination: response.data.pagination,
+        };
+      } else {
+        return { success: false, message: 'Failed to fetch backlinks' };
+      }
+    } catch (error: unknown) {
+      console.error('Get backlinks error:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to fetch backlinks',
       };
     }
   }

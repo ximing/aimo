@@ -2,14 +2,8 @@ import { Service } from 'typedi';
 import * as lancedb from '@lancedb/lancedb';
 import type { Connection, Table } from '@lancedb/lancedb';
 import { config } from '../config/config.js';
+import { MigrationManager } from '../migrations/index.js';
 import {
-  usersSchema,
-  memosSchema,
-  memoRelationsSchema,
-  categoriesSchema,
-  embeddingCacheSchema,
-  attachmentsSchema,
-  multimodalEmbeddingCacheSchema,
   type UserRecord,
   type MemoRecord,
   type MemoRelationRecord,
@@ -99,7 +93,9 @@ export class LanceDbService {
       // Mark as initialized after connection is established (needed for table operations during init)
       this.initialized = true;
 
-      await this.ensureTablesExist();
+      // Run migrations (includes table creation and index creation)
+      await this.runMigrations();
+
       console.log('LanceDB initialized successfully');
     } catch (error) {
       console.error('Failed to initialize LanceDB:', error);
@@ -107,201 +103,27 @@ export class LanceDbService {
     }
   }
 
-  private async ensureTablesExist() {
+  /**
+   * Run migrations to initialize or upgrade schema
+   * This replaces the old ensureTablesExist() method
+   */
+  private async runMigrations(): Promise<void> {
     try {
-      // Get existing tables
-      const tableNames = await this.db.tableNames();
+      console.log('Running database migrations...');
+      const migrationManager = new MigrationManager({ verbose: true });
+      await migrationManager.initialize(this.db);
 
-      // Create users table if not exists with explicit schema
-      if (!tableNames.includes('users')) {
-        console.log('Creating users table with explicit schema...');
-        await this.db.createEmptyTable('users', usersSchema);
-        console.log('Users table created successfully');
+      // Validate migration state
+      const validation = await migrationManager.validate(this.db);
+      if (!validation.valid) {
+        console.error('Migration validation failed:', validation.errors);
+        throw new Error(`Database schema is not up to date: ${validation.errors.join(', ')}`);
       }
 
-      // Create memos table if not exists with explicit schema
-      if (!tableNames.includes('memos')) {
-        console.log('Creating memos table with explicit schema...');
-        await this.db.createEmptyTable('memos', memosSchema);
-        console.log('Memos table created successfully');
-      }
-
-      // Create memo_relations table if not exists with explicit schema
-      if (!tableNames.includes('memo_relations')) {
-        console.log('Creating memo_relations table with explicit schema...');
-        await this.db.createEmptyTable('memo_relations', memoRelationsSchema);
-        console.log('Memo relations table created successfully');
-      }
-
-      // Create categories table if not exists with explicit schema
-      if (!tableNames.includes('categories')) {
-        console.log('Creating categories table with explicit schema...');
-        await this.db.createEmptyTable('categories', categoriesSchema);
-        console.log('Categories table created successfully');
-      }
-
-      // Create embedding_cache table if not exists with explicit schema
-      if (!tableNames.includes('embedding_cache')) {
-        console.log('Creating embedding_cache table with explicit schema...');
-        await this.db.createEmptyTable('embedding_cache', embeddingCacheSchema);
-        console.log('Embedding cache table created successfully');
-      }
-
-      // Create attachments table if not exists with explicit schema
-      if (!tableNames.includes('attachments')) {
-        console.log('Creating attachments table with explicit schema...');
-        await this.db.createEmptyTable('attachments', attachmentsSchema);
-        console.log('Attachments table created successfully');
-      }
-
-      // Create multimodal_embedding_cache table if not exists with explicit schema
-      if (!tableNames.includes('multimodal_embedding_cache')) {
-        console.log('Creating multimodal_embedding_cache table with explicit schema...');
-        await this.db.createEmptyTable(
-          'multimodal_embedding_cache',
-          multimodalEmbeddingCacheSchema
-        );
-        console.log('Multimodal embedding cache table created successfully');
-      }
-
-      // Create scalar indexes for query optimization
-      await this.createScalarIndexes();
+      console.log('All migrations completed successfully');
     } catch (error) {
-      console.error('Error ensuring tables exist:', error);
+      console.error('Migration execution failed:', error);
       throw error;
-    }
-  }
-
-  /**
-   * Create scalar indexes for query optimization
-   * Indexes accelerate filtering and search operations
-   *
-   * Index Strategy:
-   * - BTREE indexes: for exact match, range queries, and sorting on indexed fields
-   * - BITMAP indexes: for low-cardinality fields (status, flags)
-   * - Single-column indexes: cover most query patterns in this schema
-   *
-   * Note: LanceDB currently does not support composite indexes in this version.
-   * Use single-column indexes on the most frequently filtered/sorted columns.
-   * Query optimizer will use multiple single-column indexes when needed.
-   */
-  private async createScalarIndexes() {
-    try {
-      const users = await this.openTable('users');
-      const memos = await this.openTable('memos');
-      const memoRelations = await this.openTable('memo_relations');
-      const categories = await this.openTable('categories');
-      const attachments = await this.openTable('attachments');
-      const embeddingCache = await this.openTable('embedding_cache');
-      const multimodalEmbeddingCache = await this.openTable('multimodal_embedding_cache');
-
-      // Users table indexes
-      // uid: BTREE for exact match queries
-      // email, phone: BTREE for login and lookup queries
-      // status: BITMAP for low-cardinality filtering
-      await this.createIndexIfNotExists(users, 'uid', 'BTREE', 'users');
-      await this.createIndexIfNotExists(users, 'email', 'BTREE', 'users');
-      await this.createIndexIfNotExists(users, 'phone', 'BTREE', 'users');
-      await this.createIndexIfNotExists(users, 'status', 'BITMAP', 'users');
-
-      // Memos table indexes
-      // uid: BTREE for filtering by user
-      // categoryId: BTREE for filtering by category
-      // createdAt, updatedAt: BTREE for range queries and sorting
-      // memoId: BTREE for exact match lookup
-      await this.createIndexIfNotExists(memos, 'uid', 'BTREE', 'memos');
-      await this.createIndexIfNotExists(memos, 'memoId', 'BTREE', 'memos');
-      await this.createIndexIfNotExists(memos, 'categoryId', 'BTREE', 'memos');
-      await this.createIndexIfNotExists(memos, 'createdAt', 'BTREE', 'memos');
-      await this.createIndexIfNotExists(memos, 'updatedAt', 'BTREE', 'memos');
-
-      // Memo relations table indexes
-      // uid: BTREE for user isolation
-      // relationId: BTREE for exact match lookup
-      // sourceMemoId: BTREE for querying relations from a memo
-      // targetMemoId: BTREE for reverse lookup
-      // sourceMemoId + targetMemoId: for detecting duplicate relations
-      await this.createIndexIfNotExists(memoRelations, 'uid', 'BTREE', 'memo_relations');
-      await this.createIndexIfNotExists(memoRelations, 'relationId', 'BTREE', 'memo_relations');
-      await this.createIndexIfNotExists(memoRelations, 'sourceMemoId', 'BTREE', 'memo_relations');
-      await this.createIndexIfNotExists(memoRelations, 'targetMemoId', 'BTREE', 'memo_relations');
-
-      // Categories table indexes
-      // uid: BTREE for filtering by user
-      // categoryId: BTREE for exact match lookup
-      // createdAt: BTREE for date range queries
-      await this.createIndexIfNotExists(categories, 'uid', 'BTREE', 'categories');
-      await this.createIndexIfNotExists(categories, 'categoryId', 'BTREE', 'categories');
-      await this.createIndexIfNotExists(categories, 'createdAt', 'BTREE', 'categories');
-
-      // Attachments table indexes
-      // uid: BTREE for filtering by user
-      // attachmentId: BTREE for exact match lookup
-      // createdAt: BTREE for date range queries
-      await this.createIndexIfNotExists(attachments, 'uid', 'BTREE', 'attachments');
-      await this.createIndexIfNotExists(attachments, 'attachmentId', 'BTREE', 'attachments');
-      await this.createIndexIfNotExists(attachments, 'createdAt', 'BTREE', 'attachments');
-
-      // Embedding cache indexes
-      // contentHash: BTREE for cache lookup
-      // modelHash: BTREE for model-specific cache filtering
-      await this.createIndexIfNotExists(embeddingCache, 'contentHash', 'BTREE', 'embedding_cache');
-      await this.createIndexIfNotExists(embeddingCache, 'modelHash', 'BTREE', 'embedding_cache');
-
-      // Multimodal embedding cache indexes
-      // contentHash: BTREE for cache lookup
-      // modelHash: BTREE for model-specific cache filtering
-      // modalityType: BITMAP for low-cardinality modality filtering (text, image, video)
-      await this.createIndexIfNotExists(
-        multimodalEmbeddingCache,
-        'contentHash',
-        'BTREE',
-        'multimodal_embedding_cache'
-      );
-      await this.createIndexIfNotExists(
-        multimodalEmbeddingCache,
-        'modelHash',
-        'BTREE',
-        'multimodal_embedding_cache'
-      );
-      await this.createIndexIfNotExists(
-        multimodalEmbeddingCache,
-        'modalityType',
-        'BITMAP',
-        'multimodal_embedding_cache'
-      );
-    } catch (error) {
-      console.error('Error creating scalar indexes:', error);
-      // Don't throw - allow app to continue even if index creation fails
-      console.warn('Warning: Scalar index creation failed. Query performance may be reduced.');
-    }
-  }
-
-  /**
-   * Create a scalar index if it doesn't already exist
-   */
-  private async createIndexIfNotExists(
-    table: Table,
-    columnName: string,
-    indexType: 'BTREE' | 'BITMAP' = 'BTREE',
-    tableName: string = 'unknown'
-  ): Promise<void> {
-    try {
-      // Create the appropriate index type using LanceDB API
-      const config =
-        indexType === 'BITMAP'
-          ? { config: lancedb.Index.bitmap() }
-          : { config: lancedb.Index.btree() };
-
-      await table.createIndex(columnName, config);
-      console.log(`Created ${indexType} index on ${tableName}.${columnName}`);
-    } catch (error: any) {
-      // Index already exists or other error
-      if (error.message?.includes('already exists') || error.message?.includes('duplicate')) {
-        console.debug(`Index already exists on ${tableName}.${columnName}`);
-      } else {
-        console.warn(`Failed to create index on ${tableName}.${columnName}:`, error.message);
-      }
     }
   }
 

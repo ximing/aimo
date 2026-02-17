@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { view, useService } from '@rabjs/react';
 import { Layout } from '../../components/layout';
 import { AttachmentService } from '../../services/attachment.service';
@@ -6,7 +6,7 @@ import { GalleryFilter } from './components/gallery-filter';
 import { GallerySearchBar } from './components/gallery-search-bar';
 import { GalleryTimeline } from './components/gallery-timeline';
 import { GalleryImageCard } from './components/gallery-image-card';
-import { GalleryPreviewModal } from './components/gallery-preview-modal';
+import { AttachmentPreviewModal } from '../../components/attachment-preview-modal';
 import type { AttachmentDto } from '@aimo/dto';
 
 export const GalleryPage = view(() => {
@@ -21,13 +21,14 @@ export const GalleryPage = view(() => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleSelectAttachment = () => {
+  const handleSelectAttachment = useCallback((attachment: AttachmentDto) => {
+    attachmentService.setSelectedAttachment(attachment);
     setIsPreviewOpen(true);
-  };
+  }, [attachmentService]);
 
-  const handleClosePreview = () => {
+  const handleClosePreview = useCallback(() => {
     setIsPreviewOpen(false);
-  };
+  }, []);
 
   return (
     <Layout>
@@ -66,7 +67,7 @@ export const GalleryPage = view(() => {
       </div>
 
       {/* Preview Modal */}
-      <GalleryPreviewModal isOpen={isPreviewOpen} onClose={handleClosePreview} />
+      <AttachmentPreviewModal isOpen={isPreviewOpen} onClose={handleClosePreview} />
     </Layout>
   );
 });

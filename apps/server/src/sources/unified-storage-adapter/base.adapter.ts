@@ -1,7 +1,22 @@
 /**
- * Base storage adapter interface for backup operations
+ * Storage metadata for URL generation
+ * Uses attachment record metadata to ensure URLs are generated based on the attachment's
+ * original storage configuration, not the current global configuration.
+ * This allows old attachments to remain accessible even if storage backend is changed.
  */
-export interface StorageAdapter {
+export interface StorageMetadata {
+  bucket?: string; // Bucket name (for S3/OSS)
+  prefix?: string; // Prefix/folder name (for S3/OSS)
+  endpoint?: string; // Endpoint URL (for S3/OSS custom endpoints)
+  region?: string; // Region (for S3/OSS)
+  isPublicBucket?: string; // 'true' | 'false' - whether bucket is public
+}
+
+/**
+ * Unified storage adapter interface for attachment and backup operations
+ * Abstracts different storage backends (local, s3, oss)
+ */
+export interface UnifiedStorageAdapter {
   /**
    * Upload a file to storage
    * @param key - The storage key/path
@@ -41,21 +56,31 @@ export interface StorageAdapter {
     size: number;
     lastModified: Date;
   } | null>;
+
+  /**
+   * Generate access URL for a stored file using attachment metadata
+   * Supports both public (direct URL) and private (presigned/signed URL) buckets
+   * @param key - The storage key/path
+   * @param metadata - Storage metadata from attachment record (bucket, endpoint, region, isPublicBucket, etc.)
+   * @param expiresIn - Expiry time in seconds (only used for private buckets in S3/OSS)
+   */
+  generateAccessUrl(key: string, metadata: StorageMetadata, expiresIn?: number): Promise<string>;
 }
 
 /**
- * Abstract base class for storage adapters
+ * Abstract base class for unified storage adapters
  */
-export abstract class BaseStorageAdapter implements StorageAdapter {
+export abstract class BaseUnifiedStorageAdapter implements UnifiedStorageAdapter {
   abstract uploadFile(key: string, buffer: Buffer): Promise<void>;
   abstract downloadFile(key: string): Promise<Buffer>;
   abstract deleteFile(key: string): Promise<void>;
   abstract listFiles(prefix?: string): Promise<string[]>;
   abstract fileExists(key: string): Promise<boolean>;
   abstract getFileMetadata(key: string): Promise<{ size: number; lastModified: Date } | null>;
+  abstract generateAccessUrl(key: string, metadata: StorageMetadata, expiresIn?: number): Promise<string>;
 
   /**
-   * Build a full storage path from bucket/prefix and key
+   * Build a full storage path from base path and key
    */
   protected buildPath(basePath: string, key: string): string {
     const normalized = basePath.endsWith('/') ? basePath : `${basePath}/`;

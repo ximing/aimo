@@ -3,10 +3,10 @@ import path from 'path';
 import dayjs from 'dayjs';
 import { Worker } from 'worker_threads';
 import { fileURLToPath } from 'url';
-import type { StorageAdapter } from '../sources/storage-adapter/index.js';
+import type { UnifiedStorageAdapter } from '../sources/unified-storage-adapter/index.js';
 
 export interface BackupExecutorConfig {
-  storageAdapter: StorageAdapter;
+  storageAdapter: UnifiedStorageAdapter;
   tempDir?: string;
   lancedbPath: string;
 }
@@ -19,7 +19,7 @@ export interface BackupExecutorConfig {
 export class BackupExecutor {
   private tempDir: string;
   private lancedbPath: string;
-  private storageAdapter: StorageAdapter;
+  private storageAdapter: UnifiedStorageAdapter;
   private workerPool: Worker[] = [];
   private activeWorker: Worker | null = null;
 

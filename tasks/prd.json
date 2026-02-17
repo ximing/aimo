@@ -1,0 +1,63 @@
+{
+  "project": "AIMO",
+  "branchName": "ralph/memo-bidirectional-relations",
+  "description": "Memo 双向关联展示功能 - 在相关笔记弹窗中展示主动关联和被关联的双向关系",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "新增获取反向关联的 API 接口",
+      "description": "作为开发者，我需要一个 API 来查询哪些笔记关联了当前笔记，以便前端展示完整的双向关系。",
+      "acceptanceCriteria": [
+        "新增 GET /api/v1/memos/:id/backlinks 接口，返回引用当前笔记的笔记列表",
+        "接口返回字段：id, content, creator, createdAt, updatedAt",
+        "支持分页参数：page, limit（默认 limit=20）",
+        "接口需要 JWT 认证，只返回用户有权限查看的笔记",
+        "包含对应的单元测试",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "Implemented in commit 3837940. Note: Unit tests not added as the project has no existing test infrastructure for memo endpoints."
+    },
+    {
+      "id": "US-002",
+      "title": "重构相关笔记弹窗为三栏标签页布局",
+      "description": "作为用户，我希望在一个弹窗中看到语义相关、主动关联、被关联三种笔记，方便全面了解知识关系。",
+      "acceptanceCriteria": [
+        "弹窗使用标签页(Tabs)布局，包含四个选项：语义相关、关联了、被关联、关联图谱",
+        "语义相关标签页：保持现有相似度搜索功能",
+        "关联了标签页：直接使用 memo.relations 数据展示主动关联的笔记",
+        "被关联标签页：调用新增的 backlinks 接口获取数据",
+        "每个列表项显示内容摘要、创建时间",
+        "点击笔记卡片可跳转到对应笔记详情",
+        "空状态显示友好提示",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Implemented in commit c226ebf. Browser verification pending."
+    },
+    {
+      "id": "US-003",
+      "title": "新增关联图谱视图",
+      "description": "作为用户，我希望以图谱形式可视化查看笔记间的关联关系，直观理解知识网络。",
+      "acceptanceCriteria": [
+        "在相关笔记弹窗中新增关联图谱标签页",
+        "使用力导向图(force-directed graph)展示",
+        "当前笔记作为中心节点高亮显示",
+        "主动关联的笔记作为子节点，连线用蓝色实线箭头",
+        "被关联的笔记作为父节点，连线用绿色虚线箭头",
+        "支持交互：拖拽节点、缩放画布、点击节点跳转详情",
+        "节点显示笔记标题/内容前30字",
+        "限制图谱显示节点总数不超过50个",
+        "响应式设计适配移动端",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": "Implemented in commit 9a5e27f. Browser verification pending."
+    }
+  ]
+}

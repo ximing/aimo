@@ -1,8 +1,8 @@
 import { Service } from 'typedi';
 import { EventEmitter } from 'events';
 import { config } from '../config/config.js';
-import { StorageAdapterFactory } from '../sources/storage-adapter/factory.js';
-import type { StorageAdapter } from '../sources/storage-adapter/index.js';
+import { UnifiedStorageAdapterFactory } from '../sources/unified-storage-adapter/index.js';
+import type { UnifiedStorageAdapter } from '../sources/unified-storage-adapter/index.js';
 import { BackupExecutor } from './backup-executor.js';
 
 /**
@@ -13,7 +13,7 @@ import { BackupExecutor } from './backup-executor.js';
 export class BackupService extends EventEmitter {
   private lastBackupTime = 0;
   private backupInProgress = false;
-  private storageAdapter: StorageAdapter | null = null;
+  private storageAdapter: UnifiedStorageAdapter | null = null;
   private backupExecutor: BackupExecutor | null = null;
 
   async initialize(): Promise<void> {
@@ -34,8 +34,8 @@ export class BackupService extends EventEmitter {
     try {
       console.log('Initializing backup service...');
 
-      // Create storage adapter
-      this.storageAdapter = StorageAdapterFactory.createAdapter(config.backup);
+      // Create storage adapter using unified factory
+      this.storageAdapter = UnifiedStorageAdapterFactory.createBackupAdapter(config.backup);
 
       // Create backup executor
       this.backupExecutor = new BackupExecutor({

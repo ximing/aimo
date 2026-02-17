@@ -19,7 +19,6 @@ import {
 import { Service } from 'typedi';
 import type { Request, Response } from 'express';
 import multer from 'multer';
-import mime from 'mime-types';
 import type { UserInfoDto } from '@aimo/dto';
 import { AttachmentService } from '../../services/attachment.service.js';
 import { ResponseUtil } from '../../utils/response.js';
@@ -160,12 +159,9 @@ export class AttachmentV1Controller {
         return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
       }
 
-      // attachmentId format: "attachments/xxxxx"
-      const fullId = attachmentId.includes('attachments/')
-        ? attachmentId
-        : `attachments/${attachmentId}`;
-
-      const attachment = await this.attachmentService.getAttachment(fullId, user.uid);
+      // attachmentId format: just the nano ID (stored in database)
+      // The actual file path is stored in the attachment record
+      const attachment = await this.attachmentService.getAttachment(attachmentId, user.uid);
       if (!attachment) {
         return ResponseUtil.error(ErrorCode.ATTACHMENT_NOT_FOUND);
       }
@@ -191,12 +187,8 @@ export class AttachmentV1Controller {
         return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
       }
 
-      // attachmentId format: "attachments/xxxxx"
-      const fullId = attachmentId.includes('attachments/')
-        ? attachmentId
-        : `attachments/${attachmentId}`;
-
-      const success = await this.attachmentService.deleteAttachment(fullId, user.uid);
+      // attachmentId format: just the nano ID (stored in database)
+      const success = await this.attachmentService.deleteAttachment(attachmentId, user.uid);
       if (!success) {
         return ResponseUtil.error(ErrorCode.ATTACHMENT_NOT_FOUND);
       }
@@ -223,13 +215,9 @@ export class AttachmentV1Controller {
         return response.status(401).json(ResponseUtil.error(ErrorCode.UNAUTHORIZED));
       }
 
-      // attachmentId format: "attachments/xxxxx" or just the ID
-      const fullId = attachmentId.includes('attachments/')
-        ? attachmentId
-        : `attachments/${attachmentId}`;
-
+      // attachmentId format: just the nano ID (stored in database)
       // Get attachment buffer with permission check
-      const result = await this.attachmentService.getAttachmentBuffer(fullId, user.uid);
+      const result = await this.attachmentService.getAttachmentBuffer(attachmentId, user.uid);
 
       if (!result) {
         return response.status(404).json(ResponseUtil.error(ErrorCode.ATTACHMENT_NOT_FOUND));
@@ -249,47 +237,6 @@ export class AttachmentV1Controller {
     } catch (error) {
       console.error('Download attachment error:', error);
       return response.status(500).json(ResponseUtil.error(ErrorCode.SYSTEM_ERROR));
-    }
-  }
-}
-
-/**
- * File Access Controller
- * Serves local attachment files (no authentication required)
- */
-@Service()
-@Controller('/api/v1/attachments/file')
-export class AttachmentFileController {
-  constructor(private attachmentService: AttachmentService) {}
-
-  /**
-   * Access local attachment file (public, no auth)
-   * GET /api/v1/attachments/file/:filename
-   */
-  @Get('/:filename')
-  async getFile(@Param('filename') filename: string, @Res() response: Response) {
-    try {
-      // Check if local storage is configured
-      if (config.attachment.storageType !== 'local') {
-        return response.status(404).send('File not found');
-      }
-
-      // Get file buffer
-      const buffer = await this.attachmentService.getLocalFileBuffer(filename);
-
-      // Determine content type
-      const mimeType = mime.lookup(filename) || 'application/octet-stream';
-
-      // Set headers
-      response.setHeader('Content-Type', mimeType);
-      response.setHeader('Content-Length', buffer.length);
-      response.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
-
-      // Send file
-      return response.send(buffer);
-    } catch (error) {
-      console.error('Get file error:', error);
-      return response.status(404).send('File not found');
     }
   }
 }

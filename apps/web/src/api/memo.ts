@@ -79,3 +79,15 @@ export const findRelatedMemos = (memoId: string, limit: number = 10) => {
     }
   );
 };
+
+/**
+ * Get backlinks - memos that reference the current memo
+ */
+export const getBacklinks = (memoId: string, page: number = 1, limit: number = 20) => {
+  return request.get<
+    unknown,
+    { code: number; data: { items: MemoListItemDto[]; pagination: { total: number; page: number; limit: number; totalPages: number } } }
+  >(`/api/v1/memos/${memoId}/backlinks`, {
+    params: { page, limit },
+  });
+};

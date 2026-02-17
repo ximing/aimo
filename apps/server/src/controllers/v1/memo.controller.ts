@@ -12,13 +12,17 @@ import {
 import { Service } from 'typedi';
 import type { CreateMemoDto, UpdateMemoDto, UserInfoDto } from '@aimo/dto';
 import { MemoService } from '../../services/memo.service.js';
+import { MemoRelationService } from '../../services/memo-relation.service.js';
 import { ResponseUtil } from '../../utils/response.js';
 import { ErrorCode } from '../../constants/error-codes.js';
 
 @Service()
 @JsonController('/api/v1/memos')
 export class MemoV1Controller {
-  constructor(private memoService: MemoService) {}
+  constructor(
+    private memoService: MemoService,
+    private memoRelationService: MemoRelationService
+  ) {}
 
   @Get()
   async getMemos(
@@ -208,6 +212,51 @@ export class MemoV1Controller {
       });
     } catch (error) {
       console.error('Find related memos error:', error);
+      return ResponseUtil.error(ErrorCode.DB_ERROR);
+    }
+  }
+
+  @Get('/:memoId/backlinks')
+  async getBacklinks(
+    @Param('memoId') memoId: string,
+    @QueryParam('page') page: number = 1,
+    @QueryParam('limit') limit: number = 20,
+    @CurrentUser() user: UserInfoDto
+  ) {
+    try {
+      if (!user?.uid) {
+        return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
+      }
+
+      // First verify the memo exists and user has access
+      const memo = await this.memoService.getMemoById(memoId, user.uid);
+      if (!memo) {
+        return ResponseUtil.error(ErrorCode.NOT_FOUND);
+      }
+
+      // Get source memo IDs that link to this memo
+      const backlinkIds = await this.memoRelationService.getBacklinks(user.uid, memoId);
+
+      // Calculate pagination
+      const total = backlinkIds.length;
+      const totalPages = Math.ceil(total / limit);
+      const offset = (page - 1) * limit;
+      const paginatedIds = backlinkIds.slice(offset, offset + limit);
+
+      // Fetch full memo details for the paginated IDs
+      const items = await this.memoService.getMemosByIds(paginatedIds, user.uid);
+
+      return ResponseUtil.success({
+        items,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages,
+        },
+      });
+    } catch (error) {
+      console.error('Get backlinks error:', error);
       return ResponseUtil.error(ErrorCode.DB_ERROR);
     }
   }

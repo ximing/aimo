@@ -7,12 +7,39 @@ loadEnv();
 console.log('Current Environment:', process.env.NODE_ENV);
 
 export type StorageType = 'local' | 's3';
-export type BackupStorageType = 'local' | 's3';
-export type AttachmentStorageType = 'local' | 's3';
+export type BackupStorageType = 'local' | 's3' | 'oss';
+export type AttachmentStorageType = 'local' | 's3' | 'oss';
 
 export interface BackupRetentionPolicy {
   maxCount?: number; // 最多保留N个备份
   maxDays?: number; // 保留N天内的备份
+}
+
+// 通用 S3 存储配置（支持 AWS S3、MinIO、Aliyun OSS 作为 S3-compatible 等）
+export interface S3StorageConfig {
+  bucket: string;
+  prefix: string;
+  awsAccessKeyId?: string;
+  awsSecretAccessKey?: string;
+  region?: string;
+  endpoint?: string; // 可选：自定义端点（如 MinIO、Aliyun OSS 等）
+  isPublic?: boolean; // 是否为公开桶（true: 返回直接 URL，false: 生成 presigned URL）
+}
+
+// OSS 存储配置（使用 ali-oss 官方库）
+export interface OSSStorageConfig {
+  bucket: string;
+  prefix: string;
+  accessKeyId: string;
+  accessKeySecret: string;
+  region: string;
+  endpoint?: string; // 可选：自定义端点
+  isPublic?: boolean; // 是否为公开桶
+}
+
+// 本地存储配置
+export interface LocalStorageConfig {
+  path: string;
 }
 
 export interface BackupConfig {
@@ -22,19 +49,9 @@ export interface BackupConfig {
   retentionPolicy: BackupRetentionPolicy;
   // Note: Backup is automatically disabled if LanceDB uses S3 storage
   // S3 provides built-in redundancy and managed storage, making local backups unnecessary
-  // S3-compatible 配置（支持 AWS S3、MinIO、Aliyun OSS 等）
-  s3?: {
-    bucket: string;
-    prefix: string;
-    awsAccessKeyId?: string;
-    awsSecretAccessKey?: string;
-    region?: string;
-    endpoint?: string; // 可选：自定义端点（如 MinIO、Aliyun OSS 等）
-  };
-  // 本地存储配置
-  local?: {
-    path: string;
-  };
+  local?: LocalStorageConfig;
+  s3?: S3StorageConfig;
+  oss?: OSSStorageConfig;
 }
 
 export interface AttachmentConfig {
@@ -42,20 +59,9 @@ export interface AttachmentConfig {
   maxFileSize: number; // 最大文件大小（字节）
   allowedMimeTypes: string[]; // 允许的 MIME 类型白名单
   presignedUrlExpiry: number; // S3 预签名 URL 过期时间（秒）
-  // 本地存储配置
-  local?: {
-    path: string; // 本地存储路径
-  };
-  // S3-compatible 配置（支持 AWS S3、MinIO、Aliyun OSS 等）
-  s3?: {
-    bucket: string;
-    prefix: string;
-    awsAccessKeyId?: string;
-    awsSecretAccessKey?: string;
-    region?: string;
-    endpoint?: string; // 可选：自定义端点（如 MinIO、Aliyun OSS 等）
-    isPublic?: boolean; // 是否为公开桶（true: 返回直接 URL，false: 生成 presigned URL）
-  };
+  local?: LocalStorageConfig;
+  s3?: S3StorageConfig;
+  oss?: OSSStorageConfig;
 }
 
 export interface MultimodalEmbeddingConfig {
@@ -145,21 +151,34 @@ export const config: Config = {
       maxCount: Number(process.env.BACKUP_MAX_COUNT) || 10,
       maxDays: Number(process.env.BACKUP_MAX_DAYS) || 30,
     },
+    local:
+      process.env.BACKUP_STORAGE_TYPE === 'local'
+        ? {
+            path: process.env.BACKUP_LOCAL_PATH || './backups',
+          }
+        : undefined,
     s3:
       process.env.BACKUP_STORAGE_TYPE === 's3'
         ? {
             bucket: process.env.BACKUP_S3_BUCKET || '',
             prefix: process.env.BACKUP_S3_PREFIX || 'backups',
-            awsAccessKeyId: process.env.BACKUP_AWS_ACCESS_KEY_ID,
-            awsSecretAccessKey: process.env.BACKUP_AWS_SECRET_ACCESS_KEY,
-            region: process.env.BACKUP_AWS_REGION || 'us-east-1',
+            awsAccessKeyId: process.env.BACKUP_S3_ACCESS_KEY_ID,
+            awsSecretAccessKey: process.env.BACKUP_S3_SECRET_ACCESS_KEY,
+            region: process.env.BACKUP_S3_REGION || 'us-east-1',
             endpoint: process.env.BACKUP_S3_ENDPOINT,
+            isPublic: process.env.BACKUP_S3_IS_PUBLIC === 'true',
           }
         : undefined,
-    local:
-      process.env.BACKUP_STORAGE_TYPE === 'local'
+    oss:
+      process.env.BACKUP_STORAGE_TYPE === 'oss'
         ? {
-            path: process.env.BACKUP_LOCAL_PATH || './backups',
+            bucket: process.env.BACKUP_OSS_BUCKET || '',
+            prefix: process.env.BACKUP_OSS_PREFIX || 'backups',
+            accessKeyId: process.env.BACKUP_OSS_ACCESS_KEY_ID || '',
+            accessKeySecret: process.env.BACKUP_OSS_ACCESS_KEY_SECRET || '',
+            region: process.env.BACKUP_OSS_REGION || 'cn-hangzhou',
+            endpoint: process.env.BACKUP_OSS_ENDPOINT,
+            isPublic: process.env.BACKUP_OSS_IS_PUBLIC === 'true',
           }
         : undefined,
   },
@@ -187,9 +206,9 @@ export const config: Config = {
           'text/plain',
           'text/markdown',
         ],
-    presignedUrlExpiry: Number(process.env.ATTACHMENT_PRESIGNED_URL_EXPIRY) || 3600, // 默认 1 小时
+    presignedUrlExpiry: Number(process.env.ATTACHMENT_PRESIGNED_URL_EXPIRY) || 3600, // 默认 1 小时 (12 小时 = 43200)
     local:
-      process.env.ATTACHMENT_STORAGE_TYPE !== 's3'
+      process.env.ATTACHMENT_STORAGE_TYPE === 'local'
         ? {
             path: process.env.ATTACHMENT_LOCAL_PATH || './attachments',
           }
@@ -199,11 +218,23 @@ export const config: Config = {
         ? {
             bucket: process.env.ATTACHMENT_S3_BUCKET || '',
             prefix: process.env.ATTACHMENT_S3_PREFIX || 'attachments',
-            awsAccessKeyId: process.env.ATTACHMENT_AWS_ACCESS_KEY_ID,
-            awsSecretAccessKey: process.env.ATTACHMENT_AWS_SECRET_ACCESS_KEY,
-            region: process.env.ATTACHMENT_AWS_REGION || 'us-east-1',
+            awsAccessKeyId: process.env.ATTACHMENT_S3_ACCESS_KEY_ID,
+            awsSecretAccessKey: process.env.ATTACHMENT_S3_SECRET_ACCESS_KEY,
+            region: process.env.ATTACHMENT_S3_REGION || 'us-east-1',
             endpoint: process.env.ATTACHMENT_S3_ENDPOINT,
             isPublic: process.env.ATTACHMENT_S3_IS_PUBLIC === 'true',
+          }
+        : undefined,
+    oss:
+      process.env.ATTACHMENT_STORAGE_TYPE === 'oss'
+        ? {
+            bucket: process.env.ATTACHMENT_OSS_BUCKET || '',
+            prefix: process.env.ATTACHMENT_OSS_PREFIX || 'attachments',
+            accessKeyId: process.env.ATTACHMENT_OSS_ACCESS_KEY_ID || '',
+            accessKeySecret: process.env.ATTACHMENT_OSS_ACCESS_KEY_SECRET || '',
+            region: process.env.ATTACHMENT_OSS_REGION || 'cn-hangzhou',
+            endpoint: process.env.ATTACHMENT_OSS_ENDPOINT,
+            isPublic: process.env.ATTACHMENT_OSS_IS_PUBLIC === 'true',
           }
         : undefined,
   },
