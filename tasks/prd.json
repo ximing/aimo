@@ -33,8 +33,8 @@
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented in commit ca805c9"
     },
     {
       "id": "US-003",

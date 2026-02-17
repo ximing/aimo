@@ -94,4 +94,23 @@
   - 星期标签只显示一、三、五，节省空间
   - 月份标签使用绝对定位，根据 weekIndex 计算水平位置
 
+## 2026-02-18T05:30:00Z - US-002
+- 添加 DTO 类型：MemoActivityStatsDto 和 MemoActivityStatsItemDto
+- 创建 GET /api/v1/memos/stats/activity API 端点
+- 添加 getActivityStats 方法到 MemoService
+  - 返回最近90天（可配置）的每日memo数量统计
+  - 按用户ID过滤，确保数据隔离
+  - 使用 createdAt 时间戳分组统计
+- 添加前端 getActivityStats API 调用方法
+- Files changed:
+  - packages/dto/src/memo.ts
+  - apps/server/src/controllers/v1/memo.controller.ts
+  - apps/server/src/services/memo.service.ts
+  - apps/web/src/api/memo.ts
+- **Learnings for future iterations:**
+  - LanceDB 查询使用 SQL-like 语法进行日期范围过滤：`createdAt >= ${timestamp}`
+  - 日期分组使用 `toISOString().split('T')[0]` 获取 YYYY-MM-DD 格式
+  - API 返回格式包含 items 数组和 startDate/endDate 范围信息
+  - 参数验证：使用 Math.min/Math.max 限制 days 参数在 1-365 之间
+
 ---
