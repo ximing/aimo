@@ -49,8 +49,8 @@ export class CategoryService {
 
       const results = await table.query().where(`uid = '${uid}'`).toArray();
 
-      // Sort by createdAt in memory
-      results.sort((a: any, b: any) => a.createdAt - b.createdAt);
+      // Sort by name alphabetically (case-insensitive)
+      results.sort((a: any, b: any) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
 
       return results.map((record) => this.toCategoryDto(record as CategoryRecord));
     } catch (error) {
