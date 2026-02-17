@@ -65,6 +65,7 @@ export class MemoService extends Service {
   startDate: Date | null = null;
   endDate: Date | null = null;
   categoryFilter: string | null = loadCategoryFilterFromStorage();
+  selectedDate: string | null = null; // YYYY-MM-DD format for date filter
 
   /**
    * Computed: Get filtered memos (for client-side filtering if needed)
@@ -269,6 +270,30 @@ export class MemoService extends Service {
   setCategoryFilter(categoryId: string | null) {
     this.categoryFilter = categoryId;
     saveCategoryFilterToStorage(categoryId);
+    this.fetchMemos(true);
+  }
+
+  /**
+   * Set selected date filter (for heatmap date selection)
+   * @param date - Date string in YYYY-MM-DD format, or null to clear filter
+   */
+  setSelectedDate(date: string | null) {
+    this.selectedDate = date;
+
+    if (date) {
+      // Set startDate and endDate to the same day (beginning to end of day)
+      const startOfDay = new Date(date);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      this.startDate = startOfDay;
+      this.endDate = endOfDay;
+    } else {
+      this.startDate = null;
+      this.endDate = null;
+    }
+
     this.fetchMemos(true);
   }
 

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { view, useService } from '@rabjs/react';
-import { ArrowUp, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowUp, ChevronLeft, ChevronRight, X, Calendar } from 'lucide-react';
 import { MemoService } from '../../services/memo.service';
 import { MemoEditor } from './components/memo-editor';
 import { MemoList } from './components/memo-list';
@@ -41,6 +41,31 @@ export const HomePage = view(() => {
   const [isCollapsed, setIsCollapsed] = useState(loadCollapsedState);
   const [activityData, setActivityData] = useState<Array<{ date: string; count: number }>>([]);
   const [isLoadingActivity, setIsLoadingActivity] = useState(false);
+
+  // Parse URL params on mount and when URL changes
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const dateParam = urlParams.get('date');
+
+    if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
+      memoService.setSelectedDate(dateParam);
+    } else {
+      memoService.setSelectedDate(null);
+    }
+  }, []);
+
+  // Update URL when selected date changes
+  useEffect(() => {
+    const url = new URL(window.location.href);
+
+    if (memoService.selectedDate) {
+      url.searchParams.set('date', memoService.selectedDate);
+    } else {
+      url.searchParams.delete('date');
+    }
+
+    window.history.replaceState({}, '', url.toString());
+  }, [memoService.selectedDate]);
 
   // Fetch memos on mount (only once)
   useEffect(() => {
@@ -110,9 +135,14 @@ export const HomePage = view(() => {
             ) : (
               <CalendarHeatmap
                 data={activityData}
+                selectedDate={memoService.selectedDate}
                 onDateSelect={(date, count) => {
-                  console.log('Selected date:', date, 'count:', count);
-                  // TODO: Implement date filtering in US-004
+                  // Toggle date filter: if clicking the same date, clear the filter
+                  if (memoService.selectedDate === date) {
+                    memoService.setSelectedDate(null);
+                  } else {
+                    memoService.setSelectedDate(date);
+                  }
                 }}
               />
             )}
@@ -144,7 +174,28 @@ export const HomePage = view(() => {
         <div className="w-full max-w-[640px] h-full flex flex-col">
           {/* Top Search Bar - Fixed, part of the content area */}
           <header className="flex-shrink-0 sticky top-0 z-40 px-8 pt-4 pb-2">
-            <div className="flex items-center justify-end">
+            <div className="flex items-center justify-between">
+              {/* Date Filter Status */}
+              {memoService.selectedDate ? (
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg">
+                    <Calendar size={14} className="text-primary-600 dark:text-primary-400" />
+                    <span className="text-sm text-primary-700 dark:text-primary-300">
+                      {memoService.selectedDate}
+                    </span>
+                    <button
+                      onClick={() => memoService.setSelectedDate(null)}
+                      className="ml-1 p-0.5 text-primary-500 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-200 hover:bg-primary-100 dark:hover:bg-primary-800 rounded transition-colors"
+                      aria-label="清除日期筛选"
+                      title="清除日期筛选"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div /> /* Spacer */
+              )}
               {/* Search + Sort Bar */}
               <SearchSortBar />
             </div>

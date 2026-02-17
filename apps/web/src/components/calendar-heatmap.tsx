@@ -8,6 +8,7 @@ export interface HeatmapData {
 interface CalendarHeatmapProps {
   data: HeatmapData[];
   onDateSelect?: (date: string, count: number) => void;
+  selectedDate?: string | null;
   className?: string;
 }
 
@@ -47,6 +48,7 @@ const getMonthName = (date: Date): string => {
 export const CalendarHeatmap = ({
   data,
   onDateSelect,
+  selectedDate,
   className = '',
 }: CalendarHeatmapProps) => {
   const [hoveredCell, setHoveredCell] = useState<{
@@ -206,6 +208,8 @@ export const CalendarHeatmap = ({
                   return <div key={dayIndex} className="w-3 h-3" />;
                 }
 
+                const isSelected = selectedDate === day.date;
+
                 return (
                   <button
                     key={dayIndex}
@@ -218,8 +222,10 @@ export const CalendarHeatmap = ({
                       hover:ring-2 hover:ring-gray-400 dark:hover:ring-gray-500
                       transition-all duration-150
                       focus:outline-none focus:ring-2 focus:ring-primary-500
+                      ${isSelected ? 'ring-2 ring-offset-1 ring-primary-500 dark:ring-offset-dark-900' : ''}
                     `}
-                    aria-label={`${formatDate(day.date)}: ${day.count} 条memo`}
+                    aria-label={`${formatDate(day.date)}: ${day.count} 条memo${isSelected ? ' (已选中)' : ''}`}
+                    aria-pressed={isSelected}
                   />
                 );
               })}
