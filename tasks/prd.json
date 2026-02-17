@@ -142,8 +142,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 9,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Already implemented: memo-editor.tsx passes memoService.categoryFilter as defaultCategoryId to MemoEditorForm, which initializes selectedCategoryId with it. The categoryFilter is persisted in localStorage from US-005."
     },
     {
       "id": "US-010",

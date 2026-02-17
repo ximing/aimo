@@ -19,13 +19,42 @@
 - US-007: 创建memo时选择类别
 - US-008: 创建memo时快捷创建类别
 
+## Completed Stories
+- US-001: 获取类别列表API
+- US-002: 创建类别API
+- US-003: 更新删除类别API
+- US-004: 类别筛选器组件
+- US-005: 本地持久化筛选状态
+- US-006: 筛选器创建新类别
+- US-007: 创建memo时选择类别
+- US-008: 创建memo时快捷创建类别
+- US-009: 根据筛选状态默认选中类别
+
 ## Current Story
-US-009: 根据筛选状态默认选中类别
+US-010: 显示memo的类别标签
 
 ## Blockers/Issues
 
 ## Notes
 
+---
+
+## 2026-02-18T00:00:00Z - US-009
+- Verified US-009 was already implemented as part of previous stories
+- Implementation flow:
+  1. memo-editor.tsx passes `defaultCategoryId={memoService.categoryFilter}` to MemoEditorForm
+  2. MemoEditorForm initializes `selectedCategoryId` with `initialMemo?.categoryId || defaultCategoryId || null`
+  3. The categoryFilter is persisted in localStorage (from US-005), so it survives page refreshes
+- Files involved (already implemented):
+  - apps/web/src/pages/home/components/memo-editor.tsx
+  - apps/web/src/components/memo-editor-form.tsx
+- Build and lint pass successfully
+- **Learnings for future iterations:**
+  - US-009 was completed as part of US-007 implementation
+  - The pattern for default values: pass via props from parent, use as fallback in state initialization
+  - When editing, initialMemo.categoryId takes precedence over defaultCategoryId
+  - When creating, defaultCategoryId (from current filter) is used
+  - If filter is "all categories" (null), defaults to no category (null)
 ---
 
 ## 2026-02-17T10:30:00Z - US-001
