@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { view, useService } from '@rabjs/react';
-import type { MemoListItemDto, MemoListItemWithScoreDto } from '@aimo/dto';
+import type { MemoListItemDto, MemoListItemWithScoreDto, AttachmentDto } from '@aimo/dto';
 import { MemoService } from '../../../services/memo.service';
 import { AttachmentService } from '../../../services/attachment.service';
 import { FileText, Film, Edit2, Trash2, Link, Download } from 'lucide-react';
@@ -58,7 +58,7 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
     setShowDeleteModal(false);
   };
 
-  const handleAttachmentClick = (attachment: any) => {
+  const handleAttachmentClick = (attachment: AttachmentDto) => {
     const isImage = attachment.type.startsWith('image/');
     const isVideo = attachment.type.startsWith('video/');
 
@@ -80,7 +80,7 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
     }
   };
 
-  const handleDownloadAttachment = async (attachment: any) => {
+  const handleDownloadAttachment = async (attachment: AttachmentDto) => {
     setIsDownloading(attachment.attachmentId);
     try {
       await downloadFileFromUrl(attachment.url, attachment.filename);

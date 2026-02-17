@@ -1,4 +1,5 @@
 
+
 > @aimo/dto@0.0.0 build /Users/ximing/project/mygithub/aimo/packages/dto
 > rollup -c
 
@@ -6,7 +7,7 @@
 [1msrc/index.ts[22m → [1mdist/index.js, dist/index.mjs[22m...[39m
 [1m[33m(!) Generated empty chunks[39m[22m
 "index" and "index"
-[32mcreated [1mdist/index.js, dist/index.mjs[22m in [1m525ms[22m[39m
+[32mcreated [1mdist/index.js, dist/index.mjs[22m in [1m434ms[22m[39m
 [36m
 [1m/Users/ximing/project/mygithub/aimo/packages/dto/dist/types/index.d.ts[22m → [1mdist/index.d.ts[22m...[39m
-[32mcreated [1mdist/index.d.ts[22m in [1m23ms[22m[39m
+[32mcreated [1mdist/index.d.ts[22m in [1m19ms[22m[39m

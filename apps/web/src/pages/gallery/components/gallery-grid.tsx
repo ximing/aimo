@@ -51,9 +51,9 @@ export const GalleryGrid = view(({ onSelectAttachment }: GalleryGridProps) => {
     [attachmentService, onSelectAttachment]
   );
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   const handleDeleteAttachment = useCallback(
-    (_attachmentId: string) => {
+    () => {
       // The deletion is already handled in the service
       // This callback is just for any additional UI updates
     },
