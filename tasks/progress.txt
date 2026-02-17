@@ -11,9 +11,11 @@
 
 ## Completed Stories
 - US-001: 获取类别列表API
+- US-002: 创建类别API
+- US-003: 更新删除类别API
 
 ## Current Story
-US-002: 创建类别API
+US-004: 类别筛选器组件
 
 ## Blockers/Issues
 
@@ -51,4 +53,22 @@ US-002: 创建类别API
   - Error codes follow ranges: 3000-3999 for business logic errors
   - Case-insensitive name comparison is done by querying all user categories and filtering in memory (LanceDB doesn't support case-insensitive queries directly)
   - The API returns { code: 3001, msg: "类别已存在", data: null } for duplicates
+---
+
+## 2026-02-17T21:20:00Z - US-003
+- Implemented PUT and DELETE category APIs with proper business logic
+- Files changed:
+  - apps/server/src/services/category.service.ts
+    - Added duplicate name check in updateCategory() method
+    - Added clearCategoryFromMemos() helper method to clear categoryId from memos
+    - Updated deleteCategory() to call clearCategoryFromMemos() before deleting
+  - apps/server/src/controllers/v1/category.controller.ts
+    - Added error handling for duplicate name in updateCategory endpoint
+- Build and lint pass successfully
+- **Learnings for future iterations:**
+  - Pattern for updating records in LanceDB: delete old record then add new one (no native update)
+  - Pattern for clearing references: query all records with the foreign key, then update each one
+  - LanceDB update() method can set fields to null using { field: null }
+  - The delete-then-add pattern for categories preserves all fields while updating updatedAt
+  - Error handling pattern: throw specific error messages in service, catch and map to error codes in controller
 ---

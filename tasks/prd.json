@@ -43,8 +43,8 @@
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented duplicate name check for updates and clearCategoryFromMemos for delete"
     },
     {
       "id": "US-004",
