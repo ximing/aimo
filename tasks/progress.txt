@@ -16,9 +16,11 @@
 - US-004: 类别筛选器组件
 - US-005: 本地持久化筛选状态
 - US-006: 筛选器创建新类别
+- US-007: 创建memo时选择类别
+- US-008: 创建memo时快捷创建类别
 
 ## Current Story
-US-007: 创建memo时选择类别
+US-009: 根据筛选状态默认选中类别
 
 ## Blockers/Issues
 
@@ -136,4 +138,48 @@ US-007: 创建memo时选择类别
   - Auto-focus input using autoFocus prop
   - Callback pattern: onCategoryCreated passes categoryId to parent for auto-selection
   - Modal closes dropdown first (setIsOpen(false)), then opens modal to avoid UI overlap
+---
+
+## 2026-02-17T23:30:00Z - US-007
+- Implemented category selector in memo creation dialog
+- Files changed:
+  - apps/web/src/components/memo-editor-form.tsx
+    - Added CategoryService import and usage
+    - Added selectedCategoryId state with defaultCategoryId prop support
+    - Added category dropdown UI with all existing categories
+    - Added "No Category" option
+    - Added "+ New Category" button that opens CreateCategoryModal
+    - Updated handleSubmit to pass categoryId to createMemo/updateMemo
+    - Added handlers: handleSelectCategory, handleOpenCreateCategoryModal, handleCategoryCreated
+  - apps/web/src/pages/home/components/memo-editor.tsx
+    - Added useService(MemoService) to get current categoryFilter
+    - Passed defaultCategoryId={memoService.categoryFilter} to MemoEditorForm
+  - apps/web/src/services/memo.service.ts
+    - Updated createMemo signature to accept categoryId parameter
+    - Updated updateMemo signature to accept categoryId parameter
+- Build and lint pass successfully
+- **Learnings for future iterations:**
+  - Pattern for adding category selection: Use CategoryService to fetch categories, maintain selectedCategoryId state
+  - The CreateCategoryModal component is reusable across different parts of the app
+  - defaultCategoryId prop allows parent components to pre-select a category (e.g., from current filter)
+  - When editing, initialize selectedCategoryId from initialMemo.categoryId
+  - The category dropdown uses the same UI pattern as the category-filter component
+---
+
+## 2026-02-17T23:45:00Z - US-008
+- Verified US-008 was already implemented as part of US-007
+- The memo-editor-form component already has:
+  - "+ 新建类别" button in the category dropdown (line 562-569)
+  - handleOpenCreateCategoryModal function that closes dropdown and opens modal
+  - handleCategoryCreated callback that auto-selects the new category
+  - CreateCategoryModal integration without closing the memo dialog
+- Files involved (already implemented):
+  - apps/web/src/components/memo-editor-form.tsx
+  - apps/web/src/pages/home/components/create-category-modal.tsx
+- Build and lint pass successfully
+- **Learnings for future iterations:**
+  - US-008 was completed as part of US-007 implementation
+  - The pattern for inline category creation: close dropdown first, open modal, then auto-select new category
+  - The memo dialog stays open throughout the category creation flow
+  - This provides a seamless UX for users who need a new category while creating a memo
 ---

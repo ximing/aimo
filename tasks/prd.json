@@ -110,8 +110,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 7,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented category selector in memo-editor-form with dropdown, create new category option, and integration with MemoService"
     },
     {
       "id": "US-008",
@@ -126,8 +126,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 8,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Already implemented as part of US-007. The memo-editor-form component has + 新建类别 button in the category dropdown, opens CreateCategoryModal, and auto-selects new category after creation without closing the memo dialog."
     },
     {
       "id": "US-009",
