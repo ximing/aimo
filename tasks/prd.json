@@ -50,8 +50,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented in commit 2162b74"
     },
     {
       "id": "US-004",
@@ -83,8 +83,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 5,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented together with US-003 in commit 2162b74"
     }
   ]
 }

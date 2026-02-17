@@ -113,4 +113,24 @@
   - API 返回格式包含 items 数组和 startDate/endDate 范围信息
   - 参数验证：使用 Math.min/Math.max 限制 days 参数在 1-365 之间
 
+## 2026-02-18T06:00:00Z - US-003 (热力图布局)
+- 在memo列表左侧新增可收起的热力图列（默认展开，宽度220px）
+- 集成CalendarHeatmap组件显示活跃度数据
+- 添加收起/展开按钮，固定在侧边栏右侧
+  - 展开时按钮内嵌在列边缘
+  - 收起时按钮悬浮在左侧导航栏右侧
+- 添加localStorage支持保存收起状态（aimo:heatmap:collapsed）
+- 预留下方区域为后续功能准备
+- 从API获取90天活跃度统计数据
+- 添加加载状态显示（旋转动画）
+- Files changed:
+  - apps/web/src/pages/home/home.tsx
+- **Learnings for future iterations:**
+  - 使用`w-0 opacity-0`和固定宽度`w-[220px]`实现平滑的展开/收起动画
+  - 按钮使用`-ml-3`负边距在展开时与列边缘重叠
+  - 收起时使用`fixed left-[70px]`定位在左侧导航栏右侧
+  - localStorage读写需要try-catch防止隐私模式错误
+  - 使用`transition-all duration-300 ease-in-out`实现平滑过渡效果
+  - US-005（记住收起状态）已在此迭代中一并实现
+
 ---
