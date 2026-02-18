@@ -2,17 +2,22 @@ import { Service } from 'typedi';
 import * as bcrypt from 'bcrypt';
 import { LanceDbService } from '../sources/lancedb.js';
 import { BackupService } from './backup.service.js';
+import { CategoryService } from './category.service.js';
 import type { User, NewUser } from '../models/db/user.schema.js';
 import { generateUid } from '../utils/id.js';
 
 // Type for LanceDB table records
 type UserRecord = Record<string, any>;
 
+// Default category name for new users
+const DEFAULT_CATEGORY_NAME = '日记';
+
 @Service()
 export class UserService {
   constructor(
     private lanceDb: LanceDbService,
-    private backupService: BackupService
+    private backupService: BackupService,
+    private categoryService: CategoryService
   ) {}
 
   /**
@@ -60,6 +65,16 @@ export class UserService {
 
       // Trigger backup on user creation
       this.triggerBackup('user_created');
+
+      // Create default category for new user
+      try {
+        await this.categoryService.createCategory(user.uid, {
+          name: DEFAULT_CATEGORY_NAME,
+        });
+      } catch (error) {
+        // Log error but don't fail user creation if category creation fails
+        console.warn('Failed to create default category for user:', error);
+      }
 
       return user;
     } catch (error) {

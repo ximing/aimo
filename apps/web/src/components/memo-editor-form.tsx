@@ -35,6 +35,14 @@ export const MemoEditorForm = view(
     const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
     const [isCreateCategoryModalOpen, setIsCreateCategoryModalOpen] = useState(false);
     const [isEditorActive, setIsEditorActive] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false); // 标记是否正在提交中，用于防止推荐接口时序问题
+
+    // 当 defaultCategoryId 变化时，同步更新 selectedCategoryId（创建模式下）
+    useEffect(() => {
+      if (mode === 'create') {
+        setSelectedCategoryId(defaultCategoryId || null);
+      }
+    }, [defaultCategoryId, mode]);
     const formRef = useRef<HTMLFormElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -134,6 +142,7 @@ export const MemoEditorForm = view(
       }
 
       setLoading(true);
+      setIsSubmitting(true); // 标记正在提交，防止推荐接口时序问题
 
       try {
         // 获取附件 IDs（所有附件都已经上传）
@@ -168,13 +177,14 @@ export const MemoEditorForm = view(
         }
 
         if (result.success) {
+          // 清除推荐
+          setSuggestions([]);
+          setShowSuggestions(false);
           if (mode === 'create') {
             // 创建模式：清空表单
             setContent('');
             setAttachments([]);
             setSelectedRelations([]);
-            setSuggestions([]);
-            setShowSuggestions(false);
             setRows(3);
           }
           // 调用 onSave 回调
@@ -189,6 +199,7 @@ export const MemoEditorForm = view(
         setError('保存失败，请重试');
       } finally {
         setLoading(false);
+        setIsSubmitting(false);
       }
     };
 
@@ -221,6 +232,10 @@ export const MemoEditorForm = view(
     };
 
     const searchRelationSuggestions = async (query: string) => {
+      // 如果正在提交中，跳过推荐搜索（防止时序问题）
+      if (isSubmitting) {
+        return;
+      }
       setSearchingRelations(true);
       try {
         const response = await memoApi.vectorSearch({
@@ -228,6 +243,10 @@ export const MemoEditorForm = view(
           limit: 10,
           page: 1,
         });
+        // 再次检查：如果在请求过程中开始提交了，跳过更新
+        if (isSubmitting) {
+          return;
+        }
         if (response.code === 0 && response.data) {
           // 排除已选中的关系和自己（编辑模式）
           const selectedIds = selectedRelations.map((r) => r.memoId);
@@ -279,6 +298,20 @@ export const MemoEditorForm = view(
           setRows(3);
         }
       });
+    };
+
+    // Command+Enter (Mac) 或 Ctrl+Enter (Windows/Linux) 提交表单
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+        e.preventDefault();
+        if (content.trim() && !loading) {
+          // 立即清除推荐，避免显示问题
+          setSuggestions([]);
+          setShowSuggestions(false);
+          // 触发表单提交
+          handleSubmit(e as unknown as React.FormEvent);
+        }
+      }
     };
 
     const handleFormFocus = () => {
@@ -437,7 +470,8 @@ export const MemoEditorForm = view(
             onChange={handleContentChange}
             onFocus={handleFocus}
             onBlur={handleBlur}
-            placeholder={mode === 'create' ? '记录你的想法...' : '编辑你的笔记...'}
+            onKeyDown={handleKeyDown}
+            placeholder={mode === 'create' ? '记录你的想法... (⌘+Enter)' : '编辑你的笔记...'}
             className="w-full px-0 py-0 bg-transparent text-gray-900 dark:text-gray-50 rounded-lg focus:outline-none resize-none placeholder-gray-400 dark:placeholder-gray-600 text-sm leading-relaxed"
             rows={rows}
             disabled={loading}

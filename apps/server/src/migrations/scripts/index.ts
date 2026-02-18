@@ -15,6 +15,7 @@ import {
 } from './001-init.js';
 import { createIndexesMigration } from './002-create-indexes.js';
 import { addMemoTypeMigration } from './003-add-memo-type.js';
+import { addDiaryCategoryMigration } from './004-add-diary-category.js';
 
 /**
  * All available migrations organized by table and version
@@ -40,6 +41,9 @@ export const ALL_MIGRATIONS: Migration[] = [
 
   // Version 3: Add type field to memos table
   addMemoTypeMigration,
+
+  // Version 4: Add "日记" category for existing users
+  addDiaryCategoryMigration,
 
   // Add future migrations here
   // Example:
