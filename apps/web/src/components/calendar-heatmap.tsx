@@ -232,7 +232,7 @@ export const CalendarHeatmap = ({
       </div>
 
       {/* Legend */}
-      <div className="flex items-center justify-end gap-1 mt-2">
+      <div className="flex items-center justify-end gap-1 mt-2.5">
         <span className="text-[10px] text-gray-500 dark:text-gray-400">少</span>
         {[0, 1, 2, 3, 4].map((level) => (
           <div

@@ -186,7 +186,7 @@ export const HomePage = view(() => {
               isCollapsed ? 'w-0 opacity-0 pointer-events-none' : 'w-[300px] opacity-100'
             }`}
           >
-            <div className="w-[300px] h-full flex flex-col p-4">
+            <div className="w-[300px] h-full flex flex-col p-4 pt-5 overflow-y-auto">
               {/* Heatmap Section */}
               <div className="flex-shrink-0">
                 <div className="flex items-center justify-end mb-0">
@@ -212,6 +212,11 @@ export const HomePage = view(() => {
                 )}
               </div>
 
+              {/* On This Day Banner - Below heatmap */}
+              <div className="flex-shrink-0 mt-4">
+                <OnThisDayBanner />
+              </div>
+
               {/* Reserved space for future features */}
               <div className="flex-1 mt-6">
                 {/* Future features will be added here */}
@@ -220,11 +225,8 @@ export const HomePage = view(() => {
           </div>
 
           {/* Main Content Area */}
-          <div className={`overflow-hidden flex justify-center ${isCollapsed && !isCompact ? '' : 'flex-1'} w-full max-w-[640px]`}>
+          <div className={`overflow-hidden flex justify-center ${isCollapsed && !isCompact ? '' : 'flex-1'} w-full w-[640px]`}>
             <div className="w-full h-full flex flex-col">
-            {/* On This Day Banner - Below heatmap, above search bar */}
-            <OnThisDayBanner />
-
             {/* Top Search Bar - Fixed, part of the content area */}
             <header className="flex-shrink-0 sticky top-0 z-40 px-4 pt-4 pb-2">
               <div className="flex items-center gap-3">
@@ -256,7 +258,7 @@ export const HomePage = view(() => {
             </header>
 
           {/* Memo Editor - Fixed */}
-          <div className="px-4 pb-0 flex-shrink-0">
+          <div className="px-4 pb-0 flex-shrink-0 mt-0.5">
             <section aria-label="Create new memo">
               <MemoEditor />
             </section>
