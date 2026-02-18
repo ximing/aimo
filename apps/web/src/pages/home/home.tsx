@@ -160,62 +160,67 @@ export const HomePage = view(() => {
 
   return (
     <Layout>
-      <div
-        className={`flex-1 flex w-full overflow-hidden relative ${
-          isCompact || isCollapsed ? '' : 'gap-6'
-        }`}
-      >
-        {isCollapsed && (
-          <div className="absolute left-4 top-4 z-20 flex items-center">
-            {toggleButton}
-          </div>
-        )}
-        {/* Heatmap Sidebar - Collapsible */}
+      <div className="flex-1 flex w-full overflow-hidden relative justify-center">
+        {/* Centered Container - Sidebar + Memo as a whole */}
         <div
-          className={`${
-            isCompact
-              ? 'absolute left-0 top-0 h-full z-30 shadow-lg'
-              : 'flex-shrink-0'
-          } bg-white dark:bg-dark-900 transition-all duration-300 ease-in-out overflow-hidden ${
-            isCollapsed ? 'w-0 opacity-0 pointer-events-none' : 'w-[300px] opacity-100'
+          className={`flex h-full ${
+            isCompact || isCollapsed ? 'w-full' : 'gap-6'
           }`}
+          style={{
+            minWidth: isCompact ? '100%' : undefined,
+          }}
         >
-          <div className="w-[300px] h-full flex flex-col p-4">
-            {/* Heatmap Section */}
-            <div className="flex-shrink-0">
-              <div className="flex items-center justify-end mb-3">
-                {toggleButton}
-              </div>
-              {isLoadingActivity ? (
-                <div className="h-32 flex items-center justify-center">
-                  <div className="w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
-                </div>
-              ) : (
-                <CalendarHeatmap
-                  data={activityData}
-                  selectedDate={memoService.selectedDate}
-                  onDateSelect={(date, count) => {
-                    // Toggle date filter: if clicking the same date, clear the filter
-                    if (memoService.selectedDate === date) {
-                      memoService.setSelectedDate(null);
-                    } else {
-                      memoService.setSelectedDate(date);
-                    }
-                  }}
-                />
-              )}
+          {isCollapsed && (
+            <div className="absolute left-4 top-4 z-20 flex items-center">
+              {toggleButton}
             </div>
+          )}
+          {/* Heatmap Sidebar - Collapsible */}
+          <div
+            className={`${
+              isCompact
+                ? 'absolute left-0 top-0 h-full z-30 shadow-lg'
+                : 'flex-shrink-0'
+            } bg-white dark:bg-dark-900 transition-all duration-300 ease-in-out overflow-hidden ${
+              isCollapsed ? 'w-0 opacity-0 pointer-events-none' : 'w-[300px] opacity-100'
+            }`}
+          >
+            <div className="w-[300px] h-full flex flex-col p-4">
+              {/* Heatmap Section */}
+              <div className="flex-shrink-0">
+                <div className="flex items-center justify-end mb-3">
+                  {toggleButton}
+                </div>
+                {isLoadingActivity ? (
+                  <div className="h-32 flex items-center justify-center">
+                    <div className="w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : (
+                  <CalendarHeatmap
+                    data={activityData}
+                    selectedDate={memoService.selectedDate}
+                    onDateSelect={(date, count) => {
+                      // Toggle date filter: if clicking the same date, clear the filter
+                      if (memoService.selectedDate === date) {
+                        memoService.setSelectedDate(null);
+                      } else {
+                        memoService.setSelectedDate(date);
+                      }
+                    }}
+                  />
+                )}
+              </div>
 
-            {/* Reserved space for future features */}
-            <div className="flex-1 mt-6">
-              {/* Future features will be added here */}
+              {/* Reserved space for future features */}
+              <div className="flex-1 mt-6">
+                {/* Future features will be added here */}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Main Content Area */}
-        <div className="flex-1 overflow-hidden flex justify-center w-full">
-          <div className="w-full max-w-[640px] h-full flex flex-col">
+          {/* Main Content Area */}
+          <div className="flex-1 overflow-hidden flex justify-center w-full max-w-[640px]">
+            <div className="w-full h-full flex flex-col">
             {/* Top Search Bar - Fixed, part of the content area */}
             <header className="flex-shrink-0 sticky top-0 z-40 px-8 pt-4 pb-2">
               <div className="flex items-center gap-3">
@@ -276,6 +281,7 @@ export const HomePage = view(() => {
           </div>
           </div>
         </div>
+      </div>
       </div>
     </Layout>
   );
