@@ -182,7 +182,7 @@ export const HomePage = view(() => {
               isCompact
                 ? 'absolute left-0 top-0 h-full z-30 shadow-lg'
                 : 'flex-shrink-0'
-            } bg-white dark:bg-dark-900 transition-all duration-300 ease-in-out overflow-hidden ${
+            } dark:bg-dark-900 transition-all duration-300 ease-in-out overflow-hidden ${
               isCollapsed ? 'w-0 opacity-0 pointer-events-none' : 'w-[300px] opacity-100'
             }`}
           >

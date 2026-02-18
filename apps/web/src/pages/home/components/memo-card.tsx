@@ -141,7 +141,11 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
                 handleAttachmentClick(attachment);
               }}
               disabled={isAttachmentDownloading}
-              className="relative aspect-square bg-gray-100 dark:bg-dark-800 rounded overflow-hidden hover:shadow-lg hover:scale-105 transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50"
+              className={`relative aspect-square ${
+                isDocument
+                  ? 'bg-gray-100 dark:bg-dark-800'
+                  : 'bg-gray-100 dark:bg-dark-800 group-hover:bg-transparent dark:group-hover:bg-transparent'
+              } rounded overflow-hidden hover:shadow-lg hover:scale-105 transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50`}
               title={`点击${isDocument ? '下载' : '预览'}: ${attachment.filename}`}
             >
               {isImage ? (
