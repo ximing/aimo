@@ -17,7 +17,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -33,8 +33,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "响应式行为在 US-001 中已保留：isCompact 状态和 HEATMAP_COMPACT_QUERY 逻辑保持不变"
     }
   ]
 }
