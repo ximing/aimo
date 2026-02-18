@@ -35,6 +35,18 @@ curl -X GET http://localhost:3000/api/v1/backup/status \
 
 **Success Response (200 OK):**
 
+> **Response Type:** `ApiSuccessDto<{ backup: BackupStatusDto }>`
+>
+> **BackupStatusDto 类型定义:**
+> ```typescript
+> interface BackupStatusDto {
+>   enabled: boolean;           // 备份是否启用
+>   inProgress: boolean;       // 备份是否正在进行
+>   lastBackupTime: number;    // 上次备份时间戳（毫秒）
+>   throttleInterval: number;   // 备份节流间隔（毫秒）
+> }
+> ```
+
 ```json
 {
   "code": 0,
@@ -42,14 +54,9 @@ curl -X GET http://localhost:3000/api/v1/backup/status \
   "data": {
     "backup": {
       "enabled": true,
-      "lastBackupAt": 1704067200000,
-      "nextBackupAt": 1704153600000,
-      "backupCount": 10,
-      "status": "idle",
-      "storage": {
-        "type": "local",
-        "path": "./backups"
-      }
+      "inProgress": false,
+      "lastBackupTime": 1704067200000,
+      "throttleInterval": 86400000
     }
   }
 }
@@ -60,12 +67,9 @@ curl -X GET http://localhost:3000/api/v1/backup/status \
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | enabled | boolean | 备份是否启用 |
-| lastBackupAt | number | 上次备份时间戳 |
-| nextBackupAt | number | 下次备份时间戳 |
-| backupCount | number | 备份数量 |
-| status | string | 备份状态 (idle/running/error) |
-| storage.type | string | 存储类型 (local/s3) |
-| storage.path | string | 存储路径 |
+| inProgress | boolean | 备份是否正在进行 |
+| lastBackupTime | number | 上次备份时间戳（毫秒） |
+| throttleInterval | number | 备份节流间隔（毫秒） |
 
 **Error Responses:**
 
@@ -100,6 +104,8 @@ curl -X POST http://localhost:3000/api/v1/backup/force \
 #### Response
 
 **Success Response (200 OK):**
+
+> **Response Type:** `ApiSuccessDto<{ message: string }>`
 
 ```json
 {
@@ -144,6 +150,8 @@ curl -X POST http://localhost:3000/api/v1/backup/cleanup \
 #### Response
 
 **Success Response (200 OK):**
+
+> **Response Type:** `ApiSuccessDto<{ message: string }>`
 
 ```json
 {

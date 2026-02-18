@@ -35,6 +35,17 @@ curl -X GET http://localhost:3000/api/v1/user/info \
 
 **Success Response (200 OK):**
 
+> **Response Type:** `ApiSuccessDto<UserInfoDto>`
+>
+> **UserInfoDto 类型定义:**
+> ```typescript
+> interface UserInfoDto {
+>   uid: string;        // 用户唯一标识符
+>   email?: string;      // 用户邮箱
+>   nickname?: string;   // 用户昵称
+> }
+> ```
+
 ```json
 {
   "code": 0,
@@ -72,9 +83,20 @@ curl -X GET http://localhost:3000/api/v1/user/info \
 
 **Body Parameters (JSON):**
 
+> **Request Type:** `UpdateUserDto`
+>
+> **UpdateUserDto 类型定义:**
+> ```typescript
+> interface UpdateUserDto {
+>   nickname?: string;   // 用户昵称
+>   avatar?: string;     // 用户头像 URL
+> }
+> ```
+
 | Parameter | Type   | Required | Description |
 | --------- | ------ | -------- | ----------- |
 | nickname  | string | No       | 用户昵称    |
+| avatar    | string | No       | 用户头像 URL |
 
 **Example Request:**
 
@@ -90,6 +112,17 @@ curl -X PUT http://localhost:3000/api/v1/user/info \
 #### Response
 
 **Success Response (200 OK):**
+
+> **Response Type:** `ApiSuccessDto<{ message: string; user: UserInfoDto }>`
+>
+> **UserInfoDto 类型定义:**
+> ```typescript
+> interface UserInfoDto {
+>   uid: string;        // 用户唯一标识符
+>   email?: string;      // 用户邮箱
+>   nickname?: string;   // 用户昵称
+> }
+> ```
 
 ```json
 {

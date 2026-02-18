@@ -35,12 +35,25 @@ curl -X GET http://localhost:3000/api/v1/categories \
 
 **Success Response (200 OK):**
 
+> **Response Type:** `ApiSuccessDto<{ categories: CategoryDto[] }>`
+>
+> **CategoryDto 类型定义:**
+> ```typescript
+> interface CategoryDto {
+>   categoryId: string;   // 分类唯一标识符
+>   uid: string;          // 用户唯一标识符
+>   name: string;         // 分类名称
+>   color?: string;       // 分类颜色（十六进制）
+>   createdAt: number;    // 创建时间戳（毫秒）
+>   updatedAt: number;    // 更新时间戳（毫秒）
+> }
+> ```
+
 ```json
 {
   "code": 0,
   "message": "success",
   "data": {
-    "message": "Categories fetched successfully",
     "categories": [
       {
         "categoryId": "category_123456",
@@ -103,12 +116,25 @@ curl -X GET http://localhost:3000/api/v1/categories/category_123456 \
 
 **Success Response (200 OK):**
 
+> **Response Type:** `ApiSuccessDto<{ category: CategoryDto }>`
+>
+> **CategoryDto 类型定义:**
+> ```typescript
+> interface CategoryDto {
+>   categoryId: string;   // 分类唯一标识符
+>   uid: string;          // 用户唯一标识符
+>   name: string;         // 分类名称
+>   color?: string;       // 分类颜色（十六进制）
+>   createdAt: number;    // 创建时间戳（毫秒）
+>   updatedAt: number;    // 更新时间戳（毫秒）
+> }
+> ```
+
 ```json
 {
   "code": 0,
   "message": "success",
   "data": {
-    "message": "Category fetched successfully",
     "category": {
       "categoryId": "category_123456",
       "uid": "user_123456",
@@ -168,12 +194,25 @@ curl -X POST http://localhost:3000/api/v1/categories \
 
 **Success Response (200 OK):**
 
+> **Response Type:** `ApiSuccessDto<{ category: CategoryDto }>`
+>
+> **CategoryDto 类型定义:**
+> ```typescript
+> interface CategoryDto {
+>   categoryId: string;   // 分类唯一标识符
+>   uid: string;          // 用户唯一标识符
+>   name: string;         // 分类名称
+>   color?: string;       // 分类颜色（十六进制）
+>   createdAt: number;    // 创建时间戳（毫秒）
+>   updatedAt: number;    // 更新时间戳（毫秒）
+> }
+> ```
+
 ```json
 {
   "code": 0,
   "message": "success",
   "data": {
-    "message": "Category created successfully",
     "category": {
       "categoryId": "category_new_123456",
       "uid": "user_123456",
@@ -240,12 +279,25 @@ curl -X PUT http://localhost:3000/api/v1/categories/category_123456 \
 
 **Success Response (200 OK):**
 
+> **Response Type:** `ApiSuccessDto<{ category: CategoryDto }>`
+>
+> **CategoryDto 类型定义:**
+> ```typescript
+> interface CategoryDto {
+>   categoryId: string;   // 分类唯一标识符
+>   uid: string;          // 用户唯一标识符
+>   name: string;         // 分类名称
+>   color?: string;       // 分类颜色（十六进制）
+>   createdAt: number;    // 创建时间戳（毫秒）
+>   updatedAt: number;    // 更新时间戳（毫秒）
+> }
+> ```
+
 ```json
 {
   "code": 0,
   "message": "success",
   "data": {
-    "message": "Category updated successfully",
     "category": {
       "categoryId": "category_123456",
       "uid": "user_123456",
@@ -299,6 +351,8 @@ curl -X DELETE http://localhost:3000/api/v1/categories/category_123456 \
 #### Response
 
 **Success Response (200 OK):**
+
+> **Response Type:** `ApiSuccessDto<{ message: string }>`
 
 ```json
 {

@@ -45,6 +45,25 @@ curl -X POST http://localhost:3000/api/v1/attachments/upload \
 
 **Success Response (200 OK):**
 
+> **Response Type:** `ApiSuccessDto<UploadAttachmentResponseDto>`
+>
+> **UploadAttachmentResponseDto 类型定义:**
+> ```typescript
+> interface AttachmentDto {
+>   attachmentId: string;  // 附件唯一标识符
+>   filename: string;      // 文件名
+>   url: string;          // 访问 URL
+>   type: string;         // MIME 类型
+>   size: number;         // 文件大小（字节）
+>   createdAt: number;    // 创建时间戳（毫秒）
+> }
+>
+> interface UploadAttachmentResponseDto {
+>   message: string;
+>   attachment: AttachmentDto;
+> }
+> ```
+
 ```json
 {
   "code": 0,
@@ -52,10 +71,11 @@ curl -X POST http://localhost:3000/api/v1/attachments/upload \
   "data": {
     "message": "File uploaded successfully",
     "attachment": {
-      "id": "attachment_123456",
+      "attachmentId": "attachment_123456",
       "filename": "file.pdf",
+      "url": "/api/v1/attachments/attachment_123456/download",
+      "type": "application/pdf",
       "size": 102400,
-      "mimeType": "application/pdf",
       "createdAt": 1704067200000
     }
   }
@@ -106,6 +126,27 @@ curl -X GET "http://localhost:3000/api/v1/attachments?page=1&limit=20" \
 
 **Success Response (200 OK):**
 
+> **Response Type:** `ApiSuccessDto<AttachmentListResponseDto>`
+>
+> **AttachmentListResponseDto 类型定义:**
+> ```typescript
+> interface AttachmentDto {
+>   attachmentId: string;  // 附件唯一标识符
+>   filename: string;      // 文件名
+>   url: string;          // 访问 URL
+>   type: string;         // MIME 类型
+>   size: number;         // 文件大小（字节）
+>   createdAt: number;    // 创建时间戳（毫秒）
+> }
+>
+> interface AttachmentListResponseDto {
+>   items: AttachmentDto[];
+>   total: number;
+>   page: number;
+>   limit: number;
+> }
+> ```
+
 ```json
 {
   "code": 0,
@@ -113,17 +154,19 @@ curl -X GET "http://localhost:3000/api/v1/attachments?page=1&limit=20" \
   "data": {
     "items": [
       {
-        "id": "attachment_123456",
+        "attachmentId": "attachment_123456",
         "filename": "file.pdf",
+        "url": "/api/v1/attachments/attachment_123456/download",
+        "type": "application/pdf",
         "size": 102400,
-        "mimeType": "application/pdf",
         "createdAt": 1704067200000
       },
       {
-        "id": "attachment_789012",
+        "attachmentId": "attachment_789012",
         "filename": "image.png",
+        "url": "/api/v1/attachments/attachment_789012/download",
+        "type": "image/png",
         "size": 204800,
-        "mimeType": "image/png",
         "createdAt": 1704067200000
       }
     ],
@@ -174,15 +217,30 @@ curl -X GET http://localhost:3000/api/v1/attachments/attachment_123456 \
 
 **Success Response (200 OK):**
 
+> **Response Type:** `ApiSuccessDto<AttachmentDto>`
+>
+> **AttachmentDto 类型定义:**
+> ```typescript
+> interface AttachmentDto {
+>   attachmentId: string;  // 附件唯一标识符
+>   filename: string;      // 文件名
+>   url: string;          // 访问 URL
+>   type: string;         // MIME 类型
+>   size: number;         // 文件大小（字节）
+>   createdAt: number;    // 创建时间戳（毫秒）
+> }
+> ```
+
 ```json
 {
   "code": 0,
   "message": "success",
   "data": {
-    "id": "attachment_123456",
+    "attachmentId": "attachment_123456",
     "filename": "file.pdf",
+    "url": "/api/v1/attachments/attachment_123456/download",
+    "type": "application/pdf",
     "size": 102400,
-    "mimeType": "application/pdf",
     "createdAt": 1704067200000
   }
 }
@@ -228,6 +286,8 @@ curl -X DELETE http://localhost:3000/api/v1/attachments/attachment_123456 \
 #### Response
 
 **Success Response (200 OK):**
+
+> **Response Type:** `ApiSuccessDto<{ message: string }>`
 
 ```json
 {

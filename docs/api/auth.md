@@ -43,6 +43,17 @@ curl -X POST http://localhost:3000/api/v1/auth/register \
 
 **Success Response (200 OK):**
 
+> **Response Type:** `ApiSuccessDto<{ user: UserInfoDto }>`
+>
+> **UserInfoDto 类型定义:**
+> ```typescript
+> interface UserInfoDto {
+>   uid: string;           // 用户唯一标识符
+>   email?: string;       // 用户邮箱
+>   nickname?: string;    // 用户昵称
+> }
+> ```
+
 ```json
 {
   "code": 0,
@@ -95,6 +106,22 @@ curl -X POST http://localhost:3000/api/v1/auth/login \
 #### Response
 
 **Success Response (200 OK):**
+
+> **Response Type:** `ApiSuccessDto<LoginResponseDto>`
+>
+> **LoginResponseDto 类型定义:**
+> ```typescript
+> interface UserInfoDto {
+>   uid: string;           // 用户唯一标识符
+>   email?: string;       // 用户邮箱
+>   nickname?: string;    // 用户昵称
+> }
+>
+> interface LoginResponseDto {
+>   token: string;         // JWT 访问令牌
+>   user: UserInfoDto;     // 用户信息
+> }
+> ```
 
 ```json
 {
