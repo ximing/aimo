@@ -164,7 +164,7 @@ export const HomePage = view(() => {
         {/* Centered Container - Sidebar + Memo as a whole */}
         <div
           className={`flex h-full ${
-            isCompact || isCollapsed ? 'w-full' : 'gap-6'
+            isCompact || isCollapsed ? 'justify-center' : 'gap-0'
           }`}
           style={{
             minWidth: isCompact ? '100%' : undefined,
@@ -188,7 +188,7 @@ export const HomePage = view(() => {
             <div className="w-[300px] h-full flex flex-col p-4">
               {/* Heatmap Section */}
               <div className="flex-shrink-0">
-                <div className="flex items-center justify-end mb-3">
+                <div className="flex items-center justify-end mb-0">
                   {toggleButton}
                 </div>
                 {isLoadingActivity ? (
@@ -219,10 +219,10 @@ export const HomePage = view(() => {
           </div>
 
           {/* Main Content Area */}
-          <div className="flex-1 overflow-hidden flex justify-center w-full max-w-[640px]">
+          <div className={`overflow-hidden flex justify-center ${isCollapsed && !isCompact ? '' : 'flex-1'} w-full max-w-[640px]`}>
             <div className="w-full h-full flex flex-col">
             {/* Top Search Bar - Fixed, part of the content area */}
-            <header className="flex-shrink-0 sticky top-0 z-40 px-8 pt-4 pb-2">
+            <header className="flex-shrink-0 sticky top-0 z-40 px-4 pt-4 pb-2">
               <div className="flex items-center gap-3">
                 {/* Date Filter Status */}
                 {memoService.selectedDate && (
@@ -252,7 +252,7 @@ export const HomePage = view(() => {
             </header>
 
           {/* Memo Editor - Fixed */}
-          <div className="px-8 pb-0 flex-shrink-0">
+          <div className="px-4 pb-0 flex-shrink-0">
             <section aria-label="Create new memo">
               <MemoEditor />
             </section>
@@ -261,7 +261,7 @@ export const HomePage = view(() => {
           {/* Memos List - Scrollable */}
           <div
             id="memo-list-container"
-            className="flex-1 overflow-y-auto mt-6 pb-8 min-h-0 px-8 relative"
+            className="flex-1 overflow-y-auto mt-6 pb-8 min-h-0 px-4 relative"
             onScroll={handleScroll}
           >
             <section aria-label="Your memos">
