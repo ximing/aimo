@@ -10,6 +10,7 @@
 - Modal components use `@headlessui/react` Dialog and Transition for consistent UX
 - Use `extractPlainText()` to strip markdown syntax for content previews
 - File attachments: images/videos open preview modal, other files trigger download
+- Responsive design: Use Tailwind responsive prefixes (sm:, md:, lg:) for adaptive layouts
 
 ## 2026-02-18 - US-001
 - 实现首页布局整体居中
@@ -57,6 +58,21 @@
   - 内容预览使用 line-clamp-2 限制行数
   - 使用 extractPlainText 函数去除 markdown 语法
   - 无记录时返回 null 自动隐藏组件
+---
+
+## 2026-02-18 - US-004 (On This Day)
+- 实现响应式适配
+- 更新卡片宽度响应式类：w-[160px] sm:w-[180px] md:w-[200px]
+- 更新"查看更多"按钮宽度：w-[80px] sm:w-[90px] md:w-[100px]
+- 更新详情弹窗内边距：px-4 sm:px-6
+- 弹窗添加 mx-4 sm:mx-6 防止贴边
+- **Files changed:**
+  - `apps/web/src/pages/home/components/on-this-day-banner.tsx` - 响应式卡片宽度
+  - `apps/web/src/pages/home/components/memo-detail-modal.tsx` - 响应式内边距
+- **Learnings for future iterations:**
+  - 使用 Tailwind 响应式前缀实现渐进增强
+  - 移动端优先：基础样式为移动端，sm/md 为更大屏幕
+  - 弹窗需要水平边距防止在小屏幕上贴边
 ---
 
 ## 2026-02-18 - US-003 (On This Day)
