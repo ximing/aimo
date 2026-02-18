@@ -15,6 +15,8 @@ import type {
   AttachmentDto,
   MemoActivityStatsDto,
   MemoActivityStatsItemDto,
+  OnThisDayMemoDto,
+  OnThisDayResponseDto,
 } from '@aimo/dto';
 import { generateTypeId } from '../utils/id.js';
 import { OBJECT_TYPE } from '../models/constant/type.js';
@@ -831,6 +833,64 @@ export class MemoService {
       };
     } catch (error) {
       console.error('Error getting activity stats:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get memos from previous years on the same month/day as today
+   * Excludes memos from the current year
+   * Results are sorted by year descending (most recent first)
+   * Limited to 10 results maximum
+   */
+  async getOnThisDayMemos(uid: string): Promise<OnThisDayResponseDto> {
+    try {
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth(); // 0-11
+      const currentDay = now.getDate(); // 1-31
+
+      // Format today's month-day as MM-DD
+      const todayMonthDay = `${String(currentMonth + 1).padStart(2, '0')}-${String(currentDay).padStart(2, '0')}`;
+
+      // Get all memos for the user
+      const memosTable = await this.lanceDb.openTable('memos');
+      const allMemos = await memosTable.query().where(`uid = '${uid}'`).toArray();
+
+      // Filter memos that match the current month/day but not current year
+      const matchingMemos: OnThisDayMemoDto[] = [];
+
+      for (const memo of allMemos) {
+        const createdAt = memo.createdAt as number;
+        const memoDate = new Date(createdAt);
+        const memoYear = memoDate.getFullYear();
+        const memoMonth = memoDate.getMonth();
+        const memoDay = memoDate.getDate();
+
+        // Match month and day, but exclude current year
+        if (memoMonth === currentMonth && memoDay === currentDay && memoYear !== currentYear) {
+          matchingMemos.push({
+            memoId: memo.memoId,
+            content: memo.content,
+            createdAt,
+            year: memoYear,
+          });
+        }
+      }
+
+      // Sort by year descending (most recent first)
+      matchingMemos.sort((a, b) => b.year - a.year);
+
+      // Limit to 10 results
+      const limitedMemos = matchingMemos.slice(0, 10);
+
+      return {
+        items: limitedMemos,
+        total: limitedMemos.length,
+        todayMonthDay,
+      };
+    } catch (error) {
+      console.error('Error getting on this day memos:', error);
       throw error;
     }
   }

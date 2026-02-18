@@ -301,4 +301,20 @@ export class MemoV1Controller {
       return ResponseUtil.error(ErrorCode.DB_ERROR);
     }
   }
+
+  @Get('/on-this-day')
+  async getOnThisDayMemos(@CurrentUser() user: UserInfoDto) {
+    try {
+      if (!user?.uid) {
+        return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
+      }
+
+      const result = await this.memoService.getOnThisDayMemos(user.uid);
+
+      return ResponseUtil.success(result);
+    } catch (error) {
+      console.error('Get on this day memos error:', error);
+      return ResponseUtil.error(ErrorCode.DB_ERROR);
+    }
+  }
 }
