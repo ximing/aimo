@@ -5,12 +5,21 @@ import { MemoService } from '../../services/memo.service';
 import { MemoEditor } from './components/memo-editor';
 import { MemoList } from './components/memo-list';
 import { SearchSortBar } from './components/search-sort-bar';
+import { CategoryFilter } from './components/category-filter';
 import { Layout } from '../../components/layout';
 import { CalendarHeatmap } from '../../components/calendar-heatmap';
 import * as memoApi from '../../api/memo';
 
 // LocalStorage key for heatmap collapsed state
 const HEATMAP_COLLAPSED_KEY = 'aimo:heatmap:collapsed';
+const HEATMAP_COMPACT_QUERY = '(max-width: 1100px)';
+
+function getIsCompactLayout(): boolean {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+  return window.matchMedia(HEATMAP_COMPACT_QUERY).matches;
+}
 
 /**
  * Load collapsed state from localStorage
@@ -38,9 +47,31 @@ function saveCollapsedState(collapsed: boolean): void {
 export const HomePage = view(() => {
   const memoService = useService(MemoService);
   const [showScrollTop, setShowScrollTop] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(loadCollapsedState);
+  const [isCompact, setIsCompact] = useState(getIsCompactLayout);
+  const [isCollapsed, setIsCollapsed] = useState(() =>
+    getIsCompactLayout() ? true : loadCollapsedState()
+  );
   const [activityData, setActivityData] = useState<Array<{ date: string; count: number }>>([]);
   const [isLoadingActivity, setIsLoadingActivity] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(HEATMAP_COMPACT_QUERY);
+    const handleChange = () => {
+      setIsCompact(mediaQuery.matches);
+    };
+
+    handleChange();
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
+  useEffect(() => {
+    if (isCompact) {
+      setIsCollapsed(true);
+    } else {
+      setIsCollapsed(loadCollapsedState());
+    }
+  }, [isCompact]);
 
   // Parse URL params on mount and when URL changes
   useEffect(() => {
@@ -100,6 +131,19 @@ export const HomePage = view(() => {
     });
   }, []);
 
+  const toggleButton = (
+    <button
+      onClick={toggleCollapsed}
+      className={`flex items-center justify-center w-6 h-6 rounded-md bg-gray-100 dark:bg-dark-800 text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-200 dark:hover:bg-dark-700 transition-colors ${
+        isCollapsed ? 'shadow-sm' : ''
+      }`}
+      title={isCollapsed ? '展开活跃度' : '收起活跃度'}
+      aria-label={isCollapsed ? '展开活跃度' : '收起活跃度'}
+    >
+      {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+    </button>
+  );
+
   // Handle scroll event to show/hide the scroll-to-top button
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const scrollDistance = e.currentTarget.scrollTop;
@@ -116,90 +160,91 @@ export const HomePage = view(() => {
 
   return (
     <Layout>
-      {/* Heatmap Sidebar - Collapsible */}
       <div
-        className={`flex-shrink-0 border-r border-gray-200 dark:border-dark-700 bg-white dark:bg-dark-900 transition-all duration-300 ease-in-out overflow-hidden ${
-          isCollapsed ? 'w-0 opacity-0' : 'w-[220px] opacity-100'
+        className={`flex-1 flex w-full overflow-hidden relative ${
+          isCompact || isCollapsed ? '' : 'gap-6'
         }`}
       >
-        <div className="w-[220px] h-full flex flex-col p-4">
-          {/* Heatmap Section */}
-          <div className="flex-shrink-0">
-            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-              活跃度
-            </h3>
-            {isLoadingActivity ? (
-              <div className="h-32 flex items-center justify-center">
-                <div className="w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+        {isCollapsed && (
+          <div className="absolute left-4 top-4 z-20 flex items-center">
+            {toggleButton}
+          </div>
+        )}
+        {/* Heatmap Sidebar - Collapsible */}
+        <div
+          className={`${
+            isCompact
+              ? 'absolute left-0 top-0 h-full z-30 shadow-lg'
+              : 'flex-shrink-0'
+          } bg-white dark:bg-dark-900 transition-all duration-300 ease-in-out overflow-hidden ${
+            isCollapsed ? 'w-0 opacity-0 pointer-events-none' : 'w-[300px] opacity-100'
+          }`}
+        >
+          <div className="w-[300px] h-full flex flex-col p-4">
+            {/* Heatmap Section */}
+            <div className="flex-shrink-0">
+              <div className="flex items-center justify-end mb-3">
+                {toggleButton}
               </div>
-            ) : (
-              <CalendarHeatmap
-                data={activityData}
-                selectedDate={memoService.selectedDate}
-                onDateSelect={(date, count) => {
-                  // Toggle date filter: if clicking the same date, clear the filter
-                  if (memoService.selectedDate === date) {
-                    memoService.setSelectedDate(null);
-                  } else {
-                    memoService.setSelectedDate(date);
-                  }
-                }}
-              />
-            )}
-          </div>
-
-          {/* Reserved space for future features */}
-          <div className="flex-1 mt-6">
-            {/* Future features will be added here */}
-          </div>
-        </div>
-      </div>
-
-      {/* Collapse/Expand Button - Fixed position when collapsed, inline when expanded */}
-      <button
-        onClick={toggleCollapsed}
-        className={`flex-shrink-0 z-10 flex items-center justify-center bg-white dark:bg-dark-900 border-gray-200 dark:border-dark-700 text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-dark-800 transition-all duration-300 ${
-          isCollapsed
-            ? 'fixed left-[70px] top-1/2 -translate-y-1/2 w-6 h-12 rounded-r-lg border-y border-r shadow-sm'
-            : 'w-6 h-12 -ml-3 self-center rounded-full border shadow-sm'
-        }`}
-        title={isCollapsed ? '展开热力图' : '收起热力图'}
-        aria-label={isCollapsed ? '展开热力图' : '收起热力图'}
-      >
-        {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-      </button>
-
-      {/* Main Content Area - Right aligned container */}
-      <div className="flex-1 overflow-hidden flex justify-center w-full">
-        <div className="w-full max-w-[640px] h-full flex flex-col">
-          {/* Top Search Bar - Fixed, part of the content area */}
-          <header className="flex-shrink-0 sticky top-0 z-40 px-8 pt-4 pb-2">
-            <div className="flex items-center justify-between">
-              {/* Date Filter Status */}
-              {memoService.selectedDate ? (
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg">
-                    <Calendar size={14} className="text-primary-600 dark:text-primary-400" />
-                    <span className="text-sm text-primary-700 dark:text-primary-300">
-                      {memoService.selectedDate}
-                    </span>
-                    <button
-                      onClick={() => memoService.setSelectedDate(null)}
-                      className="ml-1 p-0.5 text-primary-500 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-200 hover:bg-primary-100 dark:hover:bg-primary-800 rounded transition-colors"
-                      aria-label="清除日期筛选"
-                      title="清除日期筛选"
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
+              {isLoadingActivity ? (
+                <div className="h-32 flex items-center justify-center">
+                  <div className="w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
                 </div>
               ) : (
-                <div /> /* Spacer */
+                <CalendarHeatmap
+                  data={activityData}
+                  selectedDate={memoService.selectedDate}
+                  onDateSelect={(date, count) => {
+                    // Toggle date filter: if clicking the same date, clear the filter
+                    if (memoService.selectedDate === date) {
+                      memoService.setSelectedDate(null);
+                    } else {
+                      memoService.setSelectedDate(date);
+                    }
+                  }}
+                />
               )}
-              {/* Search + Sort Bar */}
-              <SearchSortBar />
             </div>
-          </header>
+
+            {/* Reserved space for future features */}
+            <div className="flex-1 mt-6">
+              {/* Future features will be added here */}
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content Area */}
+        <div className="flex-1 overflow-hidden flex justify-center w-full">
+          <div className="w-full max-w-[640px] h-full flex flex-col">
+            {/* Top Search Bar - Fixed, part of the content area */}
+            <header className="flex-shrink-0 sticky top-0 z-40 px-8 pt-4 pb-2">
+              <div className="flex items-center gap-3">
+                {/* Date Filter Status */}
+                {memoService.selectedDate && (
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg">
+                      <Calendar size={14} className="text-primary-600 dark:text-primary-400" />
+                      <span className="text-sm text-primary-700 dark:text-primary-300">
+                        {memoService.selectedDate}
+                      </span>
+                      <button
+                        onClick={() => memoService.setSelectedDate(null)}
+                        className="ml-1 p-0.5 text-primary-500 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-200 hover:bg-primary-100 dark:hover:bg-primary-800 rounded transition-colors"
+                        aria-label="清除日期筛选"
+                        title="清除日期筛选"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+                <CategoryFilter />
+                {/* Search + Sort Bar */}
+                <div className="ml-auto">
+                  <SearchSortBar />
+                </div>
+              </div>
+            </header>
 
           {/* Memo Editor - Fixed */}
           <div className="px-8 pb-0 flex-shrink-0">
@@ -228,6 +273,7 @@ export const HomePage = view(() => {
                 <ArrowUp size={20} />
               </button>
             )}
+          </div>
           </div>
         </div>
       </div>

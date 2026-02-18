@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { view, useService } from '@rabjs/react';
 import { CategoryService } from '../../../services/category.service';
 import { MemoService } from '../../../services/memo.service';
-import { FolderOpen, Check, ChevronDown, Plus } from 'lucide-react';
+import { Check, ChevronDown, Plus } from 'lucide-react';
 import { CreateCategoryModal } from './create-category-modal';
 
 export const CategoryFilter = view(() => {
@@ -56,15 +56,14 @@ export const CategoryFilter = view(() => {
       {/* Filter Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-all duration-200 ${
+        className={`flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
           memoService.categoryFilter
-            ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-300 dark:border-primary-700 text-primary-700 dark:text-primary-300'
-            : 'bg-white dark:bg-dark-800 border-gray-200 dark:border-dark-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-700'
+            ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
+            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-700'
         }`}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
       >
-        <FolderOpen size={14} />
         <span className="max-w-[80px] truncate">{selectedCategoryName}</span>
         <ChevronDown
           size={14}

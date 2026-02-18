@@ -5,7 +5,7 @@ import { CategoryService } from '../services/category.service';
 import { AttachmentUploader, type AttachmentItem } from './attachment-uploader';
 import { attachmentApi } from '../api/attachment';
 import * as memoApi from '../api/memo';
-import { Paperclip, X, FolderOpen, Check, ChevronDown, Plus } from 'lucide-react';
+import { Paperclip, X, Check, ChevronDown, Plus } from 'lucide-react';
 import type { MemoListItemDto, MemoWithAttachmentsDto } from '@aimo/dto';
 import { CreateCategoryModal } from '../pages/home/components/create-category-modal';
 
@@ -34,6 +34,8 @@ export const MemoEditorForm = view(
     );
     const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
     const [isCreateCategoryModalOpen, setIsCreateCategoryModalOpen] = useState(false);
+    const [isEditorActive, setIsEditorActive] = useState(false);
+    const formRef = useRef<HTMLFormElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const suggestionsRef = useRef<HTMLDivElement>(null);
@@ -90,6 +92,28 @@ export const MemoEditorForm = view(
         return () => document.removeEventListener('mousedown', handleClickOutside);
       }
     }, [isCategoryDropdownOpen]);
+
+    // 点击编辑区外部时收起（避免选择类别时失焦）
+    useEffect(() => {
+      const handleMouseDown = (event: MouseEvent) => {
+        if (isCreateCategoryModalOpen) {
+          return;
+        }
+
+        if (formRef.current?.contains(event.target as Node)) {
+          if (!isEditorActive) {
+            setIsEditorActive(true);
+          }
+          return;
+        }
+
+        setIsEditorActive(false);
+        setIsCategoryDropdownOpen(false);
+      };
+
+      document.addEventListener('mousedown', handleMouseDown);
+      return () => document.removeEventListener('mousedown', handleMouseDown);
+    }, [isEditorActive, isCreateCategoryModalOpen]);
 
     // 清理防抖计时器
     useEffect(() => {
@@ -242,9 +266,22 @@ export const MemoEditorForm = view(
     };
 
     const handleBlur = () => {
-      // 失焦时，如果内容为空则还原到3行（仅创建模式）
-      if (mode === 'create' && !content.trim()) {
-        setRows(3);
+      // 失焦时，如果内容为空且焦点移出编辑区则还原到3行（仅创建模式）
+      if (mode !== 'create' || content.trim()) {
+        return;
+      }
+
+      requestAnimationFrame(() => {
+        const activeElement = document.activeElement;
+        if (!formRef.current?.contains(activeElement)) {
+          setRows(3);
+        }
+      });
+    };
+
+    const handleFormFocus = () => {
+      if (!isEditorActive) {
+        setIsEditorActive(true);
       }
     };
 
@@ -365,6 +402,8 @@ export const MemoEditorForm = view(
       setSelectedCategoryId(categoryId);
     };
 
+    const showCategorySelector = mode === 'edit' || isEditorActive;
+
     // Get selected category name
     const selectedCategoryName = selectedCategoryId
       ? categoryService.getCategoryName(selectedCategoryId) || '选择类别'
@@ -372,7 +411,13 @@ export const MemoEditorForm = view(
 
     return (
       <>
-      <form onSubmit={handleSubmit} noValidate className="space-y-2">
+      <form
+        ref={formRef}
+        onSubmit={handleSubmit}
+        onFocusCapture={handleFormFocus}
+        noValidate
+        className="space-y-2"
+      >
         {error && (
           <div
             className="px-3 py-2 bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-800/30 text-red-700 dark:text-red-400 rounded text-xs animate-slide-up"
@@ -484,94 +529,6 @@ export const MemoEditorForm = view(
             disabled={loading}
           />
 
-          {/* 类别选择器 */}
-          <div className="flex items-center gap-2">
-            <div className="relative" ref={categoryDropdownRef}>
-              <button
-                type="button"
-                onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
-                disabled={loading}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg border transition-all duration-200 ${
-                  selectedCategoryId
-                    ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-300 dark:border-primary-700 text-primary-700 dark:text-primary-300'
-                    : 'bg-gray-50 dark:bg-dark-700 border-gray-200 dark:border-dark-600 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-600'
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-                aria-expanded={isCategoryDropdownOpen}
-                aria-haspopup="listbox"
-              >
-                <FolderOpen size={14} />
-                <span className="max-w-[100px] truncate">{selectedCategoryName}</span>
-                <ChevronDown
-                  size={14}
-                  className={`transition-transform duration-200 ${isCategoryDropdownOpen ? 'rotate-180' : ''}`}
-                />
-              </button>
-
-              {/* Category Dropdown Menu */}
-              {isCategoryDropdownOpen && (
-                <div className="absolute left-0 bottom-full mb-1 w-48 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg shadow-lg z-50 py-1">
-                  {/* No Category Option */}
-                  <button
-                    type="button"
-                    onClick={() => handleSelectCategory(null)}
-                    className={`w-full flex items-center justify-between px-4 py-2 text-sm transition-colors ${
-                      !selectedCategoryId
-                        ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700'
-                    }`}
-                  >
-                    <span>无类别</span>
-                    {!selectedCategoryId && <Check size={14} />}
-                  </button>
-
-                  {/* Divider */}
-                  {categoryService.categories.length > 0 && (
-                    <div className="my-1 border-t border-gray-200 dark:border-dark-700" />
-                  )}
-
-                  {/* Category List */}
-                  <div className="max-h-40 overflow-y-auto">
-                    {categoryService.categories.map((category) => (
-                      <button
-                        key={category.categoryId}
-                        type="button"
-                        onClick={() => handleSelectCategory(category.categoryId)}
-                        className={`w-full flex items-center justify-between px-4 py-2 text-sm transition-colors ${
-                          selectedCategoryId === category.categoryId
-                            ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700'
-                        }`}
-                      >
-                        <span className="truncate">{category.name}</span>
-                        {selectedCategoryId === category.categoryId && <Check size={14} />}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Empty State */}
-                  {categoryService.categories.length === 0 && !categoryService.loading && (
-                    <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
-                      暂无类别
-                    </div>
-                  )}
-
-                  {/* Divider */}
-                  <div className="my-1 border-t border-gray-200 dark:border-dark-700" />
-
-                  {/* Create New Category Button */}
-                  <button
-                    type="button"
-                    onClick={handleOpenCreateCategoryModal}
-                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
-                  >
-                    <Plus size={14} />
-                    <span>新建类别</span>
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
           {/* 操作栏：附件按钮和保存按钮 */}
           <div className="flex items-center justify-between">
             {/* 左侧：附件按钮 */}
@@ -598,6 +555,91 @@ export const MemoEditorForm = view(
                 >
                   取消
                 </button>
+              )}
+              {showCategorySelector && (
+                <div className="relative" ref={categoryDropdownRef}>
+                  <button
+                    type="button"
+                    onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
+                    disabled={loading}
+                    className={`flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                      selectedCategoryId
+                        ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
+                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-700'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    aria-expanded={isCategoryDropdownOpen}
+                    aria-haspopup="listbox"
+                  >
+                    <span className="max-w-[100px] truncate">{selectedCategoryName}</span>
+                    <ChevronDown
+                      size={14}
+                      className={`transition-transform duration-200 ${isCategoryDropdownOpen ? 'rotate-180' : ''}`}
+                    />
+                  </button>
+
+                  {/* Category Dropdown Menu */}
+                  {isCategoryDropdownOpen && (
+                    <div className="absolute right-0 bottom-full mb-1 w-48 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg shadow-lg z-50 py-1">
+                      {/* No Category Option */}
+                      <button
+                        type="button"
+                        onClick={() => handleSelectCategory(null)}
+                        className={`w-full flex items-center justify-between px-4 py-2 text-sm transition-colors ${
+                          !selectedCategoryId
+                            ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
+                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700'
+                        }`}
+                      >
+                        <span>无类别</span>
+                        {!selectedCategoryId && <Check size={14} />}
+                      </button>
+
+                      {/* Divider */}
+                      {categoryService.categories.length > 0 && (
+                        <div className="my-1 border-t border-gray-200 dark:border-dark-700" />
+                      )}
+
+                      {/* Category List */}
+                      <div className="max-h-40 overflow-y-auto">
+                        {categoryService.categories.map((category) => (
+                          <button
+                            key={category.categoryId}
+                            type="button"
+                            onClick={() => handleSelectCategory(category.categoryId)}
+                            className={`w-full flex items-center justify-between px-4 py-2 text-sm transition-colors ${
+                              selectedCategoryId === category.categoryId
+                                ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700'
+                            }`}
+                          >
+                            <span className="truncate">{category.name}</span>
+                            {selectedCategoryId === category.categoryId && <Check size={14} />}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Empty State */}
+                      {categoryService.categories.length === 0 && !categoryService.loading && (
+                        <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
+                          暂无类别
+                        </div>
+                      )}
+
+                      {/* Divider */}
+                      <div className="my-1 border-t border-gray-200 dark:border-dark-700" />
+
+                      {/* Create New Category Button */}
+                      <button
+                        type="button"
+                        onClick={handleOpenCreateCategoryModal}
+                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
+                      >
+                        <Plus size={14} />
+                        <span>新建类别</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
               )}
               <button
                 type="submit"

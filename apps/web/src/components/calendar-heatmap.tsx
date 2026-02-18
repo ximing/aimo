@@ -8,7 +8,6 @@ export interface HeatmapData {
 interface CalendarHeatmapProps {
   data: HeatmapData[];
   onDateSelect?: (date: string, count: number) => void;
-  selectedDate?: string | null;
   className?: string;
 }
 
@@ -30,9 +29,21 @@ const getColorLevel = (count: number): number => {
   return 4;
 };
 
+const formatDateKey = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const parseDateKey = (dateStr: string): Date => {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
+
 // Format date for display
 const formatDate = (dateStr: string): string => {
-  const date = new Date(dateStr);
+  const date = parseDateKey(dateStr);
   return date.toLocaleDateString('zh-CN', {
     year: 'numeric',
     month: 'long',
@@ -48,7 +59,6 @@ const getMonthName = (date: Date): string => {
 export const CalendarHeatmap = ({
   data,
   onDateSelect,
-  selectedDate,
   className = '',
 }: CalendarHeatmapProps) => {
   const [hoveredCell, setHoveredCell] = useState<{
@@ -67,9 +77,11 @@ export const CalendarHeatmap = ({
     return map;
   }, [data]);
 
-  // Generate the grid data (last 91 days = 13 weeks)
+  // Generate the grid data (last 3 months, aligned to Monday-Sunday weeks)
   const gridData = useMemo(() => {
     const today = new Date();
+    const startDate = new Date(today.getFullYear(), today.getMonth() - 2, 1);
+    const endDate = new Date(today);
     const days: Array<{
       date: string;
       count: number;
@@ -78,14 +90,17 @@ export const CalendarHeatmap = ({
       weekIndex: number;
     }> = [];
 
-    // Generate 91 days (13 weeks) ending with today
-    for (let i = 90; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
+    const startOffset = (startDate.getDay() + 6) % 7; // 0 = Monday
+    startDate.setDate(startDate.getDate() - startOffset);
+
+    const endOffset = 6 - ((endDate.getDay() + 6) % 7); // 6 = Sunday
+    endDate.setDate(endDate.getDate() + endOffset);
+
+    for (let date = new Date(startDate), dayIndex = 0; date <= endDate; ) {
+      const dateStr = formatDateKey(date);
       const count = dataMap.get(dateStr) || 0;
-      const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-      const weekIndex = Math.floor((90 - i) / 7);
+      const dayOfWeek = (date.getDay() + 6) % 7; // 0 = Monday, 6 = Sunday
+      const weekIndex = Math.floor(dayIndex / 7);
 
       days.push({
         date: dateStr,
@@ -94,6 +109,9 @@ export const CalendarHeatmap = ({
         dayOfWeek,
         weekIndex,
       });
+
+      date.setDate(date.getDate() + 1);
+      dayIndex += 1;
     }
 
     return days;
@@ -117,11 +135,11 @@ export const CalendarHeatmap = ({
     let currentMonth = -1;
 
     gridData.forEach((day) => {
-      const date = new Date(day.date);
+      const date = parseDateKey(day.date);
       const month = date.getMonth();
       const weekIndex = day.weekIndex;
 
-      if (month !== currentMonth && day.dayOfWeek === 0) {
+      if (month !== currentMonth && (day.dayOfWeek === 0 || labels.length === 0)) {
         labels.push({
           month: getMonthName(date),
           weekIndex,
@@ -157,21 +175,19 @@ export const CalendarHeatmap = ({
     setHoveredCell(null);
   }, []);
 
-  // Day labels (Mon, Wed, Fri)
-  const dayLabels = ['一', '三', '五'];
+  const weekCount = Math.max(weeks.size, 1);
 
   return (
     <div className={`select-none ${className}`}>
       {/* Month labels */}
       <div className="flex mb-1">
-        <div className="w-6" /> {/* Spacer for day labels */}
         <div className="flex-1 flex relative h-4">
           {monthLabels.map((label, index) => (
             <span
               key={index}
               className="absolute text-[10px] text-gray-500 dark:text-gray-400"
               style={{
-                left: `${(label.weekIndex / 13) * 100}%`,
+                left: `${(label.weekIndex / weekCount) * 100}%`,
               }}
             >
               {label.month}
@@ -182,33 +198,16 @@ export const CalendarHeatmap = ({
 
       {/* Heatmap grid */}
       <div className="flex">
-        {/* Day labels column */}
-        <div className="flex flex-col justify-between w-6 pr-1 py-0">
-          {dayLabels.map((label, index) => (
-            <span
-              key={index}
-              className="text-[10px] text-gray-500 dark:text-gray-400 h-3 leading-3"
-              style={{
-                marginTop: index === 0 ? '0' : '6px',
-              }}
-            >
-              {label}
-            </span>
-          ))}
-        </div>
-
         {/* Grid */}
-        <div className="flex gap-[2px]">
+        <div className="flex flex-1 min-w-0 gap-[2px]">
           {Array.from(weeks.entries()).map(([weekIndex, weekDays]) => (
-            <div key={weekIndex} className="flex flex-col gap-[2px]">
+            <div key={weekIndex} className="flex flex-col gap-[2px] flex-1">
               {Array.from({ length: 7 }).map((_, dayIndex) => {
                 const day = weekDays.find((d) => d.dayOfWeek === dayIndex);
                 if (!day) {
                   // Empty cell for days that don't exist in this week
-                  return <div key={dayIndex} className="w-3 h-3" />;
+                  return <div key={dayIndex} className="w-full aspect-square" />;
                 }
-
-                const isSelected = selectedDate === day.date;
 
                 return (
                   <button
@@ -217,15 +216,13 @@ export const CalendarHeatmap = ({
                     onMouseEnter={(e) => handleMouseEnter(e, day.date, day.count)}
                     onMouseLeave={handleMouseLeave}
                     className={`
-                      w-3 h-3 rounded-sm
+                      w-full aspect-square rounded-sm
                       ${COLOR_LEVELS[day.level as keyof typeof COLOR_LEVELS]}
                       hover:ring-2 hover:ring-gray-400 dark:hover:ring-gray-500
                       transition-all duration-150
                       focus:outline-none focus:ring-2 focus:ring-primary-500
-                      ${isSelected ? 'ring-2 ring-offset-1 ring-primary-500 dark:ring-offset-dark-900' : ''}
                     `}
-                    aria-label={`${formatDate(day.date)}: ${day.count} 条memo${isSelected ? ' (已选中)' : ''}`}
-                    aria-pressed={isSelected}
+                    aria-label={`${formatDate(day.date)}: ${day.count} 条memo`}
                   />
                 );
               })}

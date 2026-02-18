@@ -133,4 +133,22 @@
   - 使用`transition-all duration-300 ease-in-out`实现平滑过渡效果
   - US-005（记住收起状态）已在此迭代中一并实现
 
+## 2026-02-18T07:30:00Z - US-004
+- 实现点击热力图日期筛选memo功能
+- 添加 selectedDate 状态到 MemoService，支持按日期筛选
+- 点击日期时设置 startDate/endDate 为当天开始/结束时间
+- URL参数自动更新为 ?date=YYYY-MM-DD，支持分享和刷新保持状态
+- 再次点击同一日期取消筛选（toggle行为）
+- 在顶部搜索栏左侧显示日期筛选状态标签，带日历图标和清除按钮
+- 热力图中选中的日期显示高亮边框（ring-2 ring-primary-500）
+- Files changed:
+  - apps/web/src/services/memo.service.ts
+  - apps/web/src/pages/home/home.tsx
+  - apps/web/src/components/calendar-heatmap.tsx
+- **Learnings for future iterations:**
+  - 使用 window.history.replaceState 更新 URL 不会触发页面刷新，适合筛选状态
+  - 日期格式验证使用正则 /^\d{4}-\d{2}-\d{2}$/ 确保格式正确
+  - 当天的开始/结束时间通过 setHours(0,0,0,0) 和 setHours(23,59,59,999) 设置
+  - 热力图组件通过 aria-pressed 属性标识选中状态，提升可访问性
+
 ---
