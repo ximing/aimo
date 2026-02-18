@@ -33,3 +33,20 @@
   - 媒体查询 `(max-width: 1100px)` 作为断点控制侧边栏行为
 ---
 
+## 2026-02-18 - US-001 (On This Day)
+- 实现后端 API 获取历史的今天 memos
+- 创建 GET /api/v1/memos/on-this-day 端点
+- 添加 OnThisDayMemoDto 和 OnThisDayResponseDto DTO 类型
+- 实现 getOnThisDayMemos() 服务方法，筛选往年同月同日的 memos
+- 排除当年记录，按年份倒序排列，最多返回 10 条
+- **Files changed:**
+  - `packages/dto/src/memo.ts` - 新增 DTO 类型
+  - `apps/server/src/services/memo.service.ts` - 添加 getOnThisDayMemos 方法
+  - `apps/server/src/controllers/v1/memo.controller.ts` - 添加 /on-this-day 端点
+- **Learnings for future iterations:**
+  - LanceDB 日期过滤：由于 Timestamp 类型无法直接与整数比较，需要在 JavaScript 中过滤日期
+  - 使用 `new Date(createdAt)` 将时间戳转换为 Date 对象进行月份/日期比较
+  - 注意 `getMonth()` 返回 0-11，`getDate()` 返回 1-31
+  - DTO 变更后需要先 build dto 包，再运行 server typecheck
+---
+

@@ -8,6 +8,7 @@ import { SearchSortBar } from './components/search-sort-bar';
 import { CategoryFilter } from './components/category-filter';
 import { Layout } from '../../components/layout';
 import { CalendarHeatmap } from '../../components/calendar-heatmap';
+import { OnThisDayBanner } from './components/on-this-day-banner';
 import * as memoApi from '../../api/memo';
 
 // LocalStorage key for heatmap collapsed state
@@ -221,6 +222,22 @@ export const HomePage = view(() => {
           {/* Main Content Area */}
           <div className={`overflow-hidden flex justify-center ${isCollapsed && !isCompact ? '' : 'flex-1'} w-full max-w-[640px]`}>
             <div className="w-full h-full flex flex-col">
+            {/* On This Day Banner - Below heatmap, above search bar */}
+            <OnThisDayBanner
+              onMemoClick={(memoId) => {
+                // Scroll to the memo in the list
+                const element = document.getElementById(`memo-${memoId}`);
+                if (element) {
+                  element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  // Add a highlight effect
+                  element.classList.add('ring-2', 'ring-primary-500', 'ring-offset-2');
+                  setTimeout(() => {
+                    element.classList.remove('ring-2', 'ring-primary-500', 'ring-offset-2');
+                  }, 2000);
+                }
+              }}
+            />
+
             {/* Top Search Bar - Fixed, part of the content area */}
             <header className="flex-shrink-0 sticky top-0 z-40 px-4 pt-4 pb-2">
               <div className="flex items-center gap-3">
