@@ -7,6 +7,7 @@ export interface HeatmapData {
 
 interface CalendarHeatmapProps {
   data: HeatmapData[];
+  selectedDate?: string | null;
   onDateSelect?: (date: string, count: number) => void;
   className?: string;
 }
@@ -58,6 +59,7 @@ const getMonthName = (date: Date): string => {
 
 export const CalendarHeatmap = ({
   data,
+  selectedDate,
   onDateSelect,
   className = '',
 }: CalendarHeatmapProps) => {
@@ -218,6 +220,7 @@ export const CalendarHeatmap = ({
                     className={`
                       w-full aspect-square rounded-sm
                       ${COLOR_LEVELS[day.level as keyof typeof COLOR_LEVELS]}
+                      ${selectedDate === day.date ? 'ring-2 ring-primary-500 dark:ring-primary-400 ring-offset-1 dark:ring-offset-dark-900' : ''}
                       hover:ring-2 hover:ring-gray-400 dark:hover:ring-gray-500
                       transition-all duration-150
                       focus:outline-none focus:ring-2 focus:ring-primary-500
