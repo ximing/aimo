@@ -33,6 +33,29 @@
   - 媒体查询 `(max-width: 1100px)` 作为断点控制侧边栏行为
 ---
 
+## 2026-02-18 - US-002 (On This Day)
+- 实现前端「历史的今天」横幅组件
+- 添加 getOnThisDayMemos API 客户端方法
+- 创建 OnThisDayBanner 组件：
+  - 横向滚动布局，支持触摸滑动和鼠标滚轮
+  - 显示时钟图标 + "历史的今天"标题
+  - 每个卡片显示年份标签（蓝色badge）和内容预览（最多2行）
+  - 无记录时自动隐藏整个区块
+  - 最多显示5条，超出显示"查看更多"入口
+- 集成到首页热力图下方、搜索栏上方
+- 点击卡片可滚动到对应 memo 并高亮显示
+- **Files changed:**
+  - `apps/web/src/api/memo.ts` - 添加 getOnThisDayMemos API
+  - `apps/web/src/pages/home/components/on-this-day-banner.tsx` - 新建横幅组件
+  - `apps/web/src/pages/home/home.tsx` - 集成横幅到首页
+- **Learnings for future iterations:**
+  - 横向滚动实现：flex + overflow-x-auto + scrollbar-hide
+  - 鼠标滚轮转横向滚动：onWheel 事件中修改 scrollLeft
+  - 内容预览使用 line-clamp-2 限制行数
+  - 使用 extractPlainText 函数去除 markdown 语法
+  - 无记录时返回 null 自动隐藏组件
+---
+
 ## 2026-02-18 - US-001 (On This Day)
 - 实现后端 API 获取历史的今天 memos
 - 创建 GET /api/v1/memos/on-this-day 端点
