@@ -21,6 +21,8 @@ import type {
 import { generateTypeId } from '../utils/id.js';
 import { OBJECT_TYPE } from '../models/constant/type.js';
 
+const UNCATEGORIZED_CATEGORY_ID = '__uncategorized__';
+
 /**
  * Service-specific options for memo search (internal use)
  */
@@ -207,9 +209,10 @@ export class MemoService {
       // Note: LanceDB Timestamp type cannot be compared with integer literals in SQL
       // So we build WHERE clause without date filters and apply them in JavaScript
       const filterConditions: string[] = [`uid = '${uid}'`];
+      const isUncategorizedFilter = categoryId === UNCATEGORIZED_CATEGORY_ID;
 
       // Add category filter
-      if (categoryId) {
+      if (categoryId && !isUncategorizedFilter) {
         filterConditions.push(`categoryId = '${categoryId}'`);
       }
 
@@ -234,6 +237,10 @@ export class MemoService {
           if (endTimestamp !== null && memoTime > endTimestamp) return false;
           return true;
         });
+      }
+
+      if (isUncategorizedFilter) {
+        allResults = allResults.filter((memo: any) => memo.categoryId == null);
       }
 
       const total = allResults.length;

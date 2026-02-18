@@ -1,6 +1,6 @@
 import { view, useService } from '@rabjs/react';
 import { MemoEditorForm } from '../../../components/memo-editor-form';
-import { MemoService } from '../../../services/memo.service';
+import { MemoService, UNCATEGORIZED_CATEGORY_ID } from '../../../services/memo.service';
 
 /**
  * MemoEditor - 创建新 memo 的编辑器组件
@@ -10,5 +10,8 @@ import { MemoService } from '../../../services/memo.service';
 export const MemoEditor = view(() => {
   const memoService = useService(MemoService);
 
-  return <MemoEditorForm mode="create" defaultCategoryId={memoService.categoryFilter} />;
+  const defaultCategoryId =
+    memoService.categoryFilter === UNCATEGORIZED_CATEGORY_ID ? null : memoService.categoryFilter;
+
+  return <MemoEditorForm mode="create" defaultCategoryId={defaultCategoryId} />;
 });

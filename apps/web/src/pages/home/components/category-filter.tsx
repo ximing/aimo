@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { view, useService } from '@rabjs/react';
 import { CategoryService } from '../../../services/category.service';
-import { MemoService } from '../../../services/memo.service';
+import { MemoService, UNCATEGORIZED_CATEGORY_ID } from '../../../services/memo.service';
 import { Check, ChevronDown, Plus } from 'lucide-react';
 import { CreateCategoryModal } from './create-category-modal';
 
@@ -46,10 +46,15 @@ export const CategoryFilter = view(() => {
     memoService.setCategoryFilter(categoryId);
   };
 
+  const isUncategorized = memoService.categoryFilter === UNCATEGORIZED_CATEGORY_ID;
+  const isAllCategories = memoService.categoryFilter === null;
+
   // Get current selected category name
-  const selectedCategoryName = memoService.categoryFilter
-    ? categoryService.getCategoryName(memoService.categoryFilter) || '全部类别'
-    : '全部类别';
+  const selectedCategoryName = isUncategorized
+    ? '无类别'
+    : memoService.categoryFilter
+      ? categoryService.getCategoryName(memoService.categoryFilter) || '全部类别'
+      : '全部类别';
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -78,13 +83,26 @@ export const CategoryFilter = view(() => {
           <button
             onClick={() => handleSelectCategory(null)}
             className={`w-full flex items-center justify-between px-4 py-2 text-sm transition-colors ${
-              !memoService.categoryFilter
+              isAllCategories
                 ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
                 : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700'
             }`}
           >
             <span>全部类别</span>
-            {!memoService.categoryFilter && <Check size={14} />}
+            {isAllCategories && <Check size={14} />}
+          </button>
+
+          {/* Uncategorized Option */}
+          <button
+            onClick={() => handleSelectCategory(UNCATEGORIZED_CATEGORY_ID)}
+            className={`w-full flex items-center justify-between px-4 py-2 text-sm transition-colors ${
+              isUncategorized
+                ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
+                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700'
+            }`}
+          >
+            <span>无类别</span>
+            {isUncategorized && <Check size={14} />}
           </button>
 
           {/* Divider */}

@@ -12,6 +12,9 @@ import * as memoApi from '../api/memo';
 // LocalStorage key for category filter persistence
 const CATEGORY_FILTER_STORAGE_KEY = 'aimo_memo_category_filter';
 
+// Special filter value for memos without a category
+export const UNCATEGORIZED_CATEGORY_ID = '__uncategorized__';
+
 /**
  * Load category filter from localStorage
  */
