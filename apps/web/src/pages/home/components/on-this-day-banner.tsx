@@ -3,10 +3,7 @@ import { view } from '@rabjs/react';
 import { Clock, ChevronRight } from 'lucide-react';
 import type { OnThisDayMemoDto } from '@aimo/dto';
 import * as memoApi from '../../../api/memo';
-
-interface OnThisDayBannerProps {
-  onMemoClick?: (memoId: string) => void;
-}
+import { MemoDetailModal } from './memo-detail-modal';
 
 // Extract plain text without markdown syntax
 const extractPlainText = (content: string): string => {
@@ -24,9 +21,11 @@ const extractPlainText = (content: string): string => {
   return plainText;
 };
 
-export const OnThisDayBanner = view(({ onMemoClick }: OnThisDayBannerProps) => {
+export const OnThisDayBanner = view(() => {
   const [memos, setMemos] = useState<OnThisDayMemoDto[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedMemoId, setSelectedMemoId] = useState<string | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -54,6 +53,18 @@ export const OnThisDayBanner = view(({ onMemoClick }: OnThisDayBannerProps) => {
       e.preventDefault();
       scrollContainerRef.current.scrollLeft += e.deltaY;
     }
+  };
+
+  // Handle memo card click - open detail modal
+  const handleMemoCardClick = (memoId: string) => {
+    setSelectedMemoId(memoId);
+    setIsDetailModalOpen(true);
+  };
+
+  // Handle close detail modal
+  const handleCloseDetailModal = () => {
+    setIsDetailModalOpen(false);
+    setSelectedMemoId(null);
   };
 
   // If no memos and not loading, hide the banner
@@ -89,7 +100,7 @@ export const OnThisDayBanner = view(({ onMemoClick }: OnThisDayBannerProps) => {
           {memos.map((memo) => (
             <button
               key={memo.memoId}
-              onClick={() => onMemoClick?.(memo.memoId)}
+              onClick={() => handleMemoCardClick(memo.memoId)}
               className="flex-shrink-0 w-[200px] p-3 bg-gray-50 dark:bg-dark-800/50 hover:bg-primary-50 dark:hover:bg-primary-950/20 border border-gray-100 dark:border-dark-700 hover:border-primary-200 dark:hover:border-primary-900/50 rounded-lg text-left transition-all duration-200 group"
             >
               {/* Year badge */}
@@ -124,6 +135,13 @@ export const OnThisDayBanner = view(({ onMemoClick }: OnThisDayBannerProps) => {
           display: none;
         }
       `}</style>
+
+      {/* Memo Detail Modal */}
+      <MemoDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={handleCloseDetailModal}
+        memoId={selectedMemoId}
+      />
     </div>
   );
 });

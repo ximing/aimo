@@ -200,7 +200,7 @@ export const HomePage = view(() => {
                   <CalendarHeatmap
                     data={activityData}
                     selectedDate={memoService.selectedDate}
-                    onDateSelect={(date, count) => {
+                    onDateSelect={(date) => {
                       // Toggle date filter: if clicking the same date, clear the filter
                       if (memoService.selectedDate === date) {
                         memoService.setSelectedDate(null);
@@ -223,20 +223,7 @@ export const HomePage = view(() => {
           <div className={`overflow-hidden flex justify-center ${isCollapsed && !isCompact ? '' : 'flex-1'} w-full max-w-[640px]`}>
             <div className="w-full h-full flex flex-col">
             {/* On This Day Banner - Below heatmap, above search bar */}
-            <OnThisDayBanner
-              onMemoClick={(memoId) => {
-                // Scroll to the memo in the list
-                const element = document.getElementById(`memo-${memoId}`);
-                if (element) {
-                  element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  // Add a highlight effect
-                  element.classList.add('ring-2', 'ring-primary-500', 'ring-offset-2');
-                  setTimeout(() => {
-                    element.classList.remove('ring-2', 'ring-primary-500', 'ring-offset-2');
-                  }, 2000);
-                }
-              }}
-            />
+            <OnThisDayBanner />
 
             {/* Top Search Bar - Fixed, part of the content area */}
             <header className="flex-shrink-0 sticky top-0 z-40 px-4 pt-4 pb-2">
