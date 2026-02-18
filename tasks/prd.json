@@ -1,40 +1,73 @@
 {
   "project": "AIMO",
-  "branchName": "ralph/sidebar-memo-layout-centering",
-  "description": "侧边栏与 Memo 区域居中布局优化 - 使热力图侧边栏和 memo 列表作为一个整体居中显示",
+  "branchName": "ralph/on-this-day",
+  "description": "历史的今天 (On This Day) - 在热力图下方展示往年今日创建的 memos",
   "userStories": [
     {
       "id": "US-001",
-      "title": "调整首页布局为整体居中",
-      "description": "作为用户，我希望侧边栏和 memo 区域作为一个整体居中显示，使页面视觉更集中、减少两侧过多的空白。",
+      "title": "后端 API - 获取历史的今天 memos",
+      "description": "作为开发者，我需要提供一个 API 端点来获取往年今日创建的 memos。",
       "acceptanceCriteria": [
-        "侧边栏宽度保持 300px 固定",
-        "memo 区域最大宽度保持 640px",
-        "侧边栏与 memo 区域紧密排列，作为一个整体在页面水平居中",
-        "整体布局容器计算最小宽度为：300px + gap + 640px",
-        "页面宽度小于最小宽度时，保持现有响应式行为（侧边栏收起）",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "创建 GET /api/v1/memos/on-this-day 端点",
+        "根据当前日期（MM-DD）筛选往年同一日期的 memos",
+        "排除今年当天的记录",
+        "按年份倒序排列（最近的年份在前）",
+        "最多返回 10 条记录",
+        "返回字段：id, content, createdAt, 年份",
+        "Typecheck passes"
       ],
       "priority": 1,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-002",
-      "title": "验证响应式交互保持不变",
-      "description": "作为用户，我希望在窄屏设备上保持现有的侧边栏交互方式，不影响移动端体验。",
+      "title": "前端组件 - 历史的今天横幅",
+      "description": "作为用户，我想在热力图下方看到历史的今天横幅，浏览往年今日的 memos。",
       "acceptanceCriteria": [
-        "页面宽度不足以容纳两侧边栏 + memo 区域时，侧边栏自动收起",
-        "点击菜单按钮后，侧边栏作为浮层覆盖在 memo 区域上方",
-        "浮层模式下的侧边栏交互与修改前完全一致",
-        "从窄屏拖动到宽屏时，布局正确切换为居中双栏模式",
+        "在热力图下方创建横向滚动横幅组件",
+        "显示标题'历史的今天'带有时钟图标",
+        "每个 memo 卡片显示内容预览（最多2行）和年份标签",
+        "横向滚动，支持触摸滑动和鼠标滚轮",
+        "当没有历史记录时整个区块隐藏",
+        "最多显示 5 条，超出显示'查看更多'入口",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 2,
-      "passes": true,
-      "notes": "响应式行为在 US-001 中已保留：isCompact 状态和 HEATMAP_COMPACT_QUERY 逻辑保持不变"
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "点击交互 - 查看 memo 详情",
+      "description": "作为用户，我想点击卡片查看完整的 memo 内容。",
+      "acceptanceCriteria": [
+        "点击卡片打开 memo 详情弹窗/页面",
+        "复用现有的 memo 详情展示组件",
+        "显示完整的 memo 内容、创建时间、年份",
+        "支持关闭弹窗返回首页",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "响应式适配",
+      "description": "作为用户，我期望在不同设备上都能正常浏览历史的今天。",
+      "acceptanceCriteria": [
+        "移动端：卡片宽度适配屏幕，保持横向滚动",
+        "桌面端：显示 3-4 个卡片，超出部分可滚动",
+        "平板：中间尺寸适配",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
     }
   ]
 }
