@@ -270,7 +270,7 @@ export class S3UnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
         expiresIn,
       });
 
-      console.log(`Generated presigned URL for key: ${fullKey} (expires in ${expiresIn}s)`);
+      // console.log(`Generated presigned URL for key: ${fullKey} (expires in ${expiresIn}s)`);
       return presignedUrl;
     } catch (error) {
       console.error(`Failed to generate access URL for S3 key: ${key}`, error);

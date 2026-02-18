@@ -112,6 +112,7 @@ export class MemoV1Controller {
       const memo = await this.memoService.createMemo(
         user.uid,
         memoData.content,
+        memoData.type,
         memoData.attachments,
         memoData.categoryId,
         memoData.relationIds,
@@ -147,6 +148,7 @@ export class MemoV1Controller {
         memoId,
         user.uid,
         memoData.content,
+        memoData.type,
         memoData.attachments,
         memoData.categoryId,
         memoData.relationIds

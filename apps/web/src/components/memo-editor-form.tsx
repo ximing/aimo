@@ -147,6 +147,7 @@ export const MemoEditorForm = view(
           // 创建 memo
           result = await memoService.createMemo(
             content,
+            'text', // type: default to text
             selectedCategoryId || undefined,
             attachmentIds.length > 0 ? attachmentIds : undefined,
             relationIds.length > 0 ? relationIds : undefined
@@ -159,6 +160,7 @@ export const MemoEditorForm = view(
           result = await memoService.updateMemo(
             initialMemo.memoId,
             content,
+            'text', // type: default to text
             selectedCategoryId,
             attachmentIds.length > 0 ? attachmentIds : undefined,
             relationIds.length > 0 ? relationIds : undefined

@@ -54,6 +54,7 @@ export const memosSchema = new Schema([
   new Field('uid', new Utf8(), false), // non-nullable user id
   new Field('categoryId', new Utf8(), true), // nullable category id (undefined = uncategorized)
   new Field('content', new Utf8(), false), // non-nullable memo content
+  new Field('type', new Utf8(), true), // nullable memo type: 'text' | 'audio' | 'video' (defaults to 'text' if not set)
   new Field(
     'attachments',
     new List(new Field('item', new Utf8(), true)),
@@ -89,6 +90,7 @@ export interface MemoRecord {
   uid: string;
   categoryId?: string; // optional category id (undefined = uncategorized)
   content: string;
+  type?: string; // optional memo type: 'text' | 'audio' | 'video' (defaults to 'text' if not set)
   attachments?: string[]; // attachment IDs array (URLs generated at runtime)
   embedding: number[];
   createdAt: number; // timestamp in milliseconds

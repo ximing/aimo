@@ -103,6 +103,7 @@ export class MemoService {
   async createMemo(
     uid: string,
     content: string,
+    type: 'text' | 'audio' | 'video' = 'text',
     attachments?: string[],
     categoryId?: string,
     relationIds?: string[],
@@ -136,6 +137,7 @@ export class MemoService {
         memoId,
         uid,
         categoryId: categoryId || undefined,
+        type,
         content,
         attachments,
         embedding,
@@ -178,6 +180,7 @@ export class MemoService {
       // Return with attachment DTOs
       return {
         ...memo,
+        type,
         attachments: attachmentDtos,
       };
     } catch (error) {
@@ -269,6 +272,7 @@ export class MemoService {
           memoId: memo.memoId,
           uid: memo.uid,
           content: memo.content,
+          type: (memo.type as 'text' | 'audio' | 'video') || 'text',
           categoryId: memo.categoryId,
           attachments: attachmentDtos,
           createdAt: memo.createdAt,
@@ -323,6 +327,7 @@ export class MemoService {
         memoId: memo.memoId,
         uid: memo.uid,
         content: memo.content,
+        type: (memo.type as 'text' | 'audio' | 'video') || 'text',
         categoryId: memo.categoryId,
         attachments: attachmentDtos,
         createdAt: memo.createdAt,
@@ -350,6 +355,7 @@ export class MemoService {
     memoId: string,
     uid: string,
     content: string,
+    type?: 'text' | 'audio' | 'video' | null,
     attachments?: string[],
     categoryId?: string | null,
     relationIds?: string[]
@@ -398,6 +404,15 @@ export class MemoService {
         embedding: embeddingArray,
         updatedAt: now,
       };
+
+      // Add type to update if provided (null = clear, undefined = no change)
+      if (type !== undefined) {
+        if (type !== null) {
+          updateValues.type = type;
+        } else {
+          updateValues.type = null;
+        }
+      }
 
       // Add categoryId to update if provided
       if (categoryId !== undefined) {
@@ -562,6 +577,7 @@ export class MemoService {
           memoId: memo.memoId,
           uid: memo.uid,
           content: memo.content,
+          type: (memo.type as 'text' | 'audio' | 'video') || 'text',
           categoryId: memo.categoryId,
           attachments: attachmentDtos,
           createdAt: memo.createdAt,
@@ -661,6 +677,7 @@ export class MemoService {
           memoId: memo.memoId,
           uid: memo.uid,
           content: memo.content,
+          type: (memo.type as 'text' | 'audio' | 'video') || 'text',
           categoryId: memo.categoryId,
           attachments: attachmentDtos,
           createdAt: memo.createdAt,
@@ -706,6 +723,7 @@ export class MemoService {
           memoId: memo.memoId,
           uid: memo.uid,
           content: memo.content,
+          type: (memo.type as 'text' | 'audio' | 'video') || 'text',
           categoryId: memo.categoryId,
           attachments: attachmentDtos,
           createdAt: memo.createdAt,

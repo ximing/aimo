@@ -148,9 +148,15 @@ export class MemoService extends Service {
   /**
    * Create a new memo with optional category, attachments and relations
    */
-  async createMemo(content: string, categoryId?: string, attachments?: string[], relationIds?: string[]) {
+  async createMemo(
+    content: string,
+    type: 'text' | 'audio' | 'video' = 'text',
+    categoryId?: string,
+    attachments?: string[],
+    relationIds?: string[]
+  ) {
     try {
-      const data: CreateMemoDto = { content, categoryId, attachments, relationIds };
+      const data: CreateMemoDto = { content, type, categoryId, attachments, relationIds };
       const response = await memoApi.createMemo(data);
 
       if (response.code === 0 && response.data) {
@@ -175,12 +181,13 @@ export class MemoService extends Service {
   async updateMemo(
     memoId: string,
     content: string,
+    type?: 'text' | 'audio' | 'video' | null,
     categoryId?: string | null,
     attachments?: string[],
     relationIds?: string[]
   ) {
     try {
-      const data: UpdateMemoDto = { content, categoryId, attachments, relationIds };
+      const data: UpdateMemoDto = { content, type, categoryId, attachments, relationIds };
       const response = await memoApi.updateMemo(memoId, data);
 
       if (response.code === 0 && response.data) {

@@ -6,6 +6,7 @@ import type { AttachmentDto } from './attachment.js';
 
 export interface CreateMemoDto {
   content: string;
+  type?: 'text' | 'audio' | 'video'; // Optional memo type, defaults to 'text'
   categoryId?: string; // Optional category ID (undefined = uncategorized)
   attachments?: string[]; // Array of attachment IDs (max 9)
   relationIds?: string[]; // Array of target memo IDs to relate to
@@ -15,6 +16,7 @@ export interface CreateMemoDto {
 
 export interface UpdateMemoDto {
   content: string;
+  type?: 'text' | 'audio' | 'video' | null; // Optional memo type (null = no change)
   categoryId?: string | null; // Optional category ID (undefined/null = uncategorized)
   attachments?: string[]; // Array of attachment IDs (max 9)
   relationIds?: string[]; // Array of target memo IDs to relate to (replaces all existing relations)
@@ -24,6 +26,7 @@ export interface MemoDto {
   memoId: string;
   uid: string;
   content: string;
+  type: 'text' | 'audio' | 'video'; // Memo type
   categoryId?: string; // Optional category ID
   attachments?: string[]; // Array of attachment IDs
   embedding: number[];
@@ -39,6 +42,7 @@ export interface MemoWithAttachmentsDto {
   memoId: string;
   uid: string;
   content: string;
+  type: 'text' | 'audio' | 'video'; // Memo type
   categoryId?: string; // Optional category ID
   attachments?: AttachmentDto[]; // Array of full attachment objects
   embedding: number[];
@@ -54,6 +58,7 @@ export interface MemoListItemDto {
   memoId: string;
   uid: string;
   content: string;
+  type: 'text' | 'audio' | 'video'; // Memo type
   categoryId?: string; // Optional category ID
   attachments?: AttachmentDto[]; // Array of full attachment objects
   relations?: MemoListItemDto[]; // Array of related memos

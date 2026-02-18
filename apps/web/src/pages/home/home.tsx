@@ -225,7 +225,7 @@ export const HomePage = view(() => {
           </div>
 
           {/* Main Content Area */}
-          <div className={`overflow-hidden flex justify-center ${isCollapsed && !isCompact ? '' : 'flex-1'} w-full w-[640px]`}>
+          <div className={`overflow-hidden flex justify-center ${isCollapsed && !isCompact ? '' : 'flex-1'} w-[640px]`}>
             <div className="w-full h-full flex flex-col">
             {/* Top Search Bar - Fixed, part of the content area */}
             <header className="flex-shrink-0 sticky top-0 z-40 px-4 pt-4 pb-2">
