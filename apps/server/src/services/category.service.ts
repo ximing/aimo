@@ -10,6 +10,34 @@ export class CategoryService {
   constructor(private lanceDb: LanceDbService) {}
 
   /**
+   * Clear categoryId from all memos that have the specified category
+   */
+  async clearCategoryFromMemos(uid: string, categoryId: string): Promise<void> {
+    try {
+      const memosTable = await this.lanceDb.openTable('memos');
+
+      // Find all memos with this category
+      const results = await memosTable
+        .query()
+        .where(`uid = '${uid}' AND categoryId = '${categoryId}'`)
+        .toArray();
+
+      // Update each memo to set categoryId to null
+      for (const memo of results) {
+        await memosTable.update({
+          where: `memoId = '${memo.memoId}'`,
+          values: { categoryId: null },
+        });
+      }
+
+      console.log(`Cleared category ${categoryId} from ${results.length} memos`);
+    } catch (error) {
+      console.error('Failed to clear category from memos:', error);
+      // Don't throw - allow category deletion even if memo update fails
+    }
+  }
+
+  /**
    * Create a new category for a user
    */
   async createCategory(uid: string, data: CreateCategoryDto): Promise<CategoryDto> {
@@ -18,13 +46,21 @@ export class CategoryService {
         throw new Error('Category name cannot be empty');
       }
 
+      const trimmedName = data.name.trim();
+
+      // Check for duplicate category name for this user
+      const existingCategory = await this.getCategoryByName(uid, trimmedName);
+      if (existingCategory) {
+        throw new Error('Category with this name already exists');
+      }
+
       const categoryId = generateTypeId(OBJECT_TYPE.CATEGORY);
       const now = Date.now();
 
       const category: CategoryRecord = {
         categoryId,
         uid,
-        name: data.name.trim(),
+        name: trimmedName,
         color: data.color?.trim() || undefined,
         createdAt: now,
         updatedAt: now,
@@ -49,12 +85,34 @@ export class CategoryService {
 
       const results = await table.query().where(`uid = '${uid}'`).toArray();
 
-      // Sort by createdAt in memory
-      results.sort((a: any, b: any) => a.createdAt - b.createdAt);
+      // Sort by name alphabetically (case-insensitive)
+      results.sort((a: any, b: any) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
 
       return results.map((record) => this.toCategoryDto(record as CategoryRecord));
     } catch (error) {
       console.error('Failed to get categories:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get a category by name (case-insensitive)
+   */
+  async getCategoryByName(uid: string, name: string): Promise<CategoryDto | null> {
+    try {
+      const table = await this.lanceDb.openTable('categories');
+
+      // Query all categories for this user and filter by name (case-insensitive)
+      const results = await table.query().where(`uid = '${uid}'`).toArray();
+
+      const normalizedName = name.toLowerCase();
+      const matchingCategory = results.find(
+        (record: any) => record.name.toLowerCase() === normalizedName
+      );
+
+      return matchingCategory ? this.toCategoryDto(matchingCategory as CategoryRecord) : null;
+    } catch (error) {
+      console.error('Failed to get category by name:', error);
       throw error;
     }
   }
@@ -100,6 +158,15 @@ export class CategoryService {
         return null;
       }
 
+      // Check for duplicate name if name is being updated
+      if (data.name !== undefined && data.name.trim() !== category.name) {
+        const trimmedName = data.name.trim();
+        const existingCategory = await this.getCategoryByName(uid, trimmedName);
+        if (existingCategory && existingCategory.categoryId !== categoryId) {
+          throw new Error('Category with this name already exists');
+        }
+      }
+
       // Update fields
       const updatedRecord: CategoryRecord = {
         categoryId: category.categoryId,
@@ -142,6 +209,9 @@ export class CategoryService {
       if (!category) {
         return false;
       }
+
+      // Clear categoryId from all memos that have this category
+      await this.clearCategoryFromMemos(uid, categoryId);
 
       // Delete the category
       await table.delete(`categoryId = '${categoryId}'`);

@@ -1,0 +1,90 @@
+{
+  "project": "AIMO",
+  "branchName": "ralph/memo-calendar-heatmap",
+  "description": "Memo列表页日历热力图 - 在左侧增加可收起的热力图列，展示最近3个月memo活跃度",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "热力图组件",
+      "description": "作为开发者，我需要创建一个可复用的日历热力图组件，用于展示memo活跃度数据。",
+      "acceptanceCriteria": [
+        "实现类似GitHub的方块网格热力图（7行x约13周）",
+        "支持4个颜色等级：无数据、低、中、高活跃",
+        "显示月份标签在顶部",
+        "鼠标悬停显示具体日期和memo数量tooltip",
+        "组件接受data: Array<{date: string, count: number}>作为输入",
+        "点击日期触发onDateSelect回调",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "Implemented in commit 0fd5091"
+    },
+    {
+      "id": "US-002",
+      "title": "热力图数据接口",
+      "description": "作为开发者，我需要后端API提供memo活跃度统计数据。",
+      "acceptanceCriteria": [
+        "创建GET /api/v1/memos/stats/activity接口",
+        "返回最近90天的每日memo数量统计",
+        "数据格式：{date: string, count: number}",
+        "只统计当前登录用户的memo",
+        "前端添加对应API调用方法",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Implemented in commit ca805c9"
+    },
+    {
+      "id": "US-003",
+      "title": "左侧热力图列布局",
+      "description": "作为用户，我希望在memo列表左侧看到热力图，且可以收起它以获得更多空间。",
+      "acceptanceCriteria": [
+        "在现有memo列表左侧新增固定宽度列（默认展开，宽度约200px）",
+        "列顶部放置热力图组件",
+        "下方区域留白（为后续功能预留）",
+        "列右侧有收起/展开按钮",
+        "收起时列完全隐藏，只显示悬浮展开按钮",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": "Implemented in commit 2162b74"
+    },
+    {
+      "id": "US-004",
+      "title": "点击日期筛选memo",
+      "description": "作为用户，我想点击热力图的某一天，只查看那天的memo。",
+      "acceptanceCriteria": [
+        "点击热力图日期，memo列表筛选为该日期",
+        "URL参数更新为?date=2025-11-20",
+        "筛选状态在UI中清晰显示",
+        "提供清除筛选按钮，返回全部memo",
+        "再次点击同一日期取消筛选",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": "Implemented in commit 9d45cbb"
+    },
+    {
+      "id": "US-005",
+      "title": "记住收起状态",
+      "description": "作为用户，我希望系统记住我是否收起了热力图列，下次打开还是这个状态。",
+      "acceptanceCriteria": [
+        "收起状态保存到localStorage",
+        "key: aimo:heatmap:collapsed",
+        "页面加载时读取该设置",
+        "切换状态时实时保存",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": "Implemented together with US-003 in commit 2162b74"
+    }
+  ]
+}

@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { view, useService } from '@rabjs/react';
 import { MemoService } from '../../../services/memo.service';
-
 export const SearchSortBar = view(() => {
   const memoService = useService(MemoService);
   const [isFocused, setIsFocused] = useState(false);
@@ -73,7 +72,7 @@ export const SearchSortBar = view(() => {
   const sortOrderLabel = memoService.sortOrder === 'desc' ? '最新优先' : '最旧优先';
 
   return (
-    <div className="relative flex-shrink-0">
+    <div className="relative flex-shrink-0 flex items-center gap-2">
       {/* Search Input Container */}
       <div
         className={`flex items-center gap-1 px-3 py-1.5 border rounded-lg transition-all duration-200 ${

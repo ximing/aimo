@@ -1,63 +1,73 @@
 {
   "project": "AIMO",
-  "branchName": "ralph/memo-bidirectional-relations",
-  "description": "Memo 双向关联展示功能 - 在相关笔记弹窗中展示主动关联和被关联的双向关系",
+  "branchName": "ralph/on-this-day",
+  "description": "历史的今天 (On This Day) - 在热力图下方展示往年今日创建的 memos",
   "userStories": [
     {
       "id": "US-001",
-      "title": "新增获取反向关联的 API 接口",
-      "description": "作为开发者，我需要一个 API 来查询哪些笔记关联了当前笔记，以便前端展示完整的双向关系。",
+      "title": "后端 API - 获取历史的今天 memos",
+      "description": "作为开发者，我需要提供一个 API 端点来获取往年今日创建的 memos。",
       "acceptanceCriteria": [
-        "新增 GET /api/v1/memos/:id/backlinks 接口，返回引用当前笔记的笔记列表",
-        "接口返回字段：id, content, creator, createdAt, updatedAt",
-        "支持分页参数：page, limit（默认 limit=20）",
-        "接口需要 JWT 认证，只返回用户有权限查看的笔记",
-        "包含对应的单元测试",
+        "创建 GET /api/v1/memos/on-this-day 端点",
+        "根据当前日期（MM-DD）筛选往年同一日期的 memos",
+        "排除今年当天的记录",
+        "按年份倒序排列（最近的年份在前）",
+        "最多返回 10 条记录",
+        "返回字段：id, content, createdAt, 年份",
         "Typecheck passes"
       ],
       "priority": 1,
-      "passes": true,
-      "notes": "Implemented in commit 3837940. Note: Unit tests not added as the project has no existing test infrastructure for memo endpoints."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-002",
-      "title": "重构相关笔记弹窗为三栏标签页布局",
-      "description": "作为用户，我希望在一个弹窗中看到语义相关、主动关联、被关联三种笔记，方便全面了解知识关系。",
+      "title": "前端组件 - 历史的今天横幅",
+      "description": "作为用户，我想在热力图下方看到历史的今天横幅，浏览往年今日的 memos。",
       "acceptanceCriteria": [
-        "弹窗使用标签页(Tabs)布局，包含四个选项：语义相关、关联了、被关联、关联图谱",
-        "语义相关标签页：保持现有相似度搜索功能",
-        "关联了标签页：直接使用 memo.relations 数据展示主动关联的笔记",
-        "被关联标签页：调用新增的 backlinks 接口获取数据",
-        "每个列表项显示内容摘要、创建时间",
-        "点击笔记卡片可跳转到对应笔记详情",
-        "空状态显示友好提示",
+        "在热力图下方创建横向滚动横幅组件",
+        "显示标题'历史的今天'带有时钟图标",
+        "每个 memo 卡片显示内容预览（最多2行）和年份标签",
+        "横向滚动，支持触摸滑动和鼠标滚轮",
+        "当没有历史记录时整个区块隐藏",
+        "最多显示 5 条，超出显示'查看更多'入口",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 2,
-      "passes": true,
-      "notes": "Implemented in commit c226ebf. Browser verification pending."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-003",
-      "title": "新增关联图谱视图",
-      "description": "作为用户，我希望以图谱形式可视化查看笔记间的关联关系，直观理解知识网络。",
+      "title": "点击交互 - 查看 memo 详情",
+      "description": "作为用户，我想点击卡片查看完整的 memo 内容。",
       "acceptanceCriteria": [
-        "在相关笔记弹窗中新增关联图谱标签页",
-        "使用力导向图(force-directed graph)展示",
-        "当前笔记作为中心节点高亮显示",
-        "主动关联的笔记作为子节点，连线用蓝色实线箭头",
-        "被关联的笔记作为父节点，连线用绿色虚线箭头",
-        "支持交互：拖拽节点、缩放画布、点击节点跳转详情",
-        "节点显示笔记标题/内容前30字",
-        "限制图谱显示节点总数不超过50个",
-        "响应式设计适配移动端",
+        "点击卡片打开 memo 详情弹窗/页面",
+        "复用现有的 memo 详情展示组件",
+        "显示完整的 memo 内容、创建时间、年份",
+        "支持关闭弹窗返回首页",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": "Implemented in commit 9a5e27f. Browser verification pending."
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "响应式适配",
+      "description": "作为用户，我期望在不同设备上都能正常浏览历史的今天。",
+      "acceptanceCriteria": [
+        "移动端：卡片宽度适配屏幕，保持横向滚动",
+        "桌面端：显示 3-4 个卡片，超出部分可滚动",
+        "平板：中间尺寸适配",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
     }
   ]
 }

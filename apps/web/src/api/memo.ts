@@ -7,6 +7,7 @@ import type {
   MemoListItemDto,
   PaginatedMemoListDto,
   PaginatedMemoListWithScoreDto,
+  MemoActivityStatsDto,
 } from '@aimo/dto';
 import request from '../utils/request';
 
@@ -90,4 +91,17 @@ export const getBacklinks = (memoId: string, page: number = 1, limit: number = 2
   >(`/api/v1/memos/${memoId}/backlinks`, {
     params: { page, limit },
   });
+};
+
+/**
+ * Get activity stats for calendar heatmap
+ * Returns daily memo counts for the specified number of days (default: 90)
+ */
+export const getActivityStats = (days: number = 90) => {
+  return request.get<unknown, { code: number; data: MemoActivityStatsDto }>(
+    '/api/v1/memos/stats/activity',
+    {
+      params: { days },
+    }
+  );
 };

@@ -9,6 +9,37 @@ import type {
 } from '@aimo/dto';
 import * as memoApi from '../api/memo';
 
+// LocalStorage key for category filter persistence
+const CATEGORY_FILTER_STORAGE_KEY = 'aimo_memo_category_filter';
+
+/**
+ * Load category filter from localStorage
+ */
+function loadCategoryFilterFromStorage(): string | null {
+  try {
+    const saved = localStorage.getItem(CATEGORY_FILTER_STORAGE_KEY);
+    // 'null' string represents "all categories" (no filter)
+    if (saved === 'null' || saved === null) {
+      return null;
+    }
+    return saved;
+  } catch {
+    // localStorage might not be available (e.g., SSR or private mode)
+    return null;
+  }
+}
+
+/**
+ * Save category filter to localStorage
+ */
+function saveCategoryFilterToStorage(categoryId: string | null): void {
+  try {
+    localStorage.setItem(CATEGORY_FILTER_STORAGE_KEY, String(categoryId));
+  } catch {
+    // localStorage might not be available
+  }
+}
+
 /**
  * Memo Service
  * Manages memo data and operations
@@ -33,6 +64,8 @@ export class MemoService extends Service {
   sortOrder: 'asc' | 'desc' = 'desc';
   startDate: Date | null = null;
   endDate: Date | null = null;
+  categoryFilter: string | null = loadCategoryFilterFromStorage();
+  selectedDate: string | null = null; // YYYY-MM-DD format for date filter
 
   /**
    * Computed: Get filtered memos (for client-side filtering if needed)
@@ -74,6 +107,10 @@ export class MemoService extends Service {
         params.endDate = this.endDate;
       }
 
+      if (this.categoryFilter) {
+        params.categoryId = this.categoryFilter;
+      }
+
       const response = await memoApi.getMemos(params);
 
       if (response.code === 0 && response.data) {
@@ -106,11 +143,11 @@ export class MemoService extends Service {
   }
 
   /**
-   * Create a new memo with optional attachments and relations
+   * Create a new memo with optional category, attachments and relations
    */
-  async createMemo(content: string, attachments?: string[], relationIds?: string[]) {
+  async createMemo(content: string, categoryId?: string, attachments?: string[], relationIds?: string[]) {
     try {
-      const data: CreateMemoDto = { content, attachments, relationIds };
+      const data: CreateMemoDto = { content, categoryId, attachments, relationIds };
       const response = await memoApi.createMemo(data);
 
       if (response.code === 0 && response.data) {
@@ -135,11 +172,12 @@ export class MemoService extends Service {
   async updateMemo(
     memoId: string,
     content: string,
+    categoryId?: string | null,
     attachments?: string[],
     relationIds?: string[]
   ) {
     try {
-      const data: UpdateMemoDto = { content, attachments, relationIds };
+      const data: UpdateMemoDto = { content, categoryId, attachments, relationIds };
       const response = await memoApi.updateMemo(memoId, data);
 
       if (response.code === 0 && response.data) {
@@ -223,6 +261,41 @@ export class MemoService extends Service {
   setDateRange(startDate: Date | null, endDate: Date | null) {
     this.startDate = startDate;
     this.endDate = endDate;
+    this.fetchMemos(true);
+  }
+
+  /**
+   * Set category filter
+   */
+  setCategoryFilter(categoryId: string | null) {
+    this.categoryFilter = categoryId;
+    saveCategoryFilterToStorage(categoryId);
+    this.fetchMemos(true);
+  }
+
+  /**
+   * Set selected date filter (for heatmap date selection)
+   * @param date - Date string in YYYY-MM-DD format, or null to clear filter
+   */
+  setSelectedDate(date: string | null) {
+    this.selectedDate = date;
+
+    if (date) {
+      // Parse YYYY-MM-DD format
+      // Important: Parse as UTC to match the date exactly, not affected by local timezone
+      const [year, month, day] = date.split('-').map(Number);
+      
+      // Create dates in UTC: start of day 00:00:00 UTC and end of day 23:59:59.999 UTC
+      const startOfDay = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+      const endOfDay = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
+
+      this.startDate = startOfDay;
+      this.endDate = endOfDay;
+    } else {
+      this.startDate = null;
+      this.endDate = null;
+    }
+
     this.fetchMemos(true);
   }
 

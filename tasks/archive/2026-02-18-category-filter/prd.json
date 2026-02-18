@@ -1,0 +1,180 @@
+{
+  "project": "AIMO",
+  "branchName": "ralph/category-filter",
+  "description": "类别筛选与管理功能 - 支持memo类别筛选、创建和本地持久化",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "获取类别列表API",
+      "description": "作为开发者，我需要后端提供获取类别列表的API，以便前端展示类别筛选器。",
+      "acceptanceCriteria": [
+        "GET /categories 返回所有类别列表",
+        "包含字段：id, name, createdAt, updatedAt",
+        "按名称字母顺序排序",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "Backend already implemented: CategoryController with GET /categories endpoint, CategoryService, schema, migrations all in place."
+    },
+    {
+      "id": "US-002",
+      "title": "创建类别API",
+      "description": "作为开发者，我需要后端提供创建类别的API，支持用户在筛选器或创建memo时创建新类别。",
+      "acceptanceCriteria": [
+        "POST /categories 创建新类别",
+        "请求体包含：name（必填，唯一）",
+        "返回创建的类别对象",
+        "重复名称返回409错误",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Implemented duplicate name check with CATEGORY_ALREADY_EXISTS (3001) error code"
+    },
+    {
+      "id": "US-003",
+      "title": "更新删除类别API",
+      "description": "作为开发者，我需要支持类别的编辑和删除功能。",
+      "acceptanceCriteria": [
+        "PUT /categories/:id 更新类别名称",
+        "DELETE /categories/:id 删除类别",
+        "删除类别时，关联的memo的categoryId设为null",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": "Implemented duplicate name check for updates and clearCategoryFromMemos for delete"
+    },
+    {
+      "id": "US-004",
+      "title": "类别筛选器组件",
+      "description": "作为用户，我需要在memo列表页通过类别筛选快速找到相关笔记。",
+      "acceptanceCriteria": [
+        "筛选器位于搜索框旁边",
+        "下拉形式，单选",
+        "首选项为全部类别，显示所有memo",
+        "列出所有现有类别选项",
+        "选中项高亮显示",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "本地持久化筛选状态",
+      "description": "作为用户，我希望刷新页面后仍保持之前的类别筛选选择。",
+      "acceptanceCriteria": [
+        "使用localStorage存储当前选中的类别ID",
+        "key为 aimo_memo_category_filter",
+        "页面加载时自动恢复上次选择的类别",
+        "全部类别状态也被记忆",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "筛选器创建新类别",
+      "description": "作为用户，当没有合适的类别时，我希望能直接在筛选器中创建新类别。",
+      "acceptanceCriteria": [
+        "筛选器下拉底部有+ 新建类别按钮",
+        "点击弹出创建类别对话框",
+        "输入类别名称，点击确认创建",
+        "创建成功后自动选中新类别并刷新列表",
+        "类别名称不能为空，最多50字符",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 6,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "创建memo时选择类别",
+      "description": "作为用户，我创建笔记时希望能为其指定类别。",
+      "acceptanceCriteria": [
+        "创建memo对话框中增加类别选择器",
+        "类别选择器位于内容输入区域附近",
+        "显示所有现有类别，支持单选",
+        "支持选择无类别",
+        "保存时categoryId与memo关联",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 7,
+      "passes": true,
+      "notes": "Implemented category selector in memo-editor-form with dropdown, create new category option, and integration with MemoService"
+    },
+    {
+      "id": "US-008",
+      "title": "创建memo时快捷创建类别",
+      "description": "作为用户，如果在创建memo时发现没有合适的类别，我希望能够直接创建。",
+      "acceptanceCriteria": [
+        "类别选择器中有+ 新建类别选项",
+        "点击后弹出创建类别对话框",
+        "创建成功后新类别自动被选中",
+        "不需要关闭创建memo对话框",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 8,
+      "passes": true,
+      "notes": "Already implemented as part of US-007. The memo-editor-form component has + 新建类别 button in the category dropdown, opens CreateCategoryModal, and auto-selects new category after creation without closing the memo dialog."
+    },
+    {
+      "id": "US-009",
+      "title": "根据筛选状态默认选中类别",
+      "description": "作为用户，如果我已经筛选了某个类别，创建新memo时应该自动默认选中该类别。",
+      "acceptanceCriteria": [
+        "读取本地存储的当前筛选类别",
+        "打开创建memo对话框时，自动选中该类别",
+        "如果筛选是全部类别，则默认无类别",
+        "用户可以手动更改选择",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 9,
+      "passes": true,
+      "notes": "Already implemented: memo-editor.tsx passes memoService.categoryFilter as defaultCategoryId to MemoEditorForm, which initializes selectedCategoryId with it. The categoryFilter is persisted in localStorage from US-005."
+    },
+    {
+      "id": "US-010",
+      "title": "显示memo的类别标签",
+      "description": "作为用户，我希望在memo列表中能看到每个笔记的类别。",
+      "acceptanceCriteria": [
+        "memo卡片上显示类别名称（如果有）",
+        "类别标签样式简洁，不喧宾夺主",
+        "无类别的memo不显示标签",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 10,
+      "passes": true,
+      "notes": "Implemented category tag in memo-card.tsx footer using CategoryService.getCategoryName() to look up category name by ID"
+    },
+    {
+      "id": "US-011",
+      "title": "编辑memo时修改类别",
+      "description": "作为用户，我希望能够修改已有memo的类别。",
+      "acceptanceCriteria": [
+        "编辑memo时显示当前类别",
+        "可以更改类别选择",
+        "可以移除类别（设为无类别）",
+        "同样支持快捷创建新类别",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 11,
+      "passes": true,
+      "notes": "Already implemented as part of US-007. The memo-editor-form component handles editing mode with: (1) selectedCategoryId initialized from initialMemo.categoryId, (2) Category dropdown with all existing categories, (3) 'No Category' option to remove category, (4) '+ New Category' button for quick category creation. MemoService.updateMemo passes categoryId to the backend API."
+    }
+  ]
+}

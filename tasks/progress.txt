@@ -8,70 +8,28 @@
 - DTO types are defined in `packages/dto/src/` and shared between frontend/backend
 - When adding controller endpoints, inject new services via constructor (TypeDI handles this automatically)
 
+## 2026-02-18 - US-001
+- 实现首页布局整体居中
+- 添加外层居中容器包裹侧边栏和 memo 区域
+- 侧边栏宽度保持 300px，memo 区域最大宽度保持 640px
+- 响应式行为保持不变（窄屏时侧边栏收起）
+- **Files changed:**
+  - `apps/web/src/pages/home/home.tsx`
+- **Learnings for future iterations:**
+  - 布局结构：外层 `justify-center` 容器 + 内层 flex 容器实现整体居中
+  - 响应式处理：通过 `isCompact || isCollapsed` 条件控制宽度为 `w-full` 或保持 `gap-6`
+  - 注意 JSX 标签闭合，编辑时容易遗漏闭合标签
+## 2026-02-18 - US-002
+- 验证响应式交互保持不变
+- US-001 的实现已保留所有响应式逻辑：
+  - `isCompact` 状态通过 `HEATMAP_COMPACT_QUERY` 媒体查询控制
+  - 窄屏时侧边栏自动收起 (`isCollapsed = true`)
+  - 侧边栏在 `isCompact` 模式下作为绝对定位浮层显示
+  - 展开/收起按钮交互保持不变
+- **Files changed:**
+  - 无新文件修改（已在 US-001 中实现）
+- **Learnings for future iterations:**
+  - 响应式逻辑通过 `window.matchMedia()` 和 React state 结合实现
+  - 媒体查询 `(max-width: 1100px)` 作为断点控制侧边栏行为
 ---
 
-## 2026-02-17T17:30:00Z - US-001
-- Implemented GET /api/v1/memos/:id/backlinks API endpoint
-- Added `getBacklinks()` method to MemoRelationService to query reverse relations
-- Added `getMemosByIds()` method to MemoService for batch memo fetching
-- Files changed:
-  - apps/server/src/controllers/v1/memo.controller.ts
-  - apps/server/src/services/memo-relation.service.ts
-  - apps/server/src/services/memo.service.ts
-  - CLAUDE.md
-- **Learnings for future iterations:**
-  - The memo relations are stored in a separate `memo_relations` table with source/target fields
-  - `MemoRelationService` handles all relation operations - forward relations use `getRelatedMemos()`, backlinks use `getBacklinks()`
-  - Controllers use TypeDI constructor injection - just add the service to the constructor and it works
-  - Pagination is done manually (slice arrays) since LanceDB doesn't have built-in pagination for this use case
-  - The project has no existing test infrastructure for memo endpoints - tests would need to be set up from scratch
-
-## 2026-02-17T18:15:00Z - US-002
-- 重构相关笔记弹窗为三栏标签页布局
-- 新增 backlinks API 接口调用 (getBacklinks)
-- 新增 MemoService.getBacklinks() 方法
-- 重构 RelatedMemosModal 为标签页布局，包含四个选项卡：
-  - 语义相关：保持现有相似度搜索功能
-  - 关联了：展示主动关联的笔记 (memo.relations)
-  - 被关联：调用新增的 backlinks 接口
-  - 关联图谱：占位符，待 US-003 实现
-- 每个列表项显示内容摘要、创建时间
-- 点击笔记卡片可跳转到对应笔记详情 (带高亮效果)
-- 空状态显示友好提示
-- 添加 memo-card ID 属性用于滚动定位
-- Files changed:
-  - apps/web/src/api/memo.ts
-  - apps/web/src/services/memo.service.ts
-  - apps/web/src/pages/home/components/related-memos-modal.tsx
-  - apps/web/src/pages/home/components/memo-card.tsx
-- **Learnings for future iterations:**
-  - HeadlessUI Tab component is already available in the project
-  - Use useCallback for load functions to avoid react-hooks/exhaustive-deps warnings
-  - The memo.relations array contains forward relations (notes this memo links to)
-  - For scroll-to-memo functionality, add id={`memo-${memo.memoId}`} to the card element
-  - Tab counts update reactively as data loads
-
-## 2026-02-17T19:30:00Z - US-003
-- 新增关联图谱视图，使用 D3.js 力导向图实现
-- 创建 RelationGraph 组件，支持以下功能：
-  - 力导向图布局 (force-directed graph)
-  - 中心节点高亮显示当前笔记（橙色）
-  - 主动关联笔记用蓝色实线箭头表示
-  - 被关联笔记用绿色虚线箭头表示
-  - 支持节点拖拽、画布缩放（滚轮）、点击查看详情
-  - 节点显示笔记内容前30字
-  - 限制节点总数不超过50个（平均分配给正向/反向关联）
-  - 添加图例和操作提示
-- 集成到 RelatedMemosModal 的关联图谱标签页
-- Files changed:
-  - apps/web/package.json (added d3 and @types/d3)
-  - apps/web/src/pages/home/components/relation-graph.tsx (new)
-  - apps/web/src/pages/home/components/related-memos-modal.tsx
-- **Learnings for future iterations:**
-  - D3.js v7 with TypeScript requires careful type handling for drag behavior
-  - Use `d3.drag<SVGGElement, GraphNode>()` with explicit event types
-  - Force simulation needs cleanup in useEffect return function to prevent memory leaks
-  - SVG markers for arrowheads need proper `refX` to not overlap with nodes
-  - Use `selectAll<SVGGElement, GraphNode>()` for proper TypeScript type inference
-  - Dark mode support: use Tailwind dark: prefixes for legend/tooltip styling
----

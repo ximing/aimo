@@ -79,6 +79,9 @@ export class CategoryV1Controller {
       });
     } catch (error) {
       console.error('Create category error:', error);
+      if (error instanceof Error && error.message.includes('already exists')) {
+        return ResponseUtil.error(ErrorCode.CATEGORY_ALREADY_EXISTS);
+      }
       return ResponseUtil.error(ErrorCode.DB_ERROR);
     }
   }
@@ -109,6 +112,9 @@ export class CategoryV1Controller {
       });
     } catch (error) {
       console.error('Update category error:', error);
+      if (error instanceof Error && error.message.includes('already exists')) {
+        return ResponseUtil.error(ErrorCode.CATEGORY_ALREADY_EXISTS);
+      }
       return ResponseUtil.error(ErrorCode.DB_ERROR);
     }
   }
