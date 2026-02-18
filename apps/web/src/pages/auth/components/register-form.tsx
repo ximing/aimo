@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { view, useService } from '@rabjs/react';
+import { useNavigate } from 'react-router';
 import { AuthService } from '../../../services/auth.service';
 
 export const RegisterForm = view(() => {
@@ -12,6 +13,7 @@ export const RegisterForm = view(() => {
   const [loading, setLoading] = useState(false);
 
   const authService = useService(AuthService);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,10 +58,8 @@ export const RegisterForm = view(() => {
       setConfirmPassword('');
       setNickname('');
 
-      // Show success message for 2 seconds, then could auto-switch to login
-      setTimeout(() => {
-        setSuccess(false);
-      }, 3000);
+      // Auto navigate to login page after successful registration
+      navigate('/auth?mode=login', { replace: true });
     } else {
       setError(result.message || 'Registration failed. Please try again.');
     }

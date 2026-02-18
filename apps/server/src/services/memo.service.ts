@@ -770,6 +770,7 @@ export class MemoService {
                 memoId: relatedMemo.memoId,
                 uid: relatedMemo.uid,
                 content: relatedMemo.content,
+                type: relatedMemo.type || 'text',
                 categoryId: relatedMemo.categoryId,
                 attachments: relatedMemo.attachments,
                 createdAt: relatedMemo.createdAt,

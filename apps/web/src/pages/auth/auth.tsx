@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { view, useService } from '@rabjs/react';
 import { AuthService } from '../../services/auth.service';
 import { LoginForm } from './components/login-form';
 import { RegisterForm } from './components/register-form';
 
 export const AuthPage = view(() => {
-  const [isLogin, setIsLogin] = useState(true);
+  const [searchParams] = useSearchParams();
+  const [isLogin, setIsLogin] = useState(() => {
+    // Check if URL has mode=login parameter
+    return searchParams.get('mode') !== 'register';
+  });
   const authService = useService(AuthService);
   const navigate = useNavigate();
 

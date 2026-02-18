@@ -2,28 +2,30 @@
 
 Base URL: `/api/v1/auth`
 
-认证相关的 API 端点，包括用户注册和登录功能。
+用户认证相关的 API 端点，包括用户注册和登录功能。
+
+**认证要求：** 公开端点，无需认证即可访问
 
 ---
 
 ## Endpoints
 
-### 1. Register User
+### 1. Register
 
 **POST** `/api/v1/auth/register`
 
-注册新用户账户。
+注册新用户账号。
 
 #### Request
 
 **Body Parameters (JSON):**
 
-| Parameter | Type   | Required | Description |
-| --------- | ------ | -------- | ----------- |
-| email     | string | Yes      | 用户邮箱    |
-| password  | string | Yes      | 用户密码    |
-| nickname  | string | No       | 用户昵称    |
-| phone     | string | No       | 用户电话    |
+| Parameter | Type   | Required | Description      |
+| --------- | ------ | -------- | ---------------- |
+| email     | string | Yes      | 用户邮箱         |
+| password  | string | Yes      | 用户密码         |
+| nickname  | string | No       | 用户昵称         |
+| phone     | string | No       | 手机号码         |
 
 **Example Request:**
 
@@ -32,9 +34,8 @@ curl -X POST http://localhost:3000/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "email": "user@example.com",
-    "password": "password123",
-    "nickname": "John Doe",
-    "phone": "+1234567890"
+    "password": "your-password",
+    "nickname": "User Nickname"
   }'
 ```
 
@@ -50,7 +51,7 @@ curl -X POST http://localhost:3000/api/v1/auth/register \
     "user": {
       "uid": "user_123456",
       "email": "user@example.com",
-      "nickname": "John Doe"
+      "nickname": "User Nickname"
     }
   }
 }
@@ -58,15 +59,14 @@ curl -X POST http://localhost:3000/api/v1/auth/register \
 
 **Error Responses:**
 
-| Error Code | Status | Description                     |
-| ---------- | ------ | ------------------------------- |
-| 4001       | 400    | Email and password are required |
-| 4011       | 409    | User already exists             |
-| 5001       | 500    | Database error                  |
+| Status | Description                 |
+| ------ | --------------------------- |
+| 400    | 参数错误 (邮箱或密码为空)   |
+| 500    | 数据库错误或用户已存在      |
 
 ---
 
-### 2. Login User
+### 2. Login
 
 **POST** `/api/v1/auth/login`
 
@@ -78,8 +78,8 @@ curl -X POST http://localhost:3000/api/v1/auth/register \
 
 | Parameter | Type   | Required | Description |
 | --------- | ------ | -------- | ----------- |
-| email     | string | Yes      | 用户邮箱    |
-| password  | string | Yes      | 用户密码    |
+| email     | string | Yes     | 用户邮箱    |
+| password  | string | Yes     | 用户密码    |
 
 **Example Request:**
 
@@ -88,7 +88,7 @@ curl -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "user@example.com",
-    "password": "password123"
+    "password": "your-password"
   }'
 ```
 
@@ -105,7 +105,7 @@ curl -X POST http://localhost:3000/api/v1/auth/login \
     "user": {
       "uid": "user_123456",
       "email": "user@example.com",
-      "nickname": "John Doe"
+      "nickname": "User Nickname"
     }
   }
 }
@@ -113,46 +113,44 @@ curl -X POST http://localhost:3000/api/v1/auth/login \
 
 **Response Headers:**
 
+登录成功后，token 会被设置为 HTTP-only Cookie：
 ```
-Set-Cookie: aimo_token=<jwt_token>; HttpOnly; Path=/; Max-Age=7776000; Secure; SameSite=Lax
+Set-Cookie: aimo_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=7776000000
 ```
-
-Token 会同时在响应体和 Cookie 中返回，有效期为 90 天。
 
 **Error Responses:**
 
-| Error Code | Status | Description                     |
-| ---------- | ------ | ------------------------------- |
-| 4001       | 400    | Email and password are required |
-| 4004       | 404    | User not found                  |
-| 4010       | 401    | Password error                  |
-| 5001       | 500    | Database error                  |
+| Status | Description        |
+| ------ | ------------------ |
+| 400    | 参数错误           |
+| 401    | 用户不存在或密码错误 |
+| 500    | 数据库错误        |
 
 ---
 
 ## Authentication
 
-登录后，需要在后续请求中包含 JWT token：
-
-**Option 1: 使用 Cookie（推荐）**
-
-登录成功后，token 会自动存储在 Cookie 中，后续请求会自动发送。
-
-**Option 2: 使用 Authorization Header**
+登录成功后，访问需要认证的 API 需要在请求头中包含 token：
 
 ```bash
-curl -X GET http://localhost:3000/api/v1/user/info \
-  -H "Authorization: Bearer <jwt_token>"
+Authorization: Bearer <jwt_token>
 ```
+
+或通过 Cookie 自动发送：
+
+```
+Cookie: aimo_token=<jwt_token>
+```
+
+Token 有效期为 90 天。
 
 ---
 
 ## Error Codes Reference
 
-| Code | Meaning                          |
-| ---- | -------------------------------- |
-| 4001 | PARAMS_ERROR - 参数错误          |
-| 4004 | USER_NOT_FOUND - 用户不存在      |
-| 4010 | PASSWORD_ERROR - 密码错误        |
-| 4011 | USER_ALREADY_EXISTS - 用户已存在 |
-| 5001 | DB_ERROR - 数据库错误            |
+| Code | HTTP Status | Meaning                       |
+| ---- | ---------- | ----------------------------- |
+| 4001 | 400        | PARAMS_ERROR - 参数错误       |
+| 4003 | 409        | USER_ALREADY_EXISTS - 用户已存在 |
+| 4010 | 401        | UNAUTHORIZED - 未授权         |
+| 5001 | 500        | DB_ERROR - 数据库错误         |
