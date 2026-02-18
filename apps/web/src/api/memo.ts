@@ -8,6 +8,7 @@ import type {
   PaginatedMemoListDto,
   PaginatedMemoListWithScoreDto,
   MemoActivityStatsDto,
+  OnThisDayResponseDto,
 } from '@aimo/dto';
 import request from '../utils/request';
 
@@ -103,5 +104,15 @@ export const getActivityStats = (days: number = 90) => {
     {
       params: { days },
     }
+  );
+};
+
+/**
+ * Get memos from previous years on the same month/day
+ * Returns memos created on this day in history (excluding current year)
+ */
+export const getOnThisDayMemos = () => {
+  return request.get<unknown, { code: number; data: OnThisDayResponseDto }>(
+    '/api/v1/memos/on-this-day'
   );
 };

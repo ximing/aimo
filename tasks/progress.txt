@@ -7,6 +7,10 @@
 - Relations are stored in a separate `memo_relations` table with source/target memo IDs
 - DTO types are defined in `packages/dto/src/` and shared between frontend/backend
 - When adding controller endpoints, inject new services via constructor (TypeDI handles this automatically)
+- Modal components use `@headlessui/react` Dialog and Transition for consistent UX
+- Use `extractPlainText()` to strip markdown syntax for content previews
+- File attachments: images/videos open preview modal, other files trigger download
+- Responsive design: Use Tailwind responsive prefixes (sm:, md:, lg:) for adaptive layouts
 
 ## 2026-02-18 - US-001
 - 实现首页布局整体居中
@@ -31,5 +35,81 @@
 - **Learnings for future iterations:**
   - 响应式逻辑通过 `window.matchMedia()` 和 React state 结合实现
   - 媒体查询 `(max-width: 1100px)` 作为断点控制侧边栏行为
+---
+
+## 2026-02-18 - US-002 (On This Day)
+- 实现前端「历史的今天」横幅组件
+- 添加 getOnThisDayMemos API 客户端方法
+- 创建 OnThisDayBanner 组件：
+  - 横向滚动布局，支持触摸滑动和鼠标滚轮
+  - 显示时钟图标 + "历史的今天"标题
+  - 每个卡片显示年份标签（蓝色badge）和内容预览（最多2行）
+  - 无记录时自动隐藏整个区块
+  - 最多显示5条，超出显示"查看更多"入口
+- 集成到首页热力图下方、搜索栏上方
+- 点击卡片可滚动到对应 memo 并高亮显示
+- **Files changed:**
+  - `apps/web/src/api/memo.ts` - 添加 getOnThisDayMemos API
+  - `apps/web/src/pages/home/components/on-this-day-banner.tsx` - 新建横幅组件
+  - `apps/web/src/pages/home/home.tsx` - 集成横幅到首页
+- **Learnings for future iterations:**
+  - 横向滚动实现：flex + overflow-x-auto + scrollbar-hide
+  - 鼠标滚轮转横向滚动：onWheel 事件中修改 scrollLeft
+  - 内容预览使用 line-clamp-2 限制行数
+  - 使用 extractPlainText 函数去除 markdown 语法
+  - 无记录时返回 null 自动隐藏组件
+---
+
+## 2026-02-18 - US-004 (On This Day)
+- 实现响应式适配
+- 更新卡片宽度响应式类：w-[160px] sm:w-[180px] md:w-[200px]
+- 更新"查看更多"按钮宽度：w-[80px] sm:w-[90px] md:w-[100px]
+- 更新详情弹窗内边距：px-4 sm:px-6
+- 弹窗添加 mx-4 sm:mx-6 防止贴边
+- **Files changed:**
+  - `apps/web/src/pages/home/components/on-this-day-banner.tsx` - 响应式卡片宽度
+  - `apps/web/src/pages/home/components/memo-detail-modal.tsx` - 响应式内边距
+- **Learnings for future iterations:**
+  - 使用 Tailwind 响应式前缀实现渐进增强
+  - 移动端优先：基础样式为移动端，sm/md 为更大屏幕
+  - 弹窗需要水平边距防止在小屏幕上贴边
+---
+
+## 2026-02-18 - US-003 (On This Day)
+- 实现点击卡片查看 memo 详情功能
+- 创建 MemoDetailModal 组件：
+  - 使用 @headlessui/react Dialog 实现弹窗
+  - 显示年份标签、完整内容、创建时间
+  - 支持附件预览（图片/视频）和下载（文档）
+  - 加载状态、错误处理
+- 更新 OnThisDayBanner：
+  - 点击卡片打开详情弹窗
+  - 管理弹窗开关状态
+- **Files changed:**
+  - `apps/web/src/pages/home/components/memo-detail-modal.tsx` - 新建详情弹窗组件
+  - `apps/web/src/pages/home/components/on-this-day-banner.tsx` - 集成弹窗交互
+  - `apps/web/src/pages/home/home.tsx` - 移除未使用的 onMemoClick prop
+- **Learnings for future iterations:**
+  - 复用 AttachmentPreviewModal 组件处理附件预览
+  - 使用 extractPlainText 统一处理 markdown 内容展示
+  - 弹窗组件模式：isOpen/onClose props + 内部状态管理
+  - 图片/视频点击预览，文档点击下载的交互模式
+---
+
+## 2026-02-18 - US-001 (On This Day)
+- 实现后端 API 获取历史的今天 memos
+- 创建 GET /api/v1/memos/on-this-day 端点
+- 添加 OnThisDayMemoDto 和 OnThisDayResponseDto DTO 类型
+- 实现 getOnThisDayMemos() 服务方法，筛选往年同月同日的 memos
+- 排除当年记录，按年份倒序排列，最多返回 10 条
+- **Files changed:**
+  - `packages/dto/src/memo.ts` - 新增 DTO 类型
+  - `apps/server/src/services/memo.service.ts` - 添加 getOnThisDayMemos 方法
+  - `apps/server/src/controllers/v1/memo.controller.ts` - 添加 /on-this-day 端点
+- **Learnings for future iterations:**
+  - LanceDB 日期过滤：由于 Timestamp 类型无法直接与整数比较，需要在 JavaScript 中过滤日期
+  - 使用 `new Date(createdAt)` 将时间戳转换为 Date 对象进行月份/日期比较
+  - 注意 `getMonth()` 返回 0-11，`getDate()` 返回 1-31
+  - DTO 变更后需要先 build dto 包，再运行 server typecheck
 ---
 

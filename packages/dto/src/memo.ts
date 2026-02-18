@@ -152,3 +152,23 @@ export interface MemoActivityStatsDto {
   startDate: string; // ISO date string
   endDate: string; // ISO date string
 }
+
+/**
+ * Memo item for "on this day" feature
+ * Shows memos from previous years on the same month/day
+ */
+export interface OnThisDayMemoDto {
+  memoId: string;
+  content: string;
+  createdAt: number; // timestamp in milliseconds
+  year: number; // The year this memo was created
+}
+
+/**
+ * Response for "on this day" API
+ */
+export interface OnThisDayResponseDto {
+  items: OnThisDayMemoDto[];
+  total: number;
+  todayMonthDay: string; // MM-DD format
+}
