@@ -7,6 +7,9 @@
 - Relations are stored in a separate `memo_relations` table with source/target memo IDs
 - DTO types are defined in `packages/dto/src/` and shared between frontend/backend
 - When adding controller endpoints, inject new services via constructor (TypeDI handles this automatically)
+- Modal components use `@headlessui/react` Dialog and Transition for consistent UX
+- Use `extractPlainText()` to strip markdown syntax for content previews
+- File attachments: images/videos open preview modal, other files trigger download
 
 ## 2026-02-18 - US-001
 - 实现首页布局整体居中
@@ -54,6 +57,27 @@
   - 内容预览使用 line-clamp-2 限制行数
   - 使用 extractPlainText 函数去除 markdown 语法
   - 无记录时返回 null 自动隐藏组件
+---
+
+## 2026-02-18 - US-003 (On This Day)
+- 实现点击卡片查看 memo 详情功能
+- 创建 MemoDetailModal 组件：
+  - 使用 @headlessui/react Dialog 实现弹窗
+  - 显示年份标签、完整内容、创建时间
+  - 支持附件预览（图片/视频）和下载（文档）
+  - 加载状态、错误处理
+- 更新 OnThisDayBanner：
+  - 点击卡片打开详情弹窗
+  - 管理弹窗开关状态
+- **Files changed:**
+  - `apps/web/src/pages/home/components/memo-detail-modal.tsx` - 新建详情弹窗组件
+  - `apps/web/src/pages/home/components/on-this-day-banner.tsx` - 集成弹窗交互
+  - `apps/web/src/pages/home/home.tsx` - 移除未使用的 onMemoClick prop
+- **Learnings for future iterations:**
+  - 复用 AttachmentPreviewModal 组件处理附件预览
+  - 使用 extractPlainText 统一处理 markdown 内容展示
+  - 弹窗组件模式：isOpen/onClose props + 内部状态管理
+  - 图片/视频点击预览，文档点击下载的交互模式
 ---
 
 ## 2026-02-18 - US-001 (On This Day)
