@@ -151,4 +151,42 @@
   - 当天的开始/结束时间通过 setHours(0,0,0,0) 和 setHours(23,59,59,999) 设置
   - 热力图组件通过 aria-pressed 属性标识选中状态，提升可访问性
 
+## 2026-02-18T10:00:00Z - BUG-001 (时间戳转换修复 - 三阶段)
+- 修复热力图日期筛选时间戳转换错误
+  - 第一阶段问题：MemoList中2月17日有数据，但热力图没显示，点击后接口返回空数据
+    - 根本原因：前端使用本地时区创建日期，后端当作UTC处理，导致时间范围错位
+  - 第二阶段问题：修复后发现LanceDB Timestamp类型无法与SQL中的整数字面值进行比较
+    - 错误信息：`Invalid user input: Received literal Int64(...) and could not convert to literal of type 'Timestamp(Millisecond, None)'`
+  - 第三阶段问题：getActivityStats() 修复后，getMemos() 接口仍报错 "No field named NaN"
+    - 根本原因：控制器接收字符串类型的时间戳，直接用 new Date(string) 构造导致 NaN
+    - 前端发送 `1771372800000`，通过查询参数成为字符串 `"1771372800000"`
+    - `new Date("1771372800000")` 尝试解析为ISO日期字符串，结果为 NaN
+- 修复方案：
+  - 前端 setSelectedDate() 改用 Date.UTC() 创建UTC时间，而不是本地时间
+  - 后端 getActivityStats() 两处修复：
+    1. 改用 getUTCFullYear/Month/Date 等方法格式化日期
+    2. **重要**: LanceDB无法在SQL WHERE条件中将整数与Timestamp类型进行比较，改为先查询所有用户数据，再在JavaScript中进行日期范围过滤
+  - 后端 MemoV1Controller.getMemos() 修复：
+    1. 将字符串时间戳用 parseInt() 转换为数字
+    2. 检查 isNaN() 避免无效时间戳
+    3. 只有有效时间戳才构造 Date 对象
+  - 后端 MemoService.getMemos() 根本修复：
+    1. **重要**: 不再在 SQL WHERE 条件中使用日期范围过滤
+    2. 改为先查询所有符合 uid/categoryId/search 的记录
+    3. 在 JavaScript 中进行日期范围过滤
+    4. 这样完全避免了 LanceDB Timestamp 类型转换问题
+- Files changed:
+  - apps/web/src/services/memo.service.ts (setSelectedDate方法)
+  - apps/server/src/services/memo.service.ts (getActivityStats和getMemos方法)
+  - apps/server/src/controllers/v1/memo.controller.ts (getMemos端点)
+- **Learnings for future iterations:**
+  - JavaScript Date 时间戳计算中必须统一时区处理
+  - 前端发送日期时应转换为UTC，避免跨时区不一致
+  - 后端格式化日期时应使用 getUTC* 方法而非 get* 方法
+  - 查询参数中的数字会被转换为字符串，需要显式 parseInt() 转换
+  - new Date(string) 假定字符串是ISO格式，对于时间戳字符串需要先 parseInt()
+  - LanceDB Timestamp字段无法直接在SQL中与整数字面值比较，必须在应用层过滤
+  - 涉及Timestamp类型过滤时，应先查询完整数据集，再在JavaScript中进行范围判断
+  - 总是检查 isNaN() 以防止无效值被拼接到SQL条件中
+
 ---

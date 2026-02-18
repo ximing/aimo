@@ -202,6 +202,8 @@ export class MemoService {
       const memosTable = await this.lanceDb.openTable('memos');
 
       // Build filter conditions
+      // Note: LanceDB Timestamp type cannot be compared with integer literals in SQL
+      // So we build WHERE clause without date filters and apply them in JavaScript
       const filterConditions: string[] = [`uid = '${uid}'`];
 
       // Add category filter
@@ -214,18 +216,23 @@ export class MemoService {
         filterConditions.push(`content LIKE '%${search}%'`);
       }
 
-      // Add date filters (convert Date objects to millisecond timestamps)
-      if (startDate) {
-        filterConditions.push(`createdAt >= ${startDate.getTime()}`);
-      }
-      if (endDate) {
-        filterConditions.push(`createdAt <= ${endDate.getTime()}`);
-      }
-
       const whereClause = filterConditions.join(' AND ');
 
-      // Get total count
-      const allResults = await memosTable.query().where(whereClause).toArray();
+      // Get all matching records (without date range, which will be filtered in JavaScript)
+      let allResults = await memosTable.query().where(whereClause).toArray();
+
+      // Apply date range filters in JavaScript (LanceDB cannot compare Timestamp with Int64 literals in SQL)
+      const startTimestamp = startDate && !isNaN(startDate.getTime()) ? startDate.getTime() : null;
+      const endTimestamp = endDate && !isNaN(endDate.getTime()) ? endDate.getTime() : null;
+
+      if (startTimestamp !== null || endTimestamp !== null) {
+        allResults = allResults.filter((memo: any) => {
+          const memoTime = memo.createdAt as number;
+          if (startTimestamp !== null && memoTime < startTimestamp) return false;
+          if (endTimestamp !== null && memoTime > endTimestamp) return false;
+          return true;
+        });
+      }
 
       const total = allResults.length;
 
@@ -770,27 +777,40 @@ export class MemoService {
     try {
       const memosTable = await this.lanceDb.openTable('memos');
 
-      // Calculate date range
+      // Calculate date range in UTC
       const endDate = new Date();
       const startDate = new Date();
       startDate.setDate(endDate.getDate() - days);
 
-      // Get all memos for the user within the date range
+      // Format date key as YYYY-MM-DD in UTC
+      const formatDateKeyUTC = (timestamp: number) => {
+        const date = new Date(timestamp); // timestamp is milliseconds since epoch
+        const year = date.getUTCFullYear();
+        const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(date.getUTCDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+
+      // Get all memos for the user
+      // LanceDB Timestamp type cannot be compared with integer literals in SQL, so we filter in JavaScript
+      const allMemos = await memosTable.query().where(`uid = '${uid}'`).toArray();
+
+      // Get timestamps for date range
       const startTimestamp = startDate.getTime();
       const endTimestamp = endDate.getTime();
 
-      const results = await memosTable
-        .query()
-        .where(`uid = '${uid}' AND createdAt >= ${startTimestamp} AND createdAt <= ${endTimestamp}`)
-        .toArray();
+      // Filter memos by date range in JavaScript
+      const memosByDate = allMemos.filter((memo: any) => {
+        const createdAt = memo.createdAt as number;
+        return createdAt >= startTimestamp && createdAt <= endTimestamp;
+      });
 
-      // Group memos by date (YYYY-MM-DD)
+      // Group memos by date (YYYY-MM-DD in UTC)
       const dateCountMap = new Map<string, number>();
 
-      for (const memo of results) {
+      for (const memo of memosByDate) {
         const createdAt = memo.createdAt as number;
-        const date = new Date(createdAt);
-        const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD
+        const dateKey = formatDateKeyUTC(createdAt); // YYYY-MM-DD (UTC)
 
         dateCountMap.set(dateKey, (dateCountMap.get(dateKey) || 0) + 1);
       }
@@ -806,8 +826,8 @@ export class MemoService {
 
       return {
         items,
-        startDate: startDate.toISOString().split('T')[0],
-        endDate: endDate.toISOString().split('T')[0],
+        startDate: formatDateKeyUTC(startTimestamp),
+        endDate: formatDateKeyUTC(endTimestamp),
       };
     } catch (error) {
       console.error('Error getting activity stats:', error);

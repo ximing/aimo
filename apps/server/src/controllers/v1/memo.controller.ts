@@ -41,6 +41,25 @@ export class MemoV1Controller {
         return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
       }
 
+      // Convert string timestamps to Date objects
+      // Frontend sends timestamps as numbers in query params (received as strings here)
+      let startDateObj: Date | undefined;
+      let endDateObj: Date | undefined;
+
+      if (startDate) {
+        const timestamp = parseInt(startDate, 10);
+        if (!isNaN(timestamp)) {
+          startDateObj = new Date(timestamp);
+        }
+      }
+
+      if (endDate) {
+        const timestamp = parseInt(endDate, 10);
+        if (!isNaN(timestamp)) {
+          endDateObj = new Date(timestamp);
+        }
+      }
+
       const result = await this.memoService.getMemos({
         uid: user.uid,
         page,
@@ -49,8 +68,8 @@ export class MemoV1Controller {
         sortOrder,
         search,
         categoryId,
-        startDate: startDate ? new Date(startDate) : undefined,
-        endDate: endDate ? new Date(endDate) : undefined,
+        startDate: startDateObj,
+        endDate: endDateObj,
       });
 
       return ResponseUtil.success(result);

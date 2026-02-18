@@ -94,7 +94,7 @@
 - 热力图风格参考 GitHub Contributions 图表
 - 使用绿色系颜色方案（与主题协调可调整）
 - 收起按钮使用 ChevronLeft/Right 图标
-- 方块大小约 10-12px，间距 2-3px
+- 方块整体填充侧边区域
 - 列背景色与主内容区有轻微区分（可选）
 
 ## Technical Considerations
@@ -110,8 +110,31 @@
 - 收起/展开动画流畅（60fps）
 - 用户可以通过热力图在 2 次点击内跳转到特定日期
 
-## Open Questions
+## Bug Fixes
 
-- 是否需要显示星期标签（Mon-Sun）？
-- 深色模式下热力图颜色是否需要调整？
-- 收起按钮的具体位置：固定在顶部还是跟随滚动？
+### BUG-001: 热力图日期筛选时间戳转换错误 (2026-02-18)
+
+**Problem:**
+- MemoList 在 2月17日 有数据
+- 热力图上没显示 2月17日
+- 点击 2月17日 后，接口请求了但返回了空数据
+- 问题原因：时区转换导致时间戳范围不正确
+
+**Root Cause:**
+1. 前端 `setSelectedDate()` 使用 `new Date(year, month - 1, day)` 创建**本地时区**的日期
+2. 然后调用 `getTime()` 返回时间戳，但这个时间戳被后端当作 UTC 时间处理
+3. 导致时间范围错位，特别是在非 UTC±0 时区
+
+**Solution:**
+- 前端修改 `setSelectedDate()` 使用 `Date.UTC()` 创建 UTC 时间
+- 后端修改 `getActivityStats()` 使用 `getUTCFullYear()` 等 UTC 方法格式化日期
+- 确保前后端使用一致的 UTC 时间戳
+
+**Changes Made:**
+1. `/apps/web/src/services/memo.service.ts`: `setSelectedDate()` 方法
+   - 从 `new Date(year, month - 1, day, ...)` 改为 `new Date(Date.UTC(year, month - 1, day, ...))`
+   
+2. `/apps/server/src/services/memo.service.ts`: `getActivityStats()` 方法
+   - 新增 `formatDateKeyUTC()` 函数使用 `getUTCFullYear()` 等 UTC 方法
+   - 确保日期统计使用 UTC 时区
+
