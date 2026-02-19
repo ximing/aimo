@@ -18,7 +18,7 @@ env:
   PNPM_VERSION: 10.22.0
 
 jobs:
-  # Build packages in dependency order first
+  # Build DTO package first
   build-packages:
     runs-on: ubuntu-latest
     steps:
@@ -46,10 +46,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build DTO package
-        run: pnpm --filter @mancedb/dto build
-
-      - name: Build LanceDB Core package
-        run: pnpm --filter @mancedb/lancedb-core build
+        run: pnpm --filter @aimo/dto build
 
       - name: Upload packages artifacts
         uses: actions/upload-artifact@v4
@@ -95,14 +92,14 @@ jobs:
           path: packages
 
       - name: Build web app
-        run: cd apps/web && ELECTRON=true pnpm build
+        run: pnpm --filter @aimo/web build
 
       - name: Upload web app artifact
         uses: actions/upload-artifact@v4
         with:
           name: web-dist
           path: |
-            apps/client/dist/web/**
+            apps/server/public/**
           retention-days: 1
 
   # Typecheck and lint client
@@ -139,11 +136,11 @@ jobs:
           name: packages-dist
           path: packages
 
-      - name: Type check
-        run: pnpm --filter @mancedb/client typecheck
+      - name: Type check client
+        run: pnpm --filter @aimo/client typecheck
 
-      - name: Lint
-        run: pnpm --filter @mancedb/client lint
+      - name: Lint client
+        run: pnpm --filter @aimo/client lint
 
   # macOS Intel (x64) build
   build-macos-x64:
@@ -180,7 +177,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: web-dist
-          path: apps/client/dist/web
+          path: apps/server/public
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -189,7 +186,7 @@ jobs:
         run: cd apps/client && pnpm exec electron-builder install-app-deps --arch=x64
 
       - name: Build Electron main process
-        run: pnpm --filter @mancedb/client build:electron
+        run: pnpm --filter @aimo/client build
 
       - name: Build macOS x64
         run: |
@@ -197,7 +194,7 @@ jobs:
             unset CSC_LINK
             unset CSC_KEY_PASSWORD
           fi
-          pnpm --filter @mancedb/client run dist:mac -- --x64
+          pnpm --filter @aimo/client run dist:mac -- --x64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_LINK: ${{ secrets.CSC_LINK }}
@@ -251,7 +248,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: web-dist
-          path: apps/client/dist/web
+          path: apps/server/public
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -260,7 +257,7 @@ jobs:
         run: cd apps/client && pnpm exec electron-builder install-app-deps --arch=arm64
 
       - name: Build Electron main process
-        run: pnpm --filter @mancedb/client build:electron
+        run: pnpm --filter @aimo/client build
 
       - name: Build macOS arm64
         run: |
@@ -268,7 +265,7 @@ jobs:
             unset CSC_LINK
             unset CSC_KEY_PASSWORD
           fi
-          pnpm --filter @mancedb/client run dist:mac -- --arm64
+          pnpm --filter @aimo/client run dist:mac -- --arm64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_LINK: ${{ secrets.CSC_LINK }}
@@ -324,13 +321,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: web-dist
-          path: apps/client/dist/web
+          path: apps/server/public
 
       - name: Build Electron main process
-        run: pnpm --filter @mancedb/client build:electron
+        run: pnpm --filter @aimo/client build
 
       - name: Build Windows
-        run: pnpm --filter @mancedb/client dist:win
+        run: pnpm --filter @aimo/client run dist:win
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
@@ -386,13 +383,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: web-dist
-          path: apps/client/dist/web
+          path: apps/server/public
 
       - name: Build Electron main process
-        run: pnpm --filter @mancedb/client build:electron
+        run: pnpm --filter @aimo/client build
 
       - name: Build Linux
-        run: pnpm --filter @mancedb/client dist:linux
+        run: pnpm --filter @aimo/client run dist:linux
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_OWNER: ${{ github.repository_owner }}
@@ -435,7 +432,7 @@ jobs:
           draft: ${{ contains(github.ref_name, '-alpha') || contains(github.ref_name, '-beta') || contains(github.ref_name, '-rc') }}
           prerelease: ${{ contains(github.ref_name, '-alpha') || contains(github.ref_name, '-beta') }}
           generate_release_notes: true
-          name: ManceDB ${{ github.ref_name }}
+          name: AIMO ${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

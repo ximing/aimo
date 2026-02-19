@@ -44,7 +44,7 @@ COPY --from=builder /app/apps/server/package.json ./apps/server/
 COPY --from=builder /app/packages/dto/package.json ./packages/dto/
 
 # Install production dependencies only (minimal install)
-RUN pnpm install --prod --frozen-lockfile --prefer-offline
+RUN HUSKY=0 pnpm install --prod --frozen-lockfile --prefer-offline
 
 # Copy built files from builder stage
 COPY --from=builder /app/apps/server/dist/ ./apps/server/dist/
