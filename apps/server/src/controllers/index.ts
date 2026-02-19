@@ -3,6 +3,7 @@ import { AuthV1Controller } from './v1/auth.controller.js';
 import { UserV1Controller } from './v1/user.controller.js';
 import { CategoryV1Controller } from './v1/category.controller.js';
 import { AttachmentV1Controller } from './v1/attachment.controller.js';
+import { ASRV1Controller } from './v1/asr.controller.js';
 import { StaticController } from './static.controller.js';
 
 // Note: StaticController should be last to handle all non-API routes
@@ -12,5 +13,6 @@ export const controllers = [
   UserV1Controller,
   CategoryV1Controller,
   AttachmentV1Controller,
+  ASRV1Controller,
   StaticController,
 ];

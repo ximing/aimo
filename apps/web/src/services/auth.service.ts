@@ -144,4 +144,36 @@ export class AuthService extends Service {
       return false;
     }
   }
+
+  /**
+   * Upload and update user avatar
+   */
+  async updateAvatar(file: File) {
+    try {
+      const response = await userApi.uploadAvatar(file);
+
+      if (response.code === 0 && response.data) {
+        // Update local user state with new avatar
+        if (this.user) {
+          this.user = {
+            ...this.user,
+            avatar: response.data.avatar,
+          };
+          localStorage.setItem('aimo_user', JSON.stringify(this.user));
+        }
+        return { success: true, avatar: response.data.avatar };
+      } else {
+        return {
+          success: false,
+          message: 'Avatar upload failed',
+        };
+      }
+    } catch (error: unknown) {
+      console.error('Upload avatar error:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Avatar upload failed',
+      };
+    }
+  }
 }

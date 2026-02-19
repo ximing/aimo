@@ -261,7 +261,7 @@ curl -X POST http://localhost:3000/api/v1/categories \
 | Parameter | Type   | Required | Description |
 | --------- | ------ | -------- | ----------- |
 | name      | string | No       | 分类名称     |
-| color     | string | No       | 分类颜色     |
+| color     | string | No       | 分类颜色（传 `null` 清空） |
 
 **Example Request:**
 
@@ -325,7 +325,7 @@ curl -X PUT http://localhost:3000/api/v1/categories/category_123456 \
 
 **DELETE** `/api/v1/categories/:categoryId`
 
-删除分类。
+删除分类（会清空该分类下笔记的分类字段）。
 
 #### Request
 

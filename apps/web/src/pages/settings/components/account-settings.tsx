@@ -1,20 +1,76 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { view, useService } from '@rabjs/react';
 import { AuthService } from '../../../services/auth.service';
-import { Save } from 'lucide-react';
+import { Save, Camera, User as UserIcon } from 'lucide-react';
 
 export const AccountSettings = view(() => {
   const authService = useService(AuthService);
   const user = authService.user;
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // User info form state
   const [nickname, setNickname] = useState(user?.nickname || '');
   const [email, setEmail] = useState(user?.email || '');
+  const [avatarPreview, setAvatarPreview] = useState<string | undefined>(user?.avatar);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   // Password form state
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('请选择图片文件');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('图片大小不能超过 5MB');
+      return;
+    }
+
+    // Show local preview immediately
+    const previewUrl = URL.createObjectURL(file);
+    setAvatarPreview(previewUrl);
+
+    // Upload to server
+    setIsUploadingAvatar(true);
+    try {
+      const result = await authService.updateAvatar(file);
+      if (result.success) {
+        // Update successful, use the new avatar URL from server
+        setAvatarPreview(result.avatar);
+      } else {
+        // Revert to old avatar on failure
+        setAvatarPreview(user?.avatar);
+        alert(result.message || '头像上传失败');
+      }
+    } catch (error) {
+      console.error('Avatar upload error:', error);
+      setAvatarPreview(user?.avatar);
+      alert('头像上传失败');
+    } finally {
+      setIsUploadingAvatar(false);
+      // Clean up preview URL
+      if (avatarPreview !== user?.avatar) {
+        URL.revokeObjectURL(previewUrl);
+      }
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
 
   const handleUpdateUserInfo = (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,6 +102,54 @@ export const AccountSettings = view(() => {
       {/* User Information Form */}
       <div className="bg-white dark:bg-dark-800 rounded-lg p-6">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-50 mb-4">个人信息</h2>
+
+        {/* Avatar Section */}
+        <div className="flex items-center gap-6 mb-6 pb-6 border-b border-gray-200 dark:border-dark-700">
+          <div className="relative">
+            <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-100 dark:bg-dark-700 flex items-center justify-center">
+              {avatarPreview ? (
+                <img
+                  src={avatarPreview}
+                  alt="用户头像"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <UserIcon className="w-12 h-12 text-gray-400 dark:text-gray-500" />
+              )}
+            </div>
+            {/* Upload overlay */}
+            <button
+              type="button"
+              onClick={handleAvatarClick}
+              disabled={isUploadingAvatar}
+              className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 hover:opacity-100 focus:opacity-100 transition-opacity cursor-pointer disabled:opacity-60"
+              aria-label="更换头像"
+            >
+              {isUploadingAvatar ? (
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+              ) : (
+                <Camera className="w-6 h-6 text-white" />
+              )}
+            </button>
+          </div>
+          <div>
+            <h3 className="text-sm font-medium text-gray-900 dark:text-gray-50">头像</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              点击头像更换图片
+            </p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+              支持 JPG、PNG、GIF、WebP，最大 5MB
+            </p>
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleAvatarChange}
+            className="hidden"
+          />
+        </div>
+
         <form onSubmit={handleUpdateUserInfo} className="space-y-4">
           <div>
             <label

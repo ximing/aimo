@@ -48,9 +48,10 @@ curl -X POST http://localhost:3000/api/v1/auth/register \
 > **UserInfoDto 类型定义:**
 > ```typescript
 > interface UserInfoDto {
->   uid: string;           // 用户唯一标识符
->   email?: string;       // 用户邮箱
->   nickname?: string;    // 用户昵称
+>   uid: string;        // 用户唯一标识符
+>   email?: string;     // 用户邮箱
+>   nickname?: string;  // 用户昵称
+>   avatar?: string;    // 用户头像 URL
 > }
 > ```
 
@@ -70,10 +71,11 @@ curl -X POST http://localhost:3000/api/v1/auth/register \
 
 **Error Responses:**
 
-| Status | Description                 |
-| ------ | --------------------------- |
-| 400    | 参数错误 (邮箱或密码为空)   |
-| 500    | 数据库错误或用户已存在      |
+| Code | Meaning |
+| ---- | ------- |
+| 2    | PARAMS_ERROR - Email and password are required |
+| 1001 | USER_ALREADY_EXISTS - 用户已存在 |
+| 2000 | DB_ERROR - 数据库错误 |
 
 ---
 
@@ -112,14 +114,15 @@ curl -X POST http://localhost:3000/api/v1/auth/login \
 > **LoginResponseDto 类型定义:**
 > ```typescript
 > interface UserInfoDto {
->   uid: string;           // 用户唯一标识符
->   email?: string;       // 用户邮箱
->   nickname?: string;    // 用户昵称
+>   uid: string;        // 用户唯一标识符
+>   email?: string;     // 用户邮箱
+>   nickname?: string;  // 用户昵称
+>   avatar?: string;    // 用户头像 URL
 > }
 >
 > interface LoginResponseDto {
->   token: string;         // JWT 访问令牌
->   user: UserInfoDto;     // 用户信息
+>   token: string;     // JWT 访问令牌
+>   user: UserInfoDto; // 用户信息
 > }
 > ```
 
@@ -140,18 +143,19 @@ curl -X POST http://localhost:3000/api/v1/auth/login \
 
 **Response Headers:**
 
-登录成功后，token 会被设置为 HTTP-only Cookie：
+登录成功后，token 会被设置为 HTTP-only Cookie（生产环境会带 `Secure`）：
 ```
-Set-Cookie: aimo_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=7776000000
+Set-Cookie: aimo_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...; HttpOnly; SameSite=Lax; Path=/; Max-Age=7776000
 ```
 
 **Error Responses:**
 
-| Status | Description        |
-| ------ | ------------------ |
-| 400    | 参数错误           |
-| 401    | 用户不存在或密码错误 |
-| 500    | 数据库错误        |
+| Code | Meaning |
+| ---- | ------- |
+| 2    | PARAMS_ERROR - Email and password are required |
+| 1000 | USER_NOT_FOUND - 用户不存在 |
+| 1002 | PASSWORD_ERROR - 密码错误 |
+| 2000 | DB_ERROR - 数据库错误 |
 
 ---
 
@@ -175,9 +179,10 @@ Token 有效期为 90 天。
 
 ## Error Codes Reference
 
-| Code | HTTP Status | Meaning                       |
-| ---- | ---------- | ----------------------------- |
-| 4001 | 400        | PARAMS_ERROR - 参数错误       |
-| 4003 | 409        | USER_ALREADY_EXISTS - 用户已存在 |
-| 4010 | 401        | UNAUTHORIZED - 未授权         |
-| 5001 | 500        | DB_ERROR - 数据库错误         |
+| Code | Meaning |
+| ---- | ------- |
+| 2    | PARAMS_ERROR - 参数错误 |
+| 1000 | USER_NOT_FOUND - 用户不存在 |
+| 1001 | USER_ALREADY_EXISTS - 用户已存在 |
+| 1002 | PASSWORD_ERROR - 密码错误 |
+| 2000 | DB_ERROR - 数据库错误 |

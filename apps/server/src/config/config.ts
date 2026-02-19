@@ -74,6 +74,13 @@ export interface MultimodalEmbeddingConfig {
   fps?: number; // 视频帧采样率 (e.g., 0.5)
 }
 
+export interface ASRConfig {
+  enabled: boolean; // 是否启用 ASR
+  model: string; // ASR 模型名称 (e.g., 'fun-asr')
+  apiKey: string; // DashScope API Key
+  baseURL: string; // DashScope API 基础 URL
+}
+
 export interface Config {
   port: number;
   cors: {
@@ -108,6 +115,7 @@ export interface Config {
     embeddingDimensions: number; // Embedding vector dimensions (e.g., 1536 for text-embedding-3-small)
   };
   multimodal: MultimodalEmbeddingConfig;
+  asr: ASRConfig;
   locale: {
     language: string; // e.g., 'zh-cn', 'en-us'
     timezone: string; // e.g., 'Asia/Shanghai', 'UTC'
@@ -255,6 +263,12 @@ export const config: Config = {
     dimension: Number(process.env.MULTIMODAL_EMBEDDING_DIMENSION) || 1024,
     outputType: process.env.MULTIMODAL_EMBEDDING_OUTPUT_TYPE || 'dense',
     fps: Number(process.env.MULTIMODAL_EMBEDDING_VIDEO_FPS) || 0.5,
+  },
+  asr: {
+    enabled: process.env.FUN_ASR_ENABLED !== 'false',
+    model: process.env.FUN_ASR_MODEL || 'fun-asr',
+    apiKey: process.env.FUN_ASR_API_KEY || process.env.DASHSCOPE_API_KEY || '',
+    baseURL: process.env.FUN_ASR_BASE_URL || 'https://dashscope.aliyuncs.com/api/v1',
   },
   locale: {
     language: process.env.LOCALE_LANGUAGE || 'zh-cn',

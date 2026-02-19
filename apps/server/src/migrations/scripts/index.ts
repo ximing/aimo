@@ -16,6 +16,7 @@ import {
 import { createIndexesMigration } from './002-create-indexes.js';
 import { addMemoTypeMigration } from './003-add-memo-type.js';
 import { addDiaryCategoryMigration } from './004-add-diary-category.js';
+import { addAvatarToUsersMigration } from './005-add-avatar-field.js';
 
 /**
  * All available migrations organized by table and version
@@ -44,6 +45,9 @@ export const ALL_MIGRATIONS: Migration[] = [
 
   // Version 4: Add "日记" category for existing users
   addDiaryCategoryMigration,
+
+  // Version 5: Add avatar field to users table
+  addAvatarToUsersMigration,
 
   // Add future migrations here
   // Example:

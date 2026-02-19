@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { view, useService } from '@rabjs/react';
 import { AuthService } from '../../services/auth.service';
@@ -7,12 +7,9 @@ import { RegisterForm } from './components/register-form';
 
 export const AuthPage = view(() => {
   const [searchParams] = useSearchParams();
-  const [isLogin, setIsLogin] = useState(() => {
-    // Check if URL has mode=login parameter
-    return searchParams.get('mode') !== 'register';
-  });
   const authService = useService(AuthService);
   const navigate = useNavigate();
+  const isLogin = searchParams.get('mode') !== 'register';
 
   // Redirect to home if already authenticated
   useEffect(() => {
@@ -41,7 +38,10 @@ export const AuthPage = view(() => {
           {/* Toggle */}
           <div className="mt-6 text-center">
             <button
-              onClick={() => setIsLogin(!isLogin)}
+              onClick={() => {
+                const nextMode = isLogin ? 'register' : 'login';
+                navigate(`/auth?mode=${nextMode}`, { replace: true });
+              }}
               className="text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors"
             >
               {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}

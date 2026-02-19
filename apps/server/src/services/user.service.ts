@@ -156,22 +156,28 @@ export class UserService {
       }
 
       const existingUser = existingUsers[0] as User;
+      const now = Date.now();
       const updatedUser: UserRecord = {
         ...existingUser,
         ...updates,
         uid: existingUser.uid, // Don't allow changing UID
-        updatedAt: Date.now(),
+        updatedAt: now,
       };
 
-      // Use update with SQL where clause
-      const updateData: Record<string, string> = {};
+      const updateValues: Record<string, any> = { updatedAt: now };
       Object.entries(updates).forEach(([key, value]) => {
-        if (value !== null && value !== undefined) {
-          updateData[key] = String(value);
+        if (key === 'uid') {
+          return;
+        }
+        if (value !== undefined) {
+          updateValues[key] = value;
         }
       });
 
-      await usersTable.update(updateData, { where: `uid = '${uid}'` });
+      await usersTable.update({
+        where: `uid = '${uid}'`,
+        values: updateValues,
+      });
 
       // Trigger backup on user update
       this.triggerBackup('user_updated');
@@ -198,8 +204,13 @@ export class UserService {
       }
 
       // Mark as inactive instead of hard delete
-      const updateData: Record<string, string> = { status: '0' };
-      await usersTable.update(updateData, { where: `uid = '${uid}'` });
+      await usersTable.update({
+        where: `uid = '${uid}'`,
+        values: {
+          status: 0,
+          updatedAt: Date.now(),
+        },
+      });
 
       // Trigger backup on user deletion
       this.triggerBackup('user_deleted');

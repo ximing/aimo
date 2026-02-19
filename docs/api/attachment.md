@@ -4,6 +4,8 @@ Base URL: `/api/v1/attachments`
 
 附件管理相关的 API 端点，用于上传、下载和管理笔记附件。
 
+附件接口返回的 `url` 为存储访问地址：本地存储时为相对路径，S3/OSS 为签名或直链地址。需要导出文件时使用 `/download` 端点。
+
 **认证要求：** 所有端点都需要有效的 JWT token
 
 ---
@@ -52,7 +54,7 @@ curl -X POST http://localhost:3000/api/v1/attachments/upload \
 > interface AttachmentDto {
 >   attachmentId: string;  // 附件唯一标识符
 >   filename: string;      // 文件名
->   url: string;          // 访问 URL
+>   url: string;          // 访问 URL（存储访问地址）
 >   type: string;         // MIME 类型
 >   size: number;         // 文件大小（字节）
 >   createdAt: number;    // 创建时间戳（毫秒）
@@ -73,7 +75,7 @@ curl -X POST http://localhost:3000/api/v1/attachments/upload \
     "attachment": {
       "attachmentId": "attachment_123456",
       "filename": "file.pdf",
-      "url": "/api/v1/attachments/attachment_123456/download",
+      "url": "user_123456/2024-01-01/attachment_123456.pdf",
       "type": "application/pdf",
       "size": 102400,
       "createdAt": 1704067200000
@@ -133,7 +135,7 @@ curl -X GET "http://localhost:3000/api/v1/attachments?page=1&limit=20" \
 > interface AttachmentDto {
 >   attachmentId: string;  // 附件唯一标识符
 >   filename: string;      // 文件名
->   url: string;          // 访问 URL
+>   url: string;          // 访问 URL（存储访问地址）
 >   type: string;         // MIME 类型
 >   size: number;         // 文件大小（字节）
 >   createdAt: number;    // 创建时间戳（毫秒）
@@ -156,7 +158,7 @@ curl -X GET "http://localhost:3000/api/v1/attachments?page=1&limit=20" \
       {
         "attachmentId": "attachment_123456",
         "filename": "file.pdf",
-        "url": "/api/v1/attachments/attachment_123456/download",
+        "url": "user_123456/2024-01-01/attachment_123456.pdf",
         "type": "application/pdf",
         "size": 102400,
         "createdAt": 1704067200000
@@ -164,7 +166,7 @@ curl -X GET "http://localhost:3000/api/v1/attachments?page=1&limit=20" \
       {
         "attachmentId": "attachment_789012",
         "filename": "image.png",
-        "url": "/api/v1/attachments/attachment_789012/download",
+        "url": "user_123456/2024-01-01/attachment_789012.png",
         "type": "image/png",
         "size": 204800,
         "createdAt": 1704067200000
@@ -224,7 +226,7 @@ curl -X GET http://localhost:3000/api/v1/attachments/attachment_123456 \
 > interface AttachmentDto {
 >   attachmentId: string;  // 附件唯一标识符
 >   filename: string;      // 文件名
->   url: string;          // 访问 URL
+>   url: string;          // 访问 URL（存储访问地址）
 >   type: string;         // MIME 类型
 >   size: number;         // 文件大小（字节）
 >   createdAt: number;    // 创建时间戳（毫秒）
@@ -238,7 +240,7 @@ curl -X GET http://localhost:3000/api/v1/attachments/attachment_123456 \
   "data": {
     "attachmentId": "attachment_123456",
     "filename": "file.pdf",
-    "url": "/api/v1/attachments/attachment_123456/download",
+    "url": "user_123456/2024-01-01/attachment_123456.pdf",
     "type": "application/pdf",
     "size": 102400,
     "createdAt": 1704067200000
@@ -332,7 +334,7 @@ curl -X DELETE http://localhost:3000/api/v1/attachments/attachment_123456 \
 **Example Request:**
 
 ```bash
-curl -X GET http://localhost:3000/api/v1/attachments/attachment_123456/download \
+curl -X GET http://localhost:3000user_123456/2024-01-01/attachment_123456.pdf \
   -H "Authorization: Bearer <jwt_token>" \
   -o downloaded_file.pdf
 ```

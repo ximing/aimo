@@ -23,13 +23,17 @@ export class AuthV1Controller {
       // Hash password
       const { hashedPassword, salt } = await this.userService.hashPassword(userData.password);
 
+      const nickname = userData.nickname?.trim();
+      const resolvedNickname =
+        nickname && nickname !== userData.email ? nickname : undefined;
+
       // Create new user
       const user = await this.userService.createUser({
         uid: '', // Will be generated in service
         email: userData.email,
         password: hashedPassword,
         salt,
-        nickname: userData.nickname,
+        nickname: resolvedNickname,
         phone: userData.phone,
         status: 1,
       });

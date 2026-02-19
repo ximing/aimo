@@ -53,6 +53,7 @@ export const Layout = view(({ children }: LayoutProps) => {
 
   const userName = authService.user?.nickname || authService.user?.email?.split('@')[0] || 'User';
   const userEmail = authService.user?.email || '';
+  const userAvatar = authService.user?.avatar;
 
   return (
     <div className="h-screen flex bg-gray-50 dark:bg-dark-900 text-gray-900 dark:text-gray-50 transition-colors">
@@ -146,9 +147,17 @@ export const Layout = view(({ children }: LayoutProps) => {
               aria-label="用户菜单"
               aria-expanded={isMenuOpen}
             >
-              <div className="w-6 h-6 bg-primary-600 rounded flex items-center justify-center text-white text-xs font-semibold">
-                {userName.charAt(0).toUpperCase()}
-              </div>
+              {userAvatar ? (
+                <img
+                  src={userAvatar}
+                  alt={`${userName} avatar`}
+                  className="w-6 h-6 rounded object-cover"
+                />
+              ) : (
+                <div className="w-6 h-6 bg-primary-600 rounded flex items-center justify-center text-white text-xs font-semibold">
+                  {userName.charAt(0).toUpperCase()}
+                </div>
+              )}
             </button>
 
             {/* Dropdown Menu - Positioned to the right of sidebar */}

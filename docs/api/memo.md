@@ -26,16 +26,16 @@ Base URL: `/api/v1/memos`
 
 **Query Parameters:**
 
-| Parameter  | Type   | Default   | Description                          |
-| ---------- | ------ | --------- | ------------------------------------ |
-| page       | number | 1         | 页码                                 |
-| limit      | number | 10        | 每页记录数                           |
-| sortBy     | string | createdAt | 排序字段：`createdAt` 或 `updatedAt` |
-| sortOrder  | string | desc      | 排序顺序：`asc` 或 `desc`            |
-| search     | string | -         | 搜索关键词（标题、内容、标签）       |
-| categoryId | string | -         | 按分类过滤                           |
-| startDate  | string | -         | 开始日期（ISO 8601 格式）            |
-| endDate    | string | -         | 结束日期（ISO 8601 格式）            |
+| Parameter  | Type   | Default   | Description                                      |
+| ---------- | ------ | --------- | ------------------------------------------------ |
+| page       | number | 1         | 页码                                             |
+| limit      | number | 10        | 每页记录数                                       |
+| sortBy     | string | createdAt | 排序字段：`createdAt` 或 `updatedAt`             |
+| sortOrder  | string | desc      | 排序顺序：`asc` 或 `desc`                        |
+| search     | string | -         | 搜索关键词（内容）                               |
+| categoryId | string | -         | 按分类过滤，使用 `__uncategorized__` 查询未分类 |
+| startDate  | number | -         | 开始时间戳（毫秒）                               |
+| endDate    | number | -         | 结束时间戳（毫秒）                               |
 
 **Example Request:**
 
@@ -55,7 +55,7 @@ curl -X GET "http://localhost:3000/api/v1/memos?page=1&limit=20&sortBy=updatedAt
 > interface AttachmentDto {
 >   attachmentId: string;  // 附件唯一标识符
 >   filename: string;      // 文件名
->   url: string;          // 访问 URL
+>   url: string;          // 访问 URL（存储访问地址）
 >   type: string;         // MIME 类型
 >   size: number;         // 文件大小（字节）
 >   createdAt: number;     // 创建时间戳（毫秒）
@@ -159,7 +159,7 @@ curl -X GET http://localhost:3000/api/v1/memos/memo_123456 \
 > interface AttachmentDto {
 >   attachmentId: string;  // 附件唯一标识符
 >   filename: string;      // 文件名
->   url: string;          // 访问 URL
+>   url: string;          // 访问 URL（存储访问地址）
 >   type: string;         // MIME 类型
 >   size: number;         // 文件大小（字节）
 >   createdAt: number;     // 创建时间戳（毫秒）
@@ -193,7 +193,7 @@ curl -X GET http://localhost:3000/api/v1/memos/memo_123456 \
       {
         "attachmentId": "attachment_123456",
         "filename": "file.pdf",
-        "url": "/api/v1/attachments/attachment_123456/download",
+        "url": "user_123456/2024-01-01/attachment_123456.pdf",
         "type": "application/pdf",
         "size": 102400,
         "createdAt": 1704067200000
@@ -281,7 +281,7 @@ curl -X POST http://localhost:3000/api/v1/memos \
 > interface AttachmentDto {
 >   attachmentId: string;  // 附件唯一标识符
 >   filename: string;      // 文件名
->   url: string;          // 访问 URL
+>   url: string;          // 访问 URL（存储访问地址）
 >   type: string;         // MIME 类型
 >   size: number;         // 文件大小（字节）
 >   createdAt: number;     // 创建时间戳（毫秒）
@@ -317,7 +317,7 @@ curl -X POST http://localhost:3000/api/v1/memos \
         {
           "attachmentId": "attachment_123456",
           "filename": "file.pdf",
-          "url": "/api/v1/attachments/attachment_123456/download",
+          "url": "user_123456/2024-01-01/attachment_123456.pdf",
           "type": "application/pdf",
           "size": 102400,
           "createdAt": 1704067200000
@@ -376,13 +376,13 @@ curl -X POST http://localhost:3000/api/v1/memos \
 
 **Body Parameters (JSON):**
 
-| Parameter   | Type   | Required | Description      |
-| ----------- | ------ | -------- | ---------------- |
-| content     | string | Yes      | 笔记内容         |
-| type        | string | No       | 笔记类型         |
-| attachments | array  | No       | 附件 ID 列表     |
-| categoryId  | string | No       | 分类 ID          |
-| relationIds | array  | No       | 相关笔记 ID 列表 |
+| Parameter   | Type   | Required | Description                                      |
+| ----------- | ------ | -------- | ----------------------------------------------- |
+| content     | string | Yes      | 笔记内容                                         |
+| type        | string | No       | 笔记类型，不传保持不变，传 `null` 重置为默认类型 |
+| attachments | array  | No       | 附件 ID 列表（传入时覆盖现有附件）               |
+| categoryId  | string | No       | 分类 ID，不传保持不变，传 `null` 取消分类        |
+| relationIds | array  | No       | 相关笔记 ID 列表（传入时覆盖现有关系）           |
 
 **Example Request:**
 
@@ -408,7 +408,7 @@ curl -X PUT http://localhost:3000/api/v1/memos/memo_123456 \
 > interface AttachmentDto {
 >   attachmentId: string;  // 附件唯一标识符
 >   filename: string;      // 文件名
->   url: string;          // 访问 URL
+>   url: string;          // 访问 URL（存储访问地址）
 >   type: string;         // MIME 类型
 >   size: number;         // 文件大小（字节）
 >   createdAt: number;     // 创建时间戳（毫秒）
@@ -560,7 +560,7 @@ curl -X POST http://localhost:3000/api/v1/memos/search/vector \
 > interface AttachmentDto {
 >   attachmentId: string;  // 附件唯一标识符
 >   filename: string;      // 文件名
->   url: string;          // 访问 URL
+>   url: string;          // 访问 URL（存储访问地址）
 >   type: string;         // MIME 类型
 >   size: number;         // 文件大小（字节）
 >   createdAt: number;     // 创建时间戳（毫秒）
@@ -632,7 +632,7 @@ curl -X POST http://localhost:3000/api/v1/memos/search/vector \
 
 **GET** `/api/v1/memos/:memoId/related`
 
-查找与指定笔记相关的笔记（通过关系链）。
+基于当前笔记的向量相似度查找相关笔记。
 
 #### Request
 
@@ -816,7 +816,7 @@ curl -X GET "http://localhost:3000/api/v1/memos/memo_123456/backlinks?page=1&lim
 
 **GET** `/api/v1/memos/stats/activity`
 
-获取笔记活动统计数据（过去 N 天的创建/更新统计）。
+获取笔记活动统计数据（过去 N 天的创建统计）。
 
 #### Request
 

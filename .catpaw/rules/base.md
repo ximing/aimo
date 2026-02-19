@@ -175,7 +175,10 @@ export const myMigration: Migration = {
 
 ### 常见变更场景
 
-**场景 1: 添加新字段**
+**场景 1: 添加新字段（推荐方案）**
+
+> ✅ 推荐使用 `addColumns()` 方法添加新字段，避免删除表重建
+
 ```typescript
 // 1. 更新 schema (apps/server/src/models/db/schema.ts)
 export const memosSchema = new Schema([
@@ -183,22 +186,36 @@ export const memosSchema = new Schema([
   new Field('newField', new Utf8(), true), // 添加新字段
 ]);
 
-// 2. 创建迁移脚本
+// 2. 创建迁移脚本（使用 addColumns）
 export const addNewFieldMigration: Migration = {
   version: 3,
   tableName: 'memos',
   description: 'Add newField to memos table',
-  up: async (connection) => {
-    const table = await connection.openTable('memos');
-    const records = await table.query().toArray();
-    const updated = records.map(r => ({ ...r, newField: 'default_value' }));
-    for (const record of records) {
-      await table.delete(`memoId = '${record.memoId}'`);
+  up: async (connection: Connection) => {
+    try {
+      const table = await connection.openTable('memos');
+      
+      // 使用 addColumns 添加新列，可设置默认值
+      const newColumns = [
+        {
+          name: 'newField',
+          valueSql: "'default_value'",  // 或使用 'NULL' 表示 nullable
+        },
+      ];
+      
+      await table.addColumns(newColumns);
+    } catch (error: any) {
+      // 检查是否已存在（幂等处理）
+      if (error.message?.includes('already exists') || error.message?.includes('duplicate')) {
+        console.log('Column already exists, skipping migration');
+        return;
+      }
+      throw error;
     }
-    await table.add(updated);
   },
 };
 ```
+
 
 **场景 2: 创建新表**
 ```typescript
@@ -257,7 +274,8 @@ export const createIndexMigration: Migration = {
 ### 注意事项
 
 ⚠️ **LanceDB 限制**:
-- 不支持 ALTER TABLE，修改字段需要删除重建
+- ⚡ **推荐**: 使用 `addColumns()` 方法添加新字段，高效且安全
+- 不支持修改字段类型（需要删除表重建）
 - 不支持复合索引，只能创建单列索引
 
 ⚠️ **版本管理**:
