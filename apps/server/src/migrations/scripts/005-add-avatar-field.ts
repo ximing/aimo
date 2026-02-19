@@ -18,19 +18,24 @@ export const addAvatarToUsersMigration: Migration = {
     try {
       const usersTable = await connection.openTable('users');
 
-      // Add the avatar column (nullable, no default value needed)
+      // Add the avatar column (nullable string, no default value needed)
+      // Use an explicit cast to keep the column type as Utf8 instead of Null.
       const newColumns = [
         {
           name: 'avatar',
-          valueSql: 'NULL',
+          valueSql: 'CAST(NULL AS VARCHAR)',
         },
       ];
 
       await usersTable.addColumns(newColumns);
       console.log('Successfully added avatar column to users table');
     } catch (error: any) {
-      // Check if the column already exists
-      if (error.message?.includes('already exists') || error.message?.includes('duplicate')) {
+      // Check if the column already exists or is already compatible
+      if (
+        error.message?.includes('already exists') ||
+        error.message?.includes('duplicate') ||
+        error.message?.includes('Type conflicts between avatar')
+      ) {
         console.log('Avatar column already exists in users table, skipping migration');
         return;
       }

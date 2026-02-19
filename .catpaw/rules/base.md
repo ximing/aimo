@@ -275,6 +275,7 @@ export const createIndexMigration: Migration = {
 
 ⚠️ **LanceDB 限制**:
 - ⚡ **推荐**: 使用 `addColumns()` 方法添加新字段，高效且安全
+- `addColumns()` 的 `valueSql` 会推断列类型，新增可空字符串列不要使用 `NULL`，应使用 `CAST(NULL AS VARCHAR)` 或显式字符串默认值，避免类型冲突
 - 不支持修改字段类型（需要删除表重建）
 - 不支持复合索引，只能创建单列索引
 
