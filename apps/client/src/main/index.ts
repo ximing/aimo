@@ -76,6 +76,12 @@ function saveWindowState(): void {
   }
 }
 
+function getIconPath(): string {
+  // Use build directory icons for the app
+  const iconPath = path.join(__dirname, '../../build/icon.png');
+  return iconPath;
+}
+
 function createWindow(): void {
   // Load saved window state
   const savedState = windowStore.store;
@@ -102,12 +108,15 @@ function createWindow(): void {
       }
     : { width: 1200, height: 800 };
 
+  const iconPath = getIconPath();
+
   mainWindow = new BrowserWindow({
     ...windowBounds,
     minWidth: 800,
     minHeight: 600,
     show: false,
     title: 'AIMO',
+    icon: iconPath,
     webPreferences: {
       preload: PRELOAD_PATH,
       contextIsolation: true,
@@ -222,13 +231,20 @@ function registerGlobalShortcuts(): void {
 }
 
 function createTray(): void {
-  // Create tray icon (use a default template or create from path)
-  // Use a simple base64 encoded icon for now (16x16 tray icon)
-  const iconPath = path.join(process.env.VITE_PUBLIC || '', 'tray-icon.png');
+  // Create tray icon
+  // Use icon_16.png from build directory for tray
+  const iconPath = path.join(__dirname, '../../build/icon_16.png');
 
-  // Try to load icon from public folder, fallback to nativeImage.createEmpty()
+  // Try to load icon from build folder
   try {
-    tray = new Tray(iconPath);
+    if (fs.existsSync(iconPath)) {
+      const icon = nativeImage.createFromPath(iconPath);
+      tray = new Tray(icon);
+    } else {
+      // Fallback: create a simple 16x16 icon
+      const emptyIcon = nativeImage.createEmpty();
+      tray = new Tray(emptyIcon);
+    }
   } catch {
     // Create a simple 16x16 transparent icon as fallback
     const emptyIcon = nativeImage.createEmpty();
