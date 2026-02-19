@@ -10,8 +10,8 @@ directories:
 files:
   - dist
   - package.json
-  # Include the built web app (from apps/server/public which is built by apps/web)
-  - ../../server/public
+  # Include the built web app (from apps/web built with ELECTRON=true)
+  - dist/web
 disableDefaultIgnoredFiles: false
 
 # macOS Configuration

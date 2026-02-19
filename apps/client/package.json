@@ -12,8 +12,10 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
-    "build:all": "pnpm --filter @aimo/web build && pnpm build && pnpm dist",
+    "build": "pnpm build:web && pnpm build:electron",
+    "build:web": "cd ../web && ELECTRON=true pnpm build",
+    "build:electron": "tsc -b && vite build",
+    "build:all": "pnpm build && pnpm dist",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",

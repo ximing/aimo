@@ -1,10 +1,19 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import path from 'node:path';
+
+// Determine output directory based on build target
+const isElectron = process.env.ELECTRON === 'true';
+const outDir = isElectron
+  ? path.resolve(__dirname, '../client/dist/web')
+  : '../server/public';
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: isElectron ? './' : '/',
   plugins: [react()],
   server: {
+    port: 5173,
     proxy: {
       '/api': {
         target: 'http://localhost:3000',
@@ -13,8 +22,8 @@ export default defineConfig({
     },
   },
   build: {
-    // Output to ../server/public for production builds
-    outDir: '../server/public',
+    // Output to different locations based on target (Electron vs server)
+    outDir,
     emptyOutDir: true,
 
     // Optimize chunk size

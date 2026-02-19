@@ -92,14 +92,14 @@ jobs:
           path: packages
 
       - name: Build web app
-        run: pnpm --filter @aimo/web build
+        run: ELECTRON=true pnpm --filter @aimo/web build
 
       - name: Upload web app artifact
         uses: actions/upload-artifact@v4
         with:
           name: web-dist
           path: |
-            apps/server/public/**
+            apps/client/dist/web/**
           retention-days: 1
 
   # Typecheck and lint client
@@ -177,7 +177,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: web-dist
-          path: apps/server/public
+          path: apps/client/dist/web
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -248,7 +248,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: web-dist
-          path: apps/server/public
+          path: apps/client/dist/web
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -321,7 +321,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: web-dist
-          path: apps/server/public
+          path: apps/client/dist/web
 
       - name: Build Electron main process
         run: pnpm --filter @aimo/client build
@@ -383,7 +383,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: web-dist
-          path: apps/server/public
+          path: apps/client/dist/web
 
       - name: Build Electron main process
         run: pnpm --filter @aimo/client build
