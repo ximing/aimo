@@ -17,7 +17,8 @@ export interface ExploreQueryDto {
  */
 export interface ExploreSourceDto {
   memoId: string;
-  content: string;
+  title: string; // Generated title from content (first line or first 50 chars)
+  content: string; // Content summary (first 200 chars)
   relevanceScore: number;
   createdAt: number;
 }

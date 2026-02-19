@@ -443,6 +443,43 @@
   - Include timing information in progress reports for performance-critical features
 ---
 
+## 2026-02-19 - US-003 (AI Explore Page)
+- Implement AI exploration chat interface
+- Create API client for explore endpoints (`apps/web/src/api/explore.ts`)
+- Create ExploreService for chat state management with localStorage persistence
+- Implement AIExplorePage with full chat UI:
+  - Scrollable message history with auto-scroll to bottom
+  - Multi-line text input with Enter to send, Shift+Enter for new line
+  - Visual distinction: user messages (primary-600 bg) vs AI messages (white/dark-800 bg with border)
+  - Markdown rendering using react-markdown for AI responses
+  - Empty state with helpful prompt suggestions (4 preset questions)
+  - Source citations displayed as clickable buttons below AI responses
+  - Suggested follow-up questions as clickable chips
+  - Loading state with spinner indicator
+  - Error handling with red alert styling
+- Implement conversation management:
+  - 10-round limit (20 messages max) with warning when reached
+  - New conversation button with confirmation dialog
+  - Conversation persisted to localStorage
+  - Context accumulation for follow-up questions (trimmed to ~4000 chars)
+- Header shows current round number and AI branding
+- Typecheck passes, lint passes (no new errors)
+- **Files changed:**
+  - `apps/web/src/api/explore.ts` - New API client for explore endpoints
+  - `apps/web/src/services/explore.service.ts` - New ExploreService for chat state management
+  - `apps/web/src/pages/ai-explore/ai-explore.tsx` - Complete chat UI implementation
+  - `apps/web/package.json` - Added react-markdown dependency
+- **Learnings for future iterations:**
+  - Use `type` keyword for type-only imports in TypeScript (verbatimModuleSyntax)
+  - react-markdown renders Markdown content safely in React
+  - Auto-resize textarea: use `rows={Math.min(5, Math.max(1, inputValue.split('\n').length))}`
+  - Scroll to bottom pattern: `messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })`
+  - Conversation persistence: save to localStorage on every message update
+  - Context management: accumulate conversation history, trim when too long
+  - Empty state UX: show suggested questions to help users get started
+  - Source citations: show as [1], [2] with relevance percentage and preview
+---
+
 ## Codebase Patterns
 - Use `electron-store` for persisting user preferences and window state to `app.getPath('userData')`
 - Always validate saved window bounds against available displays using `screen.getAllDisplays()`

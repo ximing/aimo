@@ -1,9 +1,7 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { view, useService } from '@rabjs/react';
-import ReactMarkdown from 'react-markdown';
 import { Layout } from '../../components/layout';
 import { ExploreService } from '../../services/explore.service';
-import { MemoService } from '../../services/memo.service';
 import {
   Sparkles,
   Send,
@@ -13,6 +11,7 @@ import {
   MessageSquare,
   BookOpen,
 } from 'lucide-react';
+import { SourceCard, MarkdownWithCitations, MemoDetailModal } from './components';
 
 /**
  * AI Explore Page - Chat interface for AI-powered knowledge exploration
@@ -25,11 +24,14 @@ import {
  */
 export const AIExplorePage = view(() => {
   const exploreService = useService(ExploreService);
-  const memoService = useService(MemoService);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [inputValue, setInputValue] = useState('');
   const [isInputFocused, setIsInputFocused] = useState(false);
+
+  // State for memo detail modal
+  const [selectedMemoId, setSelectedMemoId] = useState<string | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -70,16 +72,17 @@ export const AIExplorePage = view(() => {
     [setInputValue]
   );
 
-  // Handle source memo click
-  const handleSourceClick = useCallback(
-    (memoId: string) => {
-      // Open memo detail modal or navigate to memo
-      memoService.fetchMemos(true);
-      // TODO: Navigate to specific memo (US-004 will implement this)
-      console.log('Navigate to memo:', memoId);
-    },
-    [memoService]
-  );
+  // Handle source memo click - opens detail modal
+  const handleSourceClick = useCallback((memoId: string) => {
+    setSelectedMemoId(memoId);
+    setIsDetailModalOpen(true);
+  }, []);
+
+  // Close detail modal
+  const handleCloseDetailModal = useCallback(() => {
+    setIsDetailModalOpen(false);
+    setSelectedMemoId(null);
+  }, []);
 
   // Handle new conversation
   const handleNewConversation = useCallback(() => {
@@ -238,9 +241,11 @@ export const AIExplorePage = view(() => {
                       {message.role === 'user' ? (
                         <p className="whitespace-pre-wrap">{message.content}</p>
                       ) : (
-                        <div className="prose dark:prose-invert prose-sm max-w-none">
-                          <ReactMarkdown>{message.content}</ReactMarkdown>
-                        </div>
+                        <MarkdownWithCitations
+                          content={message.content}
+                          sources={message.sources || []}
+                          onCitationClick={handleSourceClick}
+                        />
                       )}
                     </div>
 
@@ -252,29 +257,33 @@ export const AIExplorePage = view(() => {
                     </div>
 
                     {/* Sources (AI messages only) */}
-                    {message.role === 'assistant' &&
-                      message.sources &&
-                      message.sources.length > 0 && (
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {message.sources.map((source, index) => (
-                            <button
-                              key={source.memoId}
-                              onClick={() => handleSourceClick(source.memoId)}
-                              className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg text-xs text-gray-600 dark:text-gray-400 hover:border-primary-300 dark:hover:border-primary-700 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
-                            >
-                              <span className="text-primary-600 dark:text-primary-400 font-medium">
-                                [{index + 1}]
-                              </span>
-                              <span className="max-w-[200px] truncate">
-                                {source.content.slice(0, 50)}...
-                              </span>
-                              <span className="text-gray-400">
-                                {Math.round(source.relevanceScore * 100)}%
-                              </span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
+                    {message.role === 'assistant' && (
+                      <div className="mt-4">
+                        {message.sources && message.sources.length > 0 ? (
+                          <div className="space-y-2">
+                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 px-1">
+                              引用来源
+                            </p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {message.sources.map((source, index) => (
+                                <SourceCard
+                                  key={source.memoId}
+                                  source={source}
+                                  index={index}
+                                  onClick={handleSourceClick}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="px-1">
+                            <p className="text-xs text-gray-400 dark:text-gray-500">
+                              未找到相关笔记
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* Suggested Questions (AI messages only) */}
                     {message.role === 'assistant' &&
@@ -398,6 +407,13 @@ export const AIExplorePage = view(() => {
           </div>
         </div>
       </div>
+
+      {/* Memo Detail Modal */}
+      <MemoDetailModal
+        memoId={selectedMemoId}
+        isOpen={isDetailModalOpen}
+        onClose={handleCloseDetailModal}
+      />
     </Layout>
   );
 });
