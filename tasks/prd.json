@@ -1,18 +1,20 @@
 {
-  "project": "AIMO",
-  "branchName": "ralph/electron-client",
-  "description": "Electron 桌面客户端 - 使用 Vite 构建，复用 Web 项目作为渲染层，提供原生桌面体验",
+  "project": "AIMO Chrome Extension",
+  "branchName": "ralph/chrome-extension",
+  "description": "AIMO Chrome 浏览器扩展 - 快速提取和保存网页内容到 AIMO 知识库",
   "userStories": [
     {
       "id": "US-001",
-      "title": "初始化 Electron 项目结构",
-      "description": "作为开发者，我需要创建 Electron 项目的基础结构，以便开始开发桌面客户端。",
+      "title": "项目初始化和基础配置",
+      "description": "作为开发者，我需要创建 Chrome 扩展的基础项目结构和配置，以便后续功能开发。",
       "acceptanceCriteria": [
-        "在 apps/client 创建 Electron 项目，包含 main 和 preload 目录",
-        "配置 Vite 构建主进程和预加载脚本",
-        "配置 TypeScript 支持，包含 tsconfig.json",
-        "添加 pnpm dev:client 命令启动 Electron 开发模式",
-        "添加 pnpm build:client 命令打包 Electron 应用",
+        "创建 apps/extension/ 目录结构",
+        "配置 manifest.json (Manifest V3)，包含必要的 permissions (storage, activeTab)",
+        "配置 Vite 构建脚本，支持多入口 (popup, content, background)",
+        "配置 TypeScript 和必要的类型定义 (@types/chrome)",
+        "创建 src/popup/index.html 作为 popup 入口",
+        "创建 src/content/index.ts 作为内容脚本入口",
+        "创建 src/background/index.ts 作为 service worker 入口",
         "Typecheck passes"
       ],
       "priority": 1,
@@ -21,15 +23,15 @@
     },
     {
       "id": "US-002",
-      "title": "复用 Web 项目作为渲染层",
-      "description": "作为开发者，我希望 Electron 加载现有的 Web 项目，避免代码重复。",
+      "title": "存储模块封装",
+      "description": "作为开发者，我需要封装 Chrome Storage 操作，以便安全地存储配置和待保存内容。",
       "acceptanceCriteria": [
-        "Electron 主进程开发模式下加载 apps/web 的 Vite dev server (http://localhost:5173)",
-        "Electron 主进程生产模式下加载打包后的 Web 静态文件",
-        "配置 apps/web 的构建输出目录供 Electron 使用",
-        "创建主窗口，尺寸 1200x800，启用 nodeIntegration: false, contextIsolation: true",
-        "Typecheck passes",
-        "Verify Electron 窗口正确显示 Web 界面"
+        "创建 src/storage/index.ts，封装 chrome.storage.local 和 chrome.storage.session",
+        "实现配置存储接口：getConfig(), setConfig(url, token), clearConfig()",
+        "实现待保存内容存储接口：getPendingItems(), addPendingItem(item), removePendingItem(id), clearPendingItems()",
+        "定义 TypeScript 类型：Config, PendingItem, ExtractedContent",
+        "所有存储操作都有错误处理",
+        "Typecheck passes"
       ],
       "priority": 2,
       "passes": false,
@@ -37,16 +39,16 @@
     },
     {
       "id": "US-003",
-      "title": "实现运行环境检测",
-      "description": "作为用户，我希望 Web 应用能识别是否在 Electron 中运行，以便调用不同的功能。",
+      "title": "AIMO API 客户端",
+      "description": "作为开发者，我需要封装 AIMO 后端 API 调用，以便在扩展中进行认证和数据操作。",
       "acceptanceCriteria": [
-        "在 preload 脚本中通过 contextBridge 暴露 window.electronAPI 对象",
-        "electronAPI 包含 platform 属性返回 process.platform",
-        "在 apps/web 创建 src/electron/isElectron.ts 导出 isElectron() 函数",
-        "isElectron() 通过检测 navigator.userAgent 中的 Electron 字符串判断",
-        "浏览器端运行时访问 window.electronAPI 返回 undefined 但不报错",
-        "Typecheck passes",
-        "在 Electron 和浏览器中分别验证环境检测正确"
+        "创建 src/api/aimo.ts，封装 AIMO API",
+        "实现 login(username, password) 方法，返回 JWT token",
+        "实现 createMemo(content, sourceUrl, attachmentIds?) 方法",
+        "实现 uploadAttachment(file) 方法 (multipart/form-data)",
+        "所有 API 调用自动添加 Authorization: Bearer token 请求头",
+        "实现统一的错误处理和响应类型",
+        "Typecheck passes"
       ],
       "priority": 3,
       "passes": false,
@@ -54,16 +56,19 @@
     },
     {
       "id": "US-004",
-      "title": "实现系统托盘功能",
-      "description": "作为用户，我希望关闭窗口后应用仍在后台运行，可以从系统托盘快速打开。",
+      "title": "浮动工具栏（内容脚本）",
+      "description": "作为用户，我在网页上选中文本或图片后，希望在选区附近看到保存按钮。",
       "acceptanceCriteria": [
-        "点击关闭按钮时调用 event.preventDefault() 和 window.hide() 隐藏到托盘",
-        "创建 Tray 实例，加载托盘图标（使用 16x16 或 22x22 像素的图标）",
-        "托盘右键菜单包含 '显示主窗口' 和 '退出应用' 两项",
-        "点击托盘图标切换窗口显示/隐藏状态",
-        "macOS 上 Dock 图标点击时恢复窗口（监听 app.on('activate')）",
+        "监听 document.onselectionchange，获取选中文本",
+        "监听图片点击事件，获取图片 URL",
+        "创建浮动工具栏 DOM 元素（使用 shadow DOM 隔离样式）",
+        "工具栏显示在选区/图片右下角，位置计算正确",
+        "工具栏包含 AIMO 图标和 '保存' 文字按钮",
+        "点击页面其他区域或滚动时工具栏自动隐藏",
+        "点击保存按钮将内容存储到 session storage 并打开 popup",
+        "支持浅色/深色主题（跟随系统偏好）",
         "Typecheck passes",
-        "手动验证托盘功能正常工作"
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 4,
       "passes": false,
@@ -71,15 +76,18 @@
     },
     {
       "id": "US-005",
-      "title": "实现系统级快捷键",
-      "description": "作为用户，我希望使用全局快捷键快速打开/隐藏 AIMO 窗口，提高效率。",
+      "title": "Popup 配置和登录页面",
+      "description": "作为用户，我首次使用扩展时需要配置服务器地址和登录信息。",
       "acceptanceCriteria": [
-        "使用 globalShortcut.register 注册 CommandOrControl+Shift+A",
-        "快捷键回调函数切换窗口显示/隐藏（visible 时 hide，否则 show）",
-        "应用启动时注册快捷键，应用退出前调用 globalShortcut.unregisterAll()",
-        "快捷键在窗口失焦或隐藏后依然有效",
+        "创建 React 组件：ConfigPage.tsx",
+        "配置表单包含：服务器 URL、用户名、密码三个字段",
+        "表单有基本的输入验证（URL 格式、非空检查）",
+        "点击登录按钮调用 API 获取 token",
+        "登录成功保存配置到 storage，切换到主界面",
+        "登录失败显示错误提示（中文错误信息）",
+        "顶部有设置图标，可重新打开配置页面",
         "Typecheck passes",
-        "手动验证快捷键正常工作"
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 5,
       "passes": false,
@@ -87,17 +95,18 @@
     },
     {
       "id": "US-006",
-      "title": "实现原生应用菜单",
-      "description": "作为用户，我希望使用原生菜单栏执行常用操作。",
+      "title": "Popup 内容列表和预览",
+      "description": "作为用户，我需要在 popup 中查看已提取的内容列表，支持预览和编辑。",
       "acceptanceCriteria": [
-        "使用 Menu.buildFromTemplate 创建应用菜单",
-        "菜单包含应用菜单（About, Quit）、编辑菜单（Undo, Redo, Cut, Copy, Paste, SelectAll）",
-        "菜单包含视图菜单（Reload, ToggleDevTools, ResetZoom, ZoomIn, ZoomOut）",
-        "菜单包含窗口菜单（Minimize, Close, 窗口列表）",
-        "macOS 上菜单符合原生样式（首项为应用名，Edit 在第二个）",
-        "Windows/Linux 上有相应的菜单栏适配",
+        "创建 React 组件：ContentList.tsx, ContentItem.tsx",
+        "主界面显示 '待保存内容' 列表，从 storage 读取",
+        "每条内容显示：类型图标（文本/图片）、内容摘要（前 50 字）、来源页面标题",
+        "支持单条删除，点击删除从列表移除",
+        "文本内容可点击展开编辑（多行文本框）",
+        "图片内容显示缩略图预览",
+        "空列表时显示提示文案和快捷操作指引",
         "Typecheck passes",
-        "手动验证菜单在各平台正常显示"
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 6,
       "passes": false,
@@ -105,16 +114,17 @@
     },
     {
       "id": "US-007",
-      "title": "实现本地文件拖拽支持",
-      "description": "作为用户，我希望直接从桌面拖拽文件到 AIMO 窗口中添加附件。",
+      "title": "图片下载和上传功能",
+      "description": "作为用户，我选中图片后，希望图片被下载并上传到 AIMO 服务器。",
       "acceptanceCriteria": [
-        "在主进程中监听 webContents.on('will-navigate') 阻止拖放导致的页面跳转",
-        "在 preload 中暴露 onFileDrop 方法，通过 IPC 接收文件路径数组",
-        "主进程监听 drag-enter 和 drag-drop 事件，提取文件路径",
-        "通过 ipcRenderer.send('files-dropped', filePaths) 发送文件路径到渲染进程",
-        "支持多文件同时拖拽，过滤掉文件夹（只传递文件路径）",
+        "实现图片 URL 解析（支持 <img> 标签和 background-image）",
+        "使用 fetch 获取图片数据并转换为 Blob/File",
+        "在 popup 中显示图片上传进度或加载状态",
+        "调用 uploadAttachment API 上传图片",
+        "上传成功后获取 attachment ID 并关联到 pending item",
+        "上传失败时显示错误提示和重试按钮",
         "Typecheck passes",
-        "手动验证文件拖拽功能正常工作"
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 7,
       "passes": false,
@@ -122,16 +132,18 @@
     },
     {
       "id": "US-008",
-      "title": "实现窗口状态管理",
-      "description": "作为用户，我希望应用记住窗口位置和大小，下次打开时保持一致。",
+      "title": "保存到 AIMO 功能",
+      "description": "作为用户，我希望将待保存的内容提交到 AIMO 服务器创建 memo。",
       "acceptanceCriteria": [
-        "安装 electron-store 作为配置存储库",
-        "窗口关闭前保存 bounds (x, y, width, height) 和 isMaximized 状态",
-        "应用启动时读取配置，使用 saved bounds 创建窗口（检查显示器有效性）",
-        "如果上次是最大化状态，创建窗口后调用 maximize()",
-        "配置存储在 app.getPath('userData') 目录",
+        "Popup 底部显示 '保存到 AIMO' 和 '取消' 按钮",
+        "点击保存按钮遍历所有 pending items",
+        "对每个文本项调用 createMemo API",
+        "对有图片的项先确保图片已上传，再创建带 attachmentIds 的 memo",
+        "显示保存进度（x/n 完成）",
+        "全部保存成功后清空 pending items，显示成功提示",
+        "保存失败的项目保留在列表中，可重试",
         "Typecheck passes",
-        "手动验证窗口状态正确保存和恢复"
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 8,
       "passes": false,
@@ -139,36 +151,19 @@
     },
     {
       "id": "US-009",
-      "title": "实现自动更新机制",
-      "description": "作为用户，我希望应用自动检查更新并提示安装。",
+      "title": "扩展图标徽章和错误处理",
+      "description": "作为用户，我希望在扩展遇到问题时得到清晰反馈，并看到待保存内容数量。",
       "acceptanceCriteria": [
-        "安装 electron-updater 依赖",
-        "在 main 进程导入 autoUpdater 并配置更新服务器（使用 GitHub Releases 作为默认）",
-        "应用启动 3 秒后自动检查更新（autoUpdater.checkForUpdatesAndNotify()）",
-        "发现更新时显示系统通知（autoUpdater.on('update-available')）",
-        "在菜单中添加 '检查更新' 菜单项，支持手动触发检查",
+        "实现 setBadge(count) 函数，在扩展图标显示未保存内容数量",
+        "添加 pending item 时自动更新徽章",
+        "清空列表时移除徽章",
+        "未配置服务器时显示 '请先配置' 提示",
+        "Token 过期时自动跳转到登录页面",
+        "网络错误显示具体中文错误信息和重试按钮",
         "Typecheck passes",
-        "手动验证更新检查流程（可使用测试版本号）"
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 9,
-      "passes": false,
-      "notes": ""
-    },
-    {
-      "id": "US-010",
-      "title": "配置跨平台打包",
-      "description": "作为开发者，我需要打包应用供 macOS、Windows 和 Linux 用户使用。",
-      "acceptanceCriteria": [
-        "配置 electron-builder，创建 electron-builder.json 或写在 package.json",
-        "配置 mac 目标：target: ['dmg', 'zip']，category: 'public.app-category.productivity'",
-        "配置 win 目标：target: ['nsis', 'portable']",
-        "配置 linux 目标：target: ['AppImage', 'deb']，category: 'Office'",
-        "配置图标路径：mac 使用 build/icon.icns，win 使用 build/icon.ico，linux 使用 build/icon.png",
-        "CI/CD 工作流配置自动生成各平台安装包（可选，可在后续迭代完成）",
-        "Typecheck passes",
-        "手动执行 pnpm build:client 验证打包成功"
-      ],
-      "priority": 10,
       "passes": false,
       "notes": ""
     }

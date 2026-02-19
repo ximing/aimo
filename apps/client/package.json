@@ -1,0 +1,50 @@
+{
+  "name": "@aimo/client",
+  "version": "0.0.0",
+  "private": true,
+  "license": "BSL-1.1",
+  "type": "module",
+  "main": "dist/main/index.js",
+  "homepage": "https://github.com/ximing/aimo",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ximing/aimo.git"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "build:all": "pnpm --filter @aimo/web build && pnpm build && pnpm dist",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "dist": "electron-builder --publish=never",
+    "dist:all": "electron-builder -mwl --publish=never",
+    "dist:mac": "electron-builder --mac --publish=never",
+    "dist:win": "electron-builder --win --publish=never",
+    "dist:linux": "electron-builder --linux --publish=never"
+  },
+  "dependencies": {
+    "electron-store": "^10.0.0",
+    "electron-updater": "^6.7.3"
+  },
+  "devDependencies": {
+    "@aimo/eslint-config": "workspace:*",
+    "@aimo/typescript-config": "workspace:*",
+    "@fiahfy/icns": "^0.0.7",
+    "@types/node": "^22.13.4",
+    "electron": "^35.7.5",
+    "electron-builder": "^26.0.12",
+    "eslint": "^9.39.1",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-only-warn": "^1.1.0",
+    "eslint-plugin-turbo": "^2.4.2",
+    "globals": "^16.5.0",
+    "icns-lib": "^1.0.1",
+    "png-to-ico": "^3.0.1",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.48.0",
+    "vite": "^7.3.1",
+    "vite-plugin-electron": "^0.29.0",
+    "vite-plugin-electron-renderer": "^0.14.6"
+  }
+}

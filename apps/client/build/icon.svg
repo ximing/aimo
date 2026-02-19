@@ -1,0 +1,59 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg-gradient" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#4ade80" />
+      <stop offset="100%" stop-color="#16a34a" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="512" height="512" rx="128" fill="url(#bg-gradient)" />
+  
+  <!-- Content Group -->
+  <g stroke="white" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    
+    <!-- Outer Ring (Techy) -->
+    <path d="M 256 80 A 176 176 0 0 1 410 170" opacity="0.8" />
+    <path d="M 432 256 A 176 176 0 0 1 350 400" opacity="0.8" />
+    <path d="M 256 432 A 176 176 0 0 1 100 340" opacity="0.8" />
+    <path d="M 80 256 A 176 176 0 0 1 160 110" opacity="0.8" />
+    
+    <!-- Inner Ring (Orbit) -->
+    <circle cx="256" cy="256" r="120" stroke-dasharray="20 40" opacity="0.6" />
+    
+    <!-- Star / Sparkle -->
+    <path d="M 400 140 L 410 120 L 420 140 L 440 150 L 420 160 L 410 180 L 400 160 L 380 150 Z" fill="white" stroke="none" />
+    
+    <!-- Dots -->
+    <circle cx="100" cy="340" r="8" fill="white" stroke="none" />
+    <circle cx="350" cy="400" r="8" fill="white" stroke="none" />
+    
+    <!-- Feather / Quill (Central) -->
+    <g transform="translate(256, 256) rotate(-15)">
+      <!-- Shaft -->
+      <path d="M 0 -70 L 0 50" stroke-width="10" />
+      
+      <!-- Vane Left -->
+      <path d="M 0 -70 Q -40 -40 -40 10 Q -40 40 -10 50" stroke-width="8" />
+      <!-- Vane Right -->
+      <path d="M 0 -70 Q 40 -40 40 10 Q 40 40 10 50" stroke-width="8" />
+      
+      <!-- Nib -->
+      <path d="M -12 50 L 0 80 L 12 50" fill="white" stroke="white" stroke-width="4" stroke-linejoin="round" />
+      <path d="M 0 50 L 0 70" stroke="#16a34a" stroke-width="4" />
+      
+      <!-- Details -->
+      <path d="M 0 -40 L 25 -50" stroke-width="6" />
+      <path d="M 0 -10 L 30 -20" stroke-width="6" />
+      <path d="M 0 20 L 25 30" stroke-width="6" />
+      
+      <path d="M 0 -40 L -25 -50" stroke-width="6" />
+      <path d="M 0 -10 L -30 -20" stroke-width="6" />
+      <path d="M 0 20 L -25 30" stroke-width="6" />
+    </g>
+  </g>
+</svg>

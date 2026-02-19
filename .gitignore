@@ -4,6 +4,8 @@
 !.env.example
 dist
 build
+!apps/client/build/
+!apps/client/build/**
 node_modules
 temp
 .DS_Store
