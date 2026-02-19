@@ -1,53 +1,21 @@
 /**
- * Electron environment detection utilities
- *
- * These utilities allow the web app to detect if it's running inside Electron
- * and access Electron-specific APIs when available.
- */
-
-// Extend Window interface to include electronAPI
-declare global {
-  interface Window {
-    electronAPI?: {
-      platform: string;
-      onMainMessage?: (callback: (message: string) => void) => void;
-      removeMainMessageListener?: (callback: (message: string) => void) => void;
-    };
-  }
-}
-
-/**
- * Check if the app is running inside Electron
- *
- * This function safely detects the Electron environment by checking for the
- * presence of window.electronAPI which is exposed via contextBridge in the preload script.
- *
- * @returns true if running in Electron, false if running in a regular browser
+ * Detect if the app is running in Electron environment
+ * Checks for the presence of 'Electron' in the user agent string
  */
 export function isElectron(): boolean {
-  // Check for electronAPI exposed via contextBridge (preferred method)
-  if (typeof window !== 'undefined' && window.electronAPI !== undefined) {
-    return true;
-  }
-
-  // Fallback: Check user agent for Electron string
-  if (typeof navigator !== 'undefined' && navigator.userAgent.includes('Electron')) {
-    return true;
-  }
-
-  return false;
+  return typeof navigator !== 'undefined' && navigator.userAgent.includes('Electron');
 }
 
 /**
- * Get the current platform when running in Electron
- *
- * @returns The platform string (darwin, win32, linux) or null if not in Electron
+ * Get the platform the app is running on
+ * Returns the platform string from Electron (darwin, win32, linux)
+ * or 'browser' if running in a web browser
  */
-export function getPlatform(): string | null {
-  if (isElectron() && window.electronAPI) {
-    return window.electronAPI.platform;
+export function getPlatform(): string {
+  if (!isElectron()) {
+    return 'browser';
   }
-  return null;
+  return window.electronAPI?.platform || 'unknown';
 }
 
 /**
@@ -69,4 +37,35 @@ export function isWindows(): boolean {
  */
 export function isLinux(): boolean {
   return getPlatform() === 'linux';
+}
+
+/**
+ * Register a callback for when files are dropped into the Electron window
+ * This only works in Electron and will be a no-op in browser
+ */
+export function onFileDrop(callback: (filePaths: string[]) => void): () => void {
+  if (!isElectron() || !window.electronAPI?.onFileDrop) {
+    // Return a no-op cleanup function for browser
+    return () => {};
+  }
+
+  window.electronAPI.onFileDrop(callback);
+
+  // Return cleanup function
+  return () => {
+    window.electronAPI?.removeFileDropListener?.(callback);
+  };
+}
+
+/**
+ * Type definition for the Electron API exposed via preload script
+ */
+declare global {
+  interface Window {
+    electronAPI?: {
+      platform: string;
+      onFileDrop?: (callback: (filePaths: string[]) => void) => void;
+      removeFileDropListener?: (callback: (filePaths: string[]) => void) => void;
+    };
+  }
 }

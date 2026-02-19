@@ -100,8 +100,8 @@
         "手动验证菜单在各平台正常显示"
       ],
       "priority": 6,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Native application menu implemented with Edit, View, Window menus. macOS has app menu first, Windows/Linux has File menu with Quit option."
     },
     {
       "id": "US-007",

@@ -14,6 +14,30 @@
   - can check registration success with the boolean returned from register()
 ---
 
+## 2026-02-19 - US-006 (Electron Client)
+- Implement native application menu
+- Add createApplicationMenu() function with platform-specific menus:
+  - Edit menu: Undo, Redo, Cut, Copy, Paste, Select All
+  - View menu: Reload, Toggle DevTools, Zoom controls, Fullscreen
+  - Window menu: Minimize, Close, Show Main Window
+  - macOS: App menu first with About, Hide, Hide Others, Quit
+  - Windows/Linux: File menu with Quit option
+  - Help menu with GitHub link
+- Use MenuItemConstructorOptions type for menu items
+- Use 'role' for standard actions to get native behavior and accelerators
+- macOS role values: 'hide', 'hideOthers', 'unhide', 'front', 'togglefullscreen'
+- Call Menu.setApplicationMenu(menu) to apply the menu
+- Typecheck and lint pass
+- **Files changed:**
+  - `apps/client/src/main/index.ts` - Added createApplicationMenu() and Menu import
+- **Learnings for future iterations:**
+  - Use `role: 'hideOthers'` (camelCase) not 'hideothers' - TypeScript will catch this
+  - Standard roles like 'undo', 'redo', 'cut', 'copy', 'paste' automatically get native accelerators
+  - macOS requires app menu as first item with app name
+  - Windows/Linux should have File menu with Quit option
+  - Menu builds from template array of MenuItemConstructorOptions
+---
+
 ## Codebase Patterns
 - Use `routing-controllers` decorators (@Get, @Post, etc.) for API endpoints
 - All services use TypeDI `@Service()` decorator for dependency injection

@@ -10,6 +10,7 @@ import {
 } from 'electron';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import fs from 'node:fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -67,6 +68,46 @@ function createWindow(): void {
       shell.openExternal(url);
     }
     return { action: 'deny' };
+  });
+
+  // Prevent navigation from drag-and-drop (will-navigate)
+  mainWindow.webContents.on('will-navigate', (event) => {
+    // Only prevent navigation if it's a file drop (not from user clicking links)
+    // The URL will typically be file:// when files are dropped
+    if (event.url.startsWith('file://')) {
+      event.preventDefault();
+    }
+  });
+
+  // Handle file drag and drop events from the webContents
+  // @ts-expect-error - webContents drag events are not fully typed in Electron types
+  mainWindow.webContents.on('drag-enter', (event: Electron.Event) => {
+    event.preventDefault();
+  });
+
+  // @ts-expect-error - webContents drag events are not fully typed in Electron types
+  mainWindow.webContents.on('drag-over', (event: Electron.Event) => {
+    event.preventDefault();
+  });
+
+  // @ts-expect-error - webContents drag events are not fully typed in Electron types
+  mainWindow.webContents.on('drop', (event: Electron.Event, files: string[]) => {
+    event.preventDefault();
+    if (!files || !Array.isArray(files)) return;
+
+    // Filter to only include files (not directories) and return absolute paths
+    const filePaths = files.filter((filePath) => {
+      try {
+        const stats = fs.statSync(filePath);
+        return stats.isFile();
+      } catch {
+        return false;
+      }
+    });
+
+    if (filePaths.length > 0 && mainWindow) {
+      mainWindow.webContents.send('files-dropped', filePaths);
+    }
   });
 
   if (VITE_DEV_SERVER_URL) {
