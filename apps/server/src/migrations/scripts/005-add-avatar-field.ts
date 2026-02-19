@@ -23,7 +23,7 @@ export const addAvatarToUsersMigration: Migration = {
       const newColumns = [
         {
           name: 'avatar',
-          valueSql: 'CAST(NULL AS VARCHAR)',
+          valueSql: 'CAST(NULL AS STRING)',
         },
       ];
 
