@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import fs from 'node:fs';
 import Store from 'electron-store';
+import { autoUpdater } from 'electron-updater';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -283,6 +284,21 @@ function createTray(): void {
   });
 }
 
+// Auto-update setup
+function setupAutoUpdater(): void {
+  // Configure autoUpdater to use GitHub releases (default behavior)
+  autoUpdater.checkForUpdatesAndNotify().catch((err) => {
+    console.warn('Failed to check for updates:', err);
+  });
+}
+
+// Manual check for updates - can be called from menu
+function checkForUpdates(): void {
+  autoUpdater.checkForUpdatesAndNotify().catch((err) => {
+    console.warn('Failed to check for updates:', err);
+  });
+}
+
 function createApplicationMenu(): void {
   const isMac = process.platform === 'darwin';
 
@@ -403,6 +419,13 @@ function createApplicationMenu(): void {
     role: 'help',
     submenu: [
       {
+        label: '检查更新',
+        click: () => {
+          checkForUpdates();
+        },
+      },
+      { type: 'separator' },
+      {
         label: '访问 GitHub',
         click: () => {
           shell.openExternal('https://github.com/ximing/aimo');
@@ -458,6 +481,25 @@ app.whenReady().then(() => {
   createTray();
   registerGlobalShortcuts();
   createApplicationMenu();
+
+  // Check for updates 3 seconds after app startup
+  setTimeout(() => {
+    setupAutoUpdater();
+  }, 3000);
+});
+
+// Auto-updater event handlers
+autoUpdater.on('update-available', () => {
+  // System notification is handled automatically by checkForUpdatesAndNotify()
+  console.log('Update available - will be downloaded automatically');
+});
+
+autoUpdater.on('update-downloaded', () => {
+  console.log('Update downloaded - will be installed on quit');
+});
+
+autoUpdater.on('error', (err) => {
+  console.warn('Auto-updater error:', err);
 });
 
 // Unregister all shortcuts when app is about to quit
