@@ -40,7 +40,7 @@ export interface ExtractedContent {
   sourceTitle: string;
 }
 
-/** API Response wrapper */
+/** API Response wrapper from AIMO server */
 export interface ApiResponse<T> {
   /** Whether the request was successful */
   success: boolean;
@@ -52,40 +52,74 @@ export interface ApiResponse<T> {
 
 /** Login request payload */
 export interface LoginRequest {
-  username: string;
+  email: string;
   password: string;
+}
+
+/** User info from API */
+export interface UserInfo {
+  uid: string;
+  email: string;
+  nickname?: string;
 }
 
 /** Login response */
 export interface LoginResponse {
   token: string;
-  user: {
-    id: string;
-    username: string;
-  };
+  user: UserInfo;
+}
+
+/** Attachment DTO */
+export interface Attachment {
+  attachmentId: string;
+  filename: string;
+  url: string;
+  type: string;
+  size: number;
+  createdAt: number;
+}
+
+/** Upload attachment response */
+export interface UploadAttachmentResponse {
+  message: string;
+  attachment: Attachment;
 }
 
 /** Create memo request */
 export interface CreateMemoRequest {
   content: string;
-  sourceUrl: string;
-  attachmentIds?: string[];
+  type?: 'text' | 'audio' | 'video';
+  categoryId?: string;
+  attachments?: string[];
+  relationIds?: string[];
 }
 
-/** Memo response from API */
-export interface MemoResponse {
-  id: string;
+/** Memo DTO */
+export interface Memo {
+  memoId: string;
+  uid: string;
   content: string;
-  sourceUrl: string;
-  createdAt: string;
-  updatedAt: string;
+  type: 'text' | 'audio' | 'video';
+  categoryId?: string;
+  attachments?: string[];
+  createdAt: number;
+  updatedAt: number;
 }
 
-/** Attachment upload response */
-export interface AttachmentResponse {
-  id: string;
-  filename: string;
-  url: string;
-  size: number;
-  mimeType: string;
+/** Create memo response */
+export interface CreateMemoResponse {
+  message: string;
+  memo: Memo;
+}
+
+/** API Error class for consistent error handling */
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status?: number,
+    public readonly code?: string
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
 }
