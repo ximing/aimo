@@ -16,8 +16,8 @@
         "Typecheck passes"
       ],
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented LangChain DeepAgents backend with ExploreService, retrieval/analysis/generation agents, and /explore API endpoint"
     },
     {
       "id": "US-002",
@@ -32,8 +32,8 @@
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented relation analysis agent with backlink support and attachment understanding agent for images/PDFs. Summary agent now integrates all outputs. Parallel execution ensures sub-5s performance (excluding LLM)."
     },
     {
       "id": "US-003",

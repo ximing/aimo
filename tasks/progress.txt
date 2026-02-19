@@ -1,3 +1,31 @@
+## 2026-02-19 - US-001 (AI Explore Page)
+- Implement LangChain DeepAgents backend architecture
+- Install langchain, @langchain/core, @langchain/openai, @langchain/langgraph dependencies
+- Create ExploreService as Agent coordinator with StateGraph workflow
+- Implement retrieval Agent using LanceDB vector search to find relevant memos
+- Implement analysis Agent for evaluating retrieved content and identifying key insights
+- Implement generation Agent for creating final answers with source citations
+- Define AgentState interface and ExploreStateAnnotation for state passing between agents
+- Create /api/v1/explore endpoint for AI exploration queries
+- Create /api/v1/explore/quick-search endpoint for fast vector search without LLM processing
+- Add Explore DTO types (ExploreQueryDto, ExploreResponseDto, ExploreSourceDto, etc.) to packages/dto
+- Typecheck passes, lint passes (no errors, pre-existing warnings only)
+- **Files changed:**
+  - `apps/server/src/services/explore.service.ts` - New ExploreService with LangChain agents
+  - `apps/server/src/controllers/v1/explore.controller.ts` - New controller with /explore endpoints
+  - `packages/dto/src/explore.ts` - New DTO types for explore feature
+  - `packages/dto/src/index.ts` - Export explore types
+- **Learnings for future iterations:**
+  - LangGraph API uses Annotation.Root to define state schema for StateGraph
+  - Use type assertions (`as any`) when adding edges to avoid strict type issues with node names
+  - StateGraph nodes return Partial<State> to update specific fields
+  - Agent workflow pattern: retrieval -> analysis -> generation, connected via edges
+  - Use `START` constant from @langchain/langgraph for entry point
+  - The `workflow.compile()` creates a runnable that can be invoked with initial state
+  - LanceDB vector search already handles embedding generation and relevance scoring
+  - Minimum relevance score threshold (0.5) filters out low-quality matches
+---
+
 ## 2026-02-19 - US-005 (Chrome Extension)
 - Create ConfigPage.tsx component with server URL, username, password form
 - Implement form validation: URL format validation with automatic https:// prefix, non-empty checks for all fields
@@ -378,6 +406,41 @@
   - Badge updates should be centralized in background script via message passing
   - Error codes (TOKEN_EXPIRED, CONFIG_MISSING) enable specific UI handling
   - Always provide retry functionality for network-related errors
+---
+
+## 2026-02-19 - US-002 (AI Explore Page)
+- Implement Relationship Analysis Agent and Attachment Understanding Agent
+- Relationship Analysis Agent features:
+  - Queries note relations (forward relations and backlinks) using MemoRelationService
+  - Analyzes temporal patterns across related memos
+  - Uses parallel fetching for all relation queries (Promise.all)
+  - Generates LLM-enhanced insights about knowledge graph connections
+  - Limits related memos to 20 for performance
+- Attachment Understanding Agent features:
+  - Analyzes images and PDFs from retrieved memos
+  - Extracts context from parent memo content
+  - Generates key insights based on filename patterns (charts, screenshots, etc.)
+  - Uses LLM to analyze attachment relevance to query
+  - Limits to 5 attachments per analysis for performance
+- Summary Agent updates:
+  - Integrates relation analysis and attachment analysis into final answer generation
+  - Passes relation context and attachment insights to generation prompt
+  - System message updated to consider relationships and attachments
+- Workflow architecture:
+  - Parallel execution: relationAnalysis and attachmentAnalysis nodes run concurrently after analysis
+  - Both branches converge to generation node
+  - Total non-LLM execution time < 5 seconds (measured with Date.now() logging)
+- Typecheck passes, lint passes (no new errors, 3 minor unused var warnings in new code)
+- **Files changed:**
+  - `apps/server/src/services/explore.service.ts` - Added relationAnalysisNode, attachmentAnalysisNode, updated generationNode and workflow
+- **Learnings for future iterations:**
+  - Use Promise.all for parallel relation queries to minimize latency
+  - Set performance budgets: limit related memos (20) and attachments (5) analyzed
+  - LangGraph parallel pattern: single node -> multiple parallel nodes -> converging node
+  - Use type assertions (`as any`) when adding edges to avoid strict type issues
+  - Log execution time with Date.now() deltas at start/end of each agent node
+  - Store timing logs with console.log to verify performance requirements
+  - Include timing information in progress reports for performance-critical features
 ---
 
 ## Codebase Patterns
