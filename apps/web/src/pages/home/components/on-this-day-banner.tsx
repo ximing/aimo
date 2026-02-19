@@ -67,9 +67,26 @@ export const OnThisDayBanner = view(() => {
     setSelectedMemoId(null);
   };
 
-  // If no memos and not loading, hide the banner
+  // If no memos and not loading, show empty state message
   if (!isLoading && memos.length === 0) {
-    return null;
+    return (
+      <div className="w-full py-3 border-b border-gray-100 dark:border-dark-800">
+        {/* Header */}
+        <div className="flex items-center gap-2 px-4 mb-2">
+          <Clock className="w-4 h-4 text-primary-500" />
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            历史的今天
+          </span>
+        </div>
+
+        {/* Empty state */}
+        <div className="flex items-center justify-center h-16 px-4">
+          <span className="text-sm text-gray-400 dark:text-gray-500">
+            暂无数据
+          </span>
+        </div>
+      </div>
+    );
   }
 
   return (

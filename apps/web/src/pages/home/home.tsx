@@ -168,27 +168,21 @@ export const HomePage = view(() => {
             <div className="w-[300px] h-full flex flex-col p-4 pt-5 overflow-y-auto">
               {/* Heatmap Section */}
               <div className="flex-shrink-0">
-                <div className="flex items-center justify-end mb-0">
+<div className="flex items-center justify-end mb-0">
 {toggleButton}
 </div>
-{memoService.activityLoading ? (
-                  <div className="h-32 flex items-center justify-center">
-                    <div className="w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
-                  </div>
-) : (
 <CalendarHeatmap
-data={memoService.activityData}
-                    selectedDate={memoService.selectedDate}
-                    onDateSelect={(date) => {
+  data={memoService.activityData}
+  selectedDate={memoService.selectedDate}
+  onDateSelect={(date) => {
                       // Toggle date filter: if clicking the same date, clear the filter
                       if (memoService.selectedDate === date) {
                         memoService.setSelectedDate(null);
                       } else {
                         memoService.setSelectedDate(date);
                       }
-                    }}
-                  />
-                )}
+                  }}
+                />
               </div>
 
               {/* On This Day Banner - Below heatmap */}
