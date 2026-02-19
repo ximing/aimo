@@ -1,3 +1,19 @@
+## 2026-02-19 - US-005 (Electron Client)
+- Implement system-level global shortcuts
+- Register CommandOrControl+Shift+A to toggle window visibility
+- Add toggleWindowVisibility() helper function for reuse
+- Add registerGlobalShortcuts() called on app ready
+- Add will-quit handler to call globalShortcut.unregisterAll()
+- Typecheck and lint pass
+- **Files changed:**
+  - `apps/client/src/main/index.ts` - Added globalShortcut import, toggleWindowVisibility(), registerGlobalShortcuts(), and will-quit handler
+- **Learnings for future iterations:**
+  - Use `globalShortcut.register()` with accelerator string like 'CommandOrControl+Shift+A'
+  - Always unregister shortcuts on app quit to avoid conflicts
+  - The toggle pattern: visible -> hide(), hidden -> show() + focus()
+  - can check registration success with the boolean returned from register()
+---
+
 ## Codebase Patterns
 - Use `routing-controllers` decorators (@Get, @Post, etc.) for API endpoints
 - All services use TypeDI `@Service()` decorator for dependency injection

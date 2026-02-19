@@ -82,8 +82,8 @@
         "手动验证快捷键正常工作"
       ],
       "priority": 5,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Global shortcut CommandOrControl+Shift+A registered to toggle window visibility, unregistered on app quit"
     },
     {
       "id": "US-006",
