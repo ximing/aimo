@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "AIMO - AI Knowledge Manager",
+  "version": "0.0.1",
+  "description": "快速提取和保存网页内容到 AIMO 知识库",
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "action": {
+    "default_popup": "src/popup/index.html",
+    "default_icon": {
+      "16": "icon-16.png",
+      "32": "icon-32.png",
+      "48": "icon-48.png",
+      "128": "icon-128.png"
+    }
+  },
+  "icons": {
+    "16": "icon-16.png",
+    "32": "icon-32.png",
+    "48": "icon-48.png",
+    "128": "icon-128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/content/index.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "background": {
+    "service_worker": "src/background/index.js",
+    "type": "module"
+  }
+}

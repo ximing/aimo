@@ -14,6 +14,7 @@ const WHITELIST_PREFIXES = [
   '/fonts/', // Static assets (JS, CSS, images)
   '/open', // Open API endpoints
   '/logo.png', // Logo image
+  '/logo-dark.png', // Dark logo image
   '/vite.svg', // Favicon and public assets
   '/favicon', // Favicon
 ];
