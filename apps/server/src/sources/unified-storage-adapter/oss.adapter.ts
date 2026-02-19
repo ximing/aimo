@@ -210,9 +210,13 @@ export class OSSUnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
         return this.generateDirectUrl(fullKey, metadata);
       }
 
+      // Determine content type from file extension
+      const contentType = this.getContentType(fullKey);
+
       // For private buckets, generate signed URL
       const url = await this.client.signatureUrl(fullKey, {
         expires: expiresIn,
+        ContentType: contentType,
       });
 
       console.log(`Generated signed URL for key: ${fullKey} (expires in ${expiresIn}s)`);
@@ -221,6 +225,22 @@ export class OSSUnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
       console.error(`Failed to generate access URL for OSS key: ${key}`, error);
       throw error;
     }
+  }
+
+  /**
+   * Get content type from file extension
+   */
+  private getContentType(key: string): string {
+    const ext = key.split('.').pop()?.toLowerCase() || '';
+    const mimeTypes: Record<string, string> = {
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      png: 'image/png',
+      gif: 'image/gif',
+      webp: 'image/webp',
+      svg: 'image/svg+xml',
+    };
+    return mimeTypes[ext] || 'application/octet-stream';
   }
 
   /**

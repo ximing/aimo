@@ -261,9 +261,13 @@ export class S3UnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
       // Use metadata bucket if provided, otherwise use adapter's bucket
       const bucket = metadata?.bucket || this.bucket;
 
+      // Determine content type from file extension
+      const contentType = this.getContentType(fullKey);
+
       const command = new GetObjectCommand({
         Bucket: bucket,
         Key: fullKey,
+        ResponseContentType: contentType,
       });
 
       const presignedUrl = await getSignedUrl(this.s3Client, command, {
@@ -276,6 +280,22 @@ export class S3UnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
       console.error(`Failed to generate access URL for S3 key: ${key}`, error);
       throw error;
     }
+  }
+
+  /**
+   * Get content type from file extension
+   */
+  private getContentType(key: string): string {
+    const ext = key.split('.').pop()?.toLowerCase() || '';
+    const mimeTypes: Record<string, string> = {
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      png: 'image/png',
+      gif: 'image/gif',
+      webp: 'image/webp',
+      svg: 'image/svg+xml',
+    };
+    return mimeTypes[ext] || 'application/octet-stream';
   }
 
   /**
