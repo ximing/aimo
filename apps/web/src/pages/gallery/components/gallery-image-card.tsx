@@ -8,6 +8,7 @@ import { view, useService } from '@rabjs/react';
 import { Play, FileText, Music, Trash2 } from 'lucide-react';
 import type { AttachmentDto } from '@aimo/dto';
 import { AttachmentService } from '../../../services/attachment.service';
+import { toast } from '../../../services/toast.service';
 import { ConfirmDeleteModal } from '../../home/components/confirm-delete-modal';
 
 interface GalleryImageCardProps {
@@ -47,7 +48,7 @@ export const GalleryImageCard = view(({ attachment, onClick, onDelete }: Gallery
       onDelete?.(attachment.attachmentId);
     } catch (err) {
       console.error('Failed to delete attachment:', err);
-      alert('删除失败，请重试');
+      toast.error('删除失败，请重试');
     } finally {
       setIsDeleting(false);
     }

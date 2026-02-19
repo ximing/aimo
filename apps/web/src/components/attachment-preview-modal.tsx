@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from 'react';
 import { view, useService } from '@rabjs/react';
 import { X, ChevronLeft, ChevronRight, Trash2, ZoomIn, ZoomOut } from 'lucide-react';
 import { AttachmentService } from '../services/attachment.service';
+import { toast } from '../services/toast.service';
 import { ConfirmDeleteModal } from '../pages/home/components/confirm-delete-modal';
 
 interface AttachmentPreviewModalProps {
@@ -98,7 +99,7 @@ const AttachmentPreviewModalContent = view(({ isOpen, onClose }: AttachmentPrevi
       }
     } catch (err) {
       console.error('Failed to delete attachment:', err);
-      alert('删除失败，请重试');
+      toast.error('删除失败，请重试');
     } finally {
       setIsDeleting(false);
     }

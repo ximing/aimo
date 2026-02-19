@@ -5,10 +5,12 @@ import SettingsPage from './pages/settings';
 import AIExplorePage from './pages/ai-explore';
 import GalleryPage from './pages/gallery';
 import { ProtectedRoute } from './components/protected-route';
+import { ToastContainer } from './components/toast';
 
 function App() {
   return (
     <BrowserRouter>
+      <ToastContainer />
       <Routes>
         <Route path="/auth" element={<AuthPage />} />
         <Route

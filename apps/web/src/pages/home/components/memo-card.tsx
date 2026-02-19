@@ -10,6 +10,7 @@ import { ConfirmDeleteModal } from './confirm-delete-modal';
 import { MemoEditorForm } from '../../../components/memo-editor-form';
 import { AttachmentPreviewModal } from '../../../components/attachment-preview-modal';
 import { downloadFileFromUrl } from '../../../utils/download';
+import { toast } from '../../../services/toast.service';
 
 interface MemoCardProps {
   memo: MemoListItemDto | MemoListItemWithScoreDto;
@@ -88,7 +89,7 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
       await downloadFileFromUrl(attachment.url, attachment.filename);
     } catch (error) {
       console.error('Download failed:', error);
-      alert('下载失败，请重试');
+      toast.error('下载失败，请重试');
     } finally {
       setIsDownloading(null);
     }

@@ -8,6 +8,7 @@ import { MemoService } from './services/memo.service.ts';
 import { ThemeService } from './services/theme.service';
 import { AttachmentService } from './services/attachment.service';
 import { CategoryService } from './services/category.service';
+import { ToastService } from './services/toast.service';
 /**
  * Register services globally
  * These are accessible throughout the entire application
@@ -17,7 +18,8 @@ register(AttachmentService);
 register(AuthService);
 register(MemoService);
 register(ThemeService);
-register(CategoryService)
+register(CategoryService);
+register(ToastService);
 // Initialize theme before rendering
 resolve(ThemeService).loadTheme();
 

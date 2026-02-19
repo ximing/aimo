@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { view, useService } from '@rabjs/react';
 import { AuthService } from '../../../services/auth.service';
 import { Save, Camera, User as UserIcon } from 'lucide-react';
+import { toast } from '../../../services/toast.service';
 
 export const AccountSettings = view(() => {
   const authService = useService(AuthService);
@@ -29,13 +30,13 @@ export const AccountSettings = view(() => {
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      alert('请选择图片文件');
+      toast.warning('请选择图片文件');
       return;
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert('图片大小不能超过 5MB');
+      toast.warning('图片大小不能超过 5MB');
       return;
     }
 
@@ -53,12 +54,12 @@ export const AccountSettings = view(() => {
       } else {
         // Revert to old avatar on failure
         setAvatarPreview(user?.avatar);
-        alert(result.message || '头像上传失败');
+        toast.error(result.message || '头像上传失败');
       }
     } catch (error) {
       console.error('Avatar upload error:', error);
       setAvatarPreview(user?.avatar);
-      alert('头像上传失败');
+      toast.error('头像上传失败');
     } finally {
       setIsUploadingAvatar(false);
       // Clean up preview URL
@@ -72,16 +73,31 @@ export const AccountSettings = view(() => {
     }
   };
 
-  const handleUpdateUserInfo = (e: React.FormEvent) => {
+  const handleUpdateUserInfo = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement user info update API call
-    console.log('Update user info:', { nickname, email });
+
+    if (!authService.user) {
+      toast.warning('用户信息未加载');
+      return;
+    }
+
+    const trimmedNickname = nickname.trim();
+    const result = await authService.updateUserInfo({ nickname: trimmedNickname });
+
+    if (result.success) {
+      setNickname(result.user?.nickname ?? trimmedNickname);
+      setEmail(result.user?.email ?? email);
+      toast.success(result.message || '保存成功');
+      return;
+    }
+
+    toast.error(result.message || '保存失败');
   };
 
   const handleUpdatePassword = (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
-      alert('新密码和确认密码不匹配');
+      toast.warning('新密码和确认密码不匹配');
       return;
     }
     // TODO: Implement password update API call
