@@ -7,10 +7,12 @@ import {
   nativeImage,
   globalShortcut,
   type MenuItemConstructorOptions,
+  screen,
 } from 'electron';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import fs from 'node:fs';
+import Store from 'electron-store';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -41,10 +43,72 @@ let mainWindow: BrowserWindow | null;
 let tray: Tray | null = null;
 let isQuiting = false;
 
-function createWindow(): void {
-  mainWindow = new BrowserWindow({
+// Window state store for saving/restoring window bounds and maximized state
+interface WindowState {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  isMaximized: boolean;
+}
+
+const windowStore = new Store<WindowState>({
+  name: 'window-state',
+  defaults: {
+    x: 0,
+    y: 0,
     width: 1200,
     height: 800,
+    isMaximized: false,
+  },
+});
+
+function saveWindowState(): void {
+  if (!mainWindow) return;
+
+  const isMaximized = mainWindow.isMaximized();
+
+  // Save maximized state
+  windowStore.set('isMaximized', isMaximized);
+
+  // Only save bounds if not maximized (maximized bounds are not useful)
+  if (!isMaximized) {
+    const bounds = mainWindow.getBounds();
+    windowStore.set('x', bounds.x);
+    windowStore.set('y', bounds.y);
+    windowStore.set('width', bounds.width);
+    windowStore.set('height', bounds.height);
+  }
+}
+
+function createWindow(): void {
+  // Load saved window state
+  const savedState = windowStore.store;
+
+  // Check if the saved display is still available
+  const displays = screen.getAllDisplays();
+  const isOnValidDisplay = displays.some((display) => {
+    const { x, y, width, height } = display.bounds;
+    return (
+      savedState.x >= x - width &&
+      savedState.x <= x + width &&
+      savedState.y >= y - height &&
+      savedState.y <= y + height
+    );
+  });
+
+  // Use saved bounds if on valid display, otherwise use default
+  const windowBounds = isOnValidDisplay
+    ? {
+        x: savedState.x,
+        y: savedState.y,
+        width: savedState.width,
+        height: savedState.height,
+      }
+    : { width: 1200, height: 800 };
+
+  mainWindow = new BrowserWindow({
+    ...windowBounds,
     minWidth: 800,
     minHeight: 600,
     show: false,
@@ -56,6 +120,11 @@ function createWindow(): void {
       sandbox: false,
     },
   });
+
+  // Restore maximized state after window is created
+  if (savedState.isMaximized && isOnValidDisplay) {
+    mainWindow.maximize();
+  }
 
   // Test active push message to Renderer-process.
   mainWindow.webContents.on('did-finish-load', () => {
@@ -124,8 +193,13 @@ function createWindow(): void {
   // Handle close to tray - prevent default close and hide window instead
   mainWindow.on('close', (event) => {
     if (!isQuiting) {
+      // Save window state before hiding
+      saveWindowState();
       event.preventDefault();
       mainWindow?.hide();
+    } else {
+      // Save window state before quitting
+      saveWindowState();
     }
   });
 }

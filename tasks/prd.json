@@ -134,8 +134,8 @@
         "手动验证窗口状态正确保存和恢复"
       ],
       "priority": 8,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Window state management using electron-store with bounds save/restore and display validation"
     },
     {
       "id": "US-009",

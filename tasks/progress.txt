@@ -1,3 +1,24 @@
+## 2026-02-19 - US-008 (Electron Client)
+- Implement window state management using electron-store
+- Add WindowState interface with x, y, width, height, isMaximized properties
+- Create windowStore with electron-store for persistence (stored in userData)
+- Implement saveWindowState() to save bounds and maximized state on window close
+- Add display validation using screen.getAllDisplays() to ensure window is on valid monitor
+- Restore saved bounds when creating window, fallback to defaults if display invalid
+- Restore maximized state after window creation if previously maximized
+- Save state both when hiding to tray (close button) and when actually quitting
+- Typecheck and lint pass
+- **Files changed:**
+  - `apps/client/src/main/index.ts` - Added window state management with electron-store
+- **Learnings for future iterations:**
+  - electron-store automatically stores data in `app.getPath('userData')`/window-state.json
+  - Always validate saved window bounds against available displays - monitors may be disconnected
+  - Use `mainWindow.getBounds()` to get current position and size
+  - Check `mainWindow.isMaximized()` before saving bounds - maximized bounds aren't useful for restoration
+  - Import `screen` from electron to access display information
+  - Store TypeScript interface helps ensure type safety for stored data
+---
+
 ## 2026-02-19 - US-007 (Electron Client)
 - Implement local file drag-and-drop support
 - Add will-navigate handler to prevent page navigation on file drop
@@ -63,6 +84,12 @@
 ---
 
 ## Codebase Patterns
+- Use `electron-store` for persisting user preferences and window state to `app.getPath('userData')`
+- Always validate saved window bounds against available displays using `screen.getAllDisplays()`
+- Save window state on 'close' event before hiding or quitting
+- Store both bounds (x, y, width, height) and isMaximized state separately
+- When restoring, only apply bounds if the display is still valid (prevents off-screen windows)
+
 - Use `routing-controllers` decorators (@Get, @Post, etc.) for API endpoints
 - All services use TypeDI `@Service()` decorator for dependency injection
 - Controllers return `ResponseUtil.success()` or `ResponseUtil.error()` for consistent responses
