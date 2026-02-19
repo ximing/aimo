@@ -5,6 +5,7 @@ import type { Config } from '../types/index.js';
 
 interface ConfigPageProps {
   onConfigSaved: (config: Config) => void;
+  initialErrorMessage?: string;
 }
 
 interface FormErrors {
@@ -14,12 +15,12 @@ interface FormErrors {
   general?: string;
 }
 
-export function ConfigPage({ onConfigSaved }: ConfigPageProps) {
+export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPageProps) {
   const [url, setUrl] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState<FormErrors>({});
+  const [errors, setErrors] = useState<FormErrors>(initialErrorMessage ? { general: initialErrorMessage } : {});
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   // Detect dark mode preference

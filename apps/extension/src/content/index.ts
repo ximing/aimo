@@ -359,14 +359,78 @@ async function handleSaveClick(): Promise<void> {
       hideToolbar();
     } else {
       console.error('Failed to save content:', response?.error);
-      // Still try to open popup - the content script can retry
-      chrome.runtime.sendMessage({ type: 'OPEN_POPUP' });
+      // Show error to user
+      showNotification(response?.error || '保存失败，请检查扩展配置', 'error');
     }
   } catch (error) {
     console.error('Error saving content:', error);
-    // Fallback: open popup anyway
-    chrome.runtime.sendMessage({ type: 'OPEN_POPUP' });
+    showNotification('保存失败，请检查网络连接', 'error');
   }
+}
+
+/**
+ * Show a notification message on the page
+ * @param message - Message to display
+ * @param type - Notification type ('success' | 'error')
+ */
+function showNotification(message: string, type: 'success' | 'error'): void {
+  // Create notification element
+  const notification = document.createElement('div');
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    background: ${type === 'error' ? '#dc2626' : '#16a34a'};
+    color: white;
+    border-radius: 8px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 2147483647;
+    animation: aimo-notification-slide-in 0.3s ease-out;
+  `;
+  notification.textContent = message;
+
+  // Add animation styles if not already present
+  if (!document.getElementById('aimo-notification-styles')) {
+    const style = document.createElement('style');
+    style.id = 'aimo-notification-styles';
+    style.textContent = `
+      @keyframes aimo-notification-slide-in {
+        from {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+      @keyframes aimo-notification-slide-out {
+        from {
+          transform: translateX(0);
+          opacity: 1;
+        }
+        to {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  document.body.appendChild(notification);
+
+  // Remove after 3 seconds
+  setTimeout(() => {
+    notification.style.animation = 'aimo-notification-slide-out 0.3s ease-out';
+    setTimeout(() => {
+      notification.remove();
+    }, 300);
+  }, 3000);
 }
 
 /**

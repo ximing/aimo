@@ -5,6 +5,7 @@ import type { Config } from '../types/index.js';
 interface MainPageProps {
   config: Config;
   onOpenSettings: () => void;
+  onAuthError?: () => void;
 }
 
 // Settings icon SVG component
@@ -26,7 +27,7 @@ function SettingsIcon() {
   );
 }
 
-export function MainPage({ config, onOpenSettings }: MainPageProps) {
+export function MainPage({ config, onOpenSettings, onAuthError }: MainPageProps) {
   // Initialize dark mode state without effect
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -126,7 +127,7 @@ export function MainPage({ config, onOpenSettings }: MainPageProps) {
         </button>
       </div>
 
-      <ContentList isDarkMode={isDarkMode} />
+      <ContentList isDarkMode={isDarkMode} onAuthError={onAuthError} />
     </div>
   );
 }

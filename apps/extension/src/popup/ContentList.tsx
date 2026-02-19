@@ -12,9 +12,10 @@ import { ApiError } from '../types/index.js';
 
 interface ContentListProps {
   isDarkMode: boolean;
+  onAuthError?: () => void;
 }
 
-export function ContentList({ isDarkMode }: ContentListProps) {
+export function ContentList({ isDarkMode, onAuthError }: ContentListProps) {
   const [pendingItems, setPendingItems] = useState<PendingItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [uploadingItems, setUploadingItems] = useState<Set<string>>(new Set());
@@ -137,6 +138,12 @@ export function ContentList({ isDarkMode }: ContentListProps) {
     } catch (error) {
       console.error('Failed to upload image:', error);
 
+      // Handle token expiration - redirect to login
+      if (error instanceof ApiError && error.code === 'TOKEN_EXPIRED') {
+        onAuthError?.();
+        return;
+      }
+
       // Get error message
       let errorMessage = '上传失败，请重试';
       if (error instanceof ApiError) {
@@ -199,6 +206,11 @@ export function ContentList({ isDarkMode }: ContentListProps) {
     }
   };
 
+  const handleRetrySave = () => {
+    setSaveError(null);
+    handleSaveToAIMO();
+  };
+
   const handleSaveToAIMO = async () => {
     if (pendingItems.length === 0) return;
 
@@ -253,6 +265,32 @@ export function ContentList({ isDarkMode }: ContentListProps) {
           setSaveProgress({ completed: completedCount, total: pendingItems.length });
         } catch (error) {
           console.error(`Failed to save item ${item.id}:`, error);
+
+          // Handle token expiration - redirect to login
+          if (error instanceof ApiError && error.code === 'TOKEN_EXPIRED') {
+            setSaveError('登录已过期，请重新登录');
+            setIsSaving(false);
+            // Call onAuthError to redirect to config page
+            onAuthError?.();
+            return;
+          }
+
+          // Handle config missing
+          if (error instanceof ApiError && error.code === 'CONFIG_MISSING') {
+            setSaveError('请先配置服务器地址');
+            setIsSaving(false);
+            onAuthError?.();
+            return;
+          }
+
+          // Handle token missing
+          if (error instanceof ApiError && error.code === 'TOKEN_MISSING') {
+            setSaveError('请先登录');
+            setIsSaving(false);
+            onAuthError?.();
+            return;
+          }
+
           // Add to failed items list
           failedItems.push(item);
 
@@ -428,7 +466,24 @@ export function ContentList({ isDarkMode }: ContentListProps) {
       fontSize: '12px',
       display: 'flex',
       alignItems: 'center',
+      justifyContent: 'space-between',
       gap: '8px',
+    },
+    errorMessageContent: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      flex: 1,
+    },
+    retryButton: {
+      padding: '4px 10px',
+      fontSize: '12px',
+      fontWeight: 500,
+      color: isDarkMode ? '#fca5a5' : '#dc2626',
+      backgroundColor: isDarkMode ? '#991b1b' : '#fee2e2',
+      border: 'none',
+      borderRadius: '4px',
+      cursor: 'pointer',
     },
     successMessage: {
       marginTop: '12px',
@@ -556,8 +611,28 @@ export function ContentList({ isDarkMode }: ContentListProps) {
 
       {saveError && (
         <div style={styles.errorMessage}>
-          <span>⚠️</span>
-          <span>{saveError}</span>
+          <div style={styles.errorMessageContent}>
+            <span>⚠️</span>
+            <span>{saveError}</span>
+          </div>
+          {!isSaving && (
+            <button
+              onClick={handleRetrySave}
+              style={styles.retryButton}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = isDarkMode
+                  ? '#b91c1c'
+                  : '#fecaca';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = isDarkMode
+                  ? '#991b1b'
+                  : '#fee2e2';
+              }}
+            >
+              重试
+            </button>
+          )}
         </div>
       )}
 

@@ -1,8 +1,25 @@
 // Service worker for Chrome Extension
-import { addPendingItem, getPendingItemsCount } from '../storage';
+import { addPendingItem, getPendingItemsCount, clearPendingItems } from '../storage';
 import type { ExtractedContent } from '../types';
 
 console.log('AIMO background service worker started');
+
+/**
+ * Set the extension badge with a specific count
+ * @param count - Number to display on badge (0 to clear)
+ */
+export async function setBadge(count: number): Promise<void> {
+  try {
+    if (count > 0) {
+      await chrome.action.setBadgeText({ text: String(count) });
+      await chrome.action.setBadgeBackgroundColor({ color: '#3b82f6' });
+    } else {
+      await chrome.action.setBadgeText({ text: '' });
+    }
+  } catch (error) {
+    console.error('Failed to set badge:', error);
+  }
+}
 
 /**
  * Update the extension badge with pending items count
@@ -10,12 +27,7 @@ console.log('AIMO background service worker started');
 async function updateBadge(): Promise<void> {
   try {
     const count = await getPendingItemsCount();
-    if (count > 0) {
-      await chrome.action.setBadgeText({ text: String(count) });
-      await chrome.action.setBadgeBackgroundColor({ color: '#3b82f6' });
-    } else {
-      await chrome.action.setBadgeText({ text: '' });
-    }
+    await setBadge(count);
   } catch (error) {
     console.error('Failed to update badge:', error);
   }
@@ -85,6 +97,35 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           console.error('Failed to update badge:', error);
           sendResponse({ success: false, error: String(error) });
         });
+      return true;
+
+    case 'CLEAR_ALL_ITEMS':
+      clearPendingItems()
+        .then(() => updateBadge())
+        .then(() => {
+          sendResponse({ success: true });
+        })
+        .catch((error) => {
+          console.error('Failed to clear all items:', error);
+          sendResponse({
+            success: false,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        });
+      return true;
+
+    case 'SET_BADGE':
+      {
+        const { count } = message.data as { count: number };
+        setBadge(count)
+          .then(() => {
+            sendResponse({ success: true });
+          })
+          .catch((error) => {
+            console.error('Failed to set badge:', error);
+            sendResponse({ success: false, error: String(error) });
+          });
+      }
       return true;
 
     case 'GET_TAB_INFO':

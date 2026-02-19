@@ -10,6 +10,7 @@ function App() {
   const [viewState, setViewState] = useState<ViewState>('loading');
   const [config, setConfigState] = useState<Config | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [configErrorMessage, setConfigErrorMessage] = useState<string | undefined>(undefined);
 
   // Check if user is already configured on mount
   useEffect(() => {
@@ -19,12 +20,19 @@ function App() {
         if (savedConfig?.url && savedConfig?.token) {
           setConfigState(savedConfig);
           setViewState('main');
+        } else if (savedConfig?.url && !savedConfig?.token) {
+          // Has URL but no token - token expired or logged out
+          setConfigErrorMessage('登录已过期，请重新登录');
+          setViewState('config');
         } else {
+          // No config at all
+          setConfigErrorMessage('请先配置服务器地址和登录信息');
           setViewState('config');
         }
       } catch (err) {
         console.error('Failed to load config:', err);
         setError('加载配置失败，请刷新重试');
+        setConfigErrorMessage('加载配置失败，请刷新重试');
         setViewState('config');
       }
     };
@@ -32,13 +40,15 @@ function App() {
     checkConfig();
   }, []);
 
-  const handleConfigSaved = (newConfig: Config) => {
-    setConfigState(newConfig);
-    setViewState('main');
+  const handleOpenSettings = () => {
+    setConfigErrorMessage(undefined);
+    setViewState('config');
   };
 
-  const handleOpenSettings = () => {
-    setViewState('config');
+  const handleConfigSaved = (newConfig: Config) => {
+    setConfigState(newConfig);
+    setConfigErrorMessage(undefined);
+    setViewState('main');
   };
 
   // Loading state
@@ -65,12 +75,26 @@ function App() {
 
   // Config/login view
   if (viewState === 'config') {
-    return <ConfigPage onConfigSaved={handleConfigSaved} />;
+    return (
+      <ConfigPage
+        onConfigSaved={handleConfigSaved}
+        initialErrorMessage={configErrorMessage}
+      />
+    );
   }
 
   // Main view with content list
   if (viewState === 'main' && config) {
-    return <MainPage config={config} onOpenSettings={handleOpenSettings} />;
+    return (
+      <MainPage
+        config={config}
+        onOpenSettings={handleOpenSettings}
+        onAuthError={() => {
+          setConfigErrorMessage('登录已过期，请重新登录');
+          setViewState('config');
+        }}
+      />
+    );
   }
 
   // Fallback - should not happen
