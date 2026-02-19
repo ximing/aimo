@@ -71,8 +71,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 4,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "completed: floating toolbar with shadow DOM, typecheck and lint pass"
     },
     {
       "id": "US-005",
@@ -90,8 +90,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 5,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "completed: ConfigPage with server URL, username, password form; form validation; login API integration; error handling in Chinese; settings icon to reopen config; typecheck and lint pass"
     },
     {
       "id": "US-006",

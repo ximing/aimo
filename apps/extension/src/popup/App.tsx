@@ -1,32 +1,92 @@
 import { useState, useEffect } from 'react';
+import { ConfigPage } from './ConfigPage.js';
+import { MainPage } from './MainPage.js';
+import { getConfig } from '../storage/index.js';
+import type { Config } from '../types/index.js';
+
+type ViewState = 'loading' | 'config' | 'main';
 
 function App() {
-  const [count, setCount] = useState(0);
+  const [viewState, setViewState] = useState<ViewState>('loading');
+  const [config, setConfigState] = useState<Config | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
+  // Check if user is already configured on mount
   useEffect(() => {
-    // Test chrome API is available
-    console.log('AIMO Extension popup loaded');
+    const checkConfig = async () => {
+      try {
+        const savedConfig = await getConfig();
+        if (savedConfig?.url && savedConfig?.token) {
+          setConfigState(savedConfig);
+          setViewState('main');
+        } else {
+          setViewState('config');
+        }
+      } catch (err) {
+        console.error('Failed to load config:', err);
+        setError('加载配置失败，请刷新重试');
+        setViewState('config');
+      }
+    };
+
+    checkConfig();
   }, []);
 
-  return (
-    <div style={{ padding: '16px', width: '300px' }}>
-      <h1 style={{ fontSize: '18px', marginBottom: '12px' }}>AIMO 知识库</h1>
-      <p style={{ fontSize: '14px', color: '#666', marginBottom: '16px' }}>
-        快速保存网页内容到 AIMO
-      </p>
-      <button
-        onClick={() => setCount((c) => c + 1)}
+  const handleConfigSaved = (newConfig: Config) => {
+    setConfigState(newConfig);
+    setViewState('main');
+  };
+
+  const handleOpenSettings = () => {
+    setViewState('config');
+  };
+
+  // Loading state
+  if (viewState === 'loading') {
+    return (
+      <div
         style={{
-          padding: '8px 16px',
-          backgroundColor: '#3b82f6',
-          color: 'white',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: 'pointer',
+          padding: '40px',
+          width: '320px',
+          textAlign: 'center',
+          fontFamily:
+            '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
         }}
       >
-        点击次数: {count}
-      </button>
+        <div style={{ fontSize: '14px', color: '#6b7280' }}>加载中...</div>
+        {error && (
+          <div style={{ marginTop: '12px', fontSize: '12px', color: '#ef4444' }}>
+            {error}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Config/login view
+  if (viewState === 'config') {
+    return <ConfigPage onConfigSaved={handleConfigSaved} />;
+  }
+
+  // Main view with content list
+  if (viewState === 'main' && config) {
+    return <MainPage config={config} onOpenSettings={handleOpenSettings} />;
+  }
+
+  // Fallback - should not happen
+  return (
+    <div
+      style={{
+        padding: '40px',
+        width: '320px',
+        textAlign: 'center',
+        fontFamily:
+          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      }}
+    >
+      <div style={{ fontSize: '14px', color: '#ef4444' }}>
+        发生错误，请刷新重试
+      </div>
     </div>
   );
 }

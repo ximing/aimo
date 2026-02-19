@@ -1,3 +1,29 @@
+## 2026-02-19 - US-005 (Chrome Extension)
+- Create ConfigPage.tsx component with server URL, username, password form
+- Implement form validation: URL format validation with automatic https:// prefix, non-empty checks for all fields
+- Login API integration: call login() from aimo.ts API client on form submit
+- Error handling in Chinese: map API errors to user-friendly Chinese messages
+- Settings icon in header: gear icon to reopen config page from main view
+- Support light/dark theme using prefers-color-scheme media query
+- Create MainPage.tsx as placeholder for content list (will be expanded in US-006)
+- Update App.tsx with state management: loading -> config -> main flow
+- Load saved config on mount to determine initial view
+- Typecheck and lint pass
+- **Files changed:**
+  - `apps/extension/src/popup/ConfigPage.tsx` - New config/login form component
+  - `apps/extension/src/popup/MainPage.tsx` - New main page component with settings icon
+  - `apps/extension/src/popup/App.tsx` - Updated with state management between config and main views
+- **Learnings for future iterations:**
+  - Use window.matchMedia('(prefers-color-scheme: dark)') for theme detection
+  - Style objects can be typed as React.CSSProperties for type safety
+  - Popup dimensions: 320px width works well for Chrome extension popups
+  - State machine pattern for view management: 'loading' | 'config' | 'main'
+  - Settings icon should use inline SVG for crisp rendering at small sizes
+  - Form validation: clear individual field errors on change, show general errors at top
+  - Test connection button provides better UX before attempting login
+  - Use chrome.storage.local.get(['aimo_config']) to preload saved URL in config form
+---
+
 ## 2026-02-19 - US-002 (Chrome Extension)
 - Create storage module in src/storage/index.ts
 - Implement chrome.storage.local wrappers for config: getConfig(), setConfig(url, token, username?), clearConfig()
@@ -212,6 +238,36 @@
   - Extension manifest needs `<all_urls>` host permission for fetching images from any site
   - Token expiry handling: catch 401, clear config, redirect to login
   - Source URL is appended to memo content as markdown: `[来源](url)`
+---
+
+## 2026-02-19 - US-004 (Chrome Extension)
+- Implement floating toolbar in content script with shadow DOM for style isolation
+- Add selectionchange listener with debouncing (100ms) for text selection
+- Add image click listener to capture images, filtering out small icons (< 50px)
+- Implement toolbar positioning at bottom-right of selection with viewport boundary checks
+- Add auto-hide on click outside (with delayed handler) and scroll events
+- Create save button that stores content to session storage via background script messaging
+- Support light/dark theme using prefers-color-scheme media query
+- Add smooth fade in/out animations with CSS keyframes
+- Update background script to handle SAVE_CONTENT message and update badge count
+- Implement badge updates on extension icon showing pending items count
+- **Files changed:**
+  - `apps/extension/src/content/index.ts` - Complete floating toolbar implementation
+  - `apps/extension/src/background/index.ts` - Message handlers and badge updates
+- **Learnings for future iterations:**
+  - Shadow DOM provides complete style isolation from host page styles
+  - Use `attachShadow({ mode: 'closed' })` to prevent external access to shadow root
+  - Debounce selectionchange events to avoid excessive updates while dragging
+  - Position toolbar with `position: absolute` and calculate coordinates from `getBoundingClientRect()`
+  - Use `window.scrollY` to adjust position for scrolled pages
+  - Always check viewport boundaries to prevent toolbar from going off-screen
+  - Theme detection: `window.matchMedia('(prefers-color-scheme: dark)')`
+  - Badge API: `chrome.action.setBadgeText()` and `chrome.action.setBadgeBackgroundColor()`
+  - Clear badge by setting text to empty string: `setBadgeText({ text: '' })`
+  - Use `chrome.runtime.sendMessage()` for communication between content script and background
+  - Chrome extension popup cannot be programmatically opened - user must click the icon
+  - Filter small images (icons) by checking `img.width` and `img.height`
+  - Use `event.preventDefault()` and `event.stopPropagation()` when handling image clicks
 ---
 
 ## Codebase Patterns
