@@ -1,3 +1,27 @@
+## 2026-02-19 - US-007 (Electron Client)
+- Implement local file drag-and-drop support
+- Add will-navigate handler to prevent page navigation on file drop
+- Add drag-enter, drag-over, drop event handlers to webContents
+- Filter dropped items to only include files using fs.statSync().isFile()
+- Send file paths to renderer via IPC 'files-dropped' event
+- Expose onFileDrop() and removeFileDropListener() in preload script with callbackMap
+- Create isElectron.ts utility with isElectron(), getPlatform(), isMacOS(), isWindows(), isLinux()
+- Add onFileDrop helper function for registering file drop callbacks
+- Browser runs without errors when window.electronAPI is undefined
+- Typecheck and lint pass
+- **Files changed:**
+  - `apps/client/src/main/index.ts` - Added drag/drop event handlers and will-navigate handler
+  - `apps/client/src/preload/index.ts` - Added onFileDrop and removeFileDropListener APIs
+  - `apps/web/src/electron/isElectron.ts` - New utility for Electron detection
+- **Learnings for future iterations:**
+  - Drag events on webContents are not fully typed in Electron - use @ts-expect-error
+  - Use fs.statSync(filePath).isFile() to filter out directories from drop
+  - Prevent file drop navigation with will-navigate handler checking for 'file://' URLs
+  - IPC pattern for file drops: main webContents.on('drop') -> webContents.send() -> renderer onFileDrop()
+  - Use separate callbackMap for different IPC events (messageCallbackMap, fileDropCallbackMap)
+  - Browser compatibility: Always check isElectron() before accessing window.electronAPI
+---
+
 ## 2026-02-19 - US-005 (Electron Client)
 - Implement system-level global shortcuts
 - Register CommandOrControl+Shift+A to toggle window visibility

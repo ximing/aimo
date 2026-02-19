@@ -117,8 +117,8 @@
         "手动验证文件拖拽功能正常工作"
       ],
       "priority": 7,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: File drag-and-drop implemented with will-navigate handler, drag/drop event listeners, file filtering, and onFileDrop IPC in preload. Browser compatibility ensured."
     },
     {
       "id": "US-008",
