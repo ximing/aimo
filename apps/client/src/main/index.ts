@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell } from 'electron';
+import { app, BrowserWindow, shell, Tray, Menu, nativeImage } from 'electron';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
@@ -28,6 +28,8 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
 /* eslint-enable turbo/no-undeclared-env-vars */
 
 let mainWindow: BrowserWindow | null;
+let tray: Tray | null = null;
+let isQuiting = false;
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -68,22 +70,95 @@ function createWindow(): void {
   mainWindow.once('ready-to-show', () => {
     mainWindow?.show();
   });
+
+  // Handle close to tray - prevent default close and hide window instead
+  mainWindow.on('close', (event) => {
+    if (!isQuiting) {
+      event.preventDefault();
+      mainWindow?.hide();
+    }
+  });
+}
+
+function createTray(): void {
+  // Create tray icon (use a default template or create from path)
+  // Use a simple base64 encoded icon for now (16x16 tray icon)
+  const iconPath = path.join(process.env.VITE_PUBLIC || '', 'tray-icon.png');
+
+  // Try to load icon from public folder, fallback to nativeImage.createEmpty()
+  try {
+    tray = new Tray(iconPath);
+  } catch {
+    // Create a simple 16x16 transparent icon as fallback
+    const emptyIcon = nativeImage.createEmpty();
+    tray = new Tray(emptyIcon);
+  }
+
+  // Set tooltip
+  tray.setToolTip('AIMO');
+
+  // Create context menu
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: '显示主窗口',
+      click: () => {
+        if (mainWindow) {
+          mainWindow.show();
+          mainWindow.focus();
+        } else {
+          createWindow();
+        }
+      },
+    },
+    { type: 'separator' },
+    {
+      label: '退出应用',
+      click: () => {
+        isQuiting = true;
+        app.quit();
+      },
+    },
+  ]);
+
+  tray.setContextMenu(contextMenu);
+
+  // Click tray icon to toggle window visibility
+  tray.on('click', () => {
+    if (mainWindow) {
+      if (mainWindow.isVisible()) {
+        mainWindow.hide();
+      } else {
+        mainWindow.show();
+        mainWindow.focus();
+      }
+    } else {
+      createWindow();
+    }
+  });
 }
 
 app.on('window-all-closed', () => {
   mainWindow = null;
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
+  // On macOS, keep app running in background when window is closed
+  // On Windows/Linux, we keep running with tray icon
+  // Don't quit here - tray icon keeps app running
 });
 
 app.on('activate', () => {
-  const allWindows = BrowserWindow.getAllWindows();
-  if (allWindows.length) {
-    allWindows[0].focus();
+  // macOS: click dock icon to restore window
+  if (mainWindow) {
+    if (mainWindow.isVisible()) {
+      mainWindow.focus();
+    } else {
+      mainWindow.show();
+      mainWindow.focus();
+    }
   } else {
     createWindow();
   }
 });
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  createWindow();
+  createTray();
+});

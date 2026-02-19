@@ -14,6 +14,25 @@
 - **Electron client:** Use `vite-plugin-electron` for main/preload build, contextBridge for API exposure
 - **Electron patterns:** Store callbacks in Map for proper IPC listener removal, use `external: ['electron']` in rollupOptions
 - **Electron web loading:** Dev mode loads from VITE_DEV_SERVER_URL (http://localhost:5173), production loads from `../server/public` (built by apps/web)
+- **Electron tray:** Use `isQuiting` flag to distinguish between close-to-tray and actual quit
+
+## 2026-02-19 - US-004 (Electron Client)
+- Implement system tray functionality
+- Close-to-tray behavior: intercept window 'close' event, prevent default and hide window
+- Create Tray instance with context menu ("显示主窗口", "退出应用")
+- Tray click toggles window visibility (show/hide)
+- macOS dock activate restores hidden window
+- Use `isQuiting` flag to handle quit vs hide-on-close distinction
+- Typecheck and lint pass
+- **Files changed:**
+  - `apps/client/src/main/index.ts` - Added Tray, Menu imports, createTray function, close-to-tray handler
+- **Learnings for future iterations:**
+  - Use a module-level `isQuiting` variable to control close behavior (don't extend App interface - causes type errors)
+  - Tray context menu built with `Menu.buildFromTemplate()`
+  - On macOS, `app.on('activate')` handles dock icon clicks to restore window
+  - Remove `window-all-closed` quit logic to keep app running in background with tray
+---
+
 
 ## 2026-02-19 - US-002 (Electron Client)
 - Update main process to load web app from correct paths

@@ -49,8 +49,8 @@
         "在 Electron 和浏览器中分别验证环境检测正确"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created isElectron.ts with isElectron(), getPlatform(), isMacOS(), isWindows(), isLinux() functions"
     },
     {
       "id": "US-004",
@@ -66,8 +66,8 @@
         "手动验证托盘功能正常工作"
       ],
       "priority": 4,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: System tray implementation with close-to-tray, context menu (show/quit), tray click toggle, and macOS dock activate support"
     },
     {
       "id": "US-005",
