@@ -1,3 +1,24 @@
+## 2026-02-19 - US-002 (Chrome Extension)
+- Create storage module in src/storage/index.ts
+- Implement chrome.storage.local wrappers for config: getConfig(), setConfig(url, token, username?), clearConfig()
+- Implement chrome.storage.session wrappers for pending items: getPendingItems(), addPendingItem(item), removePendingItem(id), clearPendingItems()
+- Add additional helper functions: updatePendingItem() for attachment updates, getPendingItemsCount() for badge updates
+- Create StorageError class for consistent error handling with operation context
+- Use existing TypeScript types from src/types/index.ts (Config, PendingItem)
+- Config stored in chrome.storage.local (persists across sessions)
+- Pending items stored in chrome.storage.session (cleared when browser closes)
+- Typecheck and lint pass
+- **Files changed:**
+  - `apps/extension/src/storage/index.ts` - New storage module with all storage operations
+- **Learnings for future iterations:**
+  - Use chrome.storage.local for persistent data (config), chrome.storage.session for temporary data (pending items)
+  - All storage operations should have try-catch with custom error class for better debugging
+  - Generate unique IDs using timestamp + random string combination
+  - Use Omit<PendingItem, 'id' | 'createdAt'> for function parameters that create new items
+  - chrome.storage.session is available in Manifest V3 for data that should not persist
+  - StorageError class helps identify which operation failed during debugging
+---
+
 ## 2026-02-19 - US-001 (Chrome Extension)
 - Create Chrome extension project structure in apps/extension/
 - Configure manifest.json (Manifest V3) with storage and activeTab permissions
