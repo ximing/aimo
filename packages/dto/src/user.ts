@@ -9,8 +9,9 @@
  */
 export interface UserInfoDto {
   uid: string;        // 用户唯一标识符
-  email?: string;      // 用户邮箱
-  nickname?: string;   // 用户昵称
+  email?: string;     // 用户邮箱
+  nickname?: string;  // 用户昵称
+  avatar?: string;    // 用户头像 URL
 }
 
 /**

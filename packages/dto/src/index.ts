@@ -15,3 +15,6 @@ export * from './attachment.js';
 
 // Response DTOs
 export * from './response.js';
+
+// ASR DTOs
+export * from './asr.js';
