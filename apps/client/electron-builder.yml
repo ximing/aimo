@@ -10,6 +10,8 @@ directories:
 files:
   - dist
   - package.json
+  # Include the built web app (from apps/server/public which is built by apps/web)
+  - ../../server/public
 disableDefaultIgnoredFiles: false
 
 # macOS Configuration

@@ -5,27 +5,34 @@
   "license": "BSL-1.1",
   "type": "module",
   "main": "dist/main/index.js",
+    "homepage": "https://github.com/ximing/aimo",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ximing/aimo.git"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:all": "pnpm --filter @aimo/web build && pnpm build && pnpm dist",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
-    "dist": "electron-builder",
-    "dist:mac": "electron-builder --mac",
-    "dist:win": "electron-builder --win",
-    "dist:linux": "electron-builder --linux"
+    "dist": "electron-builder --publish=never",
+    "dist:all": "electron-builder -mwl --publish=never",
+    "dist:mac": "electron-builder --mac --publish=never",
+    "dist:win": "electron-builder --win --publish=never",
+    "dist:linux": "electron-builder --linux --publish=never"
   },
   "dependencies": {
     "electron-store": "^10.0.0",
-    "electron-updater": "^6.3.0"
+    "electron-updater": "^6.7.3"
   },
   "devDependencies": {
     "@aimo/eslint-config": "workspace:*",
     "@aimo/typescript-config": "workspace:*",
     "@types/node": "^22.13.4",
-    "electron": "^34.0.0",
-    "electron-builder": "^25.1.0",
+    "electron": "^35.7.5",
+    "electron-builder": "^26.0.12",
     "eslint": "^9.39.1",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-only-warn": "^1.1.0",

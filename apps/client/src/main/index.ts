@@ -11,18 +11,21 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // │ │ └── index.js    > Electron-Main
 // │ └─┬ preload
 // │   └── index.mjs   > Preload-Scripts
-// ├─┬ dist-web
-// │ └── ...           > Web build output
+// ├─┬ ../server/public
+// │ └── ...           > Web build output (from apps/web)
 
+/* eslint-disable turbo/no-undeclared-env-vars */
 process.env.APP_ROOT = path.join(__dirname, '../..');
 
 export const MAIN_DIST = path.join(process.env.APP_ROOT, 'dist');
-export const RENDERER_DIST = path.join(process.env.APP_ROOT, '../web/dist');
+// Web app builds to ../server/public (relative to apps/web, so from apps/client: ../../server/public)
+export const RENDERER_DIST = path.join(process.env.APP_ROOT, '../../server/public');
 export const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
 
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
   ? path.join(process.env.APP_ROOT, 'public')
   : RENDERER_DIST;
+/* eslint-enable turbo/no-undeclared-env-vars */
 
 let mainWindow: BrowserWindow | null;
 

@@ -11,6 +11,59 @@
 - Use `extractPlainText()` to strip markdown syntax for content previews
 - File attachments: images/videos open preview modal, other files trigger download
 - Responsive design: Use Tailwind responsive prefixes (sm:, md:, lg:) for adaptive layouts
+- **Electron client:** Use `vite-plugin-electron` for main/preload build, contextBridge for API exposure
+- **Electron patterns:** Store callbacks in Map for proper IPC listener removal, use `external: ['electron']` in rollupOptions
+- **Electron web loading:** Dev mode loads from VITE_DEV_SERVER_URL (http://localhost:5173), production loads from `../server/public` (built by apps/web)
+
+## 2026-02-19 - US-002 (Electron Client)
+- Update main process to load web app from correct paths
+- Development mode: loads from VITE_DEV_SERVER_URL (http://localhost:5173 via vite-plugin-electron)
+- Production mode: loads from `../server/public` (built web app output)
+- Update electron-builder.yml to include `../../server/public` in packaged files
+- Add `build:all` script to build web app, then client, then package
+- Add eslint-disable comments for intentional environment variable usage
+- Window configured with 1200x800 size, contextIsolation: true, nodeIntegration: false
+- Typecheck and lint pass
+- **Files changed:**
+  - `apps/client/src/main/index.ts` - Updated RENDERER_DIST path, added comments
+  - `apps/client/electron-builder.yml` - Added server/public to files list
+  - `apps/client/package.json` - Added build:all script
+  - `turbo.json` - Added globalEnv for NODE_ENV
+- **Learnings for future iterations:**
+  - Web app builds to `../server/public` (not `dist` in apps/web)
+  - Electron client must reference the correct build output path
+  - Use `../../server/public` from apps/client perspective (goes to apps/server/public)
+  - electron-builder files pattern uses relative paths from app directory
+  - `build:all` script chains: web build → client build → electron-builder dist
+---
+
+## 2026-02-19 - US-001 (Electron Client)
+- Initialize Electron project structure in apps/client
+- Create main process (src/main/index.ts) with BrowserWindow configuration (1200x800)
+- Create preload script (src/preload/index.ts) exposing electronAPI via contextBridge
+- Configure Vite with vite-plugin-electron for main and preload builds
+- Configure TypeScript with ES2022 target and strict mode
+- Add pnpm dev:client and build:client commands to root package.json
+- Configure electron-builder.yml for cross-platform packaging (mac/win/linux)
+- Add ESLint config extending @aimo/eslint-config
+- Typecheck and lint pass
+- **Files changed:**
+  - `apps/client/package.json` - New Electron project configuration
+  - `apps/client/tsconfig.json` - TypeScript configuration
+  - `apps/client/vite.config.ts` - Vite with vite-plugin-electron
+  - `apps/client/electron-builder.yml` - Electron builder configuration
+  - `apps/client/eslint.config.mjs` - ESLint configuration
+  - `apps/client/src/main/index.ts` - Main process entry
+  - `apps/client/src/preload/index.ts` - Preload script with contextBridge
+  - `package.json` (root) - Added dev:client and build:client scripts
+- **Learnings for future iterations:**
+  - vite-plugin-electron simplifies Electron + Vite integration significantly
+  - Use callbackMap to store wrapped IPC callbacks for proper listener removal
+  - Preload script must use `contextIsolation: true` and `nodeIntegration: false` for security
+  - APP_ROOT path calculation: `path.join(__dirname, '../..')` from dist/main/index.js
+  - electron-builder config supports dmg/zip for mac, nsis/portable for win, AppImage/deb for linux
+  - The `postinstall` electron-builder hook can fail in pnpm monorepos - better to run manually when needed
+---
 
 ## 2026-02-18 - US-001
 - 实现首页布局整体居中

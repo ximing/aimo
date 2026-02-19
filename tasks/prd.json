@@ -16,8 +16,8 @@
         "Typecheck passes"
       ],
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Electron project structure initialized with main/preload directories, Vite config, TypeScript, and pnpm commands"
     },
     {
       "id": "US-002",
@@ -32,8 +32,8 @@
         "Verify Electron 窗口正确显示 Web 界面"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Updated RENDERER_DIST to load from server/public, added build:all script, configured electron-builder to package web assets"
     },
     {
       "id": "US-003",
