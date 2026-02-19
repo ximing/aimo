@@ -615,7 +615,10 @@ Provide 1-2 brief insights:`;
         .join('\n\n---\n\n');
 
       // Include conversation context if available
-      const contextPrefix = context ? `Previous context: ${context}\n\n` : '';
+      // Format: User/Assistant alternating messages for multi-turn dialogue
+      const contextSection = context
+        ? `\n\nPrevious Conversation History:\n${context}\n\nThis is a follow-up question. Consider the conversation history above when answering.`
+        : '';
 
       // Build relation context
       let relationContext = '';
@@ -630,7 +633,7 @@ Provide 1-2 brief insights:`;
       }
 
       // Create generation prompt with integrated analysis
-      const generationPrompt = `${contextPrefix}You are answering a user's question based on their personal notes and knowledge graph.
+      const generationPrompt = `You are answering a user's question based on their personal notes and knowledge graph.${contextSection}
 
 User Query: ${query}
 
@@ -654,7 +657,10 @@ Provide your answer:`;
       // Generate answer
       const messages = [
         new SystemMessage(
-          "You are a helpful AI assistant that answers questions based on the user's personal notes. Always cite your sources using [1], [2], etc. Consider relationships between notes and any attachment context in your answer."
+          "You are a helpful AI assistant that answers questions based on the user's personal notes. " +
+          "Always cite your sources using [1], [2], etc. " +
+          "Consider relationships between notes and any attachment context in your answer. " +
+          "For follow-up questions, reference the conversation history to maintain context and provide coherent multi-turn responses."
         ),
         new HumanMessage(generationPrompt),
       ];

@@ -1,3 +1,29 @@
+## 2026-02-19 - US-005 (AI Explore Page)
+- Implement multi-turn conversation and context memory
+- Frontend implementation in explore.service.ts:
+  - localStorage persistence with loadFromStorage() and saveToStorage()
+  - Conversation context accumulation (trimmed to ~4000 chars)
+  - 10-round limit enforcement (MAX_MESSAGES = 20)
+  - UI shows current round number (第 X/10 轮)
+  - Warning when limit reached with link to create new conversation
+  - New conversation button with confirm dialog
+- Backend improvements to ExploreService.generationNode:
+  - Better context formatting: "Previous Conversation History:" section
+  - Added "This is a follow-up question" indicator for context awareness
+  - Updated system message to emphasize multi-turn response handling
+- Typecheck passes, lint passes (no new errors)
+- **Files changed:**
+  - `apps/web/src/services/explore.service.ts` - Already implemented in US-003/004
+  - `apps/web/src/pages/ai-explore/ai-explore.tsx` - Already implemented in US-003/004
+  - `apps/server/src/services/explore.service.ts` - Improved prompt handling for conversation context
+- **Learnings for future iterations:**
+  - Use `\n\nUser: ${query}\nAssistant: ${answer}` format for accumulating conversation context
+  - Trim context at ~4000 chars to stay within token limits while preserving recent history
+  - Round tracking: Math.ceil(messages.length / 2) gives current round number
+  - Disable input and show clear messaging when conversation limit is reached
+  - Include "Previous Conversation History" section in LLM prompts for follow-up questions
+---
+
 ## 2026-02-19 - US-001 (AI Explore Page)
 - Implement LangChain DeepAgents backend architecture
 - Install langchain, @langchain/core, @langchain/openai, @langchain/langgraph dependencies
@@ -478,6 +504,53 @@
   - Context management: accumulate conversation history, trim when too long
   - Empty state UX: show suggested questions to help users get started
   - Source citations: show as [1], [2] with relevance percentage and preview
+---
+
+## 2026-02-19 - US-004 (AI Explore Page)
+- Implement smart retrieval with source citations for AI explore page
+- Update ExploreSourceDto type to include title field for better source display
+- Update backend ExploreService to generate titles from content (first line or first 50 chars)
+- Create SourceCard component (`apps/web/src/pages/ai-explore/components/source-card.tsx`) with:
+  - Generated title display with line-clamp-2 for long titles
+  - Content preview (200 chars from source.content)
+  - Relevance score with color indicator (green ≥80%, primary ≥60%, amber ≥50%, gray <50%)
+  - Created date with formatted display
+  - Hover effect with external link icon
+  - Click to open memo detail modal
+- Create MarkdownWithCitations component (`apps/web/src/pages/ai-explore/components/markdown-with-citations.tsx`) for:
+  - Parsing citation patterns [1], [2], etc. in AI responses using regex /\[(\d+)\]/g
+  - Rendering citations as clickable badge buttons that link to sources
+  - Custom paragraph and list item renderers to process inline citations
+  - Support for all standard markdown elements (headings, lists, code, blockquotes)
+- Create MemoDetailModal component (`apps/web/src/pages/ai-explore/components/memo-detail-modal.tsx`) for:
+  - Displaying full memo content with markdown rendering
+  - Showing attachments with preview/download functionality
+  - Using existing AttachmentPreviewModal for image/video preview
+  - Displaying creation and update timestamps
+- Update AIExplorePage (`apps/web/src/pages/ai-explore/ai-explore.tsx`) to:
+  - Use new components instead of inline source rendering
+  - Manage selectedMemoId and isDetailModalOpen state for modal
+  - Handle source click to open memo detail modal
+  - Show "未找到相关笔记" message when no sources found
+  - Grid layout for source cards (2 columns on desktop, 1 on mobile)
+- Typecheck passes, lint passes (no new errors, only pre-existing warnings)
+- **Files changed:**
+  - `packages/dto/src/explore.ts` - Added title field to ExploreSourceDto
+  - `apps/server/src/services/explore.service.ts` - Generate title from memo content
+  - `apps/web/src/pages/ai-explore/components/source-card.tsx` - New component
+  - `apps/web/src/pages/ai-explore/components/markdown-with-citations.tsx` - New component
+  - `apps/web/src/pages/ai-explore/components/memo-detail-modal.tsx` - New component
+  - `apps/web/src/pages/ai-explore/components/index.ts` - Component exports
+  - `apps/web/src/pages/ai-explore/ai-explore.tsx` - Updated to use new components
+- **Learnings for future iterations:**
+  - Use regex /\[(\d+)\]/g to parse citation patterns in markdown content
+  - ReactMarkdown components prop allows custom renderers for p, li, etc. to process children
+  - processCitations function recursively handles React children (strings vs arrays)
+  - line-clamp-2 Tailwind class for truncating multi-line text
+  - Relevance score color coding: green (≥80%), primary (≥60%), amber (≥50%), gray (<50%)
+  - Grid layout for cards: grid-cols-1 sm:grid-cols-2 for responsive design
+  - External link icon shows on hover with opacity transition
+  - AttachmentPreviewModal is reusable for image/video preview across the app
 ---
 
 ## Codebase Patterns

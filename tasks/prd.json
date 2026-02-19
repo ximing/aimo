@@ -67,8 +67,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 4,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented source citations with SourceCard component showing title, summary, relevance score. MarkdownWithCitations component parses [1], [2] patterns into clickable badges. MemoDetailModal opens when clicking sources. Shows '未找到相关笔记' when no sources found."
     },
     {
       "id": "US-005",
@@ -83,8 +83,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 5,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Frontend: localStorage persistence, 10-round limit with UI warnings, 'New Conversation' button, context accumulation. Backend: Improved prompts for multi-turn dialogue with conversation history formatting."
     },
     {
       "id": "US-006",
