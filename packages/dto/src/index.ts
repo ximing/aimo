@@ -18,3 +18,6 @@ export * from './response.js';
 
 // ASR DTOs
 export * from './asr.js';
+
+// Explore DTOs
+export * from './explore.js';

@@ -1,0 +1,79 @@
+import { JsonController, Post, Body, CurrentUser } from 'routing-controllers';
+import { Service } from 'typedi';
+import type { ExploreQueryDto, UserInfoDto } from '@aimo/dto';
+import { ExploreService } from '../../services/explore.service.js';
+import { ResponseUtil } from '../../utils/response.js';
+import { ErrorCode } from '../../constants/error-codes.js';
+
+/**
+ * Controller for AI-powered exploration features
+ * Provides endpoints for knowledge discovery and intelligent search
+ */
+@Service()
+@JsonController('/api/v1/explore')
+export class ExploreController {
+  constructor(private exploreService: ExploreService) {}
+
+  /**
+   * POST /api/v1/explore
+   * Process an exploration query using LangChain DeepAgents
+   * Performs vector search, analysis, and generates an AI response
+   */
+  @Post('/')
+  async explore(@Body() queryDto: ExploreQueryDto, @CurrentUser() user: UserInfoDto) {
+    try {
+      if (!user?.uid) {
+        return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
+      }
+
+      if (!queryDto.query || queryDto.query.trim().length === 0) {
+        return ResponseUtil.error(ErrorCode.PARAMS_ERROR, 'Query is required');
+      }
+
+      const result = await this.exploreService.explore(queryDto, user.uid);
+
+      return ResponseUtil.success(result);
+    } catch (error) {
+      console.error('Explore error:', error);
+      return ResponseUtil.error(
+        ErrorCode.SYSTEM_ERROR,
+        error instanceof Error ? error.message : 'Exploration failed'
+      );
+    }
+  }
+
+  /**
+   * POST /api/v1/explore/quick-search
+   * Quick vector search without LLM processing
+   * Returns memos with relevance scores
+   */
+  @Post('/quick-search')
+  async quickSearch(
+    @Body() body: { query: string; limit?: number },
+    @CurrentUser() user: UserInfoDto
+  ) {
+    try {
+      if (!user?.uid) {
+        return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
+      }
+
+      if (!body.query || body.query.trim().length === 0) {
+        return ResponseUtil.error(ErrorCode.PARAMS_ERROR, 'Query is required');
+      }
+
+      const results = await this.exploreService.quickSearch(
+        body.query,
+        user.uid,
+        body.limit || 5
+      );
+
+      return ResponseUtil.success({
+        items: results,
+        total: results.length,
+      });
+    } catch (error) {
+      console.error('Quick search error:', error);
+      return ResponseUtil.error(ErrorCode.SYSTEM_ERROR, 'Search failed');
+    }
+  }
+}
