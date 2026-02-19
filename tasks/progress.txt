@@ -1,3 +1,37 @@
+## 2026-02-19 - US-001 (Chrome Extension)
+- Create Chrome extension project structure in apps/extension/
+- Configure manifest.json (Manifest V3) with storage and activeTab permissions
+- Configure Vite build with multi-entry support for popup, content, and background scripts
+- Configure TypeScript with @types/chrome for Chrome API type definitions
+- Create src/popup/index.html as popup entry with React
+- Create src/content/index.ts as content script entry
+- Create src/background/index.ts as service worker entry
+- Add shared TypeScript types in src/types/index.ts (Config, PendingItem, ExtractedContent, etc.)
+- Add ESLint configuration following project patterns
+- Typecheck and lint pass
+- **Files changed:**
+  - `apps/extension/package.json` - New extension project configuration
+  - `apps/extension/tsconfig.json` - TypeScript project references
+  - `apps/extension/tsconfig.app.json` - TypeScript app config with chrome types
+  - `apps/extension/tsconfig.node.json` - TypeScript node config
+  - `apps/extension/vite.config.ts` - Vite multi-entry build configuration
+  - `apps/extension/eslint.config.js` - ESLint configuration
+  - `apps/extension/public/manifest.json` - Chrome extension manifest
+  - `apps/extension/src/popup/index.html` - Popup HTML entry
+  - `apps/extension/src/popup/index.tsx` - Popup React entry
+  - `apps/extension/src/popup/App.tsx` - Main popup component
+  - `apps/extension/src/content/index.ts` - Content script
+  - `apps/extension/src/background/index.ts` - Service worker
+  - `apps/extension/src/types/index.ts` - Shared TypeScript types
+- **Learnings for future iterations:**
+  - Chrome extension Vite config needs multiple inputs: popup (HTML+TS), content (TS), background (TS)
+  - Use rollupOptions.output.entryFileNames to maintain directory structure for content/background scripts
+  - Add @types/chrome to devDependencies for Chrome API type definitions
+  - Include "chrome" in tsconfig types array
+  - Extension publicDir contains manifest.json and icons, copied to dist on build
+  - Service worker uses "type": "module" in manifest background config
+---
+
 ## 2026-02-19 - US-008 (Electron Client)
 - Implement window state management using electron-store
 - Add WindowState interface with x, y, width, height, isMaximized properties
