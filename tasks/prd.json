@@ -1,171 +1,122 @@
 {
-  "project": "AIMO Chrome Extension",
-  "branchName": "ralph/chrome-extension",
-  "description": "AIMO Chrome 浏览器扩展 - 快速提取和保存网页内容到 AIMO 知识库",
+  "project": "AIMO",
+  "branchName": "ralph/ai-explore-page",
+  "description": "AI探索页面 - 基于LangChain DeepAgents的智能知识发现界面，用户可以基于已有笔记进行提问、探索和分析",
   "userStories": [
     {
       "id": "US-001",
-      "title": "项目初始化和基础配置",
-      "description": "作为开发者，我需要创建 Chrome 扩展的基础项目结构和配置，以便后续功能开发。",
+      "title": "LangChain DeepAgents后端基础架构",
+      "description": "作为开发者，我需要搭建基于LangChain的DeepAgents架构，实现多Agent协作处理用户查询",
       "acceptanceCriteria": [
-        "创建 apps/extension/ 目录结构",
-        "配置 manifest.json (Manifest V3)，包含必要的 permissions (storage, activeTab)",
-        "配置 Vite 构建脚本，支持多入口 (popup, content, background)",
-        "配置 TypeScript 和必要的类型定义 (@types/chrome)",
-        "创建 src/popup/index.html 作为 popup 入口",
-        "创建 src/content/index.ts 作为内容脚本入口",
-        "创建 src/background/index.ts 作为 service worker 入口",
+        "安装langchain及相关依赖包",
+        "创建ExploreService作为Agent协调器",
+        "实现检索Agent，使用LanceDB向量搜索相关笔记",
+        "定义Agent间状态传递的数据结构",
+        "创建/explore API端点接收用户查询",
         "Typecheck passes"
       ],
       "priority": 1,
-      "passes": true,
-      "notes": "completed: all acceptance criteria met, typecheck and lint pass"
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-002",
-      "title": "存储模块封装",
-      "description": "作为开发者，我需要封装 Chrome Storage 操作，以便安全地存储配置和待保存内容。",
+      "title": "实现关系分析Agent和附件理解Agent",
+      "description": "作为开发者，我需要实现关系分析Agent和附件理解Agent，以便全面分析笔记关联和附件内容",
       "acceptanceCriteria": [
-        "创建 src/storage/index.ts，封装 chrome.storage.local 和 chrome.storage.session",
-        "实现配置存储接口：getConfig(), setConfig(url, token), clearConfig()",
-        "实现待保存内容存储接口：getPendingItems(), addPendingItem(item), removePendingItem(id), clearPendingItems()",
-        "定义 TypeScript 类型：Config, PendingItem, ExtractedContent",
-        "所有存储操作都有错误处理",
+        "实现关系分析Agent，查询笔记间的关联关系",
+        "实现附件理解Agent，提取图片/PDF的关键信息",
+        "实现总结Agent，整合各Agent输出生成回答",
+        "Agent间通过共享状态传递中间结果",
+        "整个Agent链执行时间不超过5秒（不含LLM生成）",
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": true,
-      "notes": "completed: storage module created with error handling, typecheck and lint pass"
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-003",
-      "title": "AIMO API 客户端",
-      "description": "作为开发者，我需要封装 AIMO 后端 API 调用，以便在扩展中进行认证和数据操作。",
+      "title": "对话界面基础架构",
+      "description": "作为用户，我需要一个对话式界面来与AI交互，自然地提出关于笔记的问题",
       "acceptanceCriteria": [
-        "创建 src/api/aimo.ts，封装 AIMO API",
-        "实现 login(username, password) 方法，返回 JWT token",
-        "实现 createMemo(content, sourceUrl, attachmentIds?) 方法",
-        "实现 uploadAttachment(file) 方法 (multipart/form-data)",
-        "所有 API 调用自动添加 Authorization: Bearer token 请求头",
-        "实现统一的错误处理和响应类型",
-        "Typecheck passes"
+        "创建AI探索页面路由/ai-explore",
+        "实现可滚动的消息历史区域",
+        "底部固定输入框，支持多行文本和Enter发送",
+        "用户消息和AI消息有明显视觉区分",
+        "支持Markdown渲染AI回复内容",
+        "空状态显示引导性提示语",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": "completed: all acceptance criteria met, typecheck and lint pass"
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-004",
-      "title": "浮动工具栏（内容脚本）",
-      "description": "作为用户，我在网页上选中文本或图片后，希望在选区附近看到保存按钮。",
+      "title": "智能检索与来源标注",
+      "description": "作为用户，我希望AI回答能显示引用了哪些笔记，以便验证信息来源",
       "acceptanceCriteria": [
-        "监听 document.onselectionchange，获取选中文本",
-        "监听图片点击事件，获取图片 URL",
-        "创建浮动工具栏 DOM 元素（使用 shadow DOM 隔离样式）",
-        "工具栏显示在选区/图片右下角，位置计算正确",
-        "工具栏包含 AIMO 图标和 '保存' 文字按钮",
-        "点击页面其他区域或滚动时工具栏自动隐藏",
-        "点击保存按钮将内容存储到 session storage 并打开 popup",
-        "支持浅色/深色主题（跟随系统偏好）",
+        "AI回答下方以卡片形式展示引用的笔记",
+        "来源卡片显示笔记标题、摘要、相似度分数",
+        "点击来源卡片可跳转到对应笔记详情",
+        "回答正文中引用以[1]、[2]形式标注",
+        "无相关笔记时AI明确告知",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 4,
-      "passes": true,
-      "notes": "completed: floating toolbar with shadow DOM, typecheck and lint pass"
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-005",
-      "title": "Popup 配置和登录页面",
-      "description": "作为用户，我首次使用扩展时需要配置服务器地址和登录信息。",
+      "title": "多轮对话与上下文记忆",
+      "description": "作为用户，我希望能进行追问和深入交流，逐步探索问题",
       "acceptanceCriteria": [
-        "创建 React 组件：ConfigPage.tsx",
-        "配置表单包含：服务器 URL、用户名、密码三个字段",
-        "表单有基本的输入验证（URL 格式、非空检查）",
-        "点击登录按钮调用 API 获取 token",
-        "登录成功保存配置到 storage，切换到主界面",
-        "登录失败显示错误提示（中文错误信息）",
-        "顶部有设置图标，可重新打开配置页面",
+        "支持多轮对话，AI记住之前上下文",
+        "实现'新建话题'按钮开启独立对话",
+        "对话历史存储在localStorage",
+        "单次对话限制10轮，超出提示新建话题",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 5,
-      "passes": true,
-      "notes": "completed: ConfigPage with server URL, username, password form; form validation; login API integration; error handling in Chinese; settings icon to reopen config; typecheck and lint pass"
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-006",
-      "title": "Popup 内容列表和预览",
-      "description": "作为用户，我需要在 popup 中查看已提取的内容列表，支持预览和编辑。",
+      "title": "笔记关系图谱探索",
+      "description": "作为用户，我希望AI能发现并展示笔记间的关联关系，理解知识结构",
       "acceptanceCriteria": [
-        "创建 React 组件：ContentList.tsx, ContentItem.tsx",
-        "主界面显示 '待保存内容' 列表，从 storage 读取",
-        "每条内容显示：类型图标（文本/图片）、内容摘要（前 50 字）、来源页面标题",
-        "支持单条删除，点击删除从列表移除",
-        "文本内容可点击展开编辑（多行文本框）",
-        "图片内容显示缩略图预览",
-        "空列表时显示提示文案和快捷操作指引",
+        "AI能识别笔记间的主题关联、时间关联、标签关联",
+        "回答中可选显示关系图谱小部件",
+        "关系图谱支持点击节点查看笔记详情",
+        "提供'探索相关'按钮基于当前话题深入探索",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 6,
-      "passes": true,
-      "notes": "completed: ContentList and ContentItem components created with text editing and image preview, typecheck and lint pass"
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-007",
-      "title": "图片下载和上传功能",
-      "description": "作为用户，我选中图片后，希望图片被下载并上传到 AIMO 服务器。",
+      "title": "探索建议和洞察生成",
+      "description": "作为用户，我希望AI能主动给我洞察和建议，发现知识盲区",
       "acceptanceCriteria": [
-        "实现图片 URL 解析（支持 <img> 标签和 background-image）",
-        "使用 fetch 获取图片数据并转换为 Blob/File",
-        "在 popup 中显示图片上传进度或加载状态",
-        "调用 uploadAttachment API 上传图片",
-        "上传成功后获取 attachment ID 并关联到 pending item",
-        "上传失败时显示错误提示和重试按钮",
+        "提供'发现洞察'功能按钮",
+        "AI分析全库笔记生成主题聚类、时间趋势",
+        "洞察报告以结构化形式展示",
+        "支持'告诉我更多'追问深入特定主题",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 7,
-      "passes": true,
-      "notes": "completed: background-image extraction, download and upload with progress, retry UI, typecheck and lint pass"
-    },
-    {
-      "id": "US-008",
-      "title": "保存到 AIMO 功能",
-      "description": "作为用户，我希望将待保存的内容提交到 AIMO 服务器创建 memo。",
-      "acceptanceCriteria": [
-        "Popup 底部显示 '保存到 AIMO' 和 '取消' 按钮",
-        "点击保存按钮遍历所有 pending items",
-        "对每个文本项调用 createMemo API",
-        "对有图片的项先确保图片已上传，再创建带 attachmentIds 的 memo",
-        "显示保存进度（x/n 完成）",
-        "全部保存成功后清空 pending items，显示成功提示",
-        "保存失败的项目保留在列表中，可重试",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 8,
-      "passes": true,
-      "notes": "completed: save to AIMO with progress tracking, error handling, success message, typecheck and lint pass"
-    },
-    {
-      "id": "US-009",
-      "title": "扩展图标徽章和错误处理",
-      "description": "作为用户，我希望在扩展遇到问题时得到清晰反馈，并看到待保存内容数量。",
-      "acceptanceCriteria": [
-        "实现 setBadge(count) 函数，在扩展图标显示未保存内容数量",
-        "添加 pending item 时自动更新徽章",
-        "清空列表时移除徽章",
-        "未配置服务器时显示 '请先配置' 提示",
-        "Token 过期时自动跳转到登录页面",
-        "网络错误显示具体中文错误信息和重试按钮",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 9,
-      "passes": true,
-      "notes": "completed: badge with setBadge(), config error handling, token expiration redirect, network error retry, typecheck and lint pass"
+      "passes": false,
+      "notes": ""
     }
   ]
 }
