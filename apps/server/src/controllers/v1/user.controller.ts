@@ -96,7 +96,7 @@ export class UserV1Controller {
   @Post('/avatar')
   async uploadAvatar(@Req() req: Request, @CurrentUser() userDto: UserInfoDto) {
     return new Promise((resolve) => {
-      upload.single('avatar')(req, {} as any, async (err: Error | null) => {
+      upload.single('avatar')(req, {} as any, async (err: any) => {
         if (err) {
           if (err.message === 'Only image files are allowed') {
             return resolve(ResponseUtil.error(ErrorCode.UNSUPPORTED_FILE_TYPE));
