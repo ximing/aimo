@@ -54,6 +54,13 @@ export class MemoService extends Service {
   currentMemo: MemoWithAttachmentsDto | null = null;
   loading = false;
 
+  // Track last created memo for heatmap refresh
+  lastCreatedMemoId: string | null = null;
+
+  // Activity data for heatmap
+  activityData: Array<{ date: string; count: number }> = [];
+  activityLoading = false;
+
   // Pagination (for infinite scroll)
   page = 1;
   limit = 20;
@@ -162,6 +169,8 @@ export class MemoService extends Service {
       if (response.code === 0 && response.data) {
         // Refresh the list after creating
         await this.fetchMemos(true);
+        // Refresh heatmap after creating
+        await this.fetchActivityStats();
         return { success: true, memo: response.data.memo };
       } else {
         return { success: false, message: 'Failed to create memo' };
@@ -172,6 +181,23 @@ export class MemoService extends Service {
         success: false,
         message: error instanceof Error ? error.message : 'Failed to create memo',
       };
+    }
+  }
+
+  /**
+   * Fetch activity stats for heatmap
+   */
+  async fetchActivityStats() {
+    this.activityLoading = true;
+    try {
+      const response = await memoApi.getActivityStats(90);
+      if (response.code === 0 && response.data) {
+        this.activityData = response.data.items;
+      }
+    } catch (error) {
+      console.error('Failed to fetch activity stats:', error);
+    } finally {
+      this.activityLoading = false;
     }
   }
 

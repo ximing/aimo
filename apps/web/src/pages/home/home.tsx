@@ -9,7 +9,6 @@ import { CategoryFilter } from './components/category-filter';
 import { Layout } from '../../components/layout';
 import { CalendarHeatmap } from '../../components/calendar-heatmap';
 import { OnThisDayBanner } from './components/on-this-day-banner';
-import * as memoApi from '../../api/memo';
 
 // LocalStorage key for heatmap collapsed state
 const HEATMAP_COLLAPSED_KEY = 'aimo:heatmap:collapsed';
@@ -52,8 +51,6 @@ export const HomePage = view(() => {
   const [isCollapsed, setIsCollapsed] = useState(() =>
     getIsCompactLayout() ? true : loadCollapsedState()
   );
-  const [activityData, setActivityData] = useState<Array<{ date: string; count: number }>>([]);
-  const [isLoadingActivity, setIsLoadingActivity] = useState(false);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia(HEATMAP_COMPACT_QUERY);
@@ -102,25 +99,7 @@ export const HomePage = view(() => {
   // Fetch memos on mount (only once)
   useEffect(() => {
     memoService.fetchMemos();
-  }, []);
-
-  // Fetch activity stats for heatmap
-  useEffect(() => {
-    const fetchActivityStats = async () => {
-      setIsLoadingActivity(true);
-      try {
-        const response = await memoApi.getActivityStats(90);
-        if (response.code === 0 && response.data) {
-          setActivityData(response.data.items);
-        }
-      } catch (error) {
-        console.error('Failed to fetch activity stats:', error);
-      } finally {
-        setIsLoadingActivity(false);
-      }
-    };
-
-    fetchActivityStats();
+    memoService.fetchActivityStats();
   }, []);
 
   // Toggle collapsed state
@@ -190,15 +169,15 @@ export const HomePage = view(() => {
               {/* Heatmap Section */}
               <div className="flex-shrink-0">
                 <div className="flex items-center justify-end mb-0">
-                  {toggleButton}
-                </div>
-                {isLoadingActivity ? (
+{toggleButton}
+</div>
+{memoService.activityLoading ? (
                   <div className="h-32 flex items-center justify-center">
                     <div className="w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
                   </div>
-                ) : (
-                  <CalendarHeatmap
-                    data={activityData}
+) : (
+<CalendarHeatmap
+data={memoService.activityData}
                     selectedDate={memoService.selectedDate}
                     onDateSelect={(date) => {
                       // Toggle date filter: if clicking the same date, clear the filter
