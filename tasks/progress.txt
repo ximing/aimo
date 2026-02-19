@@ -83,6 +83,56 @@
   - Menu builds from template array of MenuItemConstructorOptions
 ---
 
+## 2026-02-19 - US-009 (Electron Client)
+- Implement auto-update mechanism using electron-updater
+- Import autoUpdater from electron-updater and configure to use GitHub Releases (default)
+- Add setupAutoUpdater() function that calls checkForUpdatesAndNotify()
+- Add checkForUpdates() function for manual update checking from menu
+- Check for updates 3 seconds after app startup using setTimeout
+- Add "检查更新" menu item to Help menu for manual update checking
+- Add autoUpdater event handlers:
+  - update-available: Logs when update is available (notification handled automatically)
+  - update-downloaded: Logs when update is downloaded (will install on quit)
+  - error: Logs any updater errors
+- Typecheck and lint pass
+- **Files changed:**
+  - `apps/client/src/main/index.ts` - Added auto-updater integration
+- **Learnings for future iterations:**
+  - electron-updater uses GitHub Releases by default (reads from package.json repository.url)
+  - checkForUpdatesAndNotify() handles both checking and showing system notifications
+  - Updates are downloaded automatically in the background when available
+  - Updates are installed when the app is quit and restarted
+  - Manual checking can be triggered by calling checkForUpdatesAndNotify() again
+  - Error handling is important as network issues can cause update checks to fail
+---
+
+## 2026-02-19 - US-010 (Electron Client)
+- Configure cross-platform Electron packaging with electron-builder
+- Verified electron-builder.yml configuration for all platforms:
+  - macOS: target dmg and zip with x64/arm64 architectures, category: public.app-category.productivity
+  - Windows: target nsis and portable with x64 architecture
+  - Linux: target AppImage and deb with x64 architecture, category: Office
+- Created build directory with icon files for all platforms:
+  - icon.icns for macOS (generated using @fiahfy/icns)
+  - icon.ico for Windows (generated using png-to-ico)
+  - icon.png for Linux (512x512 PNG)
+- Created create-icons.js script to regenerate icons from SVG source
+- Added icon generation devDependencies: png-to-ico, @fiahfy/icns
+- Package.json includes dist scripts: dist, dist:all, dist:mac, dist:win, dist:linux
+- Typecheck and lint pass
+- **Files changed:**
+  - `apps/client/build/` - New directory with icon files (icon.icns, icon.ico, icon.png, icon.svg)
+  - `apps/client/build/create-icons.js` - Script to regenerate icons from SVG
+  - `apps/client/package.json` - Added icon generation dependencies
+- **Learnings for future iterations:**
+  - Use `png-to-ico` package to generate Windows .ico files from PNGs (supports multi-resolution)
+  - Use `@fiahfy/icns` for macOS .icns generation (IcnsImage constructor: (osType, bytes, imageBuffer))
+  - Icon sizes needed: 16x16, 32x32, 48x48, 64x64, 128x128, 256x256, 512x512
+  - macOS icns osTypes: icp4(16), icp5(32), icp6(64), ic07(128), ic08(256), ic09(512)
+  - electron-builder.yml configures all platform targets in one file
+  - Keep icon source as SVG for easy regeneration at different sizes
+---
+
 ## Codebase Patterns
 - Use `electron-store` for persisting user preferences and window state to `app.getPath('userData')`
 - Always validate saved window bounds against available displays using `screen.getAllDisplays()`

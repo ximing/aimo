@@ -151,8 +151,8 @@
         "手动验证更新检查流程（可使用测试版本号）"
       ],
       "priority": 9,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Auto-update mechanism using electron-updater with GitHub Releases, automatic check on startup, manual check menu item, event handlers for update-available/update-downloaded/error"
     },
     {
       "id": "US-010",
@@ -169,8 +169,8 @@
         "手动执行 pnpm build:client 验证打包成功"
       ],
       "priority": 10,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Cross-platform packaging configured in electron-builder.yml with macOS (dmg, zip), Windows (nsis, portable), Linux (AppImage, deb). Build directory created with icon.icns, icon.ico, and icon.png."
     }
   ]
 }
