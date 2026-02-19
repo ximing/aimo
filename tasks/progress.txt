@@ -354,6 +354,32 @@
   - Progress bar styling: transition width with ease for smooth animation
 ---
 
+## 2026-02-19 - US-009 (Chrome Extension)
+- Implement setBadge(count) function in background script for badge management
+- Add CLEAR_ALL_ITEMS and SET_BADGE message handlers to background script
+- Badge updates automatically on storage changes (chrome.storage.onChanged listener)
+- Show config error message on login page when not configured (initialErrorMessage prop)
+- Handle TOKEN_EXPIRED (401) by redirecting to login page via onAuthError callback
+- Handle CONFIG_MISSING and TOKEN_MISSING errors with user feedback
+- Add retry button for network errors in save flow with errorMessageContent styles
+- Add notification system in content script for error feedback (showNotification function)
+- ContentList passes auth errors up to App via onAuthError callback prop
+- Typecheck and lint pass
+- **Files changed:**
+  - `apps/extension/src/background/index.ts` - Added setBadge(), CLEAR_ALL_ITEMS, SET_BADGE handlers
+  - `apps/extension/src/content/index.ts` - Added showNotification() for user feedback
+  - `apps/extension/src/popup/App.tsx` - Added configErrorMessage state and onAuthError handler
+  - `apps/extension/src/popup/ConfigPage.tsx` - Added initialErrorMessage prop support
+  - `apps/extension/src/popup/ContentList.tsx` - Added retry button and auth error handling
+  - `apps/extension/src/popup/MainPage.tsx` - Added onAuthError prop forwarding
+- **Learnings for future iterations:**
+  - Use callbacks (onAuthError) to communicate auth errors from child to parent components
+  - Content script can show notifications using DOM elements with CSS animations
+  - Badge updates should be centralized in background script via message passing
+  - Error codes (TOKEN_EXPIRED, CONFIG_MISSING) enable specific UI handling
+  - Always provide retry functionality for network-related errors
+---
+
 ## Codebase Patterns
 - Use `electron-store` for persisting user preferences and window state to `app.getPath('userData')`
 - Always validate saved window bounds against available displays using `screen.getAllDisplays()`

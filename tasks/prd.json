@@ -164,8 +164,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 9,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "completed: badge with setBadge(), config error handling, token expiration redirect, network error retry, typecheck and lint pass"
     }
   ]
 }
