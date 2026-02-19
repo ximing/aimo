@@ -217,6 +217,7 @@ export class MemoV1Controller {
   @Get('/:memoId/related')
   async findRelatedMemos(
     @Param('memoId') memoId: string,
+    @QueryParam('page') page: number = 1,
     @QueryParam('limit') limit: number = 10,
     @CurrentUser() user: UserInfoDto
   ) {
@@ -225,12 +226,9 @@ export class MemoV1Controller {
         return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
       }
 
-      const results = await this.memoService.findRelatedMemos(memoId, user.uid, limit);
+      const result = await this.memoService.findRelatedMemos(memoId, user.uid, page, limit);
 
-      return ResponseUtil.success({
-        items: results,
-        count: results.length,
-      });
+      return ResponseUtil.success(result);
     } catch (error) {
       console.error('Find related memos error:', error);
       return ResponseUtil.error(ErrorCode.DB_ERROR);

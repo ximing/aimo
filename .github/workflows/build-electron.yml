@@ -1,0 +1,459 @@
+name: Build Electron Client
+
+on:
+  push:
+    branches:
+      - '**'
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+env:
+  NODE_VERSION: 20
+  PNPM_VERSION: 10.22.0
+
+jobs:
+  # Build packages in dependency order first
+  build-packages:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Use official npm registry
+        run: |
+          echo "registry=https://registry.npmjs.org/" > .npmrc
+          echo "@lancedb:registry=https://registry.npmjs.org/" >> .npmrc
+          echo "@lancedb:registry=https://registry.npmjs.org/" > apps/client/.npmrc
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build DTO package
+        run: pnpm --filter @mancedb/dto build
+
+      - name: Build LanceDB Core package
+        run: pnpm --filter @mancedb/lancedb-core build
+
+      - name: Upload packages artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: packages-dist
+          path: |
+            packages/*/dist/**
+            packages/*/package.json
+          retention-days: 1
+
+  # Build web app once and reuse
+  build-web:
+    runs-on: ubuntu-latest
+    needs: build-packages
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Use official npm registry
+        run: |
+          echo "registry=https://registry.npmjs.org/" > .npmrc
+          echo "@lancedb:registry=https://registry.npmjs.org/" >> .npmrc
+          echo "@lancedb:registry=https://registry.npmjs.org/" > apps/client/.npmrc
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download packages artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: packages-dist
+          path: packages
+
+      - name: Build web app
+        run: cd apps/web && ELECTRON=true pnpm build
+
+      - name: Upload web app artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: |
+            apps/client/dist/web/**
+          retention-days: 1
+
+  # Typecheck and lint client
+  quality-checks:
+    runs-on: ubuntu-latest
+    needs: build-packages
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Use official npm registry
+        run: |
+          echo "registry=https://registry.npmjs.org/" > .npmrc
+          echo "@lancedb:registry=https://registry.npmjs.org/" >> .npmrc
+          echo "@lancedb:registry=https://registry.npmjs.org/" > apps/client/.npmrc
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download packages artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: packages-dist
+          path: packages
+
+      - name: Type check
+        run: pnpm --filter @mancedb/client typecheck
+
+      - name: Lint
+        run: pnpm --filter @mancedb/client lint
+
+  # macOS Intel (x64) build
+  build-macos-x64:
+    runs-on: macos-14
+    needs: [build-packages, build-web, quality-checks]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Use official npm registry
+        run: |
+          echo "registry=https://registry.npmjs.org/" > .npmrc
+          echo "@lancedb:registry=https://registry.npmjs.org/" >> .npmrc
+          echo "@lancedb:registry=https://registry.npmjs.org/" > apps/client/.npmrc
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Download packages artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: packages-dist
+          path: packages
+
+      - name: Download web app artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: apps/client/dist/web
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Rebuild native modules for x64
+        run: cd apps/client && pnpm exec electron-builder install-app-deps --arch=x64
+
+      - name: Build Electron main process
+        run: pnpm --filter @mancedb/client build:electron
+
+      - name: Build macOS x64
+        run: |
+          if [ -z "$CSC_LINK" ]; then
+            unset CSC_LINK
+            unset CSC_KEY_PASSWORD
+          fi
+          pnpm --filter @mancedb/client run dist:mac -- --x64
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          GITHUB_OWNER: ${{ github.repository_owner }}
+          GITHUB_REPO: ${{ github.event.repository.name }}
+
+      - name: Upload macOS x64 artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-x64-artifacts
+          path: |
+            apps/client/release/*-x64.dmg
+            apps/client/release/*-x64.zip
+            apps/client/release/latest-mac.yml
+          if-no-files-found: warn
+
+  # macOS Apple Silicon (arm64) build
+  build-macos-arm64:
+    runs-on: macos-latest
+    needs: [build-packages, build-web, quality-checks]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Use official npm registry
+        run: |
+          echo "registry=https://registry.npmjs.org/" > .npmrc
+          echo "@lancedb:registry=https://registry.npmjs.org/" >> .npmrc
+          echo "@lancedb:registry=https://registry.npmjs.org/" > apps/client/.npmrc
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          architecture: arm64
+
+      - name: Download packages artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: packages-dist
+          path: packages
+
+      - name: Download web app artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: apps/client/dist/web
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Rebuild native modules for arm64
+        run: cd apps/client && pnpm exec electron-builder install-app-deps --arch=arm64
+
+      - name: Build Electron main process
+        run: pnpm --filter @mancedb/client build:electron
+
+      - name: Build macOS arm64
+        run: |
+          if [ -z "$CSC_LINK" ]; then
+            unset CSC_LINK
+            unset CSC_KEY_PASSWORD
+          fi
+          pnpm --filter @mancedb/client run dist:mac -- --arm64
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          GITHUB_OWNER: ${{ github.repository_owner }}
+          GITHUB_REPO: ${{ github.event.repository.name }}
+
+      - name: Upload macOS arm64 artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-arm64-artifacts
+          path: |
+            apps/client/release/*-arm64.dmg
+            apps/client/release/*-arm64.zip
+            apps/client/release/latest-mac.yml
+          if-no-files-found: warn
+
+  # Windows x64 build
+  build-windows:
+    runs-on: windows-latest
+    needs: [build-packages, build-web, quality-checks]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Use official npm registry
+        run: |
+          echo "registry=https://registry.npmjs.org/" > .npmrc
+          echo "@lancedb:registry=https://registry.npmjs.org/" >> .npmrc
+          echo "@lancedb:registry=https://registry.npmjs.org/" > apps/client/.npmrc
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download packages artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: packages-dist
+          path: packages
+
+      - name: Download web app artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: apps/client/dist/web
+
+      - name: Build Electron main process
+        run: pnpm --filter @mancedb/client build:electron
+
+      - name: Build Windows
+        run: pnpm --filter @mancedb/client dist:win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+          GITHUB_OWNER: ${{ github.repository_owner }}
+          GITHUB_REPO: ${{ github.event.repository.name }}
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-artifacts
+          path: |
+            apps/client/release/*.exe
+            apps/client/release/*.msi
+            apps/client/release/latest.yml
+          if-no-files-found: warn
+
+  # Linux x64 build
+  build-linux:
+    runs-on: ubuntu-latest
+    needs: [build-packages, build-web, quality-checks]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Use official npm registry
+        run: |
+          echo "registry=https://registry.npmjs.org/" > .npmrc
+          echo "@lancedb:registry=https://registry.npmjs.org/" >> .npmrc
+          echo "@lancedb:registry=https://registry.npmjs.org/" > apps/client/.npmrc
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download packages artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: packages-dist
+          path: packages
+
+      - name: Download web app artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: apps/client/dist/web
+
+      - name: Build Electron main process
+        run: pnpm --filter @mancedb/client build:electron
+
+      - name: Build Linux
+        run: pnpm --filter @mancedb/client dist:linux
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_OWNER: ${{ github.repository_owner }}
+          GITHUB_REPO: ${{ github.event.repository.name }}
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-artifacts
+          path: |
+            apps/client/release/*.AppImage
+            apps/client/release/*.deb
+            apps/client/release/latest-linux.yml
+          if-no-files-found: warn
+
+  # Create GitHub Release for tags
+  release:
+    needs: [build-macos-x64, build-macos-arm64, build-windows, build-linux]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: '*-artifacts'
+          merge-multiple: true
+
+      - name: List artifacts
+        run: ls -la artifacts/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          draft: ${{ contains(github.ref_name, '-alpha') || contains(github.ref_name, '-beta') || contains(github.ref_name, '-rc') }}
+          prerelease: ${{ contains(github.ref_name, '-alpha') || contains(github.ref_name, '-beta') }}
+          generate_release_notes: true
+          name: ManceDB ${{ github.ref_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Build status notification
+  notify:
+    needs: [build-macos-x64, build-macos-arm64, build-windows, build-linux]
+    runs-on: ubuntu-latest
+    if: always() && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Check build status
+        run: |
+          if [ "${{ needs.build-macos-x64.result }}" == "failure" ] || \
+             [ "${{ needs.build-macos-arm64.result }}" == "failure" ] || \
+             [ "${{ needs.build-windows.result }}" == "failure" ] || \
+             [ "${{ needs.build-linux.result }}" == "failure" ]; then
+            echo "::error::One or more builds failed!"
+            exit 1
+          else
+            echo "All builds completed successfully!"
+          fi

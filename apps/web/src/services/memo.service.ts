@@ -371,15 +371,15 @@ export class MemoService extends Service {
   /**
    * Find related memos based on vector similarity
    */
-  async findRelatedMemos(memoId: string, limit: number = 10) {
+  async findRelatedMemos(memoId: string, page: number = 1, limit: number = 10) {
     try {
-      const response = await memoApi.findRelatedMemos(memoId, limit);
+      const response = await memoApi.findRelatedMemos(memoId, page, limit);
 
       if (response.code === 0 && response.data) {
         return {
           success: true,
           items: response.data.items,
-          count: response.data.count,
+          pagination: response.data.pagination,
         };
       } else {
         return { success: false, message: 'Failed to find related memos' };

@@ -1,73 +1,176 @@
 {
   "project": "AIMO",
-  "branchName": "ralph/on-this-day",
-  "description": "历史的今天 (On This Day) - 在热力图下方展示往年今日创建的 memos",
+  "branchName": "ralph/electron-client",
+  "description": "Electron 桌面客户端 - 使用 Vite 构建，复用 Web 项目作为渲染层，提供原生桌面体验",
   "userStories": [
     {
       "id": "US-001",
-      "title": "后端 API - 获取历史的今天 memos",
-      "description": "作为开发者，我需要提供一个 API 端点来获取往年今日创建的 memos。",
+      "title": "初始化 Electron 项目结构",
+      "description": "作为开发者，我需要创建 Electron 项目的基础结构，以便开始开发桌面客户端。",
       "acceptanceCriteria": [
-        "创建 GET /api/v1/memos/on-this-day 端点",
-        "根据当前日期（MM-DD）筛选往年同一日期的 memos",
-        "排除今年当天的记录",
-        "按年份倒序排列（最近的年份在前）",
-        "最多返回 10 条记录",
-        "返回字段：id, content, createdAt, 年份",
+        "在 apps/client 创建 Electron 项目，包含 main 和 preload 目录",
+        "配置 Vite 构建主进程和预加载脚本",
+        "配置 TypeScript 支持，包含 tsconfig.json",
+        "添加 pnpm dev:client 命令启动 Electron 开发模式",
+        "添加 pnpm build:client 命令打包 Electron 应用",
         "Typecheck passes"
       ],
       "priority": 1,
-      "passes": true,
-      "notes": "Implemented on 2026-02-18"
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-002",
-      "title": "前端组件 - 历史的今天横幅",
-      "description": "作为用户，我想在热力图下方看到历史的今天横幅，浏览往年今日的 memos。",
+      "title": "复用 Web 项目作为渲染层",
+      "description": "作为开发者，我希望 Electron 加载现有的 Web 项目，避免代码重复。",
       "acceptanceCriteria": [
-        "在热力图下方创建横向滚动横幅组件",
-        "显示标题'历史的今天'带有时钟图标",
-        "每个 memo 卡片显示内容预览（最多2行）和年份标签",
-        "横向滚动，支持触摸滑动和鼠标滚轮",
-        "当没有历史记录时整个区块隐藏",
-        "最多显示 5 条，超出显示'查看更多'入口",
+        "Electron 主进程开发模式下加载 apps/web 的 Vite dev server (http://localhost:5173)",
+        "Electron 主进程生产模式下加载打包后的 Web 静态文件",
+        "配置 apps/web 的构建输出目录供 Electron 使用",
+        "创建主窗口，尺寸 1200x800，启用 nodeIntegration: false, contextIsolation: true",
         "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "Verify Electron 窗口正确显示 Web 界面"
       ],
       "priority": 2,
-      "passes": true,
-      "notes": "Implemented on 2026-02-18"
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-003",
-      "title": "点击交互 - 查看 memo 详情",
-      "description": "作为用户，我想点击卡片查看完整的 memo 内容。",
+      "title": "实现运行环境检测",
+      "description": "作为用户，我希望 Web 应用能识别是否在 Electron 中运行，以便调用不同的功能。",
       "acceptanceCriteria": [
-        "点击卡片打开 memo 详情弹窗/页面",
-        "复用现有的 memo 详情展示组件",
-        "显示完整的 memo 内容、创建时间、年份",
-        "支持关闭弹窗返回首页",
+        "在 preload 脚本中通过 contextBridge 暴露 window.electronAPI 对象",
+        "electronAPI 包含 platform 属性返回 process.platform",
+        "在 apps/web 创建 src/electron/isElectron.ts 导出 isElectron() 函数",
+        "isElectron() 通过检测 navigator.userAgent 中的 Electron 字符串判断",
+        "浏览器端运行时访问 window.electronAPI 返回 undefined 但不报错",
         "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "在 Electron 和浏览器中分别验证环境检测正确"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": "Implemented on 2026-02-18"
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-004",
-      "title": "响应式适配",
-      "description": "作为用户，我期望在不同设备上都能正常浏览历史的今天。",
+      "title": "实现系统托盘功能",
+      "description": "作为用户，我希望关闭窗口后应用仍在后台运行，可以从系统托盘快速打开。",
       "acceptanceCriteria": [
-        "移动端：卡片宽度适配屏幕，保持横向滚动",
-        "桌面端：显示 3-4 个卡片，超出部分可滚动",
-        "平板：中间尺寸适配",
+        "点击关闭按钮时调用 event.preventDefault() 和 window.hide() 隐藏到托盘",
+        "创建 Tray 实例，加载托盘图标（使用 16x16 或 22x22 像素的图标）",
+        "托盘右键菜单包含 '显示主窗口' 和 '退出应用' 两项",
+        "点击托盘图标切换窗口显示/隐藏状态",
+        "macOS 上 Dock 图标点击时恢复窗口（监听 app.on('activate')）",
         "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "手动验证托盘功能正常工作"
       ],
       "priority": 4,
-      "passes": true,
-      "notes": "Implemented on 2026-02-18"
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "实现系统级快捷键",
+      "description": "作为用户，我希望使用全局快捷键快速打开/隐藏 AIMO 窗口，提高效率。",
+      "acceptanceCriteria": [
+        "使用 globalShortcut.register 注册 CommandOrControl+Shift+A",
+        "快捷键回调函数切换窗口显示/隐藏（visible 时 hide，否则 show）",
+        "应用启动时注册快捷键，应用退出前调用 globalShortcut.unregisterAll()",
+        "快捷键在窗口失焦或隐藏后依然有效",
+        "Typecheck passes",
+        "手动验证快捷键正常工作"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "实现原生应用菜单",
+      "description": "作为用户，我希望使用原生菜单栏执行常用操作。",
+      "acceptanceCriteria": [
+        "使用 Menu.buildFromTemplate 创建应用菜单",
+        "菜单包含应用菜单（About, Quit）、编辑菜单（Undo, Redo, Cut, Copy, Paste, SelectAll）",
+        "菜单包含视图菜单（Reload, ToggleDevTools, ResetZoom, ZoomIn, ZoomOut）",
+        "菜单包含窗口菜单（Minimize, Close, 窗口列表）",
+        "macOS 上菜单符合原生样式（首项为应用名，Edit 在第二个）",
+        "Windows/Linux 上有相应的菜单栏适配",
+        "Typecheck passes",
+        "手动验证菜单在各平台正常显示"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "实现本地文件拖拽支持",
+      "description": "作为用户，我希望直接从桌面拖拽文件到 AIMO 窗口中添加附件。",
+      "acceptanceCriteria": [
+        "在主进程中监听 webContents.on('will-navigate') 阻止拖放导致的页面跳转",
+        "在 preload 中暴露 onFileDrop 方法，通过 IPC 接收文件路径数组",
+        "主进程监听 drag-enter 和 drag-drop 事件，提取文件路径",
+        "通过 ipcRenderer.send('files-dropped', filePaths) 发送文件路径到渲染进程",
+        "支持多文件同时拖拽，过滤掉文件夹（只传递文件路径）",
+        "Typecheck passes",
+        "手动验证文件拖拽功能正常工作"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "实现窗口状态管理",
+      "description": "作为用户，我希望应用记住窗口位置和大小，下次打开时保持一致。",
+      "acceptanceCriteria": [
+        "安装 electron-store 作为配置存储库",
+        "窗口关闭前保存 bounds (x, y, width, height) 和 isMaximized 状态",
+        "应用启动时读取配置，使用 saved bounds 创建窗口（检查显示器有效性）",
+        "如果上次是最大化状态，创建窗口后调用 maximize()",
+        "配置存储在 app.getPath('userData') 目录",
+        "Typecheck passes",
+        "手动验证窗口状态正确保存和恢复"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "实现自动更新机制",
+      "description": "作为用户，我希望应用自动检查更新并提示安装。",
+      "acceptanceCriteria": [
+        "安装 electron-updater 依赖",
+        "在 main 进程导入 autoUpdater 并配置更新服务器（使用 GitHub Releases 作为默认）",
+        "应用启动 3 秒后自动检查更新（autoUpdater.checkForUpdatesAndNotify()）",
+        "发现更新时显示系统通知（autoUpdater.on('update-available')）",
+        "在菜单中添加 '检查更新' 菜单项，支持手动触发检查",
+        "Typecheck passes",
+        "手动验证更新检查流程（可使用测试版本号）"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "配置跨平台打包",
+      "description": "作为开发者，我需要打包应用供 macOS、Windows 和 Linux 用户使用。",
+      "acceptanceCriteria": [
+        "配置 electron-builder，创建 electron-builder.json 或写在 package.json",
+        "配置 mac 目标：target: ['dmg', 'zip']，category: 'public.app-category.productivity'",
+        "配置 win 目标：target: ['nsis', 'portable']",
+        "配置 linux 目标：target: ['AppImage', 'deb']，category: 'Office'",
+        "配置图标路径：mac 使用 build/icon.icns，win 使用 build/icon.ico，linux 使用 build/icon.png",
+        "CI/CD 工作流配置自动生成各平台安装包（可选，可在后续迭代完成）",
+        "Typecheck passes",
+        "手动执行 pnpm build:client 验证打包成功"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": ""
     }
   ]
 }

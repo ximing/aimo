@@ -1,0 +1,95 @@
+# Electron Builder Configuration
+# https://www.electron.build/configuration/configuration
+
+appId: com.mancedb.client
+productName: ManceDB
+copyright: Copyright © 2026 ManceDB
+directories:
+  output: release
+  buildResources: build
+files:
+  - dist
+  - package.json
+disableDefaultIgnoredFiles: false
+# macOS Configuration
+mac:
+  category: public.app-category.developer-tools
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+    - target: zip
+      arch:
+        - x64
+        - arm64
+  icon: build/icon.icns
+  hardenedRuntime: false
+  gatekeeperAssess: false
+  sign: null
+  notarize: null
+dmg:
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+  window:
+    width: 540
+    height: 380
+# Windows Configuration
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+        - ia32
+    - target: msi
+      arch:
+        - x64
+  icon: build/icon.ico
+  verifyUpdateCodeSignature: false
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: ManceDB
+  uninstallDisplayName: ManceDB
+msi:
+  createDesktopShortcut: true
+  runAfterFinish: true
+# Linux Configuration
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
+    - target: deb
+      arch:
+        - x64
+  category: Development
+  icon: build/icons
+  maintainer: ManceDB
+  vendor: ManceDB
+  synopsis: ManceDB Desktop Client
+  description: Desktop client for managing LanceDB databases
+  desktop:
+    entry:
+      Name: ManceDB
+      Comment: ManceDB Database Administration Tool
+      Categories: Development;Database;
+appImage:
+  artifactName: ${productName}-${version}-${arch}.${ext}
+deb:
+  artifactName: ${productName}-${version}-${arch}.${ext}
+# Publish Configuration (optional - only used during CI/CD)
+# publish:
+#   provider: github
+#   owner: ${GITHUB_OWNER}
+#   repo: ${GITHUB_REPO}
+#   releaseType: release
+# Auto-update Configuration
+electronUpdaterCompatibility: '>=6.0.0'

@@ -638,13 +638,14 @@ export class MemoService {
 
   /**
    * Find related memos based on vector similarity to a given memo
-   * Excludes the memo itself and returns top N similar memos
+   * Excludes the memo itself and returns paginated similar memos with relevance scores
    */
   async findRelatedMemos(
     memoId: string,
     uid: string,
+    page: number = 1,
     limit: number = 10
-  ): Promise<MemoListItemDto[]> {
+  ): Promise<PaginatedMemoListWithScoreDto> {
     try {
       // Get the memo to find related ones
       const sourceMemo = await this.getMemoById(memoId, uid);
@@ -656,16 +657,27 @@ export class MemoService {
 
       // Use the memo's existing embedding to search for similar memos
       const sourceEmbedding = sourceMemo.embedding;
+      const offset = (page - 1) * limit;
 
       // Perform vector search with the memo's embedding
       const results = await memosTable
         .search(sourceEmbedding)
         .where(`uid = '${uid}' AND memoId != '${memoId}'`) // Exclude the memo itself
         .limit(limit)
+        .offset(offset)
         .toArray();
 
+      // Fetch total count for pagination (all candidate memos excluding self)
+      const allResults = await memosTable
+        .query()
+        .where(`uid = '${uid}' AND memoId != '${memoId}'`)
+        .toArray();
+
+      const total = allResults.length;
+      const totalPages = Math.ceil(total / limit);
+
       // Convert attachment IDs to DTOs and exclude embedding
-      const items: MemoListItemDto[] = [];
+      const items: MemoListItemWithScoreDto[] = [];
       for (const memo of results) {
         const attachmentIds = this.convertArrowAttachments(memo.attachments);
         const attachmentDtos: AttachmentDto[] =
@@ -682,10 +694,19 @@ export class MemoService {
           attachments: attachmentDtos,
           createdAt: memo.createdAt,
           updatedAt: memo.updatedAt,
+          relevanceScore: Math.max(0, Math.min(1, 1 - (memo._distance || 0) / 2)),
         });
       }
 
-      return items;
+      return {
+        items,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages,
+        },
+      };
     } catch (error) {
       console.error('Error finding related memos:', error);
       throw error;
