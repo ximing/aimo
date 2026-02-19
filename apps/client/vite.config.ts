@@ -1,15 +1,22 @@
 import { defineConfig } from 'vite';
-import electron from 'vite-plugin-electron';
+import electron from 'vite-plugin-electron/simple';
 import renderer from 'vite-plugin-electron-renderer';
 import { resolve } from 'path';
 
+// Vite Dev Server URL for the web app (when running in development)
+const WEB_APP_DEV_URL = process.env.AIMO_WEB_DEV_URL ?? 'http://localhost:5173';
+
 export default defineConfig({
+  define: {
+    // Inject the dev server URL at build time so it's available in the main process
+    'process.env.VITE_DEV_SERVER_URL': JSON.stringify(WEB_APP_DEV_URL),
+  },
   plugins: [
-    electron([
-      {
-        // Main process entry
+    electron({
+      main: {
         entry: 'src/main/index.ts',
         onstart({ startup }) {
+          process.env.VITE_DEV_SERVER_URL = WEB_APP_DEV_URL;
           startup();
         },
         vite: {
@@ -23,9 +30,8 @@ export default defineConfig({
           },
         },
       },
-      {
-        // Preload script entry
-        entry: 'src/preload/index.ts',
+      preload: {
+        input: 'src/preload/index.ts',
         onstart({ reload }) {
           reload();
         },
@@ -40,7 +46,7 @@ export default defineConfig({
           },
         },
       },
-    ]),
+    }),
     renderer(),
   ],
   resolve: {
@@ -48,4 +54,5 @@ export default defineConfig({
       '@': resolve(__dirname, 'src'),
     },
   },
+  appType: 'custom',
 });

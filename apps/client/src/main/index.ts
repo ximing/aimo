@@ -15,30 +15,24 @@ import fs from 'node:fs';
 import Store from 'electron-store';
 import { autoUpdater } from 'electron-updater';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // The built directory structure
 //
 // ├─┬ dist
 // │ ├─┬ main
-// │ │ └── index.js    > Electron-Main
+// │ │ └── index.js     > Electron-Main
 // │ └─┬ preload
-// │   └── index.mjs   > Preload-Scripts
+// │   └── index.mjs    > Preload-Scripts
 // ├─┬ ../server/public
-// │ └── ...           > Web build output (from apps/web)
+// │ └── ...            > Web build output (from apps/web)
 
-/* eslint-disable turbo/no-undeclared-env-vars */
-process.env.APP_ROOT = path.join(__dirname, '../..');
-
-export const MAIN_DIST = path.join(process.env.APP_ROOT, 'dist');
-// Web app builds to ../server/public (relative to apps/web, so from apps/client: ../../server/public)
-export const RENDERER_DIST = path.join(process.env.APP_ROOT, '../../server/public');
 export const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
+export const RENDERER_DIST = path.resolve(__dirname, '../../../server/public');
+export const PRELOAD_PATH = path.join(__dirname, '../preload/index.mjs');
 
-process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
-  ? path.join(process.env.APP_ROOT, 'public')
-  : RENDERER_DIST;
-/* eslint-enable turbo/no-undeclared-env-vars */
+process.env.VITE_PUBLIC = RENDERER_DIST;
 
 let mainWindow: BrowserWindow | null;
 let tray: Tray | null = null;
@@ -115,7 +109,7 @@ function createWindow(): void {
     show: false,
     title: 'AIMO',
     webPreferences: {
-      preload: path.join(MAIN_DIST, 'preload/index.mjs'),
+      preload: PRELOAD_PATH,
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
