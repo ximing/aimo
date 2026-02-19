@@ -186,7 +186,7 @@ jobs:
         run: cd apps/client && pnpm exec electron-builder install-app-deps --arch=x64
 
       - name: Build Electron main process
-        run: pnpm --filter @aimo/client build
+        run: pnpm --filter @aimo/client run build:electron
 
       - name: Build macOS x64
         run: |
@@ -257,7 +257,7 @@ jobs:
         run: cd apps/client && pnpm exec electron-builder install-app-deps --arch=arm64
 
       - name: Build Electron main process
-        run: pnpm --filter @aimo/client build
+        run: pnpm --filter @aimo/client run build:electron
 
       - name: Build macOS arm64
         run: |
@@ -324,7 +324,7 @@ jobs:
           path: apps/client/dist/web
 
       - name: Build Electron main process
-        run: pnpm --filter @aimo/client build
+        run: pnpm --filter @aimo/client run build:electron
 
       - name: Build Windows
         run: pnpm --filter @aimo/client run dist:win
@@ -386,7 +386,7 @@ jobs:
           path: apps/client/dist/web
 
       - name: Build Electron main process
-        run: pnpm --filter @aimo/client build
+        run: pnpm --filter @aimo/client run build:electron
 
       - name: Build Linux
         run: pnpm --filter @aimo/client run dist:linux
