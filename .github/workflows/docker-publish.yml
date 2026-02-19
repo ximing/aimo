@@ -53,10 +53,6 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
             type=raw,value=stable,enable=${{ github.ref == 'refs/heads/master' }}
 
-      - name: Remove prepare script for Docker build
-        run: |
-          sed -i '/"prepare": "husky"/d' package.json
-
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
