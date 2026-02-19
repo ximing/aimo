@@ -632,7 +632,7 @@ curl -X POST http://localhost:3000/api/v1/memos/search/vector \
 
 **GET** `/api/v1/memos/:memoId/related`
 
-基于当前笔记的向量相似度查找相关笔记。
+基于当前笔记的向量相似度查找相关笔记，返回分页结果和相似度分数。
 
 #### Request
 
@@ -650,14 +650,15 @@ curl -X POST http://localhost:3000/api/v1/memos/search/vector \
 
 **Query Parameters:**
 
-| Parameter | Type   | Default | Description            |
-| --------- | ------ | ------- | ---------------------- |
-| limit     | number | 10      | 返回相关笔记的最大数量 |
+| Parameter | Type   | Default | Description |
+| --------- | ------ | ------- | ----------- |
+| page      | number | 1       | 页码        |
+| limit     | number | 10      | 每页数量    |
 
 **Example Request:**
 
 ```bash
-curl -X GET "http://localhost:3000/api/v1/memos/memo_123456/related?limit=10" \
+curl -X GET "http://localhost:3000/api/v1/memos/memo_123456/related?page=1&limit=10" \
   -H "Authorization: Bearer <jwt_token>"
 ```
 
@@ -665,20 +666,31 @@ curl -X GET "http://localhost:3000/api/v1/memos/memo_123456/related?limit=10" \
 
 **Success Response (200 OK):**
 
-> **Response Type:** `ApiSuccessDto<{ items: MemoListItemDto[]; count: number }>`
+> **Response Type:** `ApiSuccessDto<PaginatedMemoListWithScoreDto>`
 >
-> **MemoListItemDto 类型定义:**
+> **PaginatedMemoListWithScoreDto 类型定义:**
 > ```typescript
-> interface MemoListItemDto {
+> interface MemoListItemWithScoreDto {
 >   memoId: string;           // 笔记唯一标识符
 >   uid: string;             // 用户唯一标识符
 >   content: string;          // 笔记内容
 >   type: 'text' | 'audio' | 'video'; // 笔记类型
 >   categoryId?: string;      // 分类 ID
 >   attachments?: AttachmentDto[]; // 附件列表
->   relations?: MemoListItemDto[]; // 相关笔记
+>   relations?: MemoListItemWithScoreDto[]; // 相关笔记
 >   createdAt: number;        // 创建时间戳（毫秒）
 >   updatedAt: number;        // 更新时间戳（毫秒）
+>   relevanceScore?: number;   // 相似度分数 (0-1)，越高越相关
+> }
+>
+> interface PaginatedMemoListWithScoreDto {
+>   items: MemoListItemWithScoreDto[];
+>   pagination: {
+>     total: number;
+>     page: number;
+>     limit: number;
+>     totalPages: number;
+>   };
 > }
 > ```
 
@@ -696,10 +708,16 @@ curl -X GET "http://localhost:3000/api/v1/memos/memo_123456/related?limit=10" \
         "attachments": [],
         "relations": [],
         "createdAt": 1704067200000,
-        "updatedAt": 1704067200000
+        "updatedAt": 1704067200000,
+        "relevanceScore": 0.87
       }
     ],
-    "count": 3
+    "pagination": {
+      "total": 12,
+      "page": 1,
+      "limit": 10,
+      "totalPages": 2
+    }
   }
 }
 ```

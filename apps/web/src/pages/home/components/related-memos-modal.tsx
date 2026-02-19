@@ -75,20 +75,23 @@ const getRelevanceScore = (relevanceScore?: number): number | null => {
 };
 
 const RelevanceIndicator = ({ score }: { score: number }) => {
-  const normalized = Math.max(0, Math.min(1, score / 5));
+  const filledBlocks = Math.ceil(Math.max(0, Math.min(5, score)));
 
   return (
-    <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
+    <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500">
       <span className="shrink-0">相关度</span>
-      <div className="relative h-1.5 w-16 rounded-full bg-gray-200 dark:bg-dark-700">
-        <div
-          className="absolute left-0 top-0 h-full rounded-full bg-primary-500 dark:bg-primary-400"
-          style={{ width: `${normalized * 100}%` }}
-        />
+      <div className="flex gap-0.5">
+        {[1, 2, 3, 4, 5].map((block) => (
+          <div
+            key={block}
+            className={`w-2.5 h-2.5 rounded-sm transition-colors ${
+              block <= filledBlocks
+                ? 'bg-primary-500 dark:bg-primary-400'
+                : 'bg-gray-200 dark:bg-dark-700'
+            }`}
+          />
+        ))}
       </div>
-      <span className="shrink-0 tabular-nums text-gray-500 dark:text-gray-400">
-        {score.toFixed(1)}
-      </span>
     </div>
   );
 };
