@@ -5,7 +5,9 @@ interface ContentItemProps {
   item: PendingItem;
   isDarkMode: boolean;
   onDelete: (id: string) => void;
-  onUpdate: (id: string, content: string) => void;
+  onUpdate: (id: string, newContent: string) => void;
+  onUpload?: (id: string) => void;
+  onRetryUpload?: (id: string) => void;
 }
 
 // Delete icon SVG component
@@ -27,11 +29,70 @@ function DeleteIcon() {
   );
 }
 
+// Upload icon SVG component
+function UploadIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="17 8 12 3 7 8" />
+      <line x1="12" y1="3" x2="12" y2="15" />
+    </svg>
+  );
+}
+
+// Retry icon SVG component
+function RetryIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="23 4 23 10 17 10" />
+      <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+    </svg>
+  );
+}
+
+// Check icon SVG component
+function CheckIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+}
+
 export function ContentItem({
   item,
   isDarkMode,
   onDelete,
   onUpdate,
+  onUpload,
+  onRetryUpload,
 }: ContentItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [editedContent, setEditedContent] = useState(item.content);
@@ -51,6 +112,18 @@ export function ContentItem({
   const handleCancelEdit = () => {
     setEditedContent(item.content);
     setIsExpanded(false);
+  };
+
+  const handleUpload = () => {
+    if (item.type === 'image' && onUpload && !item.attachmentId) {
+      onUpload(item.id);
+    }
+  };
+
+  const handleRetry = () => {
+    if (item.type === 'image' && onRetryUpload) {
+      onRetryUpload(item.id);
+    }
   };
 
   const styles: Record<string, React.CSSProperties> = {
@@ -178,6 +251,169 @@ export function ContentItem({
       color: isDarkMode ? '#9ca3af' : '#6b7280',
       fontStyle: 'italic',
     },
+    // Upload-related styles
+    uploadContainer: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '8px',
+      marginTop: '4px',
+    },
+    uploadButton: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '6px',
+      padding: '8px 12px',
+      fontSize: '12px',
+      fontWeight: 500,
+      color: '#ffffff',
+      backgroundColor: '#3b82f6',
+      border: 'none',
+      borderRadius: '6px',
+      cursor: 'pointer',
+      transition: 'background-color 0.15s ease',
+    },
+    uploadButtonDisabled: {
+      backgroundColor: '#9ca3af',
+      cursor: 'not-allowed',
+    },
+    progressBarContainer: {
+      width: '100%',
+      height: '6px',
+      backgroundColor: isDarkMode ? '#4b5563' : '#e5e7eb',
+      borderRadius: '3px',
+      overflow: 'hidden',
+    },
+    progressBar: {
+      height: '100%',
+      backgroundColor: '#3b82f6',
+      borderRadius: '3px',
+      transition: 'width 0.2s ease',
+    },
+    progressBarComplete: {
+      backgroundColor: '#10b981',
+    },
+    progressBarError: {
+      backgroundColor: '#ef4444',
+    },
+    uploadStatus: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      fontSize: '11px',
+      color: isDarkMode ? '#9ca3af' : '#6b7280',
+    },
+    uploadStatusComplete: {
+      color: '#10b981',
+    },
+    uploadStatusError: {
+      color: '#ef4444',
+    },
+    retryButton: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '4px',
+      padding: '4px 8px',
+      fontSize: '11px',
+      fontWeight: 500,
+      color: '#ef4444',
+      backgroundColor: isDarkMode ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2',
+      border: `1px solid ${isDarkMode ? '#ef4444' : '#fecaca'}`,
+      borderRadius: '4px',
+      cursor: 'pointer',
+    },
+    errorMessage: {
+      fontSize: '11px',
+      color: '#ef4444',
+      marginTop: '4px',
+    },
+    uploadedBadge: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '4px',
+      fontSize: '11px',
+      color: '#10b981',
+    },
+  };
+
+  // Render upload UI for images
+  const renderUploadUI = () => {
+    const status = item.uploadStatus || 'pending';
+    const progress = item.uploadProgress || 0;
+
+    // Uploaded state
+    if (item.attachmentId || status === 'uploaded') {
+      return (
+        <div style={styles.uploadContainer}>
+          <div style={styles.uploadStatus}>
+            <span style={styles.uploadedBadge}>
+              <CheckIcon />
+              已上传
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    // Error state
+    if (status === 'error') {
+      return (
+        <div style={styles.uploadContainer}>
+          <div style={styles.progressBarContainer}>
+            <div style={{ ...styles.progressBar, ...styles.progressBarError, width: '100%' }} />
+          </div>
+          <div style={{ ...styles.uploadStatus, ...styles.uploadStatusError }}>
+            <span>上传失败</span>
+            <button style={styles.retryButton} onClick={handleRetry}>
+              <RetryIcon />
+              重试
+            </button>
+          </div>
+          {item.uploadError && (
+            <div style={styles.errorMessage}>{item.uploadError}</div>
+          )}
+        </div>
+      );
+    }
+
+    // Uploading state
+    if (status === 'uploading') {
+      return (
+        <div style={styles.uploadContainer}>
+          <div style={styles.progressBarContainer}>
+            <div
+              style={{
+                ...styles.progressBar,
+                ...(progress >= 100 ? styles.progressBarComplete : {}),
+                width: `${progress}%`,
+              }}
+            />
+          </div>
+          <div style={styles.uploadStatus}>
+            <span>{progress >= 100 ? '处理中...' : `上传中 ${Math.round(progress)}%`}</span>
+          </div>
+        </div>
+      );
+    }
+
+    // Pending state - show upload button
+    return (
+      <div style={styles.uploadContainer}>
+        <button
+          style={styles.uploadButton}
+          onClick={handleUpload}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = '#2563eb';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = '#3b82f6';
+          }}
+        >
+          <UploadIcon />
+          上传图片到服务器
+        </button>
+      </div>
+    );
   };
 
   if (item.type === 'image') {
@@ -209,6 +445,7 @@ export function ContentItem({
             (e.target as HTMLImageElement).style.display = 'none';
           }}
         />
+        {renderUploadUI()}
       </div>
     );
   }

@@ -254,11 +254,13 @@ export async function createMemo(
  * Upload an attachment
  * @param file - File to upload (Blob or File)
  * @param filename - Original filename
+ * @param onProgress - Optional callback for upload progress (simulated since fetch doesn't support real progress)
  * @returns Upload response with attachment info
  */
 export async function uploadAttachment(
   file: Blob,
-  filename: string
+  filename: string,
+  onProgress?: (progress: number) => void
 ): Promise<UploadAttachmentResponse> {
   const formData = new FormData();
   formData.append('file', file, filename);
@@ -268,6 +270,17 @@ export async function uploadAttachment(
 
   const url = `${baseUrl}/api/v1/attachments/upload`;
 
+  // Simulate progress updates since fetch doesn't support real upload progress
+  let progressInterval: ReturnType<typeof setInterval> | null = null;
+  if (onProgress) {
+    let progress = 0;
+    progressInterval = setInterval(() => {
+      progress += Math.random() * 15;
+      if (progress > 90) progress = 90; // Cap at 90% until complete
+      onProgress(Math.min(Math.round(progress), 90));
+    }, 200);
+  }
+
   try {
     const response = await fetch(url, {
       method: 'POST',
@@ -276,6 +289,16 @@ export async function uploadAttachment(
       },
       body: formData,
     });
+
+    // Clear progress interval
+    if (progressInterval) {
+      clearInterval(progressInterval);
+    }
+
+    // Set to 100% on completion
+    if (onProgress) {
+      onProgress(100);
+    }
 
     // Handle unauthorized - token expired
     if (response.status === 401) {
@@ -304,6 +327,11 @@ export async function uploadAttachment(
 
     return data.data as UploadAttachmentResponse;
   } catch (error) {
+    // Clear progress interval on error
+    if (progressInterval) {
+      clearInterval(progressInterval);
+    }
+
     if (error instanceof ApiError) {
       throw error;
     }
@@ -318,6 +346,43 @@ export async function uploadAttachment(
       'UPLOAD_ERROR'
     );
   }
+}
+
+/**
+ * Download an image from URL and upload it to AIMO
+ * @param imageUrl - URL of the image to download and upload
+ * @param onProgress - Optional callback for upload progress
+ * @returns Attachment ID if successful
+ */
+export async function downloadAndUploadImage(
+  imageUrl: string,
+  onProgress?: (progress: number) => void
+): Promise<string> {
+  // Download the image
+  const imageBlob = await downloadImage(imageUrl);
+
+  // Generate filename from URL
+  const urlObj = new URL(imageUrl);
+  const pathname = urlObj.pathname;
+  let filename = pathname.substring(pathname.lastIndexOf('/') + 1);
+
+  // Ensure filename has an extension
+  if (!filename || !filename.includes('.')) {
+    const ext = imageBlob.type?.split('/')[1] || 'jpg';
+    filename = `image-${Date.now()}.${ext}`;
+  }
+
+  // Decode URL-encoded filename
+  try {
+    filename = decodeURIComponent(filename);
+  } catch {
+    // Keep original if decoding fails
+  }
+
+  // Upload the image
+  const response = await uploadAttachment(imageBlob, filename, onProgress);
+
+  return response.attachment.attachmentId;
 }
 
 /**

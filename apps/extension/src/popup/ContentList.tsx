@@ -6,7 +6,9 @@ import {
   clearPendingItems,
 } from '../storage/index.js';
 import { ContentItem } from './ContentItem.js';
+import { downloadAndUploadImage } from '../api/aimo.js';
 import type { PendingItem } from '../types/index.js';
+import { ApiError } from '../types/index.js';
 
 interface ContentListProps {
   isDarkMode: boolean;
@@ -15,6 +17,7 @@ interface ContentListProps {
 export function ContentList({ isDarkMode }: ContentListProps) {
   const [pendingItems, setPendingItems] = useState<PendingItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [uploadingItems, setUploadingItems] = useState<Set<string>>(new Set());
 
   // Load pending items
   const loadPendingItems = useCallback(async () => {
@@ -70,6 +73,115 @@ export function ContentList({ isDarkMode }: ContentListProps) {
     } catch (error) {
       console.error('Failed to update item:', error);
     }
+  };
+
+  const handleUpload = async (id: string) => {
+    // Prevent duplicate uploads
+    if (uploadingItems.has(id)) return;
+
+    const item = pendingItems.find((i) => i.id === id);
+    if (!item || item.type !== 'image') return;
+
+    setUploadingItems((prev) => new Set(prev).add(id));
+
+    // Update status to uploading
+    await updatePendingItem(id, {
+      uploadStatus: 'uploading',
+      uploadProgress: 0,
+      uploadError: undefined,
+    });
+
+    // Update local state
+    setPendingItems((prev) =>
+      prev.map((i) =>
+        i.id === id
+          ? { ...i, uploadStatus: 'uploading', uploadProgress: 0, uploadError: undefined }
+          : i
+      )
+    );
+
+    try {
+      // Download and upload the image with progress callback
+      const attachmentId = await downloadAndUploadImage(
+        item.content,
+        (progress) => {
+          // Update progress in storage and local state
+          updatePendingItem(id, { uploadProgress: progress });
+          setPendingItems((prev) =>
+            prev.map((i) =>
+              i.id === id ? { ...i, uploadProgress: progress } : i
+            )
+          );
+        }
+      );
+
+      // Update status to uploaded with attachment ID
+      await updatePendingItem(id, {
+        uploadStatus: 'uploaded',
+        uploadProgress: 100,
+        attachmentId,
+      });
+
+      // Update local state
+      setPendingItems((prev) =>
+        prev.map((i) =>
+          i.id === id
+            ? { ...i, uploadStatus: 'uploaded', uploadProgress: 100, attachmentId }
+            : i
+        )
+      );
+    } catch (error) {
+      console.error('Failed to upload image:', error);
+
+      // Get error message
+      let errorMessage = '上传失败，请重试';
+      if (error instanceof ApiError) {
+        errorMessage = error.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
+      // Update status to error
+      await updatePendingItem(id, {
+        uploadStatus: 'error',
+        uploadError: errorMessage,
+      });
+
+      // Update local state
+      setPendingItems((prev) =>
+        prev.map((i) =>
+          i.id === id
+            ? { ...i, uploadStatus: 'error', uploadError: errorMessage }
+            : i
+        )
+      );
+    } finally {
+      setUploadingItems((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(id);
+        return newSet;
+      });
+    }
+  };
+
+  const handleRetryUpload = async (id: string) => {
+    // Reset error state and try again
+    await updatePendingItem(id, {
+      uploadStatus: 'pending',
+      uploadError: undefined,
+      uploadProgress: 0,
+    });
+
+    setPendingItems((prev) =>
+      prev.map((i) =>
+        i.id === id
+          ? { ...i, uploadStatus: 'pending', uploadError: undefined, uploadProgress: 0 }
+          : i
+      )
+    );
+
+    // Start upload
+    handleUpload(id);
   };
 
   const handleClearAll = async () => {
@@ -241,6 +353,8 @@ export function ContentList({ isDarkMode }: ContentListProps) {
             isDarkMode={isDarkMode}
             onDelete={handleDelete}
             onUpdate={handleUpdate}
+            onUpload={handleUpload}
+            onRetryUpload={handleRetryUpload}
           />
         ))}
       </div>

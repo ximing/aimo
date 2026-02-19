@@ -408,27 +408,92 @@ function handleSelectionChange(): void {
 }
 
 /**
+ * Extract image URL from an element (handles <img> and background-image)
+ */
+function extractImageUrl(element: HTMLElement): string | null {
+  // Check if it's an <img> tag
+  if (element.tagName === 'IMG') {
+    const img = element as HTMLImageElement;
+    if (img.src) return img.src;
+  }
+
+  // Check for background-image style
+  const computedStyle = window.getComputedStyle(element);
+  const backgroundImage = computedStyle.backgroundImage;
+
+  // Parse background-image: url("...") or url('...')
+  if (backgroundImage && backgroundImage !== 'none') {
+    const match = backgroundImage.match(/url\(["']?([^"')]+)["']?\)/);
+    if (match?.[1]) {
+      // Handle relative URLs
+      if (match[1].startsWith('http')) {
+        return match[1];
+      } else if (match[1].startsWith('//')) {
+        return `${window.location.protocol}${match[1]}`;
+      } else if (match[1].startsWith('/')) {
+        return `${window.location.origin}${match[1]}`;
+      } else {
+        // Relative path
+        const basePath = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+        return `${basePath}${match[1]}`;
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Check if element has a visible image (either <img> or background-image)
+ */
+function hasVisibleImage(element: HTMLElement): boolean {
+  // Check if it's an <img> tag with reasonable size
+  if (element.tagName === 'IMG') {
+    const img = element as HTMLImageElement;
+    return img.width >= 50 && img.height >= 50;
+  }
+
+  // Check for background-image with reasonable element size
+  const computedStyle = window.getComputedStyle(element);
+  if (computedStyle.backgroundImage && computedStyle.backgroundImage !== 'none') {
+    const rect = element.getBoundingClientRect();
+    return rect.width >= 50 && rect.height >= 50;
+  }
+
+  return false;
+}
+
+/**
  * Handle image click
  */
 function handleImageClick(event: MouseEvent): void {
   const target = event.target as HTMLElement;
 
-  // Check if clicked element is an image
-  if (target.tagName === 'IMG') {
-    const img = target as HTMLImageElement;
+  // Skip if clicking inside the AIMO toolbar
+  if (target.closest('#aimo-toolbar-container')) return;
 
-    // Skip small images (likely icons)
-    if (img.width < 50 || img.height < 50) return;
+  // Check if the element or its parent has an image
+  let element: HTMLElement | null = target;
+  let imageUrl: string | null = null;
 
-    // Skip images inside    if (img.closest('#aimo-toolbar-container')) return;
+  // Try to find image on the clicked element or its parents
+  while (element && element !== document.body) {
+    imageUrl = extractImageUrl(element);
+    if (imageUrl && hasVisibleImage(element)) {
+      break;
+    }
+    imageUrl = null;
+    element = element.parentElement;
+  }
 
+  if (imageUrl && element) {
     event.preventDefault();
     event.stopPropagation();
 
-    const rect = img.getBoundingClientRect();
+    const rect = element.getBoundingClientRect();
     currentSelection = {
       type: 'image',
-      content: img.src,
+      content: imageUrl,
       sourceUrl: window.location.href,
       sourceTitle: document.title,
     };

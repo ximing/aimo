@@ -10,6 +10,9 @@ export interface Config {
   username?: string;
 }
 
+/** Upload status for image items */
+export type UploadStatus = 'pending' | 'uploading' | 'uploaded' | 'error';
+
 /** Pending item waiting to be saved */
 export interface PendingItem {
   /** Unique identifier */
@@ -24,6 +27,12 @@ export interface PendingItem {
   sourceTitle: string;
   /** Optional attachment ID if already uploaded */
   attachmentId?: string;
+  /** Upload status for image items */
+  uploadStatus?: UploadStatus;
+  /** Upload progress percentage (0-100) */
+  uploadProgress?: number;
+  /** Upload error message */
+  uploadError?: string;
   /** Timestamp when item was added */
   createdAt: number;
 }
