@@ -270,6 +270,90 @@
   - Use `event.preventDefault()` and `event.stopPropagation()` when handling image clicks
 ---
 
+## 2026-02-19 - US-006 (Chrome Extension)
+- Create ContentItem.tsx component with text editing and image preview functionality
+- Create ContentList.tsx component for managing pending items list
+- Update MainPage.tsx to integrate ContentList, remove inline implementation
+- ContentItem features:
+  - Text content editing with expand/collapse (multi-line textarea)
+  - Image thumbnail preview with error handling
+  - Single item deletion with delete button
+  - Type icons (📝 for text, 🖼️ for image)
+  - Content summary (first 80 chars) and source page title
+- ContentList features:
+  - Load pending items from session storage on mount
+  - Listen for storage changes to auto-update list
+  - Empty state with hint box showing operation guidance
+  - Footer with "Save to AIMO" and "Clear All" buttons
+- Define icon components as standalone functions (not inside render) to avoid lint errors
+- Use useCallback for loadPendingItems to fix react-hooks/exhaustive-deps warning
+- Initialize dark mode state using lazy initialization to avoid setState in effect
+- Typecheck and lint pass
+- **Files changed:**
+  - `apps/extension/src/popup/ContentItem.tsx` - New component for individual content item display and editing
+  - `apps/extension/src/popup/ContentList.tsx` - New component for content list management
+  - `apps/extension/src/popup/MainPage.tsx` - Refactored to use ContentList component
+- **Learnings for future iterations:**
+  - Icon components must be defined outside of render functions to avoid "Cannot create components during render" lint error
+  - Use `useState(() => initialValue)` pattern for state that depends on window/media queries to avoid setState in effect
+  - Wrap storage loading functions with useCallback when used in useEffect dependency arrays
+  - Image onError handler can hide broken images: `(e.target as HTMLImageElement).style.display = 'none'`
+  - ContentItem should handle its own edit state (expanded/collapsed) internally
+  - Use confirm() for destructive actions like clear all
+---
+
+## 2026-02-19 - US-007 (Chrome Extension)
+- Implement image download and upload functionality
+- Add background-image CSS extraction in content script with extractImageUrl() and hasVisibleImage() helpers
+- Support image extraction from <img> tags and elements with background-image style
+- Add downloadAndUploadImage() function to API client with progress callback support
+- Add UploadStatus type ('pending' | 'uploading' | 'uploaded' | 'error') and related fields to PendingItem
+- Update ContentItem with upload progress UI including progress bar, status text, retry button, and uploaded badge
+- Update ContentList with handleUpload() and handleRetryUpload() functions for managing upload state
+- Implement simulated progress updates during upload (capped at 90% until complete, then 100%)
+- Typecheck and lint pass
+- **Files changed:**
+  - `apps/extension/src/content/index.ts` - Added background-image extraction support
+  - `apps/extension/src/types/index.ts` - Added UploadStatus type and upload-related fields to PendingItem
+  - `apps/extension/src/api/aimo.ts` - Added downloadAndUploadImage() and progress support to uploadAttachment()
+  - `apps/extension/src/popup/ContentItem.tsx` - Added upload UI components (progress bar, retry button, status badges)
+  - `apps/extension/src/popup/ContentList.tsx` - Added upload handlers and state management
+- **Learnings for future iterations:**
+  - Use window.getComputedStyle(element).backgroundImage to extract CSS background images
+  - Parse background-image URL with regex: /url\(["']?([^"')]+)["']?\)/
+  - Handle relative URLs by resolving against window.location (protocol-relative //, root-relative /, relative paths)
+  - fetch() doesn't support real upload progress - use setInterval for simulated progress
+  - Use uploadingItems Set to prevent duplicate upload attempts for the same item
+  - Update both storage and local state for real-time UI updates during upload
+  - Icon components must be defined outside of render functions (DeleteIcon, UploadIcon, RetryIcon, CheckIcon)
+  - Upload flow: pending -> uploading (with progress) -> uploaded (with attachmentId) OR error (with message)
+---
+
+## 2026-02-19 - US-008 (Chrome Extension)
+- Implement save to AIMO functionality in ContentList component
+- Add handleSaveToAIMO() function that iterates through all pending items:
+  - For images, ensures they are uploaded first (downloads and uploads if no attachmentId)
+  - Calls createMemo API for each item with content, sourceUrl, and optional attachmentIds
+  - Tracks and updates save progress (completed/total)
+  - Removes successfully saved items from storage
+  - Keeps failed items in the list with error status for retry
+- Add progress tracking UI with progress bar showing x/n completed
+- Add success message that auto-hides after 3 seconds when all items saved
+- Add error message display for partial or complete failures
+- Update footer buttons: disable during save, show '保存中...' text
+- Notify background script to update badge after save completes
+- Typecheck and lint pass
+- **Files changed:**
+  - `apps/extension/src/popup/ContentList.tsx` - Added save functionality, progress tracking, and status messages
+- **Learnings for future iterations:**
+  - Use Set to track uploading items to prevent duplicate uploads
+  - Update both storage and local state for real-time UI feedback
+  - Simulate progress for image downloads/uploads before calling createMemo
+  - Use chrome.runtime.sendMessage({ type: 'UPDATE_BADGE' }) to refresh badge count
+  - Auto-hide success messages with setTimeout for better UX
+  - Progress bar styling: transition width with ease for smooth animation
+---
+
 ## Codebase Patterns
 - Use `electron-store` for persisting user preferences and window state to `app.getPath('userData')`
 - Always validate saved window bounds against available displays using `screen.getAllDisplays()`

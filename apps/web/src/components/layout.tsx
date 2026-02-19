@@ -61,7 +61,16 @@ export const Layout = view(({ children }: LayoutProps) => {
       <aside className="w-[70px] flex-shrink-0 border-r border-gray-100 dark:border-dark-800 flex flex-col items-center py-4 gap-4">
         {/* Logo Area - Top */}
         <div className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
-          <img src="/logo.png" alt="Aimo Logo" className="w-full h-full object-cover" />
+          <img
+            src="/logo.png"
+            alt="Aimo Logo"
+            className="w-full h-full object-cover block dark:hidden"
+          />
+          <img
+            src="/logo-dark.png"
+            alt="Aimo Logo"
+            className="w-full h-full object-cover hidden dark:block"
+          />
         </div>
 
         {/* Navigation Section - Middle */}

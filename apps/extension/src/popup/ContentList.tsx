@@ -6,7 +6,7 @@ import {
   clearPendingItems,
 } from '../storage/index.js';
 import { ContentItem } from './ContentItem.js';
-import { downloadAndUploadImage } from '../api/aimo.js';
+import { downloadAndUploadImage, createMemo } from '../api/aimo.js';
 import type { PendingItem } from '../types/index.js';
 import { ApiError } from '../types/index.js';
 
@@ -18,6 +18,10 @@ export function ContentList({ isDarkMode }: ContentListProps) {
   const [pendingItems, setPendingItems] = useState<PendingItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [uploadingItems, setUploadingItems] = useState<Set<string>>(new Set());
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveProgress, setSaveProgress] = useState({ completed: 0, total: 0 });
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   // Load pending items
   const loadPendingItems = useCallback(async () => {
@@ -195,6 +199,97 @@ export function ContentList({ isDarkMode }: ContentListProps) {
     }
   };
 
+  const handleSaveToAIMO = async () => {
+    if (pendingItems.length === 0) return;
+
+    setIsSaving(true);
+    setSaveError(null);
+    setSaveProgress({ completed: 0, total: pendingItems.length });
+
+    const failedItems: PendingItem[] = [];
+    let completedCount = 0;
+
+    try {
+      for (const item of pendingItems) {
+        try {
+          // For images, ensure they are uploaded first
+          let attachmentIds: string[] | undefined;
+          if (item.type === 'image') {
+            if (item.attachmentId) {
+              // Already uploaded
+              attachmentIds = [item.attachmentId];
+            } else if (item.uploadStatus === 'error') {
+              // Skip items with upload errors
+              throw new Error('图片上传失败，请先重试上传');
+            } else {
+              // Need to upload first
+              const newAttachmentId = await downloadAndUploadImage(
+                item.content,
+                (progress) => {
+                  setPendingItems((prev) =>
+                    prev.map((i) =>
+                      i.id === item.id ? { ...i, uploadProgress: progress } : i
+                    )
+                  );
+                }
+              );
+              attachmentIds = [newAttachmentId];
+
+              // Update the item with the attachment ID
+              await updatePendingItem(item.id, {
+                attachmentId: newAttachmentId,
+                uploadStatus: 'uploaded',
+                uploadProgress: 100,
+              });
+            }
+          }
+
+          // Create memo
+          await createMemo(item.content, item.sourceUrl, attachmentIds);
+
+          // Remove successfully saved item from storage
+          await removePendingItem(item.id);
+          completedCount++;
+          setSaveProgress({ completed: completedCount, total: pendingItems.length });
+        } catch (error) {
+          console.error(`Failed to save item ${item.id}:`, error);
+          // Add to failed items list
+          failedItems.push(item);
+
+          // Update item with error status if it's an image
+          if (item.type === 'image') {
+            await updatePendingItem(item.id, {
+              uploadStatus: 'error',
+              uploadError: error instanceof ApiError ? error.message : '保存失败',
+            });
+          }
+        }
+      }
+
+      // Update local state with remaining (failed) items
+      setPendingItems(failedItems);
+
+      if (failedItems.length === 0) {
+        // All items saved successfully
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 3000);
+      } else if (failedItems.length < pendingItems.length) {
+        // Partial success
+        setSaveError(`部分保存失败：${failedItems.length} 项未能保存`);
+      } else {
+        // All failed
+        setSaveError('保存失败，请检查网络连接后重试');
+      }
+    } catch (error) {
+      console.error('Save to AIMO failed:', error);
+      setSaveError('保存过程中发生错误，请重试');
+    } finally {
+      setIsSaving(false);
+      // Notify background to update badge
+      chrome.runtime.sendMessage({ type: 'UPDATE_BADGE' });
+    }
+  };
+
   const styles: Record<string, React.CSSProperties> = {
     container: {
       display: 'flex',
@@ -299,6 +394,57 @@ export function ContentList({ isDarkMode }: ContentListProps) {
       borderRadius: '6px',
       cursor: 'pointer',
     },
+    progressContainer: {
+      marginTop: '12px',
+      padding: '12px',
+      backgroundColor: isDarkMode ? '#374151' : '#f3f4f6',
+      borderRadius: '8px',
+    },
+    progressBar: {
+      width: '100%',
+      height: '8px',
+      backgroundColor: isDarkMode ? '#4b5563' : '#e5e7eb',
+      borderRadius: '4px',
+      overflow: 'hidden',
+      marginBottom: '8px',
+    },
+    progressFill: {
+      height: '100%',
+      backgroundColor: '#3b82f6',
+      borderRadius: '4px',
+      transition: 'width 0.3s ease',
+    },
+    progressText: {
+      fontSize: '12px',
+      color: isDarkMode ? '#9ca3af' : '#6b7280',
+      textAlign: 'center' as const,
+    },
+    errorMessage: {
+      marginTop: '12px',
+      padding: '10px 12px',
+      backgroundColor: isDarkMode ? '#7f1d1d' : '#fef2f2',
+      color: isDarkMode ? '#fca5a5' : '#dc2626',
+      borderRadius: '6px',
+      fontSize: '12px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+    },
+    successMessage: {
+      marginTop: '12px',
+      padding: '10px 12px',
+      backgroundColor: isDarkMode ? '#14532d' : '#f0fdf4',
+      color: isDarkMode ? '#86efac' : '#16a34a',
+      borderRadius: '6px',
+      fontSize: '12px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+    },
+    disabledButton: {
+      opacity: 0.6,
+      cursor: 'not-allowed',
+    },
   };
 
   if (isLoading) {
@@ -361,20 +507,66 @@ export function ContentList({ isDarkMode }: ContentListProps) {
 
       <div style={styles.footer}>
         <button
-          style={styles.primaryButton}
+          style={{
+            ...styles.primaryButton,
+            ...(isSaving ? styles.disabledButton : {}),
+          }}
+          onClick={handleSaveToAIMO}
+          disabled={isSaving}
           onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#2563eb';
+            if (!isSaving) {
+              e.currentTarget.style.backgroundColor = '#2563eb';
+            }
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = '#3b82f6';
+            if (!isSaving) {
+              e.currentTarget.style.backgroundColor = '#3b82f6';
+            }
           }}
         >
-          保存到 AIMO
+          {isSaving ? '保存中...' : '保存到 AIMO'}
         </button>
-        <button style={styles.secondaryButton} onClick={handleClearAll}>
-          清空
+        <button
+          style={{
+            ...styles.secondaryButton,
+            ...(isSaving ? styles.disabledButton : {}),
+          }}
+          onClick={handleClearAll}
+          disabled={isSaving}
+        >
+          取消
         </button>
       </div>
+
+      {isSaving && (
+        <div style={styles.progressContainer}>
+          <div style={styles.progressBar}>
+            <div
+              style={{
+                ...styles.progressFill,
+                width: `${(saveProgress.completed / saveProgress.total) * 100}%`,
+              }}
+            />
+          </div>
+          <div style={styles.progressText}>
+            {saveProgress.completed}/{saveProgress.total} 已完成
+          </div>
+        </div>
+      )}
+
+      {saveError && (
+        <div style={styles.errorMessage}>
+          <span>⚠️</span>
+          <span>{saveError}</span>
+        </div>
+      )}
+
+      {showSuccess && (
+        <div style={styles.successMessage}>
+          <span>✓</span>
+          <span>保存成功！所有内容已添加到 AIMO</span>
+        </div>
+      )}
     </div>
   );
 }
