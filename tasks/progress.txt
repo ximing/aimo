@@ -188,6 +188,32 @@
   - Keep icon source as SVG for easy regeneration at different sizes
 ---
 
+## 2026-02-19 - US-003 (Chrome Extension)
+- Create AIMO API client module in src/api/aimo.ts
+- Implement login(email, password) method that authenticates with POST /api/v1/auth/login
+- Implement createMemo(content, sourceUrl, attachmentIds?) that creates memos with source attribution
+- Implement uploadAttachment(file, filename) with multipart/form-data for image uploads
+- Add automatic Authorization: Bearer token header injection for all authenticated requests
+- Add ApiError class for consistent error handling with status, code, and Chinese messages
+- Add helper functions: testConnection(), downloadImage(), isLoggedIn(), logout()
+- Update types/index.ts with Attachment, Memo, UserInfo, ApiResponse types aligned with backend DTOs
+- Handle token expiration (401) by clearing config and prompting re-login
+- Format content with source URL appended as markdown link
+- Typecheck and lint pass
+- **Files changed:**
+  - `apps/extension/src/api/aimo.ts` - New API client module with login, createMemo, uploadAttachment
+  - `apps/extension/src/types/index.ts` - Added Attachment, Memo, UserInfo, ApiError types
+- **Learnings for future iterations:**
+  - Backend login uses `email` not `username` for the field name
+  - Backend API returns `{ success: boolean, data?: T, message?: string }` wrapped responses
+  - Use `FormData` for file uploads and let browser set Content-Type with boundary
+  - Always include credentials: 'omit' for cross-origin image downloads to avoid cookie issues
+  - Map specific backend error messages to Chinese for better UX
+  - Extension manifest needs `<all_urls>` host permission for fetching images from any site
+  - Token expiry handling: catch 401, clear config, redirect to login
+  - Source URL is appended to memo content as markdown: `[来源](url)`
+---
+
 ## Codebase Patterns
 - Use `electron-store` for persisting user preferences and window state to `app.getPath('userData')`
 - Always validate saved window bounds against available displays using `screen.getAllDisplays()`
