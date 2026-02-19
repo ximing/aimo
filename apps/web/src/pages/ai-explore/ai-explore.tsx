@@ -10,8 +10,14 @@ import {
   AlertCircle,
   MessageSquare,
   BookOpen,
+  GitBranch,
 } from 'lucide-react';
-import { SourceCard, MarkdownWithCitations, MemoDetailModal } from './components';
+import {
+  SourceCard,
+  MarkdownWithCitations,
+  MemoDetailModal,
+  RelationshipGraph,
+} from './components';
 
 /**
  * AI Explore Page - Chat interface for AI-powered knowledge exploration
@@ -32,6 +38,9 @@ export const AIExplorePage = view(() => {
   // State for memo detail modal
   const [selectedMemoId, setSelectedMemoId] = useState<string | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+
+  // State for relationship graph
+  const [showRelationshipGraph, setShowRelationshipGraph] = useState(false);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -77,6 +86,31 @@ export const AIExplorePage = view(() => {
     setSelectedMemoId(memoId);
     setIsDetailModalOpen(true);
   }, []);
+
+  // Handle showing relationship graph for a source
+  const handleShowGraph = useCallback(
+    async (memoId: string) => {
+      setShowRelationshipGraph(true);
+      await exploreService.loadRelationshipGraph(memoId);
+    },
+    [exploreService]
+  );
+
+  // Handle closing relationship graph
+  const handleCloseGraph = useCallback(() => {
+    setShowRelationshipGraph(false);
+    exploreService.clearRelationshipGraph();
+  }, [exploreService]);
+
+  // Handle explore related topic
+  const handleExploreRelated = useCallback(
+    (topic: string) => {
+      setInputValue(topic);
+      handleCloseGraph();
+      inputRef.current?.focus();
+    },
+    [handleCloseGraph]
+  );
 
   // Close detail modal
   const handleCloseDetailModal = useCallback(() => {
@@ -261,9 +295,21 @@ export const AIExplorePage = view(() => {
                       <div className="mt-4">
                         {message.sources && message.sources.length > 0 ? (
                           <div className="space-y-2">
-                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 px-1">
-                              引用来源
-                            </p>
+                            <div className="flex items-center justify-between px-1">
+                              <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                                引用来源
+                              </p>
+                              {/* Show graph button for sources */}
+                              <button
+                                onClick={() =>
+                                  handleShowGraph(message.sources?.[0]?.memoId || '')
+                                }
+                                className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors"
+                              >
+                                <GitBranch className="w-3 h-3" />
+                                查看关系图谱
+                              </button>
+                            </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                               {message.sources.map((source, index) => (
                                 <SourceCard
@@ -407,6 +453,41 @@ export const AIExplorePage = view(() => {
           </div>
         </div>
       </div>
+
+      {/* Relationship Graph Modal */}
+      {showRelationshipGraph && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="relative max-w-2xl w-full">
+            {exploreService.relationshipGraphLoading ? (
+              <div className="bg-white dark:bg-dark-800 rounded-xl p-8 flex flex-col items-center justify-center">
+                <Loader2 className="w-8 h-8 text-primary-500 animate-spin mb-4" />
+                <p className="text-gray-600 dark:text-gray-400">加载关系图谱...</p>
+              </div>
+            ) : exploreService.relationshipGraphError ? (
+              <div className="bg-white dark:bg-dark-800 rounded-xl p-8 text-center">
+                <AlertCircle className="w-8 h-8 text-red-500 mx-auto mb-4" />
+                <p className="text-gray-900 dark:text-gray-50 mb-2">加载失败</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                  {exploreService.relationshipGraphError}
+                </p>
+                <button
+                  onClick={handleCloseGraph}
+                  className="px-4 py-2 bg-gray-100 dark:bg-dark-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-600 transition-colors"
+                >
+                  关闭
+                </button>
+              </div>
+            ) : exploreService.relationshipGraph ? (
+              <RelationshipGraph
+                graph={exploreService.relationshipGraph}
+                onNodeClick={handleSourceClick}
+                onExploreRelated={handleExploreRelated}
+                onClose={handleCloseGraph}
+              />
+            ) : null}
+          </div>
+        </div>
+      )}
 
       {/* Memo Detail Modal */}
       <MemoDetailModal

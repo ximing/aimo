@@ -84,3 +84,51 @@ export interface SummaryAgentOutput {
   relatedTopics?: string[];
   suggestedQuestions?: string[];
 }
+
+/**
+ * Node in the relationship graph
+ */
+export interface RelationGraphNodeDto {
+  id: string;
+  type: 'source' | 'related' | 'backlink';
+  title: string;
+  content: string;
+  createdAt: number;
+}
+
+/**
+ * Edge in the relationship graph (connection between nodes)
+ */
+export interface RelationGraphEdgeDto {
+  source: string;
+  target: string;
+  type: 'outgoing' | 'incoming' | 'thematic' | 'temporal' | 'tag';
+  label?: string;
+}
+
+/**
+ * Relationship graph data for visualization
+ */
+export interface RelationGraphDto {
+  nodes: RelationGraphNodeDto[];
+  edges: RelationGraphEdgeDto[];
+  centerMemoId: string;
+  analysis: string;
+}
+
+/**
+ * Request to explore relationships for a memo
+ */
+export interface ExploreRelationsDto {
+  memoId: string;
+  includeBacklinks?: boolean;
+  maxDepth?: number;
+}
+
+/**
+ * Response with relationship graph data
+ */
+export interface ExploreRelationsResponseDto {
+  graph: RelationGraphDto;
+  suggestedExplorations?: string[];
+}

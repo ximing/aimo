@@ -1,4 +1,4 @@
-import { JsonController, Post, Body, CurrentUser } from 'routing-controllers';
+import { JsonController, Post, Body, CurrentUser, Get, QueryParam } from 'routing-controllers';
 import { Service } from 'typedi';
 import type { ExploreQueryDto, UserInfoDto } from '@aimo/dto';
 import { ExploreService } from '../../services/explore.service.js';
@@ -74,6 +74,42 @@ export class ExploreController {
     } catch (error) {
       console.error('Quick search error:', error);
       return ResponseUtil.error(ErrorCode.SYSTEM_ERROR, 'Search failed');
+    }
+  }
+
+  /**
+   * GET /api/v1/explore/relations/:memoId
+   * Get relationship graph for a memo
+   * Returns nodes (memos) and edges (relationships) for visualization
+   */
+  @Get('/relations/:memoId')
+  async getRelations(
+    @QueryParam('memoId') memoId: string,
+    @QueryParam('includeBacklinks') includeBacklinks: boolean = true,
+    @CurrentUser() user: UserInfoDto
+  ) {
+    try {
+      if (!user?.uid) {
+        return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
+      }
+
+      if (!memoId) {
+        return ResponseUtil.error(ErrorCode.PARAMS_ERROR, 'Memo ID is required');
+      }
+
+      const result = await this.exploreService.getRelationshipGraph(
+        memoId,
+        user.uid,
+        includeBacklinks
+      );
+
+      return ResponseUtil.success(result);
+    } catch (error) {
+      console.error('Get relations error:', error);
+      return ResponseUtil.error(
+        ErrorCode.SYSTEM_ERROR,
+        error instanceof Error ? error.message : 'Failed to get relationships'
+      );
     }
   }
 }

@@ -1,5 +1,5 @@
 import { Service } from '@rabjs/react';
-import type { ExploreSourceDto } from '@aimo/dto';
+import type { ExploreSourceDto, RelationGraphDto } from '@aimo/dto';
 import * as exploreApi from '../api/explore';
 
 /**
@@ -27,6 +27,11 @@ export class ExploreService extends Service {
 
   // Error message
   error: string | null = null;
+
+  // Relationship graph state
+  relationshipGraph: RelationGraphDto | null = null;
+  relationshipGraphLoading = false;
+  relationshipGraphError: string | null = null;
 
   // Conversation context for follow-up questions
   private conversationContext = '';
@@ -213,5 +218,39 @@ export class ExploreService extends Service {
         message: error instanceof Error ? error.message : '搜索失败',
       };
     }
+  }
+
+  /**
+   * Load relationship graph for a memo
+   */
+  async loadRelationshipGraph(memoId: string) {
+    this.relationshipGraphLoading = true;
+    this.relationshipGraphError = null;
+
+    try {
+      const response = await exploreApi.getRelations(memoId, true);
+
+      if (response.code === 0 && response.data) {
+        this.relationshipGraph = response.data.graph;
+        return { success: true };
+      } else {
+        this.relationshipGraphError = '加载关系图谱失败';
+        return { success: false, message: this.relationshipGraphError };
+      }
+    } catch (error: unknown) {
+      console.error('Load relationship graph error:', error);
+      this.relationshipGraphError = error instanceof Error ? error.message : '加载关系图谱失败';
+      return { success: false, message: this.relationshipGraphError };
+    } finally {
+      this.relationshipGraphLoading = false;
+    }
+  }
+
+  /**
+   * Clear the relationship graph
+   */
+  clearRelationshipGraph() {
+    this.relationshipGraph = null;
+    this.relationshipGraphError = null;
   }
 }

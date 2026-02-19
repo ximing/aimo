@@ -109,12 +109,12 @@ function processCitations(
 
   // If children is an array, process each child
   if (Array.isArray(children)) {
-    return children.map((child, index) => {
+    return children.map((child, idx) => {
       if (typeof child === 'string') {
         return (
-          <React.Fragment key={index}>
+          <span key={idx}>
             {parseCitations(child, sources, onCitationClick)}
-          </React.Fragment>
+          </span>
         );
       }
       return child;

@@ -1,11 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
-import type { MemoWithAttachmentsDto } from '@aimo/dto';
-import { X, Calendar, Paperclip } from 'lucide-react';
+import type { MemoWithAttachmentsDto, AttachmentDto } from '@aimo/dto';
+import { X, Calendar, Paperclip, ZoomIn } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { getMemoById } from '../../../api/memo';
-import { AttachmentPreviewModal } from '../../home/components/attachment-preview-modal';
+import { getMemo } from '../../../api/memo';
 
 interface MemoDetailModalProps {
   memoId: string | null;
@@ -22,11 +21,7 @@ export const MemoDetailModal = ({ memoId, isOpen, onClose }: MemoDetailModalProp
   const [memo, setMemo] = useState<MemoWithAttachmentsDto | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [previewAttachment, setPreviewAttachment] = useState<{
-    url: string;
-    type: string;
-    filename: string;
-  } | null>(null);
+  const [previewAttachment, setPreviewAttachment] = useState<AttachmentDto | null>(null);
 
   // Fetch memo details when opened
   useEffect(() => {
@@ -39,7 +34,7 @@ export const MemoDetailModal = ({ memoId, isOpen, onClose }: MemoDetailModalProp
     setLoading(true);
     setError(null);
     try {
-      const response = await getMemoById(id);
+      const response = await getMemo(id);
       if (response.code === 0 && response.data) {
         setMemo(response.data);
       } else {
@@ -65,7 +60,7 @@ export const MemoDetailModal = ({ memoId, isOpen, onClose }: MemoDetailModalProp
   };
 
   // Handle attachment click
-  const handleAttachmentClick = (attachment: { url: string; type: string; filename: string }) => {
+  const handleAttachmentClick = useCallback((attachment: AttachmentDto) => {
     const isImage = attachment.type.startsWith('image/');
     const isVideo = attachment.type.startsWith('video/');
 
@@ -78,7 +73,7 @@ export const MemoDetailModal = ({ memoId, isOpen, onClose }: MemoDetailModalProp
       link.download = attachment.filename;
       link.click();
     }
-  };
+  }, []);
 
   // Check if file is previewable
   const isPreviewable = (type: string) => {
@@ -154,13 +149,7 @@ export const MemoDetailModal = ({ memoId, isOpen, onClose }: MemoDetailModalProp
                               {memo.attachments.map((attachment) => (
                                 <button
                                   key={attachment.attachmentId}
-                                  onClick={() =>
-                                    handleAttachmentClick({
-                                      url: attachment.url,
-                                      type: attachment.type,
-                                      filename: attachment.filename,
-                                    })
-                                  }
+                                  onClick={() => handleAttachmentClick(attachment)}
                                   className={`group relative aspect-square rounded-lg border border-gray-200 dark:border-dark-700 overflow-hidden hover:border-primary-300 dark:hover:border-primary-700 transition-colors ${
                                     isPreviewable(attachment.type)
                                       ? 'cursor-pointer'
@@ -189,7 +178,9 @@ export const MemoDetailModal = ({ memoId, isOpen, onClose }: MemoDetailModalProp
                                   )}
                                   {/* Hover overlay for previewable items */}
                                   {isPreviewable(attachment.type) && (
-                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                      <ZoomIn className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    </div>
                                   )}
                                 </button>
                               ))}
@@ -217,12 +208,64 @@ export const MemoDetailModal = ({ memoId, isOpen, onClose }: MemoDetailModalProp
         </Dialog>
       </Transition>
 
-      {/* Attachment Preview Modal */}
-      <AttachmentPreviewModal
-        isOpen={!!previewAttachment}
-        onClose={() => setPreviewAttachment(null)}
-        attachment={previewAttachment || { url: '', type: '', filename: '' }}
-      />
+      {/* Simple Attachment Preview Modal */}
+      <Transition appear show={!!previewAttachment} as={Fragment}>
+        <Dialog as="div" className="relative z-[60]" onClose={() => setPreviewAttachment(null)}>
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-200"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-150"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black/90" />
+          </Transition.Child>
+
+          <div className="fixed inset-0 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4">
+              <Transition.Child
+                as={Fragment}
+                enter="ease-out duration-200"
+                enterFrom="opacity-0 scale-95"
+                enterTo="opacity-100 scale-100"
+                leave="ease-in duration-150"
+                leaveFrom="opacity-100 scale-100"
+                leaveTo="opacity-0 scale-95"
+              >
+                <Dialog.Panel className="relative w-full max-w-4xl">
+                  <button
+                    onClick={() => setPreviewAttachment(null)}
+                    className="absolute -top-12 right-0 p-2 text-white/80 hover:text-white transition-colors"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+
+                  {previewAttachment?.type.startsWith('image/') ? (
+                    <img
+                      src={previewAttachment.url}
+                      alt={previewAttachment.filename}
+                      className="max-w-full max-h-[80vh] mx-auto rounded-lg"
+                    />
+                  ) : previewAttachment?.type.startsWith('video/') ? (
+                    <video
+                      src={previewAttachment.url}
+                      controls
+                      autoPlay
+                      className="max-w-full max-h-[80vh] mx-auto rounded-lg"
+                    />
+                  ) : null}
+
+                  <p className="text-center text-white/80 mt-4 text-sm">
+                    {previewAttachment?.filename}
+                  </p>
+                </Dialog.Panel>
+              </Transition.Child>
+            </div>
+          </div>
+        </Dialog>
+      </Transition>
     </>
   );
 };

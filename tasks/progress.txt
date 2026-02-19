@@ -1,3 +1,39 @@
+## 2026-02-20 - US-006 (AI Explore Page)
+- Implement relationship graph exploration feature
+- Backend changes:
+  - Added RelationGraphDto, RelationGraphNodeDto, RelationGraphEdgeDto types to packages/dto
+  - Implemented getRelationshipGraph() in ExploreService to build relationship graphs
+  - Detects thematic, temporal, outgoing, and incoming relationships between memos
+  - Added GET /api/v1/explore/relations/:memoId endpoint
+- Frontend changes:
+  - Created RelationshipGraph component with SVG visualization
+  - Interactive nodes with hover effects and click-to-view functionality
+  - Expandable/collapsible graph view
+  - Edge labels showing relationship types (引用, 被引用, 主题关联, 时间关联)
+  - Color-coded nodes: blue (center), emerald (related), amber (backlinks)
+  - Added "查看关系图谱" button to source citations
+  - "探索相关" button to continue exploration from graph
+  - Added explore service methods for loading/clearing relationship graphs
+- Typecheck passes, lint passes (no new errors)
+- **Files changed:**
+  - `packages/dto/src/explore.ts` - Added relationship graph DTO types
+  - `apps/server/src/services/explore.service.ts` - Added getRelationshipGraph method
+  - `apps/server/src/controllers/v1/explore.controller.ts` - Added /relations endpoint
+  - `apps/web/src/api/explore.ts` - Added getRelations API call
+  - `apps/web/src/services/explore.service.ts` - Added relationship graph state management
+  - `apps/web/src/pages/ai-explore/components/relationship-graph.tsx` - New graph component
+  - `apps/web/src/pages/ai-explore/components/index.ts` - Export new component
+  - `apps/web/src/pages/ai-explore/ai-explore.tsx` - Integrated graph modal and buttons
+- **Learnings for future iterations:**
+  - SVG-based graph visualization: use viewBox for responsive scaling
+  - Circle layout for nodes: angle = (index / total) * 2 * PI - PI/2 for top-start positioning
+  - Edge path calculation using Math.atan2 for angle between nodes
+  - Use stroke-dasharray for different edge styles (dashed for thematic/temporal)
+  - Implement custom attachment preview modal instead of relying on global service
+  - Import paths: check actual file locations with glob before assuming paths
+  - DTO rebuild required before type changes propagate to dependent packages
+---
+
 ## 2026-02-19 - US-005 (AI Explore Page)
 - Implement multi-turn conversation and context memory
 - Frontend implementation in explore.service.ts:

@@ -8,6 +8,10 @@ import type {
   ExploreSourceDto,
   MemoListItemDto,
   AttachmentDto,
+  RelationGraphDto,
+  RelationGraphNodeDto,
+  RelationGraphEdgeDto,
+  ExploreRelationsResponseDto,
 } from '@aimo/dto';
 import { config } from '../config/config.js';
 import { MemoService } from './memo.service.js';
@@ -803,5 +807,310 @@ Provide exactly 3 short, relevant follow-up questions (one per line, no numberin
       console.error('Quick search error:', error);
       return [];
     }
+  }
+
+  /**
+   * Get relationship graph for a memo
+   * Builds a graph of related memos with thematic, temporal, and tag-based connections
+   */
+  async getRelationshipGraph(
+    memoId: string,
+    uid: string,
+    includeBacklinks: boolean = true
+  ): Promise<ExploreRelationsResponseDto> {
+    try {
+      // Get the center memo
+      const centerMemo = await this.memoService.getMemoById(memoId, uid);
+      if (!centerMemo) {
+        throw new Error('Memo not found');
+      }
+
+      // Build nodes array starting with center memo
+      const nodes: RelationGraphNodeDto[] = [
+        {
+          id: centerMemo.memoId,
+          type: 'source',
+          title: this.generateTitle(centerMemo.content),
+          content: centerMemo.content.substring(0, 200),
+          createdAt: centerMemo.createdAt,
+        },
+      ];
+      const edges: RelationGraphEdgeDto[] = [];
+      const processedIds = new Set<string>([memoId]);
+
+      // Get forward relations (center memo -> others)
+      const relatedIds = await this.memoRelationService.getRelatedMemos(uid, memoId);
+      const relatedMemos = await this.memoService.getMemosByIds(relatedIds, uid);
+
+      for (const memo of relatedMemos) {
+        if (!processedIds.has(memo.memoId)) {
+          nodes.push({
+            id: memo.memoId,
+            type: 'related',
+            title: this.generateTitle(memo.content),
+            content: memo.content.substring(0, 200),
+            createdAt: memo.createdAt,
+          });
+          processedIds.add(memo.memoId);
+        }
+
+        edges.push({
+          source: memoId,
+          target: memo.memoId,
+          type: 'outgoing',
+          label: '引用',
+        });
+      }
+
+      // Get backlinks (others -> center memo) if requested
+      if (includeBacklinks) {
+        const backlinkIds = await this.memoRelationService.getBacklinks(uid, memoId);
+        const backlinkMemos = await this.memoService.getMemosByIds(backlinkIds, uid);
+
+        for (const memo of backlinkMemos) {
+          if (!processedIds.has(memo.memoId)) {
+            nodes.push({
+              id: memo.memoId,
+              type: 'backlink',
+              title: this.generateTitle(memo.content),
+              content: memo.content.substring(0, 200),
+              createdAt: memo.createdAt,
+            });
+            processedIds.add(memo.memoId);
+          }
+
+          edges.push({
+            source: memo.memoId,
+            target: memoId,
+            type: 'incoming',
+            label: '被引用',
+          });
+        }
+      }
+
+      // Analyze temporal connections (memos created around the same time)
+      const temporalConnections = this.findTemporalConnections(
+        centerMemo,
+        relatedMemos.concat(includeBacklinks ? await this.memoService.getMemosByIds(await this.memoRelationService.getBacklinks(uid, memoId), uid) : [])
+      );
+
+      for (const connection of temporalConnections) {
+        // Only add temporal edge if not already connected
+        const existingEdge = edges.find(
+          (e) =>
+            (e.source === connection.memoId1 && e.target === connection.memoId2) ||
+            (e.source === connection.memoId2 && e.target === connection.memoId1)
+        );
+
+        if (!existingEdge && processedIds.has(connection.memoId2)) {
+          edges.push({
+            source: connection.memoId1,
+            target: connection.memoId2,
+            type: 'temporal',
+            label: '时间关联',
+          });
+        }
+      }
+
+      // Analyze thematic connections (shared tags/content similarity)
+      const thematicConnections = await this.findThematicConnections(centerMemo, uid);
+
+      for (const connection of thematicConnections) {
+        if (!processedIds.has(connection.memoId)) {
+          const thematicMemo = await this.memoService.getMemoById(connection.memoId, uid);
+          if (thematicMemo) {
+            nodes.push({
+              id: thematicMemo.memoId,
+              type: 'related',
+              title: this.generateTitle(thematicMemo.content),
+              content: thematicMemo.content.substring(0, 200),
+              createdAt: thematicMemo.createdAt,
+            });
+            processedIds.add(thematicMemo.memoId);
+          }
+        }
+
+        // Add thematic edge
+        const existingEdge = edges.find(
+          (e) =>
+            (e.source === memoId && e.target === connection.memoId) ||
+            (e.source === connection.memoId && e.target === memoId)
+        );
+
+        if (!existingEdge) {
+          edges.push({
+            source: memoId,
+            target: connection.memoId,
+            type: 'thematic',
+            label: '主题关联',
+          });
+        }
+      }
+
+      // Generate analysis and suggested explorations
+      const analysis = this.generateGraphAnalysis(nodes, edges, centerMemo);
+      const suggestedExplorations = await this.generateSuggestedExplorations(
+        centerMemo,
+        nodes,
+        edges
+      );
+
+      const graph: RelationGraphDto = {
+        nodes,
+        edges,
+        centerMemoId: memoId,
+        analysis,
+      };
+
+      return {
+        graph,
+        suggestedExplorations,
+      };
+    } catch (error) {
+      console.error('Get relationship graph error:', error);
+      throw new Error(
+        `Failed to get relationship graph: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * Generate a title from memo content
+   */
+  private generateTitle(content: string): string {
+    const firstLine = content.split('\n')[0].trim();
+    return firstLine.length > 50 ? firstLine.substring(0, 50) + '...' : firstLine;
+  }
+
+  /**
+   * Find temporal connections between memos
+   */
+  private findTemporalConnections(
+    centerMemo: MemoListItemDto,
+    relatedMemos: MemoListItemDto[]
+  ): Array<{ memoId1: string; memoId2: string; timeDiff: number }> {
+    const connections: Array<{ memoId1: string; memoId2: string; timeDiff: number }> = [];
+    const centerTime = centerMemo.createdAt;
+    const timeWindow = 24 * 60 * 60 * 1000; // 24 hours
+
+    for (const memo of relatedMemos) {
+      const timeDiff = Math.abs(memo.createdAt - centerTime);
+      if (timeDiff <= timeWindow && memo.memoId !== centerMemo.memoId) {
+        connections.push({
+          memoId1: centerMemo.memoId,
+          memoId2: memo.memoId,
+          timeDiff,
+        });
+      }
+    }
+
+    return connections;
+  }
+
+  /**
+   * Find thematic connections using vector similarity
+   */
+  private async findThematicConnections(
+    centerMemo: MemoListItemDto,
+    uid: string
+  ): Promise<Array<{ memoId: string; similarity: number }>> {
+    try {
+      // Use vector search to find thematically similar memos
+      const searchResult = await this.memoService.vectorSearch({
+        uid,
+        query: centerMemo.content.substring(0, 500),
+        page: 1,
+        limit: 5,
+      });
+
+      return searchResult.items
+        .filter((memo) => memo.memoId !== centerMemo.memoId)
+        .map((memo) => ({
+          memoId: memo.memoId,
+          similarity: memo.relevanceScore || 0,
+        }))
+        .filter((conn) => conn.similarity >= 0.6); // Only high similarity connections
+    } catch (error) {
+      console.warn('Thematic connection search failed:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Generate analysis text for the relationship graph
+   */
+  private generateGraphAnalysis(
+    nodes: RelationGraphNodeDto[],
+    edges: RelationGraphEdgeDto[],
+    centerMemo: MemoListItemDto
+  ): string {
+    const outgoingCount = edges.filter((e) => e.type === 'outgoing').length;
+    const incomingCount = edges.filter((e) => e.type === 'incoming').length;
+    const thematicCount = edges.filter((e) => e.type === 'thematic').length;
+    const temporalCount = edges.filter((e) => e.type === 'temporal').length;
+
+    const parts: string[] = [];
+
+    if (outgoingCount > 0) {
+      parts.push(`引用了 ${outgoingCount} 条相关笔记`);
+    }
+
+    if (incomingCount > 0) {
+      parts.push(`被 ${incomingCount} 条笔记引用`);
+    }
+
+    if (thematicCount > 0) {
+      parts.push(`发现 ${thematicCount} 个主题关联`);
+    }
+
+    if (temporalCount > 0) {
+      parts.push(`发现 ${temporalCount} 个时间关联`);
+    }
+
+    if (parts.length === 0) {
+      return '暂未发现与其他笔记的关联';
+    }
+
+    return parts.join('，') + '。';
+  }
+
+  /**
+   * Generate suggested explorations based on the graph
+   */
+  private async generateSuggestedExplorations(
+    centerMemo: MemoListItemDto,
+    nodes: RelationGraphNodeDto[],
+    edges: RelationGraphEdgeDto[]
+  ): Promise<string[]> {
+    const suggestions: string[] = [];
+
+    // Add suggestions based on connection types
+    const hasRelations = edges.some((e) => e.type === 'outgoing' || e.type === 'incoming');
+    const hasThematic = edges.some((e) => e.type === 'thematic');
+
+    if (hasRelations) {
+      suggestions.push('这些笔记之间有什么联系？');
+    }
+
+    if (hasThematic) {
+      suggestions.push('深入探索这个主题');
+    }
+
+    // Add context-aware suggestions
+    const content = centerMemo.content.toLowerCase();
+    if (content.includes('项目') || content.includes('project')) {
+      suggestions.push('这个项目的整体进展如何？');
+    }
+    if (content.includes('会议') || content.includes('meeting')) {
+      suggestions.push('还有哪些相关的会议记录？');
+    }
+    if (content.includes('问题') || content.includes('bug') || content.includes('issue')) {
+      suggestions.push('这个问题最终如何解决？');
+    }
+
+    // Always add a general exploration suggestion
+    suggestions.push('基于这个话题继续探索');
+
+    return suggestions.slice(0, 3);
   }
 }
