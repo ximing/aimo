@@ -1,3 +1,5 @@
+import mime from 'mime-types';
+
 /**
  * Storage metadata for URL generation
  * Uses attachment record metadata to ensure URLs are generated based on the attachment's
@@ -92,5 +94,15 @@ export abstract class BaseUnifiedStorageAdapter implements UnifiedStorageAdapter
    */
   protected extractFilename(path: string): string {
     return path.split('/').pop() || path;
+  }
+
+  /**
+   * Get content type from file extension using mime-types library
+   * @param key - The file key/path
+   */
+  protected getContentType(key: string): string {
+    const filename = this.extractFilename(key);
+    const mimeType = mime.lookup(filename);
+    return (mimeType as string) || 'application/octet-stream';
   }
 }

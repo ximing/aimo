@@ -283,22 +283,6 @@ export class S3UnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
   }
 
   /**
-   * Get content type from file extension
-   */
-  private getContentType(key: string): string {
-    const ext = key.split('.').pop()?.toLowerCase() || '';
-    const mimeTypes: Record<string, string> = {
-      jpg: 'image/jpeg',
-      jpeg: 'image/jpeg',
-      png: 'image/png',
-      gif: 'image/gif',
-      webp: 'image/webp',
-      svg: 'image/svg+xml',
-    };
-    return mimeTypes[ext] || 'application/octet-stream';
-  }
-
-  /**
    * Generate direct URL for public S3 buckets using metadata
    */
   private generateDirectUrl(key: string, metadata?: StorageMetadata): string {
