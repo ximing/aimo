@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell, Tray, Menu, nativeImage } from 'electron';
+import { app, BrowserWindow, shell, Tray, Menu, nativeImage, globalShortcut } from 'electron';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
@@ -78,6 +78,28 @@ function createWindow(): void {
       mainWindow?.hide();
     }
   });
+}
+
+function toggleWindowVisibility(): void {
+  if (!mainWindow) {
+    createWindow();
+    return;
+  }
+
+  if (mainWindow.isVisible()) {
+    mainWindow.hide();
+  } else {
+    mainWindow.show();
+    mainWindow.focus();
+  }
+}
+
+function registerGlobalShortcuts(): void {
+  // Register CommandOrControl+Shift+A to toggle window visibility
+  const registered = globalShortcut.register('CommandOrControl+Shift+A', toggleWindowVisibility);
+  if (!registered) {
+    console.warn('Failed to register global shortcut CommandOrControl+Shift+A');
+  }
 }
 
 function createTray(): void {
@@ -161,4 +183,10 @@ app.on('activate', () => {
 app.whenReady().then(() => {
   createWindow();
   createTray();
+  registerGlobalShortcuts();
+});
+
+// Unregister all shortcuts when app is about to quit
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll();
 });
