@@ -1,7 +1,9 @@
 import { JsonController, Get, Put, Post, Body, CurrentUser, Req } from 'routing-controllers';
 import { Service, Inject } from 'typedi';
 import multer from 'multer';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
+import crypto from 'crypto';
+import fs from 'fs/promises';
 import type { UserInfoDto, UpdateUserDto } from '@aimo/dto';
 import { UserService } from '../../services/user.service.js';
 import { AvatarService } from '../../services/avatar.service.js';
@@ -33,6 +35,101 @@ export class UserV1Controller {
     @Inject(() => AvatarService) private avatarService: AvatarService
   ) {}
 
+  /**
+   * Get avatar image - streams avatar from storage
+   */
+  @Get('/avatar')
+  async getAvatar(@CurrentUser() userDto: UserInfoDto, @Req() req: Request) {
+    const res = req.res as Response;
+
+    try {
+      // Check authentication
+      if (!userDto?.uid) {
+        return this.serveDefaultAvatar(res);
+      }
+
+      // Get user info to find avatar path
+      const user = await this.userService.findUserByUid(userDto.uid);
+      if (!user || !user.avatar) {
+        return this.serveDefaultAvatar(res);
+      }
+
+      // Get avatar path (not URL)
+      const avatarPath = user.avatar;
+
+      // Try to download avatar from storage
+      try {
+        const { buffer, etag, contentType } = await this.avatarService.downloadAvatar(avatarPath);
+
+        // Set headers
+        res.setHeader('Content-Type', contentType || 'image/jpeg');
+        res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 1 day
+        res.setHeader('ETag', etag || this.generateEtag(avatarPath));
+        res.setHeader('Content-Length', buffer.length);
+
+        // Check if client sent If-None-Match header
+        const clientEtag = req.headers['if-none-match'];
+        if (clientEtag && clientEtag === etag) {
+          res.status(304);
+          res.end();
+          return;
+        }
+
+        // Send the buffer
+        res.status(200);
+        res.end(buffer);
+        return;
+      } catch (error) {
+        console.warn('Failed to download avatar, serving default:', error);
+        return this.serveDefaultAvatar(res);
+      }
+    } catch (error) {
+      console.error('Error in avatar controller:', error);
+      return this.serveDefaultAvatar(res);
+    }
+  }
+
+  /**
+   * Serve default avatar
+   */
+  private async serveDefaultAvatar(res: Response) {
+    try {
+      const defaultAvatarPath = './public/default-avatar.svg';
+      const buffer = await fs.readFile(defaultAvatarPath);
+      const etag = `"${crypto.createHash('md5').update(buffer).digest('hex')}"`;
+
+      res.setHeader('Content-Type', 'image/svg+xml');
+      res.setHeader('Cache-Control', 'public, max-age=2592000'); // Cache for 30 days
+      res.setHeader('ETag', etag);
+      res.setHeader('Content-Length', buffer.length);
+
+      res.status(200);
+      res.end(buffer);
+      return;
+    } catch (error) {
+      console.error('Failed to serve default avatar:', error);
+      // Return a minimal SVG if even default avatar fails
+      const minimalSvg = Buffer.from(
+        `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect fill="#e5e7eb" width="200" height="200"/></svg>`
+      );
+
+      res.setHeader('Content-Type', 'image/svg+xml');
+      res.setHeader('Cache-Control', 'public, max-age=2592000');
+      res.setHeader('Content-Length', minimalSvg.length);
+
+      res.status(200);
+      res.end(minimalSvg);
+      return;
+    }
+  }
+
+  /**
+   * Generate ETag from avatar path
+   */
+  private generateEtag(path: string): string {
+    return `"${crypto.createHash('md5').update(path).digest('hex')}"`;
+  }
+
   @Get('/info')
   async getUser(@CurrentUser() userDto: UserInfoDto) {
     try {
@@ -45,12 +142,15 @@ export class UserV1Controller {
         return ResponseUtil.error(ErrorCode.USER_NOT_FOUND);
       }
 
+      // Generate avatar access URL if avatar exists
+      const avatar = user.avatar ? await this.avatarService.generateAvatarAccessUrl(user.avatar) : '';
+
       // Return user info without sensitive data
       const userInfo: UserInfoDto = {
         uid: user.uid,
         email: user.email,
         nickname: user.nickname,
-        avatar: user.avatar,
+        avatar: avatar,
       };
 
       return ResponseUtil.success(userInfo);
@@ -72,12 +172,15 @@ export class UserV1Controller {
         return ResponseUtil.error(ErrorCode.USER_NOT_FOUND);
       }
 
+      // Generate avatar access URL if avatar exists
+      const avatar = updatedUser.avatar ? await this.avatarService.generateAvatarAccessUrl(updatedUser.avatar) : '';
+
       // Return updated user info without sensitive data
       const userInfo: UserInfoDto = {
         uid: updatedUser.uid,
         email: updatedUser.email,
         nickname: updatedUser.nickname,
-        avatar: updatedUser.avatar,
+        avatar: avatar,
       };
 
       return ResponseUtil.success({
@@ -122,16 +225,19 @@ export class UserV1Controller {
           const oldUser = await this.userService.findUserByUid(userDto.uid);
           const oldAvatar = oldUser?.avatar;
 
-          // Upload new avatar
-          const avatarUrl = await this.avatarService.uploadAvatar({
+          // Upload new avatar - returns path (not URL)
+          const avatarPath = await this.avatarService.uploadAvatar({
             uid: userDto.uid,
             buffer: file.buffer,
             filename: file.originalname,
             mimeType: file.mimetype,
           });
 
-          // Update user with new avatar URL
-          await this.userService.updateUser(userDto.uid, { avatar: avatarUrl });
+          // Update user with new avatar path (not URL)
+          await this.userService.updateUser(userDto.uid, { avatar: avatarPath });
+
+          // Generate access URL for response (with 10-year expiry)
+          const avatarUrl = await this.avatarService.generateAvatarAccessUrl(avatarPath);
 
           // Delete old avatar if exists
           if (oldAvatar) {
