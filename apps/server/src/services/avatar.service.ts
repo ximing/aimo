@@ -59,10 +59,10 @@ export class AvatarService {
   /**
    * 生成头像访问URL
    * @param avatarPath - 头像存储路径
-   * @param expiresIn - 过期时间（秒），默认10年
+   * @param expiresIn - 过期时间（秒），默认7天
    * @returns 带过期时间的访问URL
    */
-  async generateAvatarAccessUrl(avatarPath: string, expiresIn: number = 10 * 365 * 24 * 60 * 60): Promise<string> {
+  async generateAvatarAccessUrl(avatarPath: string, expiresIn: number = 7 * 24 * 60 * 60): Promise<string> {
     if (!avatarPath) return '';
 
     // 如果已经是完整URL，直接返回
