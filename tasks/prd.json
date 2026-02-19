@@ -18,8 +18,8 @@
         "Typecheck passes"
       ],
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "completed: all acceptance criteria met, typecheck and lint pass"
     },
     {
       "id": "US-002",
@@ -34,8 +34,8 @@
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "completed: storage module created with error handling, typecheck and lint pass"
     },
     {
       "id": "US-003",
@@ -51,8 +51,8 @@
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "completed: all acceptance criteria met, typecheck and lint pass"
     },
     {
       "id": "US-004",
@@ -71,8 +71,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 4,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "completed: floating toolbar with shadow DOM, typecheck and lint pass"
     },
     {
       "id": "US-005",
@@ -90,8 +90,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 5,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "completed: ConfigPage with server URL, username, password form; form validation; login API integration; error handling in Chinese; settings icon to reopen config; typecheck and lint pass"
     },
     {
       "id": "US-006",
@@ -109,8 +109,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 6,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "completed: ContentList and ContentItem components created with text editing and image preview, typecheck and lint pass"
     },
     {
       "id": "US-007",
@@ -127,8 +127,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 7,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "completed: background-image extraction, download and upload with progress, retry UI, typecheck and lint pass"
     },
     {
       "id": "US-008",
@@ -146,8 +146,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 8,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "completed: save to AIMO with progress tracking, error handling, success message, typecheck and lint pass"
     },
     {
       "id": "US-009",
@@ -164,8 +164,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 9,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "completed: badge with setBadge(), config error handling, token expiration redirect, network error retry, typecheck and lint pass"
     }
   ]
 }

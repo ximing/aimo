@@ -1,3 +1,84 @@
+## 2026-02-19 - US-005 (Chrome Extension)
+- Create ConfigPage.tsx component with server URL, username, password form
+- Implement form validation: URL format validation with automatic https:// prefix, non-empty checks for all fields
+- Login API integration: call login() from aimo.ts API client on form submit
+- Error handling in Chinese: map API errors to user-friendly Chinese messages
+- Settings icon in header: gear icon to reopen config page from main view
+- Support light/dark theme using prefers-color-scheme media query
+- Create MainPage.tsx as placeholder for content list (will be expanded in US-006)
+- Update App.tsx with state management: loading -> config -> main flow
+- Load saved config on mount to determine initial view
+- Typecheck and lint pass
+- **Files changed:**
+  - `apps/extension/src/popup/ConfigPage.tsx` - New config/login form component
+  - `apps/extension/src/popup/MainPage.tsx` - New main page component with settings icon
+  - `apps/extension/src/popup/App.tsx` - Updated with state management between config and main views
+- **Learnings for future iterations:**
+  - Use window.matchMedia('(prefers-color-scheme: dark)') for theme detection
+  - Style objects can be typed as React.CSSProperties for type safety
+  - Popup dimensions: 320px width works well for Chrome extension popups
+  - State machine pattern for view management: 'loading' | 'config' | 'main'
+  - Settings icon should use inline SVG for crisp rendering at small sizes
+  - Form validation: clear individual field errors on change, show general errors at top
+  - Test connection button provides better UX before attempting login
+  - Use chrome.storage.local.get(['aimo_config']) to preload saved URL in config form
+---
+
+## 2026-02-19 - US-002 (Chrome Extension)
+- Create storage module in src/storage/index.ts
+- Implement chrome.storage.local wrappers for config: getConfig(), setConfig(url, token, username?), clearConfig()
+- Implement chrome.storage.session wrappers for pending items: getPendingItems(), addPendingItem(item), removePendingItem(id), clearPendingItems()
+- Add additional helper functions: updatePendingItem() for attachment updates, getPendingItemsCount() for badge updates
+- Create StorageError class for consistent error handling with operation context
+- Use existing TypeScript types from src/types/index.ts (Config, PendingItem)
+- Config stored in chrome.storage.local (persists across sessions)
+- Pending items stored in chrome.storage.session (cleared when browser closes)
+- Typecheck and lint pass
+- **Files changed:**
+  - `apps/extension/src/storage/index.ts` - New storage module with all storage operations
+- **Learnings for future iterations:**
+  - Use chrome.storage.local for persistent data (config), chrome.storage.session for temporary data (pending items)
+  - All storage operations should have try-catch with custom error class for better debugging
+  - Generate unique IDs using timestamp + random string combination
+  - Use Omit<PendingItem, 'id' | 'createdAt'> for function parameters that create new items
+  - chrome.storage.session is available in Manifest V3 for data that should not persist
+  - StorageError class helps identify which operation failed during debugging
+---
+
+## 2026-02-19 - US-001 (Chrome Extension)
+- Create Chrome extension project structure in apps/extension/
+- Configure manifest.json (Manifest V3) with storage and activeTab permissions
+- Configure Vite build with multi-entry support for popup, content, and background scripts
+- Configure TypeScript with @types/chrome for Chrome API type definitions
+- Create src/popup/index.html as popup entry with React
+- Create src/content/index.ts as content script entry
+- Create src/background/index.ts as service worker entry
+- Add shared TypeScript types in src/types/index.ts (Config, PendingItem, ExtractedContent, etc.)
+- Add ESLint configuration following project patterns
+- Typecheck and lint pass
+- **Files changed:**
+  - `apps/extension/package.json` - New extension project configuration
+  - `apps/extension/tsconfig.json` - TypeScript project references
+  - `apps/extension/tsconfig.app.json` - TypeScript app config with chrome types
+  - `apps/extension/tsconfig.node.json` - TypeScript node config
+  - `apps/extension/vite.config.ts` - Vite multi-entry build configuration
+  - `apps/extension/eslint.config.js` - ESLint configuration
+  - `apps/extension/public/manifest.json` - Chrome extension manifest
+  - `apps/extension/src/popup/index.html` - Popup HTML entry
+  - `apps/extension/src/popup/index.tsx` - Popup React entry
+  - `apps/extension/src/popup/App.tsx` - Main popup component
+  - `apps/extension/src/content/index.ts` - Content script
+  - `apps/extension/src/background/index.ts` - Service worker
+  - `apps/extension/src/types/index.ts` - Shared TypeScript types
+- **Learnings for future iterations:**
+  - Chrome extension Vite config needs multiple inputs: popup (HTML+TS), content (TS), background (TS)
+  - Use rollupOptions.output.entryFileNames to maintain directory structure for content/background scripts
+  - Add @types/chrome to devDependencies for Chrome API type definitions
+  - Include "chrome" in tsconfig types array
+  - Extension publicDir contains manifest.json and icons, copied to dist on build
+  - Service worker uses "type": "module" in manifest background config
+---
+
 ## 2026-02-19 - US-008 (Electron Client)
 - Implement window state management using electron-store
 - Add WindowState interface with x, y, width, height, isMaximized properties
@@ -131,6 +212,172 @@
   - macOS icns osTypes: icp4(16), icp5(32), icp6(64), ic07(128), ic08(256), ic09(512)
   - electron-builder.yml configures all platform targets in one file
   - Keep icon source as SVG for easy regeneration at different sizes
+---
+
+## 2026-02-19 - US-003 (Chrome Extension)
+- Create AIMO API client module in src/api/aimo.ts
+- Implement login(email, password) method that authenticates with POST /api/v1/auth/login
+- Implement createMemo(content, sourceUrl, attachmentIds?) that creates memos with source attribution
+- Implement uploadAttachment(file, filename) with multipart/form-data for image uploads
+- Add automatic Authorization: Bearer token header injection for all authenticated requests
+- Add ApiError class for consistent error handling with status, code, and Chinese messages
+- Add helper functions: testConnection(), downloadImage(), isLoggedIn(), logout()
+- Update types/index.ts with Attachment, Memo, UserInfo, ApiResponse types aligned with backend DTOs
+- Handle token expiration (401) by clearing config and prompting re-login
+- Format content with source URL appended as markdown link
+- Typecheck and lint pass
+- **Files changed:**
+  - `apps/extension/src/api/aimo.ts` - New API client module with login, createMemo, uploadAttachment
+  - `apps/extension/src/types/index.ts` - Added Attachment, Memo, UserInfo, ApiError types
+- **Learnings for future iterations:**
+  - Backend login uses `email` not `username` for the field name
+  - Backend API returns `{ success: boolean, data?: T, message?: string }` wrapped responses
+  - Use `FormData` for file uploads and let browser set Content-Type with boundary
+  - Always include credentials: 'omit' for cross-origin image downloads to avoid cookie issues
+  - Map specific backend error messages to Chinese for better UX
+  - Extension manifest needs `<all_urls>` host permission for fetching images from any site
+  - Token expiry handling: catch 401, clear config, redirect to login
+  - Source URL is appended to memo content as markdown: `[来源](url)`
+---
+
+## 2026-02-19 - US-004 (Chrome Extension)
+- Implement floating toolbar in content script with shadow DOM for style isolation
+- Add selectionchange listener with debouncing (100ms) for text selection
+- Add image click listener to capture images, filtering out small icons (< 50px)
+- Implement toolbar positioning at bottom-right of selection with viewport boundary checks
+- Add auto-hide on click outside (with delayed handler) and scroll events
+- Create save button that stores content to session storage via background script messaging
+- Support light/dark theme using prefers-color-scheme media query
+- Add smooth fade in/out animations with CSS keyframes
+- Update background script to handle SAVE_CONTENT message and update badge count
+- Implement badge updates on extension icon showing pending items count
+- **Files changed:**
+  - `apps/extension/src/content/index.ts` - Complete floating toolbar implementation
+  - `apps/extension/src/background/index.ts` - Message handlers and badge updates
+- **Learnings for future iterations:**
+  - Shadow DOM provides complete style isolation from host page styles
+  - Use `attachShadow({ mode: 'closed' })` to prevent external access to shadow root
+  - Debounce selectionchange events to avoid excessive updates while dragging
+  - Position toolbar with `position: absolute` and calculate coordinates from `getBoundingClientRect()`
+  - Use `window.scrollY` to adjust position for scrolled pages
+  - Always check viewport boundaries to prevent toolbar from going off-screen
+  - Theme detection: `window.matchMedia('(prefers-color-scheme: dark)')`
+  - Badge API: `chrome.action.setBadgeText()` and `chrome.action.setBadgeBackgroundColor()`
+  - Clear badge by setting text to empty string: `setBadgeText({ text: '' })`
+  - Use `chrome.runtime.sendMessage()` for communication between content script and background
+  - Chrome extension popup cannot be programmatically opened - user must click the icon
+  - Filter small images (icons) by checking `img.width` and `img.height`
+  - Use `event.preventDefault()` and `event.stopPropagation()` when handling image clicks
+---
+
+## 2026-02-19 - US-006 (Chrome Extension)
+- Create ContentItem.tsx component with text editing and image preview functionality
+- Create ContentList.tsx component for managing pending items list
+- Update MainPage.tsx to integrate ContentList, remove inline implementation
+- ContentItem features:
+  - Text content editing with expand/collapse (multi-line textarea)
+  - Image thumbnail preview with error handling
+  - Single item deletion with delete button
+  - Type icons (📝 for text, 🖼️ for image)
+  - Content summary (first 80 chars) and source page title
+- ContentList features:
+  - Load pending items from session storage on mount
+  - Listen for storage changes to auto-update list
+  - Empty state with hint box showing operation guidance
+  - Footer with "Save to AIMO" and "Clear All" buttons
+- Define icon components as standalone functions (not inside render) to avoid lint errors
+- Use useCallback for loadPendingItems to fix react-hooks/exhaustive-deps warning
+- Initialize dark mode state using lazy initialization to avoid setState in effect
+- Typecheck and lint pass
+- **Files changed:**
+  - `apps/extension/src/popup/ContentItem.tsx` - New component for individual content item display and editing
+  - `apps/extension/src/popup/ContentList.tsx` - New component for content list management
+  - `apps/extension/src/popup/MainPage.tsx` - Refactored to use ContentList component
+- **Learnings for future iterations:**
+  - Icon components must be defined outside of render functions to avoid "Cannot create components during render" lint error
+  - Use `useState(() => initialValue)` pattern for state that depends on window/media queries to avoid setState in effect
+  - Wrap storage loading functions with useCallback when used in useEffect dependency arrays
+  - Image onError handler can hide broken images: `(e.target as HTMLImageElement).style.display = 'none'`
+  - ContentItem should handle its own edit state (expanded/collapsed) internally
+  - Use confirm() for destructive actions like clear all
+---
+
+## 2026-02-19 - US-007 (Chrome Extension)
+- Implement image download and upload functionality
+- Add background-image CSS extraction in content script with extractImageUrl() and hasVisibleImage() helpers
+- Support image extraction from <img> tags and elements with background-image style
+- Add downloadAndUploadImage() function to API client with progress callback support
+- Add UploadStatus type ('pending' | 'uploading' | 'uploaded' | 'error') and related fields to PendingItem
+- Update ContentItem with upload progress UI including progress bar, status text, retry button, and uploaded badge
+- Update ContentList with handleUpload() and handleRetryUpload() functions for managing upload state
+- Implement simulated progress updates during upload (capped at 90% until complete, then 100%)
+- Typecheck and lint pass
+- **Files changed:**
+  - `apps/extension/src/content/index.ts` - Added background-image extraction support
+  - `apps/extension/src/types/index.ts` - Added UploadStatus type and upload-related fields to PendingItem
+  - `apps/extension/src/api/aimo.ts` - Added downloadAndUploadImage() and progress support to uploadAttachment()
+  - `apps/extension/src/popup/ContentItem.tsx` - Added upload UI components (progress bar, retry button, status badges)
+  - `apps/extension/src/popup/ContentList.tsx` - Added upload handlers and state management
+- **Learnings for future iterations:**
+  - Use window.getComputedStyle(element).backgroundImage to extract CSS background images
+  - Parse background-image URL with regex: /url\(["']?([^"')]+)["']?\)/
+  - Handle relative URLs by resolving against window.location (protocol-relative //, root-relative /, relative paths)
+  - fetch() doesn't support real upload progress - use setInterval for simulated progress
+  - Use uploadingItems Set to prevent duplicate upload attempts for the same item
+  - Update both storage and local state for real-time UI updates during upload
+  - Icon components must be defined outside of render functions (DeleteIcon, UploadIcon, RetryIcon, CheckIcon)
+  - Upload flow: pending -> uploading (with progress) -> uploaded (with attachmentId) OR error (with message)
+---
+
+## 2026-02-19 - US-008 (Chrome Extension)
+- Implement save to AIMO functionality in ContentList component
+- Add handleSaveToAIMO() function that iterates through all pending items:
+  - For images, ensures they are uploaded first (downloads and uploads if no attachmentId)
+  - Calls createMemo API for each item with content, sourceUrl, and optional attachmentIds
+  - Tracks and updates save progress (completed/total)
+  - Removes successfully saved items from storage
+  - Keeps failed items in the list with error status for retry
+- Add progress tracking UI with progress bar showing x/n completed
+- Add success message that auto-hides after 3 seconds when all items saved
+- Add error message display for partial or complete failures
+- Update footer buttons: disable during save, show '保存中...' text
+- Notify background script to update badge after save completes
+- Typecheck and lint pass
+- **Files changed:**
+  - `apps/extension/src/popup/ContentList.tsx` - Added save functionality, progress tracking, and status messages
+- **Learnings for future iterations:**
+  - Use Set to track uploading items to prevent duplicate uploads
+  - Update both storage and local state for real-time UI feedback
+  - Simulate progress for image downloads/uploads before calling createMemo
+  - Use chrome.runtime.sendMessage({ type: 'UPDATE_BADGE' }) to refresh badge count
+  - Auto-hide success messages with setTimeout for better UX
+  - Progress bar styling: transition width with ease for smooth animation
+---
+
+## 2026-02-19 - US-009 (Chrome Extension)
+- Implement setBadge(count) function in background script for badge management
+- Add CLEAR_ALL_ITEMS and SET_BADGE message handlers to background script
+- Badge updates automatically on storage changes (chrome.storage.onChanged listener)
+- Show config error message on login page when not configured (initialErrorMessage prop)
+- Handle TOKEN_EXPIRED (401) by redirecting to login page via onAuthError callback
+- Handle CONFIG_MISSING and TOKEN_MISSING errors with user feedback
+- Add retry button for network errors in save flow with errorMessageContent styles
+- Add notification system in content script for error feedback (showNotification function)
+- ContentList passes auth errors up to App via onAuthError callback prop
+- Typecheck and lint pass
+- **Files changed:**
+  - `apps/extension/src/background/index.ts` - Added setBadge(), CLEAR_ALL_ITEMS, SET_BADGE handlers
+  - `apps/extension/src/content/index.ts` - Added showNotification() for user feedback
+  - `apps/extension/src/popup/App.tsx` - Added configErrorMessage state and onAuthError handler
+  - `apps/extension/src/popup/ConfigPage.tsx` - Added initialErrorMessage prop support
+  - `apps/extension/src/popup/ContentList.tsx` - Added retry button and auth error handling
+  - `apps/extension/src/popup/MainPage.tsx` - Added onAuthError prop forwarding
+- **Learnings for future iterations:**
+  - Use callbacks (onAuthError) to communicate auth errors from child to parent components
+  - Content script can show notifications using DOM elements with CSS animations
+  - Badge updates should be centralized in background script via message passing
+  - Error codes (TOKEN_EXPIRED, CONFIG_MISSING) enable specific UI handling
+  - Always provide retry functionality for network-related errors
 ---
 
 ## Codebase Patterns
