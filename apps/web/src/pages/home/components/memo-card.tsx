@@ -4,7 +4,8 @@ import type { MemoListItemDto, MemoListItemWithScoreDto, AttachmentDto } from '@
 import { MemoService } from '../../../services/memo.service';
 import { AttachmentService } from '../../../services/attachment.service';
 import { CategoryService } from '../../../services/category.service';
-import { FileText, Film, Edit2, Trash2, Link, Download, Folder } from 'lucide-react';
+import copyToClipboard from 'copy-to-clipboard';
+import { FileText, Film, Edit2, Trash2, Link, Download, Folder, Copy } from 'lucide-react';
 import { RelatedMemosModal } from './related-memos-modal';
 import { ConfirmDeleteModal } from './confirm-delete-modal';
 import { MemoEditorForm } from '../../../components/memo-editor-form';
@@ -121,6 +122,26 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
   const TRUNCATE_LENGTH = 150;
   const shouldTruncate = plainText.length > TRUNCATE_LENGTH;
   const displayText = isExpanded ? plainText : plainText.substring(0, TRUNCATE_LENGTH);
+
+  const handleCopyMemo = useCallback(() => {
+    const contentToCopy = plainText.trim() || memo.content;
+    if (!contentToCopy) {
+      toast.error('没有可复制的内容');
+      return;
+    }
+
+    try {
+      const copied = copyToClipboard(contentToCopy);
+      if (copied) {
+        toast.success('已复制到剪贴板');
+        return;
+      }
+      toast.error('复制失败，请重试');
+    } catch (error) {
+      console.error('Copy failed:', error);
+      toast.error('复制失败，请重试');
+    }
+  }, [memo.content, plainText]);
 
   // 渲染附件网格
   const renderAttachments = () => {
@@ -357,6 +378,18 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
                   aria-label="Edit memo"
                 >
                   <Edit2 className="w-4 h-4" />
+                </button>
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCopyMemo();
+                  }}
+                  className="p-1.5 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-dark-700 rounded hover:text-primary-600 dark:hover:text-primary-400 hover:border-primary-200 dark:hover:border-primary-900/50 transition-colors cursor-pointer"
+                  title="Copy memo"
+                  aria-label="Copy memo"
+                >
+                  <Copy className="w-4 h-4" />
                 </button>
 
                 <button

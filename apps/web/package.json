@@ -16,6 +16,7 @@
     "@headlessui/react": "^2.2.9",
     "@rabjs/react": "^9.0.0",
     "axios": "^1.13.5",
+    "copy-to-clipboard": "^3.3.3",
     "d3": "^7.9.0",
     "jszip": "^3.10.1",
     "lucide-react": "^0.563.0",
