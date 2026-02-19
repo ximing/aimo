@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useService, bindServices } from '@rabjs/react';
 import { Download, FileArchive, AlertCircle, CheckCircle, XCircle, Loader } from 'lucide-react';
 import { ExportService } from '../../../services/export.service';
+import { navigate } from '../../../utils/navigation';
 
 export const ExportData = bindServices(() => {
   const exportService = useService(ExportService);
@@ -300,7 +301,7 @@ export const ExportData = bindServices(() => {
               </button>
               <button
                 onClick={() => {
-                  window.location.href = '/';
+                  navigate('/');
                 }}
                 className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-dark-700 dark:hover:bg-dark-600 text-gray-900 dark:text-gray-50 rounded-lg font-medium transition-colors"
               >

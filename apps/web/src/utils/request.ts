@@ -1,5 +1,6 @@
 import axios, { AxiosError } from 'axios';
 import type { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 'axios';
+import { navigate } from './navigation';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/';
 
@@ -59,16 +60,18 @@ request.interceptors.response.use(
       const { status, data } = error.response;
 
       switch (status) {
-        case 401:
+        case 401: {
           // Unauthorized - clear auth data and redirect to login
           localStorage.removeItem('aimo_token');
           localStorage.removeItem('aimo_user');
 
-          // Only redirect if not already on auth page
-          if (!window.location.pathname.includes('/auth')) {
-            window.location.href = '/auth';
+          // Only redirect if not already on auth page (check both pathname and hash for compatibility)
+          const isAuthPage = window.location.pathname.includes('/auth') || window.location.hash.includes('/auth');
+          if (!isAuthPage) {
+            navigate('/auth', { replace: true });
           }
           break;
+        }
 
         case 403:
           console.error('Forbidden:', data?.message || 'Access denied');
