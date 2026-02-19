@@ -98,11 +98,18 @@ export abstract class BaseUnifiedStorageAdapter implements UnifiedStorageAdapter
 
   /**
    * Get content type from file extension using mime-types library
+   * For security reasons, returns application/octet-stream for HTML and similar content types
    * @param key - The file key/path
    */
   protected getContentType(key: string): string {
     const filename = this.extractFilename(key);
-    const mimeType = mime.lookup(filename);
-    return (mimeType as string) || 'application/octet-stream';
+    const mimeType = mime.lookup(filename) as string;
+
+    // Security: return octet-stream for potentially dangerous content types
+    if (!mimeType || mimeType === 'text/html' || mimeType === 'text/plain' || mimeType === 'application/javascript' || mimeType === 'text/javascript') {
+      return 'application/octet-stream';
+    }
+
+    return mimeType || 'application/octet-stream';
   }
 }
