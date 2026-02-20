@@ -1,3 +1,163 @@
 # Ralph Progress Log
 Started: 2026年 2月15日 星期日 23时33分46秒 CST
 ---
+
+## Codebase Patterns
+- LanceDB table schemas are defined in `apps/server/src/models/db/schema.ts` using Apache Arrow types
+- Migrations are created in `apps/server/src/migrations/scripts/` and registered in `index.ts`
+- Table schemas use `new Schema([...])` with `new Field(name, type, nullable)` definitions
+- TypeScript types for records are exported alongside schemas
+- Migration version numbers must be unique per table
+- Export new types from `lancedb.ts` for service layer access
+- LanceDB Query API: sorting is done in JavaScript via `.sort()` after `.toArray()`, not via `.orderBy()`
+- LanceDB `update()` takes `{ where: string, values: Record }` object format
+- TypeDI services are auto-injected into controllers via constructor injection
+- Table names use snake_case (e.g., `ai_conversations`)
+- Primary key fields use full name + Id (e.g., `conversationId`, not just `id`)
+
+## 2026-02-20 11:50:00 - US-001
+- Created ai_conversations and ai_messages table schemas in schema.ts
+- Created migration script 006-add-ai-conversations.ts
+- Registered migrations in migration index
+- Exported new types from lancedb.ts
+- Files changed:
+  - apps/server/src/models/db/schema.ts
+  - apps/server/src/migrations/scripts/006-add-ai-conversations.ts
+  - apps/server/src/migrations/scripts/index.ts
+  - apps/server/src/sources/lancedb.ts
+- **Learnings for future iterations:**
+  - Table names use snake_case (e.g., ai_conversations)
+  - Primary key fields use full name + Id (e.g., conversationId, not just id)
+  - Foreign keys reference parent table (e.g., conversationId in ai_messages)
+  - List/Struct types for complex fields like sources need proper Apache Arrow definitions
+  - Timestamps use `new Timestamp(TimeUnit.MILLISECOND)`
+  - Migrations use version 6 (following existing v1-v5 pattern)
+---
+
+## 2026-02-20 14:35:00 - US-002
+- Implemented backend API for conversation CRUD operations
+- Added conversation and message DTOs to packages/dto/src/explore.ts:
+  - AIMessageSourceDto, AIMessageDto, AIConversationDto, AIConversationDetailDto
+  - CreateConversationDto, UpdateConversationDto, AddMessageDto
+  - ConversationListResponseDto, ConversationListQueryDto
+- Created AIConversationService with methods:
+  - getConversations(uid) - sorted by updatedAt desc
+  - getConversation(id, uid) - with all messages
+  - createConversation(uid, data)
+  - updateConversation(id, uid, data) - rename title
+  - deleteConversation(id, uid) - also deletes all messages
+  - addMessage(conversationId, uid, data)
+  - getMostRecentConversation(uid)
+- Added REST endpoints to ExploreController:
+  - GET /api/v1/explore/conversations
+  - GET /api/v1/explore/conversations/:id
+  - POST /api/v1/explore/conversations
+  - PUT /api/v1/explore/conversations/:id
+  - DELETE /api/v1/explore/conversations/:id
+  - POST /api/v1/explore/conversations/:id/messages
+- Files changed:
+  - apps/server/src/services/ai-conversation.service.ts (new)
+  - apps/server/src/controllers/v1/explore.controller.ts
+  - packages/dto/src/explore.ts
+- **Learnings for future iterations:**
+  - LanceDB Query API doesn't support `.orderBy()` - sorting must be done in JavaScript after `.toArray()`
+  - LanceDB `update()` takes an object with `{ where: string, values: Record }` not positional args
+  - Use `.sort((a, b) => Number(b.updatedAt) - Number(a.updatedAt))` for timestamp sorting
+  - When adding messages, also update the conversation's updatedAt timestamp
+  - DTOs should extend base types (AIConversationDetailDto extends AIConversationDto)
+  - TypeDI services are auto-injected into controllers when declared in constructor
+---
+
+## 2026-02-20 16:15:00 - US-003
+- Created explore-conversation.ts API module with all conversation endpoints:
+  - getConversations, getConversation, createConversation, updateConversation, deleteConversation, addMessage
+- Refactored ExploreService to use backend API instead of localStorage:
+  - Added conversations array for storing conversation list
+  - Added currentConversationId for tracking selected conversation
+  - Added conversationsLoading and isOnline state
+  - Implemented loadConversations() to fetch list from API
+  - Implemented loadConversation() to fetch messages from API
+  - Implemented ensureConversation() to auto-create conversation on first message
+  - Implemented updateConversationTitle() to auto-generate title from first message
+  - Added conversation management methods: selectConversation, deleteConversation, renameConversation, refreshConversations
+  - Modified sendQuery() to persist messages to backend via addMessage API
+  - Modified newConversation() to create conversation via API
+- Added network error handling with isOnline flag
+- Maintained reactive state with @rabjs/react Service class
+- Files changed:
+  - apps/web/src/api/explore-conversation.ts (new)
+  - apps/web/src/services/explore.service.ts (refactored)
+- Build and lint pass successfully
+- **Learnings for future iterations:**
+  - When refactoring from localStorage to API, maintain the same reactive state interface to minimize UI changes
+  - Use private helper methods (ensureConversation, rebuildContext) to encapsulate complex logic
+  - Keep error handling consistent - set isOnline false on network errors, provide user-friendly error messages
+  - The Service class from @rabjs/react auto-triggers re-renders when observable properties change
+  - When converting API types to UI types, map carefully (e.g., AIMessageSourceDto -> ExploreSourceDto)
+  - Auto-generating conversation titles from first message provides better UX than default titles
+---
+
+## 2026-02-20 18:30:00 - US-004, US-005, US-007, US-008, US-009
+- Completely refactored AI Explore page layout:
+  - Removed top header from ai-explore.tsx
+  - Created left sidebar (280px fixed width) with conversation list
+  - Moved "AI 探索" title and Sparkles icon to sidebar header
+  - Added "返回首页" back button in sidebar
+  - Main content now takes full remaining width with no top padding
+- Implemented conversation list in sidebar (US-005):
+  - Displays conversations sorted by updatedAt (already sorted from API)
+  - Shows title and relative time (e.g., "2小时前")
+  - Highlights selected conversation with primary color background
+  - Click to switch conversations
+  - Added ChevronRight icon on hover for visual feedback
+- Added new topic button in sidebar (US-007):
+  - Plus icon button next to title
+  - Creates new conversation via API
+  - Auto-focuses input after creation
+- Implemented floating input box (US-008):
+  - Fixed at bottom with gradient fade background
+  - White background with shadow for visual separation
+  - Max-width constrained to match message area
+  - Added pb-32 to messages area to prevent content being hidden
+  - Uses left-[350px] to position correctly relative to sidebar (70px nav + 280px sidebar)
+- Added empty and loading states (US-009):
+  - Skeleton loading state for conversation list (3 placeholder items)
+  - Empty state with MessageSquare icon when no conversations
+  - Welcome screen when no conversation selected (with suggestion cards)
+  - Welcome state inside conversation when no messages yet
+- Added formatRelativeTime helper for displaying relative timestamps
+- Files changed:
+  - apps/web/src/pages/ai-explore/ai-explore.tsx (complete rewrite of layout)
+- Build and lint pass successfully
+- **Learnings for future iterations:**
+  - When using fixed positioning for the input area, account for the left sidebar width (350px = 70px nav + 280px sidebar)
+  - Use `pb-32` (padding-bottom) on scrollable content area to ensure content isn't hidden behind fixed input
+  - Gradient fade from background color helps blend fixed input with scrollable content
+  - For relative timestamps, use a simple helper function with time difference calculations
+  - The Layout component already provides a 70px left nav, so the sidebar is additional to that
+  - `min-w-0` on flex children prevents overflow issues with long content
+---
+
+## 2026-02-20 19:45:00 - US-006
+- Implemented conversation management features:
+  - Added hover menu (MoreVertical icon) that appears on conversation item hover
+  - Created dropdown menu with rename and delete options
+  - Implemented rename modal with input field and keyboard shortcuts (Enter to submit, Escape to cancel)
+  - Implemented delete confirmation modal with warning styling
+  - Delete automatically switches to the most recent conversation after deletion
+  - Rename updates the conversation list immediately after success
+- Used existing ExploreService methods (renameConversation, deleteConversation)
+- Added new state management for modals:
+  - activeMenuId: tracks which conversation's menu is open
+  - isRenameModalOpen, isDeleteModalOpen: modal visibility
+  - editingConversationId, editingTitle: form state
+- Files changed:
+  - apps/web/src/pages/ai-explore/ai-explore.tsx
+- Build and lint pass successfully
+- **Learnings for future iterations:**
+  - For hover menus, use a combination of `opacity-0 group-hover:opacity-100` with proper `z-index` management
+  - Click-outside handling for dropdowns can use a fixed overlay with `z-10` behind the menu
+  - Use `stopPropagation()` on menu buttons to prevent triggering the parent button click
+  - Keyboard shortcuts in modals: Enter to submit, Escape to cancel for better UX
+  - Position dropdown menus with `absolute right-0 top-full mt-1` for proper alignment
+---

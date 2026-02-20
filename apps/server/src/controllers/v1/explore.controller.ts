@@ -1,11 +1,28 @@
-import { JsonController, Post, Body, CurrentUser, Get, QueryParam } from 'routing-controllers';
+import {
+  JsonController,
+  Post,
+  Body,
+  CurrentUser,
+  Get,
+  QueryParam,
+  Param,
+  Put,
+  Delete,
+} from 'routing-controllers';
 import { Service } from 'typedi';
 
 import { ErrorCode } from '../../constants/error-codes.js';
+import { AIConversationService } from '../../services/ai-conversation.service.js';
 import { ExploreService } from '../../services/explore.service.js';
 import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 
-import type { ExploreQueryDto, UserInfoDto } from '@aimo/dto';
+import type {
+  AddMessageDto,
+  CreateConversationDto,
+  ExploreQueryDto,
+  UpdateConversationDto,
+  UserInfoDto,
+} from '@aimo/dto';
 
 /**
  * Controller for AI-powered exploration features
@@ -14,7 +31,10 @@ import type { ExploreQueryDto, UserInfoDto } from '@aimo/dto';
 @Service()
 @JsonController('/api/v1/explore')
 export class ExploreController {
-  constructor(private exploreService: ExploreService) {}
+  constructor(
+    private exploreService: ExploreService,
+    private aiConversationService: AIConversationService
+  ) {}
 
   /**
    * POST /api/v1/explore
@@ -112,6 +132,201 @@ export class ExploreController {
         ErrorCode.SYSTEM_ERROR,
         error instanceof Error ? error.message : 'Failed to get relationships'
       );
+    }
+  }
+
+  // ==================== Conversation Management Endpoints ====================
+
+  /**
+   * GET /api/v1/explore/conversations
+   * Get all conversations for the current user (sorted by updatedAt desc)
+   */
+  @Get('/conversations')
+  async getConversations(@CurrentUser() user: UserInfoDto) {
+    try {
+      if (!user?.uid) {
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
+      }
+
+      const conversations = await this.aiConversationService.getConversations(user.uid);
+
+      return ResponseUtility.success({
+        items: conversations,
+        total: conversations.length,
+      });
+    } catch (error) {
+      console.error('Get conversations error:', error);
+      return ResponseUtility.error(ErrorCode.DB_ERROR, 'Failed to get conversations');
+    }
+  }
+
+  /**
+   * GET /api/v1/explore/conversations/:id
+   * Get a single conversation with all messages
+   */
+  @Get('/conversations/:id')
+  async getConversation(@Param('id') conversationId: string, @CurrentUser() user: UserInfoDto) {
+    try {
+      if (!user?.uid) {
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
+      }
+
+      if (!conversationId) {
+        return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'Conversation ID is required');
+      }
+
+      const conversation = await this.aiConversationService.getConversation(conversationId, user.uid);
+
+      if (!conversation) {
+        return ResponseUtility.error(ErrorCode.NOT_FOUND, 'Conversation not found');
+      }
+
+      return ResponseUtility.success(conversation);
+    } catch (error) {
+      console.error('Get conversation error:', error);
+      return ResponseUtility.error(ErrorCode.DB_ERROR, 'Failed to get conversation');
+    }
+  }
+
+  /**
+   * POST /api/v1/explore/conversations
+   * Create a new conversation
+   */
+  @Post('/conversations')
+  async createConversation(
+    @Body() data: CreateConversationDto,
+    @CurrentUser() user: UserInfoDto
+  ) {
+    try {
+      if (!user?.uid) {
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
+      }
+
+      const conversation = await this.aiConversationService.createConversation(user.uid, data);
+
+      return ResponseUtility.success({
+        message: 'Conversation created successfully',
+        conversation,
+      });
+    } catch (error) {
+      console.error('Create conversation error:', error);
+      return ResponseUtility.error(ErrorCode.DB_ERROR, 'Failed to create conversation');
+    }
+  }
+
+  /**
+   * PUT /api/v1/explore/conversations/:id
+   * Update a conversation (rename title)
+   */
+  @Put('/conversations/:id')
+  async updateConversation(
+    @Param('id') conversationId: string,
+    @Body() data: UpdateConversationDto,
+    @CurrentUser() user: UserInfoDto
+  ) {
+    try {
+      if (!user?.uid) {
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
+      }
+
+      if (!conversationId) {
+        return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'Conversation ID is required');
+      }
+
+      if (!data.title || data.title.trim().length === 0) {
+        return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'Title is required');
+      }
+
+      const conversation = await this.aiConversationService.updateConversation(
+        conversationId,
+        user.uid,
+        data
+      );
+
+      if (!conversation) {
+        return ResponseUtility.error(ErrorCode.NOT_FOUND, 'Conversation not found');
+      }
+
+      return ResponseUtility.success({
+        message: 'Conversation updated successfully',
+        conversation,
+      });
+    } catch (error) {
+      console.error('Update conversation error:', error);
+      return ResponseUtility.error(ErrorCode.DB_ERROR, 'Failed to update conversation');
+    }
+  }
+
+  /**
+   * DELETE /api/v1/explore/conversations/:id
+   * Delete a conversation and all its messages
+   */
+  @Delete('/conversations/:id')
+  async deleteConversation(@Param('id') conversationId: string, @CurrentUser() user: UserInfoDto) {
+    try {
+      if (!user?.uid) {
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
+      }
+
+      if (!conversationId) {
+        return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'Conversation ID is required');
+      }
+
+      const success = await this.aiConversationService.deleteConversation(conversationId, user.uid);
+
+      if (!success) {
+        return ResponseUtility.error(ErrorCode.NOT_FOUND, 'Conversation not found');
+      }
+
+      return ResponseUtility.success({
+        message: 'Conversation deleted successfully',
+      });
+    } catch (error) {
+      console.error('Delete conversation error:', error);
+      return ResponseUtility.error(ErrorCode.DB_ERROR, 'Failed to delete conversation');
+    }
+  }
+
+  /**
+   * POST /api/v1/explore/conversations/:id/messages
+   * Add a message to a conversation
+   */
+  @Post('/conversations/:id/messages')
+  async addMessage(
+    @Param('id') conversationId: string,
+    @Body() data: AddMessageDto,
+    @CurrentUser() user: UserInfoDto
+  ) {
+    try {
+      if (!user?.uid) {
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
+      }
+
+      if (!conversationId) {
+        return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'Conversation ID is required');
+      }
+
+      if (!data.role || (data.role !== 'user' && data.role !== 'assistant')) {
+        return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'Valid role is required (user or assistant)');
+      }
+
+      if (!data.content || data.content.trim().length === 0) {
+        return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'Content is required');
+      }
+
+      const message = await this.aiConversationService.addMessage(conversationId, user.uid, data);
+
+      if (!message) {
+        return ResponseUtility.error(ErrorCode.NOT_FOUND, 'Conversation not found');
+      }
+
+      return ResponseUtility.success({
+        message: 'Message added successfully',
+        data: message,
+      });
+    } catch (error) {
+      console.error('Add message error:', error);
+      return ResponseUtility.error(ErrorCode.DB_ERROR, 'Failed to add message');
     }
   }
 }

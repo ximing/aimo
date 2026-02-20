@@ -681,20 +681,13 @@ Provide your answer:`;
       const response = await this.model.invoke(messages);
       const answer = typeof response.content === 'string' ? response.content : '';
 
-      // Map memos to sources with generated titles
-      const sources: ExploreSourceDto[] = retrievedMemos.map((memo) => {
-        // Generate title from first line or first 50 chars of content
-        const firstLine = memo.content.split('\n')[0].trim();
-        const title = firstLine.length > 50 ? firstLine.slice(0, 50) + '...' : firstLine;
-
-        return {
-          memoId: memo.memoId,
-          title,
-          content: memo.content.slice(0, 200) + (memo.content.length > 200 ? '...' : ''),
-          relevanceScore: state.relevanceScores?.[memo.memoId] || 0,
-          createdAt: memo.createdAt,
-        };
-      });
+      // Map memos to sources
+      const sources: ExploreSourceDto[] = retrievedMemos.map((memo) => ({
+        memoId: memo.memoId,
+        content: memo.content.slice(0, 200) + (memo.content.length > 200 ? '...' : ''),
+        relevanceScore: state.relevanceScores?.[memo.memoId] || 0,
+        createdAt: memo.createdAt,
+      }));
 
       // Generate suggested follow-up questions
       const suggestedQuestions = await this.generateSuggestedQuestions(query, answer);

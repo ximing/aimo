@@ -102,14 +102,14 @@ export const RelationshipGraph: React.FC<RelationshipGraphProps> = ({
   };
 
   // Get edge style based on type
-  const getEdgeStyle = (edge: RelationGraphEdgeDto) => {
+  const getEdgeStyle = (edge: RelationGraphEdgeDto): React.CSSProperties => {
     switch (edge.type) {
       case 'thematic':
-        return 'stroke-dasharray: 4,4;';
+        return { strokeDasharray: '4,4' };
       case 'temporal':
-        return 'stroke-dasharray: 2,2;';
+        return { strokeDasharray: '2,2' };
       default:
-        return '';
+        return {};
     }
   };
 
@@ -188,7 +188,7 @@ export const RelationshipGraph: React.FC<RelationshipGraphProps> = ({
                 strokeWidth={2}
                 fill="none"
                 opacity={0.6}
-                style={{ ...(getEdgeStyle(edge) as React.CSSProperties) }}
+                style={getEdgeStyle(edge)}
               />
               {/* Edge label */}
               {isExpanded && edge.label && (

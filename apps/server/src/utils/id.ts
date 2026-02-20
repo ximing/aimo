@@ -45,6 +45,12 @@ export const generateTypeId = (type: (typeof OBJECT_TYPE)[keyof typeof OBJECT_TY
     case OBJECT_TYPE.RELATION: {
       return `r${typeid()}`;
     }
+    case OBJECT_TYPE.CONVERSATION: {
+      return `conv${typeid()}`;
+    }
+    case OBJECT_TYPE.MESSAGE: {
+      return `msg${typeid()}`;
+    }
   }
   throw new Error(`Invalid type: ${type}`);
 };
