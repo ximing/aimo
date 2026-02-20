@@ -214,6 +214,25 @@ export const config: Config = {
           // 文本
           'text/plain',
           'text/markdown',
+          // 音频
+          'audio/aac',
+          'audio/amr',
+          'audio/flac',
+          'audio/mp4',
+          'audio/mpeg',
+          'audio/ogg',
+          'audio/opus',
+          'audio/wav',
+          'audio/x-ms-wma',
+          // 视频
+          'video/x-msvideo',
+          'video/x-flv',
+          'video/x-matroska',
+          'video/quicktime',
+          'video/mp4',
+          'video/mpeg',
+          'video/webm',
+          'video/x-ms-wmv',
         ],
     presignedUrlExpiry: Number(process.env.ATTACHMENT_PRESIGNED_URL_EXPIRY) || 3600, // 默认 1 小时 (12 小时 = 43200)
     local:
