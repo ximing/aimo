@@ -132,3 +132,83 @@ export interface ExploreRelationsResponseDto {
   graph: RelationGraphDto;
   suggestedExplorations?: string[];
 }
+
+// ==================== AI Conversation DTOs ====================
+
+/**
+ * AI Message source reference
+ */
+export interface AIMessageSourceDto {
+  memoId?: string;
+  content?: string;
+  similarity?: number;
+}
+
+/**
+ * AI Message DTO
+ */
+export interface AIMessageDto {
+  messageId: string;
+  conversationId: string;
+  role: 'user' | 'assistant';
+  content: string;
+  sources?: AIMessageSourceDto[];
+  createdAt: number;
+}
+
+/**
+ * AI Conversation DTO
+ */
+export interface AIConversationDto {
+  conversationId: string;
+  title: string;
+  createdAt: number;
+  updatedAt: number;
+  messageCount?: number;
+}
+
+/**
+ * AI Conversation with messages DTO
+ */
+export interface AIConversationDetailDto extends AIConversationDto {
+  messages: AIMessageDto[];
+}
+
+/**
+ * Create conversation request DTO
+ */
+export interface CreateConversationDto {
+  title?: string;
+}
+
+/**
+ * Update conversation request DTO
+ */
+export interface UpdateConversationDto {
+  title: string;
+}
+
+/**
+ * Add message request DTO
+ */
+export interface AddMessageDto {
+  role: 'user' | 'assistant';
+  content: string;
+  sources?: AIMessageSourceDto[];
+}
+
+/**
+ * Conversation list response DTO
+ */
+export interface ConversationListResponseDto {
+  items: AIConversationDto[];
+  total: number;
+}
+
+/**
+ * Conversation list query params
+ */
+export interface ConversationListQueryDto {
+  page?: number;
+  limit?: number;
+}
