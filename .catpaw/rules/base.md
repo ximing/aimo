@@ -116,6 +116,77 @@ aimo/
 - **笔记数据**: LanceDB （含 embedding）
 - **向量维度**: 1536 (text-embedding-3-small)
 
+## 日志规范
+
+### 核心原则
+
+**服务端所有日志输出必须使用统一的 logger，禁止直接使用 console.log/console.error 等。**
+
+<constraint>
+所有日志输出必须通过 `@aimo/logger` 包实现，禁止使用 console.log、console.error 等原生方法
+</constraint>
+
+### 日志模块位置
+
+**文件**: `apps/server/src/utils/logger.ts`
+
+```typescript
+import { Log } from "@aimo/logger";
+
+const logDir = process.env.AIMO_LOG_DIR || path.join(process.cwd(), "logs");
+
+export const logger = new Log({
+  projectName: "aimo-server",
+  level: (process.env.AIMO_LOG_LEVEL as "trace" | "debug" | "info" | "warn" | "error") || "info",
+  logDir,
+  enableTerminal: true,
+  maxSize: "20m",
+  maxFiles: "7d",
+});
+
+// 导出便捷方法
+export const { trace, debug, info, warn, error, flush, close } = logger;
+```
+
+### 日志级别
+
+| 级别 | 使用场景 |
+|------|----------|
+| trace | 详细的调试信息，如函数调用、变量值 |
+| debug | 开发调试信息，如请求参数、响应数据 |
+| info | 正常业务日志，如服务启动、请求处理 |
+| warn | 警告信息，如配置缺失、限流触发 |
+| error | 错误信息，如异常捕获、请求失败 |
+
+### 环境变量配置
+
+| 变量 | 说明 | 默认值 |
+|------|------|--------|
+| AIMO_LOG_DIR | 日志文件目录 | `./logs` |
+| AIMO_LOG_LEVEL | 日志级别 | `info` |
+
+### 使用示例
+
+```typescript
+import { logger, info, warn, error } from "@/utils/logger";
+
+// 方式1: 使用 logger 实例
+logger.info("服务启动成功", { port: 3000 });
+logger.error("请求处理失败", { error: err.message });
+
+// 方式2: 使用便捷方法
+info("用户登录", { userId: "xxx" });
+warn("缓存命中率低", { hitRate: 0.3 });
+error("数据库连接失败", err);
+```
+
+### 最佳实践
+
+1. **使用结构化日志** - 第二个参数传入对象，便于日志检索和分析
+2. **错误日志必须包含上下文** - 记录相关参数和错误详情
+3. **敏感信息脱敏** - 避免在日志中记录密码、Token 等敏感数据
+4. **适当选择日志级别** - 避免过度 logging 或关键信息遗漏
+
 ## 数据库迁移规范
 
 ### 核心原则

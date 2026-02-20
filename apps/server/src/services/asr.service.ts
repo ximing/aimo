@@ -6,6 +6,7 @@
 import { Service } from 'typedi';
 
 import { config } from '../config/config.js';
+import { logger } from '../utils/logger.js';
 
 import type {
   ASRTaskResponseDto,
@@ -61,6 +62,7 @@ export class ASRService {
     this.baseURL = config.asr.baseURL.replace(/\/$/, '');
     this.apiKey = config.asr.apiKey;
     this.model = config.asr.model;
+    logger.info('ASR Service initialized', { baseURL: this.baseURL, model: this.model });
   }
 
   /**
@@ -200,6 +202,8 @@ export class ASRService {
       }
     );
 
+    logger.info('ASR transcription task submitted', { taskId: data.output.task_id, requestId: data.request_id, fileCount: fileUrls.length });
+
     return {
       taskId: data.output.task_id,
       requestId: data.request_id,
@@ -257,10 +261,12 @@ export class ASRService {
       const status = await this.queryTaskStatus(taskId);
 
       if (status.status === 'SUCCEEDED' || status.status === 'FAILED') {
+        logger.debug('ASR task status check', { taskId, status: status.status });
         return status;
       }
 
       if (Date.now() - startTime > timeoutMs) {
+        logger.error(`ASR transcription timeout after ${timeoutMs}ms`, { taskId });
         throw new Error(`Transcription timeout after ${timeoutMs}ms`);
       }
 
@@ -300,6 +306,7 @@ export class ASRService {
     const data = await this.queryTaskDetails(taskId);
 
     if (data.output.task_status !== 'SUCCEEDED') {
+      logger.warn('ASR task not succeeded', { taskId, status: data.output.task_status, requestId: data.request_id });
       return {
         results: [],
         status: 'FAILED',
@@ -345,6 +352,9 @@ export class ASRService {
     pollIntervalMs: number = 2000,
     timeoutMs: number = 300_000
   ): Promise<ASRResultDto> {
+    const startTime = Date.now();
+    logger.info('Starting ASR transcription', { fileCount: request.fileUrls.length, languageHints: request.languageHints });
+
     // Submit the transcription task
     const task = await this.submitTranscription(request);
 
@@ -352,6 +362,15 @@ export class ASRService {
     await this.waitForTranscription(task.taskId, pollIntervalMs, timeoutMs);
 
     // Get results
-    return await this.getTranscriptionResult(task.taskId);
+    const result = await this.getTranscriptionResult(task.taskId);
+    const duration = Date.now() - startTime;
+    
+    if (result.status === 'SUCCEEDED') {
+      logger.info('ASR transcription completed', { taskId: task.taskId, resultCount: result.results.length, durationMs: duration });
+    } else {
+      logger.error('ASR transcription failed', { taskId: task.taskId, durationMs: duration });
+    }
+
+    return result;
   }
 }
