@@ -1,6 +1,12 @@
 import { Service } from '@rabjs/react';
-import type { ExploreSourceDto, RelationGraphDto } from '@aimo/dto';
+import type {
+  ExploreSourceDto,
+  RelationGraphDto,
+  AIConversationDto,
+  AIMessageDto,
+} from '@aimo/dto';
 import * as exploreApi from '../api/explore';
+import * as conversationApi from '../api/explore-conversation';
 
 /**
  * Message type for chat interface
@@ -15,18 +21,39 @@ export interface ChatMessage {
 }
 
 /**
+ * Network error with fallback flag
+ */
+interface NetworkError {
+  code: number;
+  message: string;
+  isFallback?: boolean;
+}
+
+/**
  * Explore Service
  * Manages AI exploration chat state and operations
  */
 export class ExploreService extends Service {
-  // Chat messages
+  // Chat messages (current conversation)
   messages: ChatMessage[] = [];
+
+  // Conversations list
+  conversations: AIConversationDto[] = [];
+
+  // Current conversation ID
+  currentConversationId: string | null = null;
+
+  // Conversations loading state
+  conversationsLoading = false;
 
   // Loading state for AI response
   loading = false;
 
   // Error message
   error: string | null = null;
+
+  // Network status
+  isOnline = true;
 
   // Relationship graph state
   relationshipGraph: RelationGraphDto | null = null;
@@ -40,11 +67,11 @@ export class ExploreService extends Service {
   private readonly MAX_MESSAGES = 20;
 
   /**
-   * Initialize service and load messages from localStorage
+   * Initialize service
    */
   constructor() {
     super();
-    this.loadFromStorage();
+    this.loadConversations();
   }
 
   /**
@@ -55,44 +82,95 @@ export class ExploreService extends Service {
   }
 
   /**
-   * Get localStorage key for current conversation
+   * Get current conversation
    */
-  private getStorageKey(): string {
-    return 'aimo_explore_conversation';
+  get currentConversation(): AIConversationDto | null {
+    if (!this.currentConversationId) return null;
+    return this.conversations.find((c) => c.conversationId === this.currentConversationId) || null;
   }
 
   /**
-   * Load conversation from localStorage
+   * Load all conversations from API
    */
-  private loadFromStorage() {
+  async loadConversations() {
+    this.conversationsLoading = true;
+    this.error = null;
+
     try {
-      const saved = localStorage.getItem(this.getStorageKey());
-      if (saved) {
-        const data = JSON.parse(saved);
-        this.messages = data.messages || [];
-        this.conversationContext = data.context || '';
+      const response = await conversationApi.getConversations();
+      if (response.code === 0 && response.data) {
+        this.conversations = response.data.items || [];
+        this.isOnline = true;
+
+        // If there are conversations but none selected, select the most recent
+        if (this.conversations.length > 0 && !this.currentConversationId) {
+          // Don't auto-select; let the UI show empty state
+          // User can explicitly select a conversation
+        }
       }
-    } catch {
-      // localStorage might not be available
-      this.messages = [];
-      this.conversationContext = '';
+    } catch (err: unknown) {
+      console.error('Failed to load conversations:', err);
+      const error = err as NetworkError;
+      this.error = error.message || '加载对话列表失败';
+      this.isOnline = false;
+    } finally {
+      this.conversationsLoading = false;
     }
   }
 
   /**
-   * Save conversation to localStorage
+   * Load a specific conversation with messages
    */
-  private saveToStorage() {
+  async loadConversation(conversationId: string) {
+    this.loading = true;
+    this.error = null;
+
     try {
-      localStorage.setItem(
-        this.getStorageKey(),
-        JSON.stringify({
-          messages: this.messages,
-          context: this.conversationContext,
-        })
-      );
-    } catch {
-      // localStorage might not be available
+      const response = await conversationApi.getConversation(conversationId);
+      if (response.code === 0 && response.data) {
+        const conversation = response.data;
+        this.currentConversationId = conversation.conversationId;
+
+        // Convert API messages to ChatMessage format
+        this.messages = (conversation.messages || []).map((msg: AIMessageDto) => ({
+          id: msg.messageId,
+          role: msg.role,
+          content: msg.content,
+          sources: msg.sources?.map((s) => ({
+            memoId: s.memoId || '',
+            title: '',
+            content: s.content || '',
+            relevanceScore: s.similarity || 0,
+            createdAt: msg.createdAt,
+          })),
+          createdAt: msg.createdAt,
+        }));
+
+        // Rebuild conversation context from messages
+        this.rebuildContext();
+        this.isOnline = true;
+      }
+    } catch (err: unknown) {
+      console.error('Failed to load conversation:', err);
+      const error = err as NetworkError;
+      this.error = error.message || '加载对话失败';
+      this.isOnline = false;
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  /**
+   * Rebuild conversation context from current messages
+   */
+  private rebuildContext() {
+    this.conversationContext = this.messages
+      .map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
+      .join('\n');
+
+    // Trim context if it gets too long
+    if (this.conversationContext.length > 4000) {
+      this.conversationContext = this.conversationContext.slice(-4000);
     }
   }
 
@@ -109,6 +187,58 @@ export class ExploreService extends Service {
    */
   get currentRound(): number {
     return Math.ceil(this.messages.length / 2);
+  }
+
+  /**
+   * Ensure a conversation exists, creating one if necessary
+   */
+  private async ensureConversation(): Promise<string | null> {
+    if (this.currentConversationId) {
+      return this.currentConversationId;
+    }
+
+    // Create a new conversation
+    try {
+      const response = await conversationApi.createConversation({
+        title: '新对话',
+      });
+      if (response.code === 0 && response.data?.conversation) {
+        const conversation = response.data.conversation;
+        this.currentConversationId = conversation.conversationId;
+        this.conversations.unshift(conversation);
+        this.isOnline = true;
+        return conversation.conversationId;
+      }
+    } catch (err: unknown) {
+      console.error('Failed to create conversation:', err);
+      const error = err as NetworkError;
+      this.error = error.message || '创建对话失败';
+      this.isOnline = false;
+    }
+    return null;
+  }
+
+  /**
+   * Update conversation title based on first user message
+   */
+  private async updateConversationTitle(conversationId: string, content: string) {
+    // Only update if title is the default "新对话" and this is the first message
+    const conversation = this.conversations.find((c) => c.conversationId === conversationId);
+    if (conversation && conversation.title === '新对话' && this.messages.length <= 2) {
+      // Generate title from content (first 20 chars)
+      const newTitle = content.slice(0, 20) + (content.length > 20 ? '...' : '');
+      try {
+        const response = await conversationApi.updateConversation(conversationId, {
+          title: newTitle,
+        });
+        if (response.code === 0 && response.data?.conversation) {
+          conversation.title = response.data.conversation.title;
+          conversation.updatedAt = response.data.conversation.updatedAt;
+        }
+      } catch (err) {
+        console.error('Failed to update conversation title:', err);
+      }
+    }
   }
 
   /**
@@ -131,6 +261,13 @@ export class ExploreService extends Service {
     this.loading = true;
     this.error = null;
 
+    // Ensure we have a conversation
+    const conversationId = await this.ensureConversation();
+    if (!conversationId) {
+      this.loading = false;
+      return { success: false, message: this.error || '创建对话失败' };
+    }
+
     // Add user message immediately
     const userMessage: ChatMessage = {
       id: this.generateId(),
@@ -139,7 +276,27 @@ export class ExploreService extends Service {
       createdAt: Date.now(),
     };
     this.messages.push(userMessage);
-    this.saveToStorage();
+
+    // Save user message to backend
+    try {
+      await conversationApi.addMessage(conversationId, {
+        role: 'user',
+        content: query.trim(),
+      });
+
+      // Update conversation title if needed
+      await this.updateConversationTitle(conversationId, query.trim());
+
+      this.isOnline = true;
+    } catch (err: unknown) {
+      console.error('Failed to save user message:', err);
+      const error = err as NetworkError;
+      this.error = error.message || '保存消息失败';
+      this.messages = this.messages.filter((m) => m.id !== userMessage.id);
+      this.loading = false;
+      this.isOnline = false;
+      return { success: false, message: this.error };
+    }
 
     try {
       const response = await exploreApi.explore({
@@ -150,7 +307,7 @@ export class ExploreService extends Service {
       if (response.code === 0 && response.data) {
         const { answer, sources, suggestedQuestions } = response.data;
 
-        // Add AI response
+        // Add AI response to local state
         const assistantMessage: ChatMessage = {
           id: this.generateId(),
           role: 'assistant',
@@ -169,14 +326,39 @@ export class ExploreService extends Service {
           this.conversationContext = this.conversationContext.slice(-4000);
         }
 
-        this.saveToStorage();
+        // Save assistant message to backend
+        try {
+          await conversationApi.addMessage(conversationId, {
+            role: 'assistant',
+            content: answer,
+            sources: sources?.map((s) => ({
+              memoId: s.memoId,
+              content: s.content,
+              similarity: s.relevanceScore,
+            })),
+          });
+
+          // Update conversation in list (move to top due to updatedAt)
+          const conversationIndex = this.conversations.findIndex(
+            (c) => c.conversationId === conversationId
+          );
+          if (conversationIndex > 0) {
+            const [conversation] = this.conversations.splice(conversationIndex, 1);
+            conversation.updatedAt = Date.now();
+            this.conversations.unshift(conversation);
+          } else if (conversationIndex === 0) {
+            this.conversations[0].updatedAt = Date.now();
+          }
+        } catch (err) {
+          console.error('Failed to save assistant message:', err);
+          // Continue even if save fails - user can still see the response
+        }
 
         return { success: true };
       } else {
         this.error = response.data?.toString() || '探索失败，请重试';
         // Remove the user message on error
         this.messages = this.messages.filter((m) => m.id !== userMessage.id);
-        this.saveToStorage();
         return { success: false, message: this.error };
       }
     } catch (error: unknown) {
@@ -184,7 +366,6 @@ export class ExploreService extends Service {
       this.error = error instanceof Error ? error.message : '探索失败，请重试';
       // Remove the user message on error
       this.messages = this.messages.filter((m) => m.id !== userMessage.id);
-      this.saveToStorage();
       return { success: false, message: this.error };
     } finally {
       this.loading = false;
@@ -194,11 +375,128 @@ export class ExploreService extends Service {
   /**
    * Start a new conversation
    */
-  newConversation() {
-    this.messages = [];
-    this.conversationContext = '';
+  async newConversation(title?: string): Promise<string | null> {
+    this.loading = true;
     this.error = null;
-    this.saveToStorage();
+
+    try {
+      const response = await conversationApi.createConversation({
+        title: title || '新对话',
+      });
+
+      if (response.code === 0 && response.data?.conversation) {
+        const conversation = response.data.conversation;
+        this.currentConversationId = conversation.conversationId;
+        this.conversations.unshift(conversation);
+        this.messages = [];
+        this.conversationContext = '';
+        this.isOnline = true;
+        return conversation.conversationId;
+      }
+    } catch (err: unknown) {
+      console.error('Failed to create conversation:', err);
+      const error = err as NetworkError;
+      this.error = error.message || '创建对话失败';
+      this.isOnline = false;
+    } finally {
+      this.loading = false;
+    }
+    return null;
+  }
+
+  /**
+   * Select an existing conversation
+   */
+  async selectConversation(conversationId: string) {
+    if (conversationId === this.currentConversationId) return;
+    await this.loadConversation(conversationId);
+  }
+
+  /**
+   * Delete a conversation
+   */
+  async deleteConversation(conversationId: string): Promise<boolean> {
+    this.loading = true;
+    this.error = null;
+
+    try {
+      const response = await conversationApi.deleteConversation(conversationId);
+
+      if (response.code === 0) {
+        // Remove from list
+        this.conversations = this.conversations.filter(
+          (c) => c.conversationId !== conversationId
+        );
+
+        // If current conversation was deleted, clear it
+        if (this.currentConversationId === conversationId) {
+          this.currentConversationId = null;
+          this.messages = [];
+          this.conversationContext = '';
+
+          // Auto-select most recent if available
+          if (this.conversations.length > 0) {
+            await this.loadConversation(this.conversations[0].conversationId);
+          }
+        }
+
+        this.isOnline = true;
+        return true;
+      }
+    } catch (err: unknown) {
+      console.error('Failed to delete conversation:', err);
+      const error = err as NetworkError;
+      this.error = error.message || '删除对话失败';
+      this.isOnline = false;
+    } finally {
+      this.loading = false;
+    }
+    return false;
+  }
+
+  /**
+   * Rename a conversation
+   */
+  async renameConversation(conversationId: string, newTitle: string): Promise<boolean> {
+    if (!newTitle.trim()) {
+      this.error = '标题不能为空';
+      return false;
+    }
+
+    this.loading = true;
+    this.error = null;
+
+    try {
+      const response = await conversationApi.updateConversation(conversationId, {
+        title: newTitle.trim(),
+      });
+
+      if (response.code === 0 && response.data?.conversation) {
+        const updated = response.data.conversation;
+        const conversation = this.conversations.find((c) => c.conversationId === conversationId);
+        if (conversation) {
+          conversation.title = updated.title;
+          conversation.updatedAt = updated.updatedAt;
+        }
+        this.isOnline = true;
+        return true;
+      }
+    } catch (err: unknown) {
+      console.error('Failed to rename conversation:', err);
+      const error = err as NetworkError;
+      this.error = error.message || '重命名对话失败';
+      this.isOnline = false;
+    } finally {
+      this.loading = false;
+    }
+    return false;
+  }
+
+  /**
+   * Refresh conversations list
+   */
+  async refreshConversations() {
+    await this.loadConversations();
   }
 
   /**

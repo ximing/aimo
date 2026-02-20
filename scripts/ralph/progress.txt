@@ -9,6 +9,11 @@ Started: 2026年 2月15日 星期日 23时33分46秒 CST
 - TypeScript types for records are exported alongside schemas
 - Migration version numbers must be unique per table
 - Export new types from `lancedb.ts` for service layer access
+- LanceDB Query API: sorting is done in JavaScript via `.sort()` after `.toArray()`, not via `.orderBy()`
+- LanceDB `update()` takes `{ where: string, values: Record }` object format
+- TypeDI services are auto-injected into controllers via constructor injection
+- Table names use snake_case (e.g., `ai_conversations`)
+- Primary key fields use full name + Id (e.g., `conversationId`, not just `id`)
 
 ## 2026-02-20 11:50:00 - US-001
 - Created ai_conversations and ai_messages table schemas in schema.ts
@@ -27,4 +32,67 @@ Started: 2026年 2月15日 星期日 23时33分46秒 CST
   - List/Struct types for complex fields like sources need proper Apache Arrow definitions
   - Timestamps use `new Timestamp(TimeUnit.MILLISECOND)`
   - Migrations use version 6 (following existing v1-v5 pattern)
+---
+
+## 2026-02-20 14:35:00 - US-002
+- Implemented backend API for conversation CRUD operations
+- Added conversation and message DTOs to packages/dto/src/explore.ts:
+  - AIMessageSourceDto, AIMessageDto, AIConversationDto, AIConversationDetailDto
+  - CreateConversationDto, UpdateConversationDto, AddMessageDto
+  - ConversationListResponseDto, ConversationListQueryDto
+- Created AIConversationService with methods:
+  - getConversations(uid) - sorted by updatedAt desc
+  - getConversation(id, uid) - with all messages
+  - createConversation(uid, data)
+  - updateConversation(id, uid, data) - rename title
+  - deleteConversation(id, uid) - also deletes all messages
+  - addMessage(conversationId, uid, data)
+  - getMostRecentConversation(uid)
+- Added REST endpoints to ExploreController:
+  - GET /api/v1/explore/conversations
+  - GET /api/v1/explore/conversations/:id
+  - POST /api/v1/explore/conversations
+  - PUT /api/v1/explore/conversations/:id
+  - DELETE /api/v1/explore/conversations/:id
+  - POST /api/v1/explore/conversations/:id/messages
+- Files changed:
+  - apps/server/src/services/ai-conversation.service.ts (new)
+  - apps/server/src/controllers/v1/explore.controller.ts
+  - packages/dto/src/explore.ts
+- **Learnings for future iterations:**
+  - LanceDB Query API doesn't support `.orderBy()` - sorting must be done in JavaScript after `.toArray()`
+  - LanceDB `update()` takes an object with `{ where: string, values: Record }` not positional args
+  - Use `.sort((a, b) => Number(b.updatedAt) - Number(a.updatedAt))` for timestamp sorting
+  - When adding messages, also update the conversation's updatedAt timestamp
+  - DTOs should extend base types (AIConversationDetailDto extends AIConversationDto)
+  - TypeDI services are auto-injected into controllers when declared in constructor
+---
+
+## 2026-02-20 16:15:00 - US-003
+- Created explore-conversation.ts API module with all conversation endpoints:
+  - getConversations, getConversation, createConversation, updateConversation, deleteConversation, addMessage
+- Refactored ExploreService to use backend API instead of localStorage:
+  - Added conversations array for storing conversation list
+  - Added currentConversationId for tracking selected conversation
+  - Added conversationsLoading and isOnline state
+  - Implemented loadConversations() to fetch list from API
+  - Implemented loadConversation() to fetch messages from API
+  - Implemented ensureConversation() to auto-create conversation on first message
+  - Implemented updateConversationTitle() to auto-generate title from first message
+  - Added conversation management methods: selectConversation, deleteConversation, renameConversation, refreshConversations
+  - Modified sendQuery() to persist messages to backend via addMessage API
+  - Modified newConversation() to create conversation via API
+- Added network error handling with isOnline flag
+- Maintained reactive state with @rabjs/react Service class
+- Files changed:
+  - apps/web/src/api/explore-conversation.ts (new)
+  - apps/web/src/services/explore.service.ts (refactored)
+- Build and lint pass successfully
+- **Learnings for future iterations:**
+  - When refactoring from localStorage to API, maintain the same reactive state interface to minimize UI changes
+  - Use private helper methods (ensureConversation, rebuildContext) to encapsulate complex logic
+  - Keep error handling consistent - set isOnline false on network errors, provide user-friendly error messages
+  - The Service class from @rabjs/react auto-triggers re-renders when observable properties change
+  - When converting API types to UI types, map carefully (e.g., AIMessageSourceDto -> ExploreSourceDto)
+  - Auto-generating conversation titles from first message provides better UX than default titles
 ---
