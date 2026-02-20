@@ -197,42 +197,240 @@ export const config: Config = {
     allowedMimeTypes: process.env.ATTACHMENT_ALLOWED_MIME_TYPES
       ? process.env.ATTACHMENT_ALLOWED_MIME_TYPES.split(',')
       : [
-          // 图片
+          // ===== 图片 - 常见格式 =====
           'image/png',
           'image/jpeg',
-          'image/gif',
+          'image/jpg',
+          'image/gif', // 闪图/动态图
           'image/webp',
+          'image/bmp',
+          'image/tiff',
+          'image/tif',
           'image/svg+xml',
-          // PDF
-          'application/pdf',
-          // 文档
-          'application/msword',
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          // 表格
-          'application/vnd.ms-excel',
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-          // 文本
-          'text/plain',
-          'text/markdown',
-          // 音频
+          'image/avif',
+          // ===== Apple/iPhone 照片格式 =====
+          'image/heic', // iPhone 默认 HEIC 格式 (iOS 11+)
+          'image/heif', // HEIF 容器
+          'image/heic-sequence', // iPhone 连拍模式 (HEIC)
+          'image/heif-sequence', // HEIF 连拍
+          'image/apple-megatexture', // Apple MGTX
+          'image/x-m4v', // M4V 图片 (iOS)
+          // ===== Android 照片格式 =====
+          'image/x-adobe-dng', // Adobe DNG (Android 旗舰机、专业模式)
+          // Samsung Galaxy
+          'image/x-samsung-srw', // Samsung RAW
+          'image/x-samsung-sgw',
+          // Huawei
+          'image/x-huawei-hdr', // Huawei RAW
+          'image/x-huawei-dng',
+          // Xiaomi
+          'image/x-xiaomi-dng', // Xiaomi RAW
+          // Oppo/Vivo/OnePlus
+          'image/x-oppo-orf', // Oppo RAW
+          'image/x-vivo-dng', // Vivo RAW
+          'image/x-oneplus-dng', // OnePlus RAW
+          // ===== 相机 RAW 格式 - Canon =====
+          'image/x-canon-cr2', // Canon CR2 (EOS 20D-50D, 5D/7D 早期)
+          'image/x-canon-cr3', // Canon CR3 (EOS R 系列, 90D, etc)
+          'image/x-canon-crw', // Canon CRW (早期)
+          'image/x-canon-raw',
+          'image/x-canon-crw',
+          'image/x-canon-cr2',
+          'image/x-canon-cr3',
+          'image/x-canon-1dmx', // Canon 1D 系列
+          'image/x-canon-1dsx',
+          // ===== 相机 RAW 格式 - Nikon =====
+          'image/x-nikon-nef', // Nikon NEF (专业格式)
+          'image/x-nikon-nrw', // Nikon NRW (Compact)
+          'image/x-nikon-nef',
+          'image/x-nikon-nrw',
+          'image/x-nikon-ndf', // Nikon NDF (Nikon NEF with TIFF)
+          // ===== 相机 RAW 格式 - Sony =====
+          'image/x-sony-arw', // Sony ARW
+          'image/x-sony-srf', // Sony SRF
+          'image/x-sony-sr2', // Sony SR2
+          'image/x-sony-sony-raw',
+          'image/x-sony-arw',
+          'image/x-sony-srf',
+          'image/x-sony-sr2',
+          'image/x-sony-rx100', // Sony RX100 RAW
+          'image/x-sony-a7r', // Sony A7R RAW
+          // ===== 相机 RAW 格式 - Fujifilm =====
+          'image/x-fuji-raf', // Fujifilm RAF
+          'image/x-fuji-raw',
+          'image/x-fuji-raf',
+          // ===== 相机 RAW 格式 - Panasonic =====
+          'image/x-panasonic-rw2', // Panasonic RW2
+          'image/x-panasonic-raw',
+          'image/x-panasonic-rw2',
+          'image/x-panasonic-raw',
+          // ===== 相机 RAW 格式 - Olympus =====
+          'image/x-orf', // Olympus ORF
+          'image/x-olympus-raw',
+          'image/x-olympus-orf',
+          // ===== 相机 RAW 格式 - Pentax =====
+          'image/x-pentax-pef', // Pentax PEF
+          'image/x-pentax-raw',
+          'image/x-pentax-dng', // Pentax DNG
+          'image/x-pentax-pef',
+          // ===== 相机 RAW 格式 - Leica =====
+          'image/x-leica-rwl', // Leica RWL
+          'image/x-leica-raw',
+          'image/x-leica-rwl',
+          'image/x-leica-dng',
+          'image/x-leica-3fr', // Leica 3FR
+          // ===== 相机 RAW 格式 - Hasselblad =====
+          'image/x-hasselblad-3fr', // Hasselblad 3FR
+          'image/x-hasselblad-raw',
+          'image/x-hasselblad-3fr',
+          'image/x-hasselblad-dng',
+          'image/x-hasselblad-fff', // Hasselblad FFF
+          // ===== 相机 RAW 格式 - Phase One =====
+          'image/x-phaseone-iiq', // Phase One IIQ
+          'image/x-phaseone-raw',
+          'image/x-phaseone-iiq',
+          // ===== 相机 RAW 格式 - Leaf =====
+          'image/x-leaf-mos', // Leaf MOS
+          'image/x-leaf-raw',
+          'image/x-leaf-mos',
+          // ===== 相机 RAW 格式 - Epson / Ricoh / Casio =====
+          'image/x-epson-erf', // Epson RAW
+          'image/x-ricoh-dng', // Ricoh RAW
+          'image/x-casio-raw', // Casio RAW
+          'image/x-casio-bay', // Casio BAY
+          // ===== 相机 RAW 格式 - 其他品牌 =====
+          'image/x-raw', // 通用 RAW
+          'image/x-adobe-dng', // Adobe DNG (通用)
+          'image/dng', // DNG (官方 MIME)
+          // ===== 专业/图形格式 =====
+          'image/x-icon', // ICO 图标
+          'image/x-rgb', // RGB
+          'image/x-sgi', // SGI
+          'image/x-targa', // TGA
+          'image/x-psd', // Photoshop PSD
+          'image/vnd.adobe.photoshop', // Photoshop
+          'image/x-indesign', // InDesign
+          // ===== 医学/科学影像 =====
+          'image/x-dicom', // DICOM (医学影像)
+          'image/dicom-rle',
+          // ===== HDR/3D/全景格式 =====
+          'image/x-exr', // OpenEXR (HDR)
+          'image/x-hdr',
+          'image/vnd.radiance', // Radiance HDR
+          // ===== Netpbm/PNM 格式 =====
+          'image/x-portable-anymap', // PNM 格式
+          'image/x-portable-bitmap', // PBM (灰度)
+          'image/x-portable-graymap', // PGM (灰度)
+          'image/x-portable-pixmap', // PPM (彩色)
+          'image/x-xbitmap', // XBM (位图)
+          'image/x-xpixmap', // XPM
+          // ===== 其他移动/设备格式 =====
+          'image/x-qcom-msm', // Qualcomm
+          'image/x-ktx', // Khronos Texture
+          'image/ktx2', // KTX2
+          'image/astc', // ASTC (ARM texture)
+          // ===== 允许所有图片类型 (备用) =====
+          'image/*',
+          // ===== 视频 =====
+          // 常见视频格式
+          'video/x-msvideo', // AVI
+          'video/x-flv', // FLV
+          'video/x-matroska', // MKV
+          'video/quicktime', // MOV
+          'video/mp4',
+          'video/mpeg',
+          'video/webm',
+          'video/x-ms-wmv',
+          'video/3gpp', // 3GP (手机视频)
+          'video/3gpp2',
+          // ===== 更多视频格式 =====
+          'video/x-m4v', // M4V (iTunes/Apple TV)
+          'video/x-sgi-movie', // SGI/Movie
+          'video/x-mpeg', // MPEG
+          'video/x-mpeg2', // MPEG-2
+          'video/vnd.mpegurl', // MPU/M3U8
+          'video/x-ms-asf', // ASF
+          'video/x-ms-asf-plugin',
+          'video/x-ms-wax', // WAX
+          'video/x-ms-wvx', // WVX
+          'video/x-msvideo', // AVI
+          'video/x-avi', // AVI ( alternate)
+          'video/avi',
+          'video/x-nv', // nVidia video
+          'video/x-qtc', // QTC
+          'video/x-smv', // SMV
+          'video/x-matroska', // MKV
+          'video/x-matroska-3d', // 3D MKV
+          'video/webm', // WebM (VP8/VP9)
+          'video/webm-vp9', // WebM VP9
+          'video/ogg', // OGV (Ogg Theora)
+          'video/ogv',
+          // ===== 专业/广播视频格式 =====
+          'video/divx', // DivX
+          'video/x-divx',
+          'video/vnd.divx',
+          'video/x-xvid', // Xvid
+          'video/x-vid',
+          'video/x264', // H.264
+          'video/h264',
+          'video/h264-viva',
+          'video/h264-rtsp',
+          'video/x-h264',
+          'video/x-red', // RealMedia
+          'video/x-pn-realvideo',
+          'video/vnd.rn-realvideo',
+          'video/vnd.rn-realmedia',
+          // ===== 移动/流媒体视频格式 =====
+          'video/iso.segment', // HLS
+          'application/vnd.apple.mpegurl', // M3U8
+          'application/x-mpegurl',
+          'application/vnd.ms-sstr+xml', // Smooth Streaming
+          'application/dash+xml', // DASH
+          // ===== 其他视频格式 =====
+          'video/x-mjpeg', // MJPEG
+          'video/x-mjpg',
+          'video/x-unknown', // 未知格式
+          'video/*', // 允许所有视频类型 (备用)
+          // ===== 音频 =====
           'audio/aac',
           'audio/amr',
           'audio/flac',
           'audio/mp4',
           'audio/mpeg',
+          'audio/mp3',
           'audio/ogg',
           'audio/opus',
           'audio/wav',
           'audio/x-ms-wma',
-          // 视频
-          'video/x-msvideo',
-          'video/x-flv',
-          'video/x-matroska',
-          'video/quicktime',
-          'video/mp4',
-          'video/mpeg',
-          'video/webm',
-          'video/x-ms-wmv',
+          'audio/webm',
+          // ===== 文档 =====
+          'application/pdf',
+          'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // DOCX
+          'application/vnd.ms-excel',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // XLSX
+          'application/vnd.ms-powerpoint',
+          'application/vnd.openxmlformats-officedocument.presentationml.presentation', // PPTX
+          'application/rtf',
+          'text/plain',
+          'text/markdown',
+          'text/csv',
+          // ===== 压缩文件 =====
+          'application/zip',
+          'application/x-zip-compressed',
+          'application/x-rar-compressed',
+          'application/vnd.rar',
+          'application/x-7z-compressed',
+          'application/x-tar',
+          'application/gzip',
+          'application/x-gzip',
+          'application/x-bzip2',
+          'application/x-xz',
+          // ===== 其他 =====
+          'application/json',
+          'application/xml',
+          'text/xml',
+          'application/octet-stream', // 通用二进制
         ],
     presignedUrlExpiry: Number(process.env.ATTACHMENT_PRESIGNED_URL_EXPIRY) || 3600, // 默认 1 小时 (12 小时 = 43200)
     local:

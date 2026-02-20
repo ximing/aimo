@@ -28,6 +28,32 @@ import type { UserInfoDto } from '@aimo/dto';
 import type { Request, Response } from 'express';
 
 
+/**
+ * Check if a MIME type is allowed, supporting wildcard patterns like "image/*"
+ * @param mimeType - The MIME type to check (e.g., "image/heic", "image/png")
+ * @param allowedTypes - Array of allowed MIME types, can include wildcards (e.g., "image/*", "video/*")
+ * @returns true if the MIME type is allowed, false otherwise
+ */
+function isMimeTypeAllowed(mimeType: string, allowedTypes: string[]): boolean {
+  // First try exact match
+  if (allowedTypes.includes(mimeType)) {
+    return true;
+  }
+
+  // Then check wildcard patterns (e.g., "image/*", "video/*", "audio/*")
+  for (const allowed of allowedTypes) {
+    if (allowed.endsWith('/*')) {
+      const prefix = allowed.slice(0, -2); // Remove "/*"
+      if (mimeType.startsWith(prefix + '/')) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+
 // Configure multer for memory storage
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -68,9 +94,9 @@ export class AttachmentV1Controller {
             return resolve(ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'No file uploaded'));
           }
 
-          // Validate file type
+          // Validate file type (supports wildcard like "image/*")
           const mimeType = file.mimetype;
-          if (!config.attachment.allowedMimeTypes.includes(mimeType)) {
+          if (!isMimeTypeAllowed(mimeType, config.attachment.allowedMimeTypes)) {
             return resolve(
               ResponseUtility.error(
                 ErrorCode.UNSUPPORTED_FILE_TYPE,
