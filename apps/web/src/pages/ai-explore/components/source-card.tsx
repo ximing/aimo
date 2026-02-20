@@ -1,5 +1,4 @@
 import type { ExploreSourceDto } from '@aimo/dto';
-import { FileText } from 'lucide-react';
 
 interface SourceCardProps {
   source: ExploreSourceDto;
@@ -11,10 +10,8 @@ interface SourceCardProps {
  * SourceCard component - Displays a source citation card with content preview, date, and relevance score
  * Used below AI responses to show which notes were referenced
  */
-export const SourceCard = ({ source, onClick }: Omit<SourceCardProps, 'index'>) => {
-  const relevancePercent = Math.round(source.relevanceScore * 100);
-
-  // Format date
+export const SourceCard = ({ source, index, onClick }: SourceCardProps) => {
+  // Get relevance color based on score
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp);
     return date.toLocaleDateString('zh-CN', {
@@ -24,40 +21,47 @@ export const SourceCard = ({ source, onClick }: Omit<SourceCardProps, 'index'>) 
     });
   };
 
-  // Get relevance color based on score
-  const getRelevanceColor = (score: number) => {
-    if (score >= 0.8) return 'bg-green-500';
-    if (score >= 0.6) return 'bg-primary-500';
-    if (score >= 0.5) return 'bg-amber-500';
-    return 'bg-gray-400';
+  // Convert relevance score (0-1) to 5 blocks (1-5)
+  const getRelevanceBlocks = (score: number) => {
+    const blocks = Math.max(1, Math.min(5, Math.ceil(score * 5)));
+    return Array.from({ length: 5 }, (_, i) => i < blocks);
   };
+
+  const relevanceBlocks = getRelevanceBlocks(source.relevanceScore);
 
   return (
     <button
       onClick={() => onClick(source.memoId)}
-      className="group flex flex-col w-full text-left bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-xl hover:border-primary-300 dark:hover:border-primary-700 hover:shadow-md transition-all p-3"
+      className="group flex flex-col w-64 flex-shrink-0 text-left bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-xl hover:border-primary-300 dark:hover:border-primary-700 hover:shadow-md transition-all p-3"
     >
-      {/* Content preview */}
-      <div className="flex-1 pb-4">
-        <p className="text-xs text-gray-600 dark:text-gray-300 line-clamp-3">
-          {source.content}
-        </p>
+      {/* Content preview with inline index */}
+      <div className="flex-1 pb-2">
+        <div className="flex items-start gap-2">
+          <span className="flex-shrink-0 mt-0.5 w-5 h-5 flex items-center justify-center rounded bg-primary-100 dark:bg-primary-900/40 text-xs font-medium text-primary-700 dark:text-primary-400">
+            {index + 1}
+          </span>
+          <p className="text-xs text-gray-600 dark:text-gray-300 line-clamp-3">
+            {source.content}
+          </p>
+        </div>
       </div>
 
       {/* Footer with date and relevance score */}
-      <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-dark-700">
-        <div className="flex items-center gap-2">
-          <FileText className="w-3 h-3 text-gray-400" />
+      <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-dark-700">
+        <div className="flex items-center gap-1">
           <span className="text-xs text-gray-400">{formatDate(source.createdAt)}</span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs text-gray-400">相关度</span>
-          <div className="flex items-center gap-1">
-            <div className={`w-1.5 h-1.5 rounded-full ${getRelevanceColor(source.relevanceScore)}`} />
-            <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
-              {relevancePercent}%
-            </span>
-          </div>
+        <div className="flex items-center gap-0.5">
+          {relevanceBlocks.map((filled, i) => (
+            <div
+              key={i}
+              className={`w-1.5 h-3 rounded-sm ${
+                filled
+                  ? 'bg-primary-500'
+                  : 'bg-gray-200 dark:bg-gray-700'
+              }`}
+            />
+          ))}
         </div>
       </div>
     </button>

@@ -484,7 +484,7 @@ export const AIExplorePage = view(() => {
                                         查看关系图谱
                                       </button>
                                     </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
                                       {message.sources.map((source, index) => (
                                         <SourceCard
                                           key={source.memoId}

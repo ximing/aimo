@@ -30,7 +30,7 @@ const CitationLink = ({
     <button
       onClick={onClick}
       className="inline-flex items-center justify-center mx-0.5 px-1.5 py-0.5 text-xs font-medium bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-400 rounded hover:bg-primary-200 dark:hover:bg-primary-900/60 transition-colors"
-      title={`查看来源: ${source.title}`}
+      title={`查看来源: ${source.content.slice(0, 50)}${source.content.length > 50 ? '...' : ''}`}
     >
       {index + 1}
     </button>
