@@ -16,6 +16,10 @@ import { createIndexesMigration } from './002-create-indexes.js';
 import { addMemoTypeMigration } from './003-add-memo-type.js';
 import { addDiaryCategoryMigration } from './004-add-diary-category.js';
 import { addAvatarToUsersMigration } from './005-add-avatar-field.js';
+import {
+  aiConversationsTableMigration,
+  aiMessagesTableMigration,
+} from './006-add-ai-conversations.js';
 
 import type { Migration } from '../types.js';
 
@@ -49,6 +53,10 @@ export const ALL_MIGRATIONS: Migration[] = [
 
   // Version 5: Add avatar field to users table
   addAvatarToUsersMigration,
+
+  // Version 6: Add AI conversations and messages tables
+  aiConversationsTableMigration,
+  aiMessagesTableMigration,
 
   // Add future migrations here
   // Example:

@@ -265,3 +265,75 @@ export interface TableMigrationRecord {
   currentVersion: number;
   lastMigratedAt: number; // timestamp in milliseconds
 }
+
+/**
+ * AI Conversations table schema
+ * Stores AI conversation sessions with metadata
+ */
+export const aiConversationsSchema = new Schema([
+  new Field('conversationId', new Utf8(), false), // non-nullable unique conversation id
+  new Field('uid', new Utf8(), false), // non-nullable user id
+  new Field('title', new Utf8(), false), // non-nullable conversation title
+  new Field('createdAt', new Timestamp(TimeUnit.MILLISECOND), false), // non-nullable creation timestamp in milliseconds
+  new Field('updatedAt', new Timestamp(TimeUnit.MILLISECOND), false), // non-nullable update timestamp in milliseconds
+]);
+
+/**
+ * Type definition for AI conversation records
+ */
+export interface AIConversationRecord {
+  conversationId: string;
+  uid: string;
+  title: string;
+  createdAt: number; // timestamp in milliseconds
+  updatedAt: number; // timestamp in milliseconds
+}
+
+/**
+ * AI Messages table schema
+ * Stores messages within AI conversations
+ * Sources field stores references to related memos/quotes
+ */
+export const aiMessagesSchema = new Schema([
+  new Field('messageId', new Utf8(), false), // non-nullable unique message id
+  new Field('conversationId', new Utf8(), false), // non-nullable conversation id (foreign key)
+  new Field('role', new Utf8(), false), // non-nullable role: 'user' | 'assistant'
+  new Field('content', new Utf8(), false), // non-nullable message content
+  new Field(
+    'sources',
+    new List(
+      new Field(
+        'item',
+        new Struct([
+          new Field('memoId', new Utf8(), true),
+          new Field('content', new Utf8(), true),
+          new Field('similarity', new Float32(), true),
+        ]),
+        true
+      )
+    ),
+    true
+  ), // nullable list of source references
+  new Field('createdAt', new Timestamp(TimeUnit.MILLISECOND), false), // non-nullable creation timestamp in milliseconds
+]);
+
+/**
+ * Type definition for AI message source references
+ */
+export interface AIMessageSource {
+  memoId?: string;
+  content?: string;
+  similarity?: number;
+}
+
+/**
+ * Type definition for AI message records
+ */
+export interface AIMessageRecord {
+  messageId: string;
+  conversationId: string;
+  role: 'user' | 'assistant';
+  content: string;
+  sources?: AIMessageSource[];
+  createdAt: number; // timestamp in milliseconds
+}

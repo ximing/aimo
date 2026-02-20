@@ -251,4 +251,15 @@ export class LanceDbService {
   }
 }
 
-export {type UserRecord, type MemoRecord, type MemoRelationRecord, type CategoryRecord, type EmbeddingCacheRecord, type AttachmentRecord, type MultimodalEmbeddingCacheRecord} from '../models/db/schema.js';
+export {
+  type UserRecord,
+  type MemoRecord,
+  type MemoRelationRecord,
+  type CategoryRecord,
+  type EmbeddingCacheRecord,
+  type AttachmentRecord,
+  type MultimodalEmbeddingCacheRecord,
+  type AIConversationRecord,
+  type AIMessageRecord,
+  type AIMessageSource,
+} from '../models/db/schema.js';
