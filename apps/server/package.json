@@ -54,6 +54,7 @@
     "reflect-metadata": "^0.2.2",
     "routing-controllers": "^0.11.1",
     "typedi": "^0.10.0",
+    "urllib": "^2.44.0",
     "zod": "^3.22.0"
   },
   "devDependencies": {

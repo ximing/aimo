@@ -283,6 +283,9 @@ importers:
       typedi:
         specifier: ^0.10.0
         version: 0.10.0
+      urllib:
+        specifier: ^2.44.0
+        version: 2.44.0
       zod:
         specifier: ^3.22.0
         version: 3.25.76

@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 
+import urllib from 'urllib';
 import { Service } from 'typedi';
 
 import { config } from '../config/config.js';
@@ -8,7 +9,7 @@ import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
 /**
  * Multimodal content types
  */
-export type ModalityType = 'text' | 'image' | 'video';
+export type ModalityType = 'text' | 'image' | 'video' | 'multi_images' | 'vl';
 
 /**
  * Multimodal content input
@@ -17,6 +18,7 @@ export interface MultimodalContent {
   text?: string;
   image?: string; // URL or base64 encoded image
   video?: string; // URL or base64 encoded video
+  multi_images?: string[]; // Multiple image URLs or base64 encoded images
 }
 
 /**
@@ -29,14 +31,36 @@ interface DashScopeEmbedding {
 }
 
 interface DashScopeResponse {
-  output: {
+  output?: {
     embeddings: DashScopeEmbedding[];
   };
-  usage: {
+  usage?: {
     input_tokens: number;
     image_tokens?: number;
+    image_count?: number;
+    duration?: number;
   };
+  request_id?: string;
+  code?: string;
+  message?: string;
 }
+
+const MODEL_DIMENSIONS: Record<string, number[]> = {
+  'qwen3-vl-embedding': [2560, 2048, 1536, 1024, 768, 512, 256],
+  'qwen2.5-vl-embedding': [2048, 1024, 768, 512],
+  'tongyi-embedding-vision-plus': [1152, 1024, 512, 256, 128, 64],
+  'tongyi-embedding-vision-flash': [768, 512, 256, 128, 64],
+};
+
+const MODEL_DEFAULT_DIMENSIONS: Record<string, number> = {
+  'qwen3-vl-embedding': 2560,
+  'qwen2.5-vl-embedding': 1024,
+  'tongyi-embedding-vision-plus': 1152,
+  'tongyi-embedding-vision-flash': 768,
+  'multimodal-embedding-v1': 1024,
+};
+
+const MULTI_IMAGE_MODELS = new Set(['tongyi-embedding-vision-plus', 'tongyi-embedding-vision-flash']);
 
 /**
  * Service for generating multimodal embeddings using DashScope API
@@ -46,9 +70,11 @@ interface DashScopeResponse {
 export class MultimodalEmbeddingService {
   private dimension: number;
   private modelHash: string;
+  private requestDimension?: number;
 
   constructor(private lanceDatabase: LanceDatabaseService) {
-    this.dimension = config.multimodal.dimension;
+    this.dimension = this.resolveDimensionForModel();
+    this.requestDimension = this.getRequestDimension();
     this.modelHash = this.generateModelHash();
   }
 
@@ -56,8 +82,20 @@ export class MultimodalEmbeddingService {
    * Generate a hash for the current model configuration
    */
   private generateModelHash(): string {
-    const modelIdentifier = `${config.multimodal.model}:${config.multimodal.dimension}`;
-    return createHash('sha256').update(modelIdentifier).digest('hex');
+    const modelSignature: Record<string, unknown> = {
+      model: config.multimodal.model,
+      outputType: config.multimodal.outputType,
+    };
+
+    if (typeof this.requestDimension === 'number') {
+      modelSignature.dimension = this.requestDimension;
+    }
+
+    if (typeof config.multimodal.fps === 'number') {
+      modelSignature.fps = config.multimodal.fps;
+    }
+
+    return createHash('sha256').update(JSON.stringify(modelSignature)).digest('hex');
   }
 
   /**
@@ -67,16 +105,153 @@ export class MultimodalEmbeddingService {
     return createHash('sha256').update(content).digest('hex');
   }
 
-  /**
-   * Determine modality type from content URL or data
-   */
-  private determineModalityType(content: string): ModalityType {
-    if (content.startsWith('data:image/') || content.includes('image/')) {
-      return 'image';
-    } else if (content.startsWith('data:video/') || content.includes('video/')) {
-      return 'video';
+  private resolveDimensionForModel(): number {
+    const allowedDimensions = MODEL_DIMENSIONS[config.multimodal.model];
+    if (allowedDimensions) {
+      if (allowedDimensions.includes(config.multimodal.dimension)) {
+        return config.multimodal.dimension;
+      }
+
+      const fallback = MODEL_DEFAULT_DIMENSIONS[config.multimodal.model];
+      if (typeof fallback === 'number') {
+        console.warn(
+          `Configured dimension ${config.multimodal.dimension} is not supported by model ${config.multimodal.model}, using ${fallback}`
+        );
+        return fallback;
+      }
+
+      console.warn(
+        `Configured dimension ${config.multimodal.dimension} is not supported by model ${config.multimodal.model}`
+      );
     }
-    return 'text';
+
+    return MODEL_DEFAULT_DIMENSIONS[config.multimodal.model] ?? config.multimodal.dimension;
+  }
+
+  private getRequestDimension(): number | undefined {
+    const allowedDimensions = MODEL_DIMENSIONS[config.multimodal.model];
+    if (!allowedDimensions) {
+      return undefined;
+    }
+
+    if (allowedDimensions.includes(config.multimodal.dimension)) {
+      return config.multimodal.dimension;
+    }
+
+    const fallback = MODEL_DEFAULT_DIMENSIONS[config.multimodal.model];
+    if (typeof fallback === 'number' && allowedDimensions.includes(fallback)) {
+      console.warn(
+        `Configured dimension ${config.multimodal.dimension} is not supported by model ${config.multimodal.model}, using ${fallback}`
+      );
+      return fallback;
+    }
+
+    console.warn(
+      `Configured dimension ${config.multimodal.dimension} is not supported by model ${config.multimodal.model}`
+    );
+    return undefined;
+  }
+
+  private getModalityFlags(content: MultimodalContent) {
+    const hasText = typeof content.text === 'string' && content.text.trim().length > 0;
+    const hasImage = typeof content.image === 'string' && content.image.trim().length > 0;
+    const hasVideo = typeof content.video === 'string' && content.video.trim().length > 0;
+    const hasMultiImages =
+      Array.isArray(content.multi_images) && content.multi_images.filter(Boolean).length > 0;
+
+    return {
+      hasText,
+      hasImage,
+      hasVideo,
+      hasMultiImages,
+    };
+  }
+
+  private resolveModalityType(content: MultimodalContent): ModalityType {
+    const { hasText, hasImage, hasVideo, hasMultiImages } = this.getModalityFlags(content);
+    const modalityCount =
+      Number(hasText) + Number(hasImage) + Number(hasVideo) + Number(hasMultiImages);
+
+    if (modalityCount === 0) {
+      throw new Error('At least one of text, image, video, or multi_images must be provided');
+    }
+
+    if (hasMultiImages) {
+      if (modalityCount > 1) {
+        throw new Error('multi_images cannot be combined with other modalities');
+      }
+      return 'multi_images';
+    }
+
+    if (modalityCount > 1) {
+      return 'vl';
+    }
+
+    if (hasText) {
+      return 'text';
+    }
+
+    if (hasImage) {
+      return 'image';
+    }
+
+    return 'video';
+  }
+
+  private serializeContent(content: MultimodalContent): string {
+    const sanitized: Record<string, unknown> = {};
+
+    if (content.text) {
+      sanitized.text = content.text;
+    }
+    if (content.image) {
+      sanitized.image = content.image;
+    }
+    if (content.video) {
+      sanitized.video = content.video;
+    }
+
+    const multiImages = Array.isArray(content.multi_images)
+      ? content.multi_images.filter(Boolean)
+      : undefined;
+
+    if (multiImages && multiImages.length > 0) {
+      sanitized.multi_images = multiImages;
+    }
+
+    return JSON.stringify(sanitized);
+  }
+
+  private buildRequestParameters(contents: MultimodalContent[]): Record<string, unknown> | undefined {
+    const parameters: Record<string, unknown> = {};
+
+    if (typeof this.requestDimension === 'number') {
+      parameters.dimension = this.requestDimension;
+    }
+
+    if (config.multimodal.outputType) {
+      parameters.output_type = config.multimodal.outputType;
+    }
+
+    if (this.hasVideo(contents) && typeof config.multimodal.fps === 'number') {
+      parameters.fps = config.multimodal.fps;
+    }
+
+    return Object.keys(parameters).length > 0 ? parameters : undefined;
+  }
+
+  private hasVideo(contents: MultimodalContent[]): boolean {
+    return contents.some((content) => Boolean(content.video));
+  }
+
+  private validateContents(contents: MultimodalContent[]): void {
+    const hasMultiImages = contents.some(
+      (content) => Array.isArray(content.multi_images) && content.multi_images.length > 0
+    );
+
+    if (hasMultiImages && !MULTI_IMAGE_MODELS.has(config.multimodal.model)) {
+      throw new Error(`Model ${config.multimodal.model} does not support multi_images input`);
+    }
   }
 
   /**
@@ -140,34 +315,60 @@ export class MultimodalEmbeddingService {
       throw new Error('DASHSCOPE_API_KEY is not configured');
     }
 
+    if (!contents || contents.length === 0) {
+      throw new Error('Contents array cannot be empty');
+    }
+
+    this.validateContents(contents);
+
+    const parameters = this.buildRequestParameters(contents);
+    const payload: Record<string, unknown> = {
+      model: config.multimodal.model,
+      input: {
+        contents,
+      },
+    };
+
+    if (parameters) {
+      payload.parameters = parameters;
+    }
+
     try {
-      const response = await fetch(
+      const response = await urllib.request(
         `${config.multimodal.baseURL}/services/embeddings/multimodal-embedding/multimodal-embedding`,
         {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${config.multimodal.apiKey}`,
-            'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            model: config.multimodal.model,
-            input: {
-              contents,
-            },
-            parameters: {
-              dimension: config.multimodal.dimension,
-              output_type: config.multimodal.outputType,
-              fps: config.multimodal.fps,
-            },
-          }),
+          contentType: 'json',
+          dataType: 'json',
+          data: payload,
         }
       );
 
-      if (!response.ok) {
-        throw new Error(`DashScope API call failed: ${response.status} - ${response.statusText}`);
+      const statusCode =
+        typeof response.status === 'number' ? response.status : response.res?.statusCode;
+
+      if (!statusCode || statusCode < 200 || statusCode >= 300) {
+        throw new Error(
+          `DashScope API call failed: ${statusCode ?? 'unknown'} - ${
+            response.res?.statusMessage ?? 'Unknown error'
+          }`
+        );
       }
 
-      const data = (await response.json()) as DashScopeResponse;
+      const data = response.data as DashScopeResponse;
+      if (data.code) {
+        throw new Error(
+          `DashScope API error: ${data.code}${data.message ? ` - ${data.message}` : ''}`
+        );
+      }
+
+      if (!data.output?.embeddings || data.output.embeddings.length === 0) {
+        throw new Error('DashScope API response missing embeddings');
+      }
+
       return data.output.embeddings;
     } catch (error) {
       throw new Error(
@@ -191,57 +392,40 @@ export class MultimodalEmbeddingService {
     modalityType?: ModalityType
   ): Promise<number[]> {
     try {
-      // Determine the primary content and modality type
-      let contentString: string | null = null;
-      let detectedModalityType: ModalityType;
-
-      if (content.text) {
-        contentString = content.text;
-        detectedModalityType = 'text';
-      } else if (content.image) {
-        contentString = content.image;
-        detectedModalityType = 'image';
-      } else if (content.video) {
-        contentString = content.video;
-        detectedModalityType = 'video';
-      } else {
-        throw new Error('At least one of text, image, or video must be provided');
-      }
-
-      // Override with explicit modalityType if provided
-      if (modalityType) {
-        detectedModalityType = modalityType;
-      }
-
-      const contentHash = this.generateContentHash(contentString);
+      this.validateContents([content]);
+      const resolvedModalityType = this.resolveModalityType(content);
+      const finalModalityType = modalityType ?? resolvedModalityType;
+      const contentHash = this.generateContentHash(this.serializeContent(content));
 
       // Try to get from cache
       const cachedEmbedding = await this.queryCacheByHash(
         this.modelHash,
         contentHash,
-        detectedModalityType
+        finalModalityType
       );
 
       if (cachedEmbedding) {
-        console.log(`Cache hit for multimodal embedding (${detectedModalityType})`);
+        console.log(`Cache hit for multimodal embedding (${finalModalityType})`);
         return cachedEmbedding;
       }
 
       // Cache miss, generate embedding
       console.log(
-        `Cache miss for multimodal embedding (${detectedModalityType}), generating new one...`
+        `Cache miss for multimodal embedding (${finalModalityType}), generating new one...`
       );
 
       const embeddings = await this.callDashScopeAPI([content]);
+      const embeddingResult =
+        embeddings.find((embedding) => embedding.index === 0) ?? embeddings[0];
 
-      if (embeddings.length === 0) {
+      if (!embeddingResult) {
         throw new Error('No embedding returned from DashScope API');
       }
 
-      const embedding = embeddings[0].embedding;
+      const embedding = embeddingResult.embedding;
 
       // Save to cache
-      await this.saveToCache(this.modelHash, contentHash, detectedModalityType, embedding);
+      await this.saveToCache(this.modelHash, contentHash, finalModalityType, embedding);
 
       return embedding;
     } catch (error) {
@@ -263,34 +447,17 @@ export class MultimodalEmbeddingService {
         throw new Error('Contents array cannot be empty');
       }
 
+      this.validateContents(contents);
+
       // Generate hashes and determine modality types for all contents
       const contentWithHashes = contents.map((item) => {
-        let contentString: string | null = null;
-        let modalityType: ModalityType;
-
-        if (item.text) {
-          contentString = item.text;
-          modalityType = 'text';
-        } else if (item.image) {
-          contentString = item.image;
-          modalityType = 'image';
-        } else if (item.video) {
-          contentString = item.video;
-          modalityType = 'video';
-        } else {
-          throw new Error('At least one of text, image, or video must be provided');
-        }
-
-        // Override with explicit modalityType if provided
-        if (item.modalityType) {
-          modalityType = item.modalityType;
-        }
+        const resolvedModalityType = this.resolveModalityType(item);
+        const finalModalityType = item.modalityType ?? resolvedModalityType;
 
         return {
           content: item,
-          contentString,
-          modalityType,
-          contentHash: this.generateContentHash(contentString),
+          modalityType: finalModalityType,
+          contentHash: this.generateContentHash(this.serializeContent(item)),
         };
       });
 
@@ -326,11 +493,22 @@ export class MultimodalEmbeddingService {
       );
 
       const embeddings = await this.callDashScopeAPI(contentsToGenerate);
+      const embeddingsByIndex = new Map<number, DashScopeEmbedding>();
+
+      for (const embedding of embeddings) {
+        embeddingsByIndex.set(embedding.index, embedding);
+      }
 
       // Save to cache and merge results
-      for (const [index, embedding_] of embeddings.entries()) {
-        const originalIndex = indexesToGenerate[index];
-        const embedding = embedding_.embedding;
+      for (const [relativeIndex, originalIndex] of indexesToGenerate.entries()) {
+        const embeddingResult =
+          embeddingsByIndex.get(relativeIndex) ?? embeddings[relativeIndex];
+
+        if (!embeddingResult) {
+          throw new Error(`No embedding returned for index ${relativeIndex}`);
+        }
+
+        const embedding = embeddingResult.embedding;
         await this.saveToCache(
           this.modelHash,
           contentWithHashes[originalIndex].contentHash,
