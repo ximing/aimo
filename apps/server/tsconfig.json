@@ -15,6 +15,7 @@
     "strictNullChecks": true,
     "lib": ["ES2022"],
     "outDir": "./dist",
+    "rootDir": "./src",
     "noImplicitAny": false,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
