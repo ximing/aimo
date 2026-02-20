@@ -12,7 +12,7 @@ files:
   - package.json
   # Include the built web app (from apps/web built with ELECTRON=true)
   - dist/web
-disableDefaultIgnoredFiles: false
+disableDefaultIgnoredFiles: true
 
 # macOS Configuration
 mac:
