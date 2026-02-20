@@ -1,120 +1,155 @@
 {
   "project": "AIMO",
-  "branchName": "ralph/ai-explore-page",
-  "description": "AI探索页面 - 基于LangChain DeepAgents的智能知识发现界面，用户可以基于已有笔记进行提问、探索和分析",
+  "branchName": "ralph/ai-explore-conversation-storage",
+  "description": "AI探索对话持久化与侧边栏改造 - 将对话数据从localStorage迁移到LanceDB，左侧增加对话历史列表，移除header，输入框悬浮固定",
   "userStories": [
     {
       "id": "US-001",
-      "title": "LangChain DeepAgents后端基础架构",
-      "description": "作为开发者，我需要搭建基于LangChain的DeepAgents架构，实现多Agent协作处理用户查询",
+      "title": "创建对话数据表结构",
+      "description": "作为开发者，我需要在LanceDB中创建对话存储结构，以便持久化保存用户对话数据",
       "acceptanceCriteria": [
-        "安装langchain及相关依赖包",
-        "创建ExploreService作为Agent协调器",
-        "实现检索Agent，使用LanceDB向量搜索相关笔记",
-        "定义Agent间状态传递的数据结构",
-        "创建/explore API端点接收用户查询",
+        "在LanceDB中创建ai_conversations表，包含字段：id, userId, title, createdAt, updatedAt",
+        "创建ai_messages表，包含字段：id, conversationId, role, content, sources, createdAt",
+        "创建数据库迁移脚本",
+        "运行迁移成功，表结构验证通过",
         "Typecheck passes"
       ],
       "priority": 1,
-      "passes": true,
-      "notes": "Implemented LangChain DeepAgents backend with ExploreService, retrieval/analysis/generation agents, and /explore API endpoint"
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-002",
-      "title": "实现关系分析Agent和附件理解Agent",
-      "description": "作为开发者，我需要实现关系分析Agent和附件理解Agent，以便全面分析笔记关联和附件内容",
+      "title": "后端API - 对话CRUD",
+      "description": "作为开发者，我需要提供后端API来管理对话数据",
       "acceptanceCriteria": [
-        "实现关系分析Agent，查询笔记间的关联关系",
-        "实现附件理解Agent，提取图片/PDF的关键信息",
-        "实现总结Agent，整合各Agent输出生成回答",
-        "Agent间通过共享状态传递中间结果",
-        "整个Agent链执行时间不超过5秒（不含LLM生成）",
+        "GET /api/explore/conversations - 获取用户的对话列表（按updatedAt倒序）",
+        "GET /api/explore/conversations/:id - 获取单个对话详情（含消息列表）",
+        "POST /api/explore/conversations - 创建新对话",
+        "PUT /api/explore/conversations/:id - 更新对话（重命名标题）",
+        "DELETE /api/explore/conversations/:id - 删除对话",
+        "POST /api/explore/conversations/:id/messages - 添加消息到对话",
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": true,
-      "notes": "Implemented relation analysis agent with backlink support and attachment understanding agent for images/PDFs. Summary agent now integrates all outputs. Parallel execution ensures sub-5s performance (excluding LLM)."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-003",
-      "title": "对话界面基础架构",
-      "description": "作为用户，我需要一个对话式界面来与AI交互，自然地提出关于笔记的问题",
+      "title": "前端服务层改造",
+      "description": "作为开发者，我需要改造前端数据层，从调用localStorage改为调用后端API",
       "acceptanceCriteria": [
-        "创建AI探索页面路由/ai-explore",
-        "实现可滚动的消息历史区域",
-        "底部固定输入框，支持多行文本和Enter发送",
-        "用户消息和AI消息有明显视觉区分",
-        "支持Markdown渲染AI回复内容",
-        "空状态显示引导性提示语",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "创建exploreConversation API模块，封装所有对话相关接口",
+        "更新ExploreService，使用API替代localStorage",
+        "保持现有对话状态的响应式特性",
+        "添加错误处理和网络失败降级提示",
+        "Typecheck passes"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": "Implemented AI exploration chat interface with message history, markdown rendering, source citations, and conversation management (10-round limit with localStorage persistence)"
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-004",
-      "title": "智能检索与来源标注",
-      "description": "作为用户，我希望AI回答能显示引用了哪些笔记，以便验证信息来源",
+      "title": "移除Header改造页面布局",
+      "description": "作为用户，我希望页面布局更简洁，移除顶部header，将导航整合到左侧边栏",
       "acceptanceCriteria": [
-        "AI回答下方以卡片形式展示引用的笔记",
-        "来源卡片显示笔记标题、摘要、相似度分数",
-        "点击来源卡片可跳转到对应笔记详情",
-        "回答正文中引用以[1]、[2]形式标注",
-        "无相关笔记时AI明确告知",
+        "移除AI探索页面原有的顶部header",
+        "将页面标题AI探索移到左侧边栏顶部",
+        "主内容区占满剩余宽度，无顶部留白",
+        "边栏顶部包含返回首页的返回按钮",
+        "整体布局左右结构：左侧边栏 + 右侧主内容区",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 4,
-      "passes": true,
-      "notes": "Implemented source citations with SourceCard component showing title, summary, relevance score. MarkdownWithCitations component parses [1], [2] patterns into clickable badges. MemoDetailModal opens when clicking sources. Shows '未找到相关笔记' when no sources found."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-005",
-      "title": "多轮对话与上下文记忆",
-      "description": "作为用户，我希望能进行追问和深入交流，逐步探索问题",
+      "title": "左侧对话列表边栏",
+      "description": "作为用户，我需要左侧边栏展示历史对话列表，方便快速切换不同对话",
       "acceptanceCriteria": [
-        "支持多轮对话，AI记住之前上下文",
-        "实现'新建话题'按钮开启独立对话",
-        "对话历史存储在localStorage",
-        "单次对话限制10轮，超出提示新建话题",
+        "页面左侧固定宽度边栏（280px）",
+        "边栏顶部显示页面标题AI探索和新建话题按钮",
+        "对话列表按最后更新时间倒序排列",
+        "每个对话项显示标题和最后更新时间（相对时间，如2小时前）",
+        "当前选中的对话高亮显示",
+        "点击对话项加载对应对话内容",
+        "边栏支持滚动，当对话较多时可滚动查看",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 5,
-      "passes": true,
-      "notes": "Frontend: localStorage persistence, 10-round limit with UI warnings, 'New Conversation' button, context accumulation. Backend: Improved prompts for multi-turn dialogue with conversation history formatting."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-006",
-      "title": "笔记关系图谱探索",
-      "description": "作为用户，我希望AI能发现并展示笔记间的关联关系，理解知识结构",
+      "title": "对话管理功能",
+      "description": "作为用户，我需要对对话进行管理，包括删除和重命名",
       "acceptanceCriteria": [
-        "AI能识别笔记间的主题关联、时间关联、标签关联",
-        "回答中可选显示关系图谱小部件",
-        "关系图谱支持点击节点查看笔记详情",
-        "提供'探索相关'按钮基于当前话题深入探索",
+        "对话项hover时显示操作按钮（更多菜单）",
+        "点击重命名弹出输入框修改对话标题",
+        "点击删除弹出确认对话框，确认后删除",
+        "删除后自动切换到最新的其他对话，若无则显示空状态",
+        "重命名后列表实时更新",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 6,
-      "passes": true,
-      "notes": "Implemented relationship graph with thematic, temporal, outgoing, and incoming relationship detection. Graph widget with interactive nodes, expand/collapse, and explore-related functionality."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-007",
-      "title": "探索建议和洞察生成",
-      "description": "作为用户，我希望AI能主动给我洞察和建议，发现知识盲区",
+      "title": "新建话题功能迁移",
+      "description": "作为用户，我需要在左侧边栏中方便地新建话题",
       "acceptanceCriteria": [
-        "提供'发现洞察'功能按钮",
-        "AI分析全库笔记生成主题聚类、时间趋势",
-        "洞察报告以结构化形式展示",
-        "支持'告诉我更多'追问深入特定主题",
+        "左侧边栏顶部有新建话题按钮（+ 图标或文字按钮）",
+        "点击后创建新对话，标题默认为新对话或基于第一条消息生成",
+        "新建后自动切换到新对话",
+        "新对话出现在列表顶部",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "悬浮输入框改造",
+      "description": "作为用户，我希望输入框固定在底部，始终可见，类似ChatGPT的交互体验",
+      "acceptanceCriteria": [
+        "输入框固定在视口底部，不随消息滚动",
+        "输入框宽度适应主内容区，左右有合适边距",
+        "输入框有白色背景和阴影，与消息列表有视觉区分",
+        "消息列表区域底部预留输入框高度，避免内容被遮挡",
+        "输入框支持多行文本，自动增高",
+        "发送按钮在输入框右侧",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "空状态和加载状态",
+      "description": "作为用户，我希望在无对话或加载时有清晰的反馈",
+      "acceptanceCriteria": [
+        "无对话时，左侧列表显示暂无对话提示",
+        "首次进入页面无选中对话时，主区域显示欢迎界面（引导新建话题）",
+        "加载对话列表时显示骨架屏或loading状态",
+        "切换对话时主区域显示loading状态",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 9,
       "passes": false,
       "notes": ""
     }
