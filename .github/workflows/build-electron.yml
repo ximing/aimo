@@ -98,8 +98,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: web-dist
-          path: |
-            apps/client/dist/web/**
+          path: apps/client/dist/web
           retention-days: 1
 
   # Typecheck and lint client
@@ -173,12 +172,6 @@ jobs:
           name: packages-dist
           path: packages
 
-      - name: Download web app artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: web-dist
-          path: apps/client/dist/web
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -187,6 +180,12 @@ jobs:
 
       - name: Build Electron main process
         run: pnpm --filter @aimo/client run build:electron
+
+      - name: Download web app artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: apps/client/dist/web
 
       - name: Build macOS x64
         run: |
@@ -244,12 +243,6 @@ jobs:
           name: packages-dist
           path: packages
 
-      - name: Download web app artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: web-dist
-          path: apps/client/dist/web
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -258,7 +251,13 @@ jobs:
 
       - name: Build Electron main process
         run: pnpm --filter @aimo/client run build:electron
-
+      
+      - name: Download web app artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: apps/client/dist/web
+      
       - name: Build macOS arm64
         run: |
           if [ -z "$CSC_LINK" ]; then
@@ -317,15 +316,15 @@ jobs:
           name: packages-dist
           path: packages
 
+      - name: Build Electron main process
+        run: pnpm --filter @aimo/client run build:electron
+
       - name: Download web app artifact
         uses: actions/download-artifact@v4
         with:
           name: web-dist
           path: apps/client/dist/web
-
-      - name: Build Electron main process
-        run: pnpm --filter @aimo/client run build:electron
-
+      
       - name: Build Windows
         run: pnpm --filter @aimo/client run dist:win
         env:
@@ -379,15 +378,15 @@ jobs:
           name: packages-dist
           path: packages
 
+      - name: Build Electron main process
+        run: pnpm --filter @aimo/client run build:electron
+
       - name: Download web app artifact
         uses: actions/download-artifact@v4
         with:
           name: web-dist
           path: apps/client/dist/web
-
-      - name: Build Electron main process
-        run: pnpm --filter @aimo/client run build:electron
-
+      
       - name: Build Linux
         run: pnpm --filter @aimo/client run dist:linux
         env:

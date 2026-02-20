@@ -14,7 +14,7 @@
     "dev": "vite",
     "build": "pnpm build:web && pnpm build:electron",
     "build:web": "cd ../web && ELECTRON=true pnpm build",
-    "build:electron": "tsc -b && vite build",
+    "build:electron": "vite build && tsc -b",
     "build:all": "pnpm build && pnpm dist",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/",
