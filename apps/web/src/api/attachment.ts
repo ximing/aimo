@@ -1,7 +1,8 @@
 import axios from 'axios';
 import type { AttachmentDto, UploadAttachmentResponseDto } from '@aimo/dto';
 
-const API_BASE = '/api/v1/attachments';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+const API_BASE = `${API_BASE_URL}/api/v1/attachments`;
 
 interface ApiResponse<T> {
   code: number;
