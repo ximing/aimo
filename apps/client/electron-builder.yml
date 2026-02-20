@@ -13,11 +13,8 @@ directories:
   output: release
   buildResources: build
 files:
-  - dist
+  - dist/**
   - package.json
-  # Include the built web app (from apps/web built with ELECTRON=true)
-  - dist/web
-disableDefaultIgnoredFiles: true
 
 # macOS Configuration
 mac:
