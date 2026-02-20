@@ -1,3 +1,30 @@
 # Ralph Progress Log
 Started: 2026年 2月15日 星期日 23时33分46秒 CST
 ---
+
+## Codebase Patterns
+- LanceDB table schemas are defined in `apps/server/src/models/db/schema.ts` using Apache Arrow types
+- Migrations are created in `apps/server/src/migrations/scripts/` and registered in `index.ts`
+- Table schemas use `new Schema([...])` with `new Field(name, type, nullable)` definitions
+- TypeScript types for records are exported alongside schemas
+- Migration version numbers must be unique per table
+- Export new types from `lancedb.ts` for service layer access
+
+## 2026-02-20 11:50:00 - US-001
+- Created ai_conversations and ai_messages table schemas in schema.ts
+- Created migration script 006-add-ai-conversations.ts
+- Registered migrations in migration index
+- Exported new types from lancedb.ts
+- Files changed:
+  - apps/server/src/models/db/schema.ts
+  - apps/server/src/migrations/scripts/006-add-ai-conversations.ts
+  - apps/server/src/migrations/scripts/index.ts
+  - apps/server/src/sources/lancedb.ts
+- **Learnings for future iterations:**
+  - Table names use snake_case (e.g., ai_conversations)
+  - Primary key fields use full name + Id (e.g., conversationId, not just id)
+  - Foreign keys reference parent table (e.g., conversationId in ai_messages)
+  - List/Struct types for complex fields like sources need proper Apache Arrow definitions
+  - Timestamps use `new Timestamp(TimeUnit.MILLISECOND)`
+  - Migrations use version 6 (following existing v1-v5 pattern)
+---
