@@ -47,7 +47,7 @@ export class SchedulerService {
           console.log('Starting scheduled LanceDB optimization...');
           const startTime = Date.now();
 
-          await this.lanceDbService.optimizeAllTables();
+          await this.lanceDatabaseService.optimizeAllTables();
 
           const duration = Date.now() - startTime;
           console.log(`Scheduled LanceDB optimization completed in ${duration}ms`);

@@ -20,7 +20,7 @@ export class EmbeddingService {
       baseURL: config.openai.baseURL,
     });
 
-    this.model = openaiClient.embedding(config.openai.model, {
+    this.model = openaiClient.embedding(config.openai.embeddingModel, {
       dimensions: config.openai.embeddingDimensions,
     });
     this.dimensions = config.openai.embeddingDimensions;
@@ -34,7 +34,7 @@ export class EmbeddingService {
    * This ensures cache invalidation when model or dimensions change
    */
   private generateModelHash(): string {
-    const modelIdentifier = `${config.openai.model}:${config.openai.embeddingDimensions}`;
+    const modelIdentifier = `${config.openai.embeddingModel}:${config.openai.embeddingDimensions}`;
     return createHash('sha256').update(modelIdentifier).digest('hex');
   }
 

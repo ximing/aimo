@@ -1,8 +1,7 @@
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import { StateGraph, END, START, Annotation } from '@langchain/langgraph';
-import { ChatOpenAI, OpenAIEmbeddings } from '@langchain/openai';
+import { ChatOpenAI } from '@langchain/openai';
 import { Service } from 'typedi';
-
 
 import { config } from '../config/config.js';
 import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
@@ -30,8 +29,8 @@ import type { MemoListItemWithScoreDto } from '@aimo/dto';
  */
 const NODE_RETRIEVE = 'retrieve' as const;
 const NODE_ANALYZE = 'analyze' as const;
-const NODE_RELATION_ANALYSIS = 'relationAnalysis' as const;
-const NODE_ATTACHMENT_ANALYSIS = 'attachmentAnalysis' as const;
+const NODE_RELATION_ANALYSIS = 'analyzeRelations' as const;
+const NODE_ATTACHMENT_ANALYSIS = 'analyzeAttachments' as const;
 const NODE_GENERATE = 'generate' as const;
 
 /**
@@ -82,7 +81,6 @@ interface ExploreAgentState {
 @Service()
 export class ExploreService {
   private model: ChatOpenAI;
-  private embeddings: OpenAIEmbeddings;
 
   constructor(
     private memoService: MemoService,
@@ -99,14 +97,6 @@ export class ExploreService {
         baseURL: config.openai.baseURL,
       },
       temperature: 0.3,
-    });
-
-    this.embeddings = new OpenAIEmbeddings({
-      modelName: config.openai.model || 'text-embedding-3-small',
-      apiKey: config.openai.apiKey,
-      configuration: {
-        baseURL: config.openai.baseURL,
-      },
     });
   }
 
@@ -386,7 +376,8 @@ Provide a concise analysis focusing on how these notes can answer the user's que
       }
 
       // Build analysis summary
-      const analysis = analysisParts.join(' ') || 'No significant relations found among retrieved memos.';
+      const analysis =
+        analysisParts.join(' ') || 'No significant relations found among retrieved memos.';
 
       // Generate LLM-based relation insights if we have related memos
       let enhancedAnalysis = analysis;
@@ -398,7 +389,12 @@ Retrieved Memos:
 ${retrievedMemos.map((m, index) => `[${index + 1}] ${m.content.slice(0, 300)}${m.content.length > 300 ? '...' : ''}`).join('\n\n')}
 
 Related Connected Memos:
-${relatedMemos.slice(0, 5).map((m, index) => `[R${index + 1}] ${m.content.slice(0, 200)}${m.content.length > 200 ? '...' : ''}`).join('\n\n')}
+${relatedMemos
+  .slice(0, 5)
+  .map(
+    (m, index) => `[R${index + 1}] ${m.content.slice(0, 200)}${m.content.length > 200 ? '...' : ''}`
+  )
+  .join('\n\n')}
 
 Identify:
 1. Key thematic connections between retrieved memos
@@ -512,22 +508,28 @@ Provide a brief analysis (2-3 sentences):`;
               .map(([memoId, _]) => retrievedMemos.find((m) => m.memoId === memoId))
               .filter(Boolean);
 
-            const contextText = contextMemos
-              .map((m) => m?.content.slice(0, 200))
-              .join('; ');
+            const contextText = contextMemos.map((m) => m?.content.slice(0, 200)).join('; ');
 
-            attachmentSummaries[attachment.attachmentId] = `Image: ${attachment.filename}. ${contextText ? 'Referenced in context: ' + contextText : 'No direct context available.'}`;
+            attachmentSummaries[attachment.attachmentId] =
+              `Image: ${attachment.filename}. ${contextText ? 'Referenced in context: ' + contextText : 'No direct context available.'}`;
 
             // Extract potential insights from image filename and context
             if (/chart|graph|diagram|flow/i.test(attachment.filename)) {
-              keyInsights.push(`Image "${attachment.filename}" may contain visual data or diagrams relevant to the query.`);
+              keyInsights.push(
+                `Image "${attachment.filename}" may contain visual data or diagrams relevant to the query.`
+              );
             } else if (/screenshot|screen/i.test(attachment.filename)) {
-              keyInsights.push(`Screenshot "${attachment.filename}" captures a specific state or interface.`);
+              keyInsights.push(
+                `Screenshot "${attachment.filename}" captures a specific state or interface.`
+              );
             }
           } else if (isPDF) {
             // For PDFs, note their presence and potential relevance
-            attachmentSummaries[attachment.attachmentId] = `PDF Document: ${attachment.filename}. Content extraction would require additional processing.`;
-            keyInsights.push(`PDF "${attachment.filename}" may contain detailed reference material.`);
+            attachmentSummaries[attachment.attachmentId] =
+              `PDF Document: ${attachment.filename}. Content extraction would require additional processing.`;
+            keyInsights.push(
+              `PDF "${attachment.filename}" may contain detailed reference material.`
+            );
           }
         } catch (error) {
           console.warn(`Failed to analyze attachment ${attachment.attachmentId}:`, error);
@@ -544,7 +546,10 @@ Attachments:
 ${attachmentsToAnalyze.map((att, index) => `[${index + 1}] ${att.filename} (${att.type})`).join('\n')}
 
 Context from related memos:
-${retrievedMemos.slice(0, 3).map((m) => `- ${m.content.slice(0, 150)}...`).join('\n')}
+${retrievedMemos
+  .slice(0, 3)
+  .map((m) => `- ${m.content.slice(0, 150)}...`)
+  .join('\n')}
 
 What key information might these attachments contain that could help answer the query?
 Provide 1-2 brief insights:`;
@@ -666,9 +671,9 @@ Provide your answer:`;
       const messages = [
         new SystemMessage(
           "You are a helpful AI assistant that answers questions based on the user's personal notes. " +
-          "Always cite your sources using [1], [2], etc. " +
-          "Consider relationships between notes and any attachment context in your answer. " +
-          "For follow-up questions, reference the conversation history to maintain context and provide coherent multi-turn responses."
+            'Always cite your sources using [1], [2], etc. ' +
+            'Consider relationships between notes and any attachment context in your answer. ' +
+            'For follow-up questions, reference the conversation history to maintain context and provide coherent multi-turn responses.'
         ),
         new HumanMessage(generationPrompt),
       ];
@@ -712,10 +717,7 @@ Provide your answer:`;
   /**
    * Generate suggested follow-up questions
    */
-  private async generateSuggestedQuestions(
-    query: string,
-    answer: string
-  ): Promise<string[]> {
+  private async generateSuggestedQuestions(query: string, answer: string): Promise<string[]> {
     try {
       const prompt = `Based on this question and answer, suggest 3 follow-up questions the user might want to ask:
 
@@ -895,7 +897,14 @@ Provide exactly 3 short, relevant follow-up questions (one per line, no numberin
       // Analyze temporal connections (memos created around the same time)
       const temporalConnections = this.findTemporalConnections(
         centerMemo,
-        relatedMemos.concat(includeBacklinks ? await this.memoService.getMemosByIds(await this.memoRelationService.getBacklinks(uid, memoId), uid) : [])
+        relatedMemos.concat(
+          includeBacklinks
+            ? await this.memoService.getMemosByIds(
+                await this.memoRelationService.getBacklinks(uid, memoId),
+                uid
+              )
+            : []
+        )
       );
 
       for (const connection of temporalConnections) {

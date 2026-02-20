@@ -85,7 +85,7 @@ export class AttachmentService {
     };
 
     // Save to database
-    const table = await this.lanceDbService.openTable('attachments');
+    const table = await this.lanceDatabaseService.openTable('attachments');
     await table.add([record as unknown as Record<string, unknown>]);
 
     // Generate multimodal embedding asynchronously for images and videos if enabled
@@ -148,7 +148,7 @@ export class AttachmentService {
       const modelHash = (this.multimodalEmbeddingService as any).modelHash;
 
       // Update the attachment record with the embedding
-      const table = await this.lanceDbService.openTable('attachments');
+      const table = await this.lanceDatabaseService.openTable('attachments');
 
       // Get the existing record
       const results = await table
@@ -192,7 +192,7 @@ export class AttachmentService {
    * Get attachment by ID
    */
   async getAttachment(attachmentId: string, uid: string): Promise<AttachmentDto | null> {
-    const table = await this.lanceDbService.openTable('attachments');
+    const table = await this.lanceDatabaseService.openTable('attachments');
 
     const results = await table
       .query()
@@ -229,7 +229,7 @@ export class AttachmentService {
     const { uid, page = 1, limit = 20 } = options;
     const offset = (page - 1) * limit;
 
-    const table = await this.lanceDbService.openTable('attachments');
+    const table = await this.lanceDatabaseService.openTable('attachments');
 
     // Get total count
     const allResults = await table.query().where(`uid = '${uid}'`).toArray();
@@ -268,7 +268,7 @@ export class AttachmentService {
    * Delete attachment
    */
   async deleteAttachment(attachmentId: string, uid: string): Promise<boolean> {
-    const table = await this.lanceDbService.openTable('attachments');
+    const table = await this.lanceDatabaseService.openTable('attachments');
 
     // Find attachment
     const results = await table
@@ -308,7 +308,7 @@ export class AttachmentService {
       return [];
     }
 
-    const table = await this.lanceDbService.openTable('attachments');
+    const table = await this.lanceDatabaseService.openTable('attachments');
 
     // Fetch all attachments in a single query
     const whereConditions = attachmentIds.map((id) => `attachmentId = '${id}'`).join(' OR ');
@@ -355,7 +355,7 @@ export class AttachmentService {
     }
 
     // Get the record to access storage info
-    const table = await this.lanceDbService.openTable('attachments');
+    const table = await this.lanceDatabaseService.openTable('attachments');
     const results = await table
       .query()
       .where(`attachmentId = '${attachmentId}' AND uid = '${uid}'`)

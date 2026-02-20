@@ -30,15 +30,15 @@ export class StaticController {
       if (existsSync(this.indexPath)) {
         const html = readFileSync(this.indexPath, 'utf-8');
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        res.send(html);
-      } else {
-        res
-          .status(404)
-          .send('Not Found: index.html not found. Make sure web application is built.');
+        return res.send(html);
       }
+
+      return res
+        .status(404)
+        .send('Not Found: index.html not found. Make sure web application is built.');
     } catch (error) {
       console.error('Error serving index.html:', error);
-      res.status(500).send('Internal Server Error');
+      return res.status(500).send('Internal Server Error');
     }
   }
 }

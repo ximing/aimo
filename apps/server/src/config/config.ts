@@ -110,7 +110,8 @@ export interface Config {
   };
   openai: {
     apiKey: string;
-    model: string;
+    model: string; // Chat model for AI exploration
+    embeddingModel: string; // Embedding model for vector search
     baseURL: string;
     embeddingDimensions: number; // Embedding vector dimensions (e.g., 1536 for text-embedding-3-small)
   };
@@ -251,7 +252,8 @@ export const config: Config = {
   },
   openai: {
     apiKey: process.env.OPENAI_API_KEY || '',
-    model: process.env.OPENAI_MODEL || 'text-embedding-3-small',
+    model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+    embeddingModel: process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small',
     baseURL: process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1',
     embeddingDimensions: Number(process.env.OPENAI_EMBEDDING_DIMENSIONS) || 1536,
   },
