@@ -29,7 +29,6 @@ export interface MemoDto {
   type: 'text' | 'audio' | 'video'; // Memo type
   categoryId?: string; // Optional category ID
   attachments?: string[]; // Array of attachment IDs
-  embedding: number[];
   relations?: MemoDto[]; // Array of related memos (populated when fetching lists)
   createdAt: number; // timestamp in milliseconds
   updatedAt: number; // timestamp in milliseconds
@@ -45,7 +44,6 @@ export interface MemoWithAttachmentsDto {
   type: 'text' | 'audio' | 'video'; // Memo type
   categoryId?: string; // Optional category ID
   attachments?: AttachmentDto[]; // Array of full attachment objects
-  embedding: number[];
   relations?: MemoWithAttachmentsDto[]; // Array of related memos with attachment details
   createdAt: number; // timestamp in milliseconds
   updatedAt: number; // timestamp in milliseconds
