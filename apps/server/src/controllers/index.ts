@@ -7,6 +7,7 @@ import { CategoryV1Controller } from './v1/category.controller.js';
 import { ExploreController } from './v1/explore.controller.js';
 import { MemoV1Controller } from './v1/memo.controller.js';
 import { UserV1Controller } from './v1/user.controller.js';
+import { SystemController } from './v1/system.controller.js';
 import { StaticController } from './static.controller.js';
 
 // Note: StaticController import should stay last to avoid catching API routes
@@ -19,5 +20,6 @@ export const controllers = [
   ASRV1Controller,
   ExploreController,
   BackupV1Controller,
+  SystemController,
   StaticController,
 ];

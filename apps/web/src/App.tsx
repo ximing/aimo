@@ -3,6 +3,10 @@ import { useEffect } from 'react';
 import AuthPage from './pages/auth';
 import HomePage from './pages/home';
 import SettingsPage from './pages/settings';
+import { AccountSettings } from './pages/settings/components/account-settings';
+import { ImportData } from './pages/settings/components/import-data';
+import { ExportData } from './pages/settings/components/export-data';
+import { About } from './pages/settings/components/about';
 import AIExplorePage from './pages/ai-explore';
 import GalleryPage from './pages/gallery';
 import { ProtectedRoute } from './components/protected-route';
@@ -29,18 +33,24 @@ function App() {
       <Routes>
         <Route path="/auth" element={<AuthPage />} />
         <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <HomePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
           path="/settings"
           element={
             <ProtectedRoute>
               <SettingsPage />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="/settings/account" replace />} />
+          <Route path="account" element={<AccountSettings />} />
+          <Route path="import" element={<ImportData />} />
+          <Route path="export" element={<ExportData />} />
+          <Route path="about" element={<About />} />
+        </Route>
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <HomePage />
             </ProtectedRoute>
           }
         />
