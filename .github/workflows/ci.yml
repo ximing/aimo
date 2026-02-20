@@ -49,6 +49,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build Logger
+        run: pnpm --filter @aimo/logger build
+
       - name: Build DTO
         run: pnpm --filter @aimo/dto build
 
