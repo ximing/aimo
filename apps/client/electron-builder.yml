@@ -4,6 +4,11 @@
 appId: com.aimo.app
 productName: AIMO
 copyright: Copyright © 2026 AIMO
+
+# Disable ASAR to fix "Not allowed to load local resource" error
+# When loading files from ASAR with crossorigin attributes, browsers block the request
+asar: false
+
 directories:
   output: release
   buildResources: build
