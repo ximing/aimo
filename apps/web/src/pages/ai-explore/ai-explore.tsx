@@ -1,6 +1,5 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { view, useService } from '@rabjs/react';
-import { useNavigate } from 'react-router';
 import { Layout } from '../../components/layout';
 import { ExploreService } from '../../services/explore.service';
 import {
@@ -12,7 +11,6 @@ import {
   MessageSquare,
   BookOpen,
   GitBranch,
-  ArrowLeft,
   ChevronRight,
   Clock,
   MoreVertical,
@@ -57,7 +55,6 @@ const formatRelativeTime = (timestamp: number): string => {
  */
 export const AIExplorePage = view(() => {
   const exploreService = useService(ExploreService);
-  const navigate = useNavigate();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -162,6 +159,9 @@ export const AIExplorePage = view(() => {
     if (newId) {
       setInputValue('');
       inputRef.current?.focus();
+    } else if (exploreService.error) {
+      // Show error toast or alert when conversation creation fails
+      console.error('Failed to create conversation:', exploreService.error);
     }
   }, [exploreService]);
 
@@ -172,11 +172,6 @@ export const AIExplorePage = view(() => {
     },
     [exploreService]
   );
-
-  // Handle back to home
-  const handleBackHome = useCallback(() => {
-    navigate('/', { replace: true });
-  }, [navigate]);
 
   // Handle opening rename modal
   const handleOpenRename = useCallback((conversationId: string, currentTitle: string) => {
@@ -249,15 +244,6 @@ export const AIExplorePage = view(() => {
         >
           {/* Sidebar Header */}
           <div className="p-4 border-b border-gray-200 dark:border-dark-700">
-            {/* Back to Home */}
-            <button
-              onClick={handleBackHome}
-              className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors mb-3"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>返回首页</span>
-            </button>
-
             {/* Title and New Topic Button */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">

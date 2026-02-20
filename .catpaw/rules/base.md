@@ -288,3 +288,106 @@ export const createIndexMigration: Migration = {
 - 大量数据迁移提前备份
 - 关键迁移先在测试环境验证
 - 监控迁移执行日志
+
+## LanceDB 数据类型转换规范
+
+### 核心原则
+
+当从 LanceDB 查询数据时，某些类型返回的是 Arrow 对象而非普通 JavaScript 对象，必须调用 `.toArray()` 方法进行转换后再使用。
+
+### List<Utf8> 类型转换 (如 attachments 字段)
+
+```typescript
+private convertArrowAttachments(arrowAttachments: any): string[] {
+  if (!arrowAttachments) {
+    return [];
+  }
+
+  // If it's already a plain array, return as is
+  if (Array.isArray(arrowAttachments)) {
+    return arrowAttachments;
+  }
+
+  // If it's an Arrow object with toArray method, convert to array
+  if (arrowAttachments.toArray) {
+    return arrowAttachments.toArray();
+  }
+
+  // If it's an Arrow Vector with data property
+  if (arrowAttachments.data && Array.isArray(arrowAttachments.data)) {
+    return arrowAttachments.data;
+  }
+
+  // Fallback: return empty array
+  return [];
+}
+```
+
+### List<Struct> 类型转换 (如 sources 字段)
+
+```typescript
+private toMessageDto(record: Record<string, unknown>): AIMessageDto {
+  let sources: AIMessageSourceDto[] | undefined;
+
+  if (record.sources) {
+    let sourcesArray: any[] = [];
+
+    // 检查是否是 Arrow List 对象
+    if (typeof record.sources === 'object' && 'toArray' in record.sources) {
+      // It's an Arrow List object, convert to array
+      sourcesArray = (record.sources as any).toArray();
+    } else if (Array.isArray(record.sources)) {
+      // Already a plain array
+      sourcesArray = record.sources;
+    }
+
+    // 转换每个元素为普通对象
+    sources = sourcesArray.map((item: any) => {
+      if (item && typeof item === 'object') {
+        return {
+          memoId: item.memoId ?? undefined,
+          content: item.content ?? undefined,
+          similarity: item.similarity ?? undefined,
+          relevanceScore: item.relevanceScore ?? undefined,
+          createdAt: item.createdAt ?? undefined,
+        };
+      }
+      return item;
+    });
+
+    // 过滤空数组
+    if (sources.length === 0) {
+      sources = undefined;
+    }
+  }
+
+  return {
+    messageId: String(record.messageId),
+    // ... 其他字段
+    sources,
+  };
+}
+```
+
+### 常见错误
+
+❌ **错误做法**: 直接使用 `Array.isArray(record.sources)` 检查
+```typescript
+// 错误！Arrow List 对象不会返回 true
+const sourcesArray = Array.isArray(record.sources) ? record.sources : [record.sources];
+```
+
+✅ **正确做法**: 先检查是否有 `toArray` 方法
+```typescript
+// 正确！先检查 Arrow 对象
+if (typeof record.sources === 'object' && 'toArray' in record.sources) {
+  sourcesArray = (record.sources as any).toArray();
+} else if (Array.isArray(record.sources)) {
+  sourcesArray = record.sources;
+}
+```
+
+### 参考实现
+
+- `apps/server/src/services/memo.service.ts` - `convertArrowAttachments` 方法处理 `List<Utf8>`
+- `apps/server/src/services/ai-conversation.service.ts` - `toMessageDto` 方法处理 `List<Struct>`

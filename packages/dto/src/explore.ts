@@ -17,7 +17,6 @@ export interface ExploreQueryDto {
  */
 export interface ExploreSourceDto {
   memoId: string;
-  title: string; // Generated title from content (first line or first 50 chars)
   content: string; // Content summary (first 200 chars)
   relevanceScore: number;
   createdAt: number;
@@ -137,11 +136,14 @@ export interface ExploreRelationsResponseDto {
 
 /**
  * AI Message source reference
+ * Stores memo references in conversation messages
  */
 export interface AIMessageSourceDto {
   memoId?: string;
   content?: string;
   similarity?: number;
+  relevanceScore?: number;
+  createdAt?: number;
 }
 
 /**

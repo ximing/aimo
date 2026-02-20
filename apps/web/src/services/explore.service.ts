@@ -7,6 +7,7 @@ import type {
 } from '@aimo/dto';
 import * as exploreApi from '../api/explore';
 import * as conversationApi from '../api/explore-conversation';
+import { toast } from './toast.service';
 
 /**
  * Message type for chat interface
@@ -138,10 +139,9 @@ export class ExploreService extends Service {
           content: msg.content,
           sources: msg.sources?.map((s) => ({
             memoId: s.memoId || '',
-            title: '',
             content: s.content || '',
-            relevanceScore: s.similarity || 0,
-            createdAt: msg.createdAt,
+            relevanceScore: s.relevanceScore ?? s.similarity ?? 0,
+            createdAt: s.createdAt ?? msg.createdAt,
           })),
           createdAt: msg.createdAt,
         }));
@@ -214,6 +214,7 @@ export class ExploreService extends Service {
       const error = err as NetworkError;
       this.error = error.message || '创建对话失败';
       this.isOnline = false;
+      toast.error(this.error);
     }
     return null;
   }
@@ -392,12 +393,17 @@ export class ExploreService extends Service {
         this.conversationContext = '';
         this.isOnline = true;
         return conversation.conversationId;
+      } else {
+        // Handle API error response
+        this.error = response.data?.toString() || '创建对话失败';
+        this.isOnline = false;
       }
     } catch (err: unknown) {
       console.error('Failed to create conversation:', err);
       const error = err as NetworkError;
       this.error = error.message || '创建对话失败';
       this.isOnline = false;
+      toast.error(this.error);
     } finally {
       this.loading = false;
     }

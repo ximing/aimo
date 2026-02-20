@@ -4,6 +4,7 @@ import type { Table } from '@lancedb/lancedb';
 
 import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
 import { generateTypeId } from '../utils/id.js';
+import { OBJECT_TYPE } from '../models/constant/type.js';
 
 import type {
   AIConversationDto,
@@ -67,9 +68,46 @@ export class AIConversationService {
 
   /**
    * Convert database record to message DTO
+   * LanceDB List<Struct> type is returned as an Arrow List that needs .toArray() conversion
    */
   private toMessageDto(record: Record<string, unknown>): AIMessageDto {
-    const sources = record.sources as AIMessageSourceDto[] | undefined;
+    // Convert LanceDB List<Struct> to plain JavaScript array
+    // The sources field comes from schema: List(Struct([memoId, content, similarity]))
+    let sources: AIMessageSourceDto[] | undefined;
+
+    if (record.sources) {
+      // Handle Arrow List type - call toArray() to convert to plain array
+      let sourcesArray: any[] = [];
+
+      if (typeof record.sources === 'object' && 'toArray' in record.sources) {
+        // It's an Arrow List object, convert to array
+        sourcesArray = (record.sources as any).toArray();
+      } else if (Array.isArray(record.sources)) {
+        // Already a plain array
+        sourcesArray = record.sources;
+      }
+
+      // Convert each source item to plain object if needed
+      sources = sourcesArray.map((item: any) => {
+        // Handle both plain objects and potential Arrow objects
+        if (item && typeof item === 'object') {
+          return {
+            memoId: item.memoId ?? undefined,
+            content: item.content ?? undefined,
+            similarity: item.similarity ?? undefined,
+            relevanceScore: item.relevanceScore ?? undefined,
+            createdAt: item.createdAt ?? undefined,
+          } as AIMessageSourceDto;
+        }
+        return item;
+      });
+
+      // Filter out empty arrays
+      if (sources.length === 0) {
+        sources = undefined;
+      }
+    }
+
     return {
       messageId: String(record.messageId),
       conversationId: String(record.conversationId),
@@ -153,7 +191,7 @@ export class AIConversationService {
       const table = await this.getConversationsTable();
 
       const now = Date.now();
-      const conversationId = generateTypeId('conv');
+      const conversationId = generateTypeId(OBJECT_TYPE.CONVERSATION);
       const title = data.title || this.generateDefaultTitle();
 
       const record = {
@@ -311,7 +349,7 @@ export class AIConversationService {
       }
 
       const now = Date.now();
-      const messageId = generateTypeId('msg');
+      const messageId = generateTypeId(OBJECT_TYPE.MESSAGE);
 
       const record = {
         messageId,
