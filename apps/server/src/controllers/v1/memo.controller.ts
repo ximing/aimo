@@ -14,7 +14,7 @@ import { Service } from 'typedi';
 import { ErrorCode } from '../../constants/error-codes.js';
 import { MemoRelationService } from '../../services/memo-relation.service.js';
 import { MemoService } from '../../services/memo.service.js';
-import { ResponseUtil } from '../../utils/response.js';
+import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 
 import type { CreateMemoDto, UpdateMemoDto, UserInfoDto } from '@aimo/dto';
 
@@ -40,25 +40,25 @@ export class MemoV1Controller {
   ) {
     try {
       if (!user?.uid) {
-        return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
       }
 
       // Convert string timestamps to Date objects
       // Frontend sends timestamps as numbers in query params (received as strings here)
-      let startDateObj: Date | undefined;
-      let endDateObj: Date | undefined;
+      let startDateObject: Date | undefined;
+      let endDateObject: Date | undefined;
 
       if (startDate) {
-        const timestamp = parseInt(startDate, 10);
+        const timestamp = Number.parseInt(startDate, 10);
         if (!isNaN(timestamp)) {
-          startDateObj = new Date(timestamp);
+          startDateObject = new Date(timestamp);
         }
       }
 
       if (endDate) {
-        const timestamp = parseInt(endDate, 10);
+        const timestamp = Number.parseInt(endDate, 10);
         if (!isNaN(timestamp)) {
-          endDateObj = new Date(timestamp);
+          endDateObject = new Date(timestamp);
         }
       }
 
@@ -70,14 +70,14 @@ export class MemoV1Controller {
         sortOrder,
         search,
         categoryId,
-        startDate: startDateObj,
-        endDate: endDateObj,
+        startDate: startDateObject,
+        endDate: endDateObject,
       });
 
-      return ResponseUtil.success(result);
+      return ResponseUtility.success(result);
     } catch (error) {
       console.error('Get memos error:', error);
-      return ResponseUtil.error(ErrorCode.DB_ERROR);
+      return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
 
@@ -85,18 +85,18 @@ export class MemoV1Controller {
   async getMemo(@Param('memoId') memoId: string, @CurrentUser() user: UserInfoDto) {
     try {
       if (!user?.uid) {
-        return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
       }
 
       const memo = await this.memoService.getMemoById(memoId, user.uid);
       if (!memo) {
-        return ResponseUtil.error(ErrorCode.NOT_FOUND);
+        return ResponseUtility.error(ErrorCode.NOT_FOUND);
       }
 
-      return ResponseUtil.success(memo);
+      return ResponseUtility.success(memo);
     } catch (error) {
       console.error('Get memo error:', error);
-      return ResponseUtil.error(ErrorCode.DB_ERROR);
+      return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
 
@@ -104,11 +104,11 @@ export class MemoV1Controller {
   async createMemo(@Body() memoData: CreateMemoDto, @CurrentUser() user: UserInfoDto) {
     try {
       if (!user?.uid) {
-        return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
       }
 
       if (!memoData.content) {
-        return ResponseUtil.error(ErrorCode.PARAMS_ERROR, 'Content is required');
+        return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'Content is required');
       }
 
       const memo = await this.memoService.createMemo(
@@ -121,13 +121,13 @@ export class MemoV1Controller {
         memoData.createdAt,
         memoData.updatedAt
       );
-      return ResponseUtil.success({
+      return ResponseUtility.success({
         message: 'Memo created successfully',
         memo,
       });
     } catch (error) {
       console.error('Create memo error:', error);
-      return ResponseUtil.error(ErrorCode.DB_ERROR);
+      return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
 
@@ -139,11 +139,11 @@ export class MemoV1Controller {
   ) {
     try {
       if (!user?.uid) {
-        return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
       }
 
       if (!memoData.content) {
-        return ResponseUtil.error(ErrorCode.PARAMS_ERROR, 'Content is required');
+        return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'Content is required');
       }
 
       const memo = await this.memoService.updateMemo(
@@ -156,16 +156,16 @@ export class MemoV1Controller {
         memoData.relationIds
       );
       if (!memo) {
-        return ResponseUtil.error(ErrorCode.NOT_FOUND);
+        return ResponseUtility.error(ErrorCode.NOT_FOUND);
       }
 
-      return ResponseUtil.success({
+      return ResponseUtility.success({
         message: 'Memo updated successfully',
         memo,
       });
     } catch (error) {
       console.error('Update memo error:', error);
-      return ResponseUtil.error(ErrorCode.DB_ERROR);
+      return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
 
@@ -173,18 +173,18 @@ export class MemoV1Controller {
   async deleteMemo(@Param('memoId') memoId: string, @CurrentUser() user: UserInfoDto) {
     try {
       if (!user?.uid) {
-        return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
       }
 
       const success = await this.memoService.deleteMemo(memoId, user.uid);
       if (!success) {
-        return ResponseUtil.error(ErrorCode.NOT_FOUND);
+        return ResponseUtility.error(ErrorCode.NOT_FOUND);
       }
 
-      return ResponseUtil.success({ message: 'Memo deleted successfully' });
+      return ResponseUtility.success({ message: 'Memo deleted successfully' });
     } catch (error) {
       console.error('Delete memo error:', error);
-      return ResponseUtil.error(ErrorCode.DB_ERROR);
+      return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
 
@@ -195,11 +195,11 @@ export class MemoV1Controller {
   ) {
     try {
       if (!user?.uid) {
-        return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
       }
 
       if (!body.query) {
-        return ResponseUtil.error(ErrorCode.PARAMS_ERROR, 'Query is required');
+        return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'Query is required');
       }
 
       const result = await this.memoService.vectorSearch({
@@ -209,10 +209,10 @@ export class MemoV1Controller {
         limit: body.limit || 20,
       });
 
-      return ResponseUtil.success(result);
+      return ResponseUtility.success(result);
     } catch (error) {
       console.error('Vector search error:', error);
-      return ResponseUtil.error(ErrorCode.DB_ERROR);
+      return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
 
@@ -225,15 +225,15 @@ export class MemoV1Controller {
   ) {
     try {
       if (!user?.uid) {
-        return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
       }
 
       const result = await this.memoService.findRelatedMemos(memoId, user.uid, page, limit);
 
-      return ResponseUtil.success(result);
+      return ResponseUtility.success(result);
     } catch (error) {
       console.error('Find related memos error:', error);
-      return ResponseUtil.error(ErrorCode.DB_ERROR);
+      return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
 
@@ -246,13 +246,13 @@ export class MemoV1Controller {
   ) {
     try {
       if (!user?.uid) {
-        return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
       }
 
       // First verify the memo exists and user has access
       const memo = await this.memoService.getMemoById(memoId, user.uid);
       if (!memo) {
-        return ResponseUtil.error(ErrorCode.NOT_FOUND);
+        return ResponseUtility.error(ErrorCode.NOT_FOUND);
       }
 
       // Get source memo IDs that link to this memo
@@ -267,7 +267,7 @@ export class MemoV1Controller {
       // Fetch full memo details for the paginated IDs
       const items = await this.memoService.getMemosByIds(paginatedIds, user.uid);
 
-      return ResponseUtil.success({
+      return ResponseUtility.success({
         items,
         pagination: {
           total,
@@ -278,7 +278,7 @@ export class MemoV1Controller {
       });
     } catch (error) {
       console.error('Get backlinks error:', error);
-      return ResponseUtil.error(ErrorCode.DB_ERROR);
+      return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
 
@@ -289,7 +289,7 @@ export class MemoV1Controller {
   ) {
     try {
       if (!user?.uid) {
-        return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
       }
 
       // Validate days parameter
@@ -297,10 +297,10 @@ export class MemoV1Controller {
 
       const stats = await this.memoService.getActivityStats(user.uid, validDays);
 
-      return ResponseUtil.success(stats);
+      return ResponseUtility.success(stats);
     } catch (error) {
       console.error('Get activity stats error:', error);
-      return ResponseUtil.error(ErrorCode.DB_ERROR);
+      return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
 
@@ -308,15 +308,15 @@ export class MemoV1Controller {
   async getOnThisDayMemos(@CurrentUser() user: UserInfoDto) {
     try {
       if (!user?.uid) {
-        return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
       }
 
       const result = await this.memoService.getOnThisDayMemos(user.uid);
 
-      return ResponseUtil.success(result);
+      return ResponseUtility.success(result);
     } catch (error) {
       console.error('Get on this day memos error:', error);
-      return ResponseUtil.error(ErrorCode.DB_ERROR);
+      return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
 }

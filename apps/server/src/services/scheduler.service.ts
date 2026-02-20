@@ -2,7 +2,7 @@ import cron from 'node-cron';
 import { Service } from 'typedi';
 
 import { config } from '../config/config.js';
-import { LanceDbService } from '../sources/lancedb.js';
+import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
 
 /**
  * 调度服务
@@ -13,7 +13,7 @@ export class SchedulerService {
   private tasks: cron.ScheduledTask[] = [];
   private isInitialized = false;
 
-  constructor(private lanceDbService: LanceDbService) {}
+  constructor(private lanceDatabaseService: LanceDatabaseService) {}
 
   /**
    * 初始化所有定时任务

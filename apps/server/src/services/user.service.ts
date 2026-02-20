@@ -1,7 +1,7 @@
 import * as bcrypt from 'bcrypt';
 import { Service } from 'typedi';
 
-import { LanceDbService } from '../sources/lancedb.js';
+import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
 import { generateUid } from '../utils/id.js';
 
 import { BackupService } from './backup.service.js';
@@ -18,7 +18,7 @@ const DEFAULT_CATEGORY_NAME = '日记';
 @Service()
 export class UserService {
   constructor(
-    private lanceDb: LanceDbService,
+    private lanceDatabase: LanceDatabaseService,
     private backupService: BackupService,
     private categoryService: CategoryService
   ) {}
@@ -168,14 +168,14 @@ export class UserService {
       };
 
       const updateValues: Record<string, any> = { updatedAt: now };
-      Object.entries(updates).forEach(([key, value]) => {
+      for (const [key, value] of Object.entries(updates)) {
         if (key === 'uid') {
-          return;
+          continue;
         }
         if (value !== undefined) {
           updateValues[key] = value;
         }
-      });
+      }
 
       await usersTable.update({
         where: `uid = '${uid}'`,

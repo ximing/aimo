@@ -8,7 +8,7 @@ import { nanoid } from 'nanoid';
 import { Service } from 'typedi';
 
 import { config } from '../config/config.js';
-import { LanceDbService } from '../sources/lancedb.js';
+import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
 import { UnifiedStorageAdapterFactory } from '../sources/unified-storage-adapter/index.js';
 
 import { MultimodalEmbeddingService } from './multimodal-embedding.service.js';
@@ -37,7 +37,7 @@ export class AttachmentService {
   private storageAdapter: UnifiedStorageAdapter;
 
   constructor(
-    private lanceDbService: LanceDbService,
+    private lanceDatabaseService: LanceDatabaseService,
     private multimodalEmbeddingService: MultimodalEmbeddingService
   ) {
     // Create storage adapter for attachments
@@ -57,9 +57,9 @@ export class AttachmentService {
     // Generate storage path: {uid}/{YYYY-MM-DD}/{nanoid24}.{ext}
     // Note: prefix (e.g., 'attachments') is added by the storage adapter
     const fileId = nanoid(24);
-    const ext = filename.split('.').pop() || '';
-    const dateStr = dayjs().format('YYYY-MM-DD');
-    const path = `${uid}/${dateStr}/${fileId}.${ext}`;
+    const extension = filename.split('.').pop() || '';
+    const dateString = dayjs().format('YYYY-MM-DD');
+    const path = `${uid}/${dateString}/${fileId}.${extension}`;
 
     // Upload file to storage
     await this.storageAdapter.uploadFile(path, buffer);

@@ -5,7 +5,7 @@ import { Service } from 'typedi';
 import { config } from '../../config/config.js';
 import { ErrorCode } from '../../constants/error-codes.js';
 import { UserService } from '../../services/user.service.js';
-import { ResponseUtil } from '../../utils/response.js';
+import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 
 import type { RegisterDto, LoginDto } from '@aimo/dto';
 import type { Response } from 'express';
@@ -20,7 +20,7 @@ export class AuthV1Controller {
   async register(@Body() userData: RegisterDto) {
     try {
       if (!userData.email || !userData.password) {
-        return ResponseUtil.error(ErrorCode.PARAMS_ERROR, 'Email and password are required');
+        return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'Email and password are required');
       }
 
       // Hash password
@@ -41,7 +41,7 @@ export class AuthV1Controller {
         status: 1,
       });
 
-      return ResponseUtil.success({
+      return ResponseUtility.success({
         user: {
           uid: user.uid,
           email: user.email,
@@ -51,9 +51,9 @@ export class AuthV1Controller {
     } catch (error) {
       console.error('Registration error:', error);
       if (error instanceof Error && error.message.includes('already exists')) {
-        return ResponseUtil.error(ErrorCode.USER_ALREADY_EXISTS);
+        return ResponseUtility.error(ErrorCode.USER_ALREADY_EXISTS);
       }
-      return ResponseUtil.error(ErrorCode.DB_ERROR);
+      return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
 
@@ -61,13 +61,13 @@ export class AuthV1Controller {
   async login(@Body() loginData: LoginDto, @Res() response: Response) {
     try {
       if (!loginData.email || !loginData.password) {
-        return ResponseUtil.error(ErrorCode.PARAMS_ERROR, 'Email and password are required');
+        return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'Email and password are required');
       }
 
       // Find user by email
       const user = await this.userService.findUserByEmail(loginData.email);
       if (!user) {
-        return ResponseUtil.error(ErrorCode.USER_NOT_FOUND);
+        return ResponseUtility.error(ErrorCode.USER_NOT_FOUND);
       }
 
       // Verify password
@@ -76,7 +76,7 @@ export class AuthV1Controller {
         user.password
       );
       if (!isPasswordValid) {
-        return ResponseUtil.error(ErrorCode.PASSWORD_ERROR);
+        return ResponseUtility.error(ErrorCode.PASSWORD_ERROR);
       }
 
       // Generate JWT token
@@ -97,7 +97,7 @@ export class AuthV1Controller {
         maxAge: 90 * 24 * 60 * 60 * 1000, // 90 days in milliseconds
       });
 
-      return ResponseUtil.success({
+      return ResponseUtility.success({
         token,
         user: {
           uid: user.uid,
@@ -107,7 +107,7 @@ export class AuthV1Controller {
       });
     } catch (error) {
       console.error('Login error:', error);
-      return ResponseUtil.error(ErrorCode.DB_ERROR);
+      return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
 }

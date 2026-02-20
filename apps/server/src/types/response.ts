@@ -4,7 +4,7 @@ export interface ApiResponse<T = any> {
   data: T;
 }
 
-export interface PaginationParams {
+export interface PaginationParameters {
   page: number;
   pageSize: number;
 }

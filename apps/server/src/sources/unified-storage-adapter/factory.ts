@@ -21,11 +21,11 @@ import type {
  * - S3-compatible services (AWS S3, MinIO, etc.)
  * - Aliyun OSS (using ali-oss official library)
  */
-export class UnifiedStorageAdapterFactory {
+export const UnifiedStorageAdapterFactory = {
   /**
    * Create storage adapter for attachment storage
    */
-  static createAttachmentAdapter(attachmentConfig: AttachmentConfig): UnifiedStorageAdapter {
+  createAttachmentAdapter(attachmentConfig: AttachmentConfig): UnifiedStorageAdapter {
     const storageType = attachmentConfig.storageType;
 
     console.log(`Creating attachment storage adapter for type: ${storageType}`);
@@ -68,15 +68,16 @@ export class UnifiedStorageAdapterFactory {
         });
       }
 
-      default:
+      default: {
         throw new Error(`Unsupported attachment storage type: ${storageType}`);
+      }
     }
-  }
+  },
 
   /**
    * Create storage adapter for backup storage
    */
-  static createBackupAdapter(backupConfig: BackupConfig): UnifiedStorageAdapter {
+  createBackupAdapter(backupConfig: BackupConfig): UnifiedStorageAdapter {
     const storageType = backupConfig.storageType;
 
     console.log(`Creating backup storage adapter for type: ${storageType}`);
@@ -119,8 +120,9 @@ export class UnifiedStorageAdapterFactory {
         });
       }
 
-      default:
+      default: {
         throw new Error(`Unsupported backup storage type: ${storageType}`);
+      }
     }
-  }
-}
+  },
+};

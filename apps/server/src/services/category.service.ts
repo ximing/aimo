@@ -1,7 +1,7 @@
 import { Service } from 'typedi';
 
 import { OBJECT_TYPE } from '../models/constant/type.js';
-import { LanceDbService } from '../sources/lancedb.js';
+import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
 import { generateTypeId } from '../utils/id.js';
 
 import type { CategoryRecord } from '../models/db/schema.js';
@@ -9,7 +9,7 @@ import type { CategoryDto, CreateCategoryDto, UpdateCategoryDto } from '@aimo/dt
 
 @Service()
 export class CategoryService {
-  constructor(private lanceDb: LanceDbService) {}
+  constructor(private lanceDatabase: LanceDatabaseService) {}
 
   /**
    * Clear categoryId from all memos that have the specified category
@@ -173,13 +173,13 @@ export class CategoryService {
       const updatedRecord: CategoryRecord = {
         categoryId: category.categoryId,
         uid: category.uid,
-        name: data.name !== undefined ? data.name.trim() : category.name,
+        name: data.name === undefined ? category.name : data.name.trim(),
         color:
           data.color === null
             ? undefined
-            : data.color !== undefined
-              ? data.color.trim()
-              : category.color,
+            : (data.color === undefined
+              ? category.color
+              : data.color.trim()),
         createdAt: category.createdAt,
         updatedAt: Date.now(),
       };

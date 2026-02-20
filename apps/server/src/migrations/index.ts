@@ -184,6 +184,8 @@ export class MigrationManager {
 }
 
 // Export for backward compatibility
-export { MigrationExecutor };
+
 export type { Migration, MigrationExecutionResult } from './types.js';
 export { getAllTableNames, getLatestVersion, getMigrationsFromVersion, getMigrationsForTable } from './scripts/index.js';
+
+export {MigrationExecutor} from './executor.js';

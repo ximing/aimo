@@ -160,7 +160,7 @@ export class ASRService {
   async waitForTranscription(
     taskId: string,
     pollIntervalMs: number = 2000,
-    timeoutMs: number = 300000
+    timeoutMs: number = 300_000
   ): Promise<ASRTaskStatusDto> {
     const startTime = Date.now();
 
@@ -253,7 +253,7 @@ export class ASRService {
   async transcribe(
     request: ASRTranscribeRequestDto,
     pollIntervalMs: number = 2000,
-    timeoutMs: number = 300000
+    timeoutMs: number = 300_000
   ): Promise<ASRResultDto> {
     // Submit the transcription task
     const task = await this.submitTranscription(request);

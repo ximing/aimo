@@ -1,8 +1,8 @@
 import 'reflect-metadata';
-import { loadEnv } from './config/env.js';
+import { loadEnv as loadEnvironment } from './config/env.js';
 
 // Load environment variables first to access config
-loadEnv();
+loadEnvironment();
 
 // Set timezone from config
 process.env.TZ = process.env.LOCALE_TIMEZONE || 'Asia/Shanghai';

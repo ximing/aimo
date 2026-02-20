@@ -1,7 +1,7 @@
-import fs from 'fs/promises';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { Worker } from 'worker_threads';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { Worker } from 'node:worker_threads';
 
 import dayjs from 'dayjs';
 
@@ -77,8 +77,8 @@ export class BackupExecutor {
    * Compress local LanceDB database files using tar.gz in a worker thread
    * This prevents blocking the main event loop
    */
-  private async compressDatabase(destPath: string): Promise<void> {
-    console.log(`Compressing LanceDB files: ${this.lancedbPath} -> ${destPath}`);
+  private async compressDatabase(destinationPath: string): Promise<void> {
+    console.log(`Compressing LanceDB files: ${this.lancedbPath} -> ${destinationPath}`);
 
     return new Promise((resolve, reject) => {
       try {
@@ -89,7 +89,7 @@ export class BackupExecutor {
 
         this.activeWorker = worker;
 
-        const taskId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const taskId = `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
         const timeout = setTimeout(
           () => {
             worker.terminate();
@@ -104,7 +104,7 @@ export class BackupExecutor {
           this.activeWorker = null;
 
           if (result.success) {
-            console.log(`Database compressed successfully: ${destPath}`);
+            console.log(`Database compressed successfully: ${destinationPath}`);
             worker.terminate();
             resolve();
           } else {
@@ -134,7 +134,7 @@ export class BackupExecutor {
         // Send compression task to worker
         worker.postMessage({
           lancedbPath: this.lancedbPath,
-          destPath,
+          destPath: destinationPath,
           taskId,
         });
       } catch (error) {
@@ -160,11 +160,7 @@ export class BackupExecutor {
       try {
         const stats = await fs.stat(filePath);
 
-        if (stats.isDirectory()) {
-          await this.removeDirectory(filePath);
-        } else {
-          await fs.unlink(filePath);
-        }
+        await (stats.isDirectory() ? this.removeDirectory(filePath) : fs.unlink(filePath));
 
         console.log(`Cleaned up temporary file: ${filePath}`);
       } catch (error) {
@@ -184,11 +180,7 @@ export class BackupExecutor {
       for (const entry of entries) {
         const fullPath = path.join(dirPath, entry.name);
 
-        if (entry.isDirectory()) {
-          await this.removeDirectory(fullPath);
-        } else {
-          await fs.unlink(fullPath);
-        }
+        await (entry.isDirectory() ? this.removeDirectory(fullPath) : fs.unlink(fullPath));
       }
 
       await fs.rmdir(dirPath);
@@ -237,11 +229,9 @@ export class BackupExecutor {
       if (maxDays) {
         const cutoffDate = dayjs().subtract(maxDays, 'days').toDate();
         for (const backup of backups) {
-          if (backup.date && backup.date < cutoffDate) {
-            if (!filesToDelete.includes(backup.filename)) {
+          if (backup.date && backup.date < cutoffDate && !filesToDelete.includes(backup.filename)) {
               filesToDelete.push(backup.filename);
             }
-          }
         }
       }
 
@@ -271,8 +261,8 @@ export class BackupExecutor {
       // Extract date from format: YYYY-MM-DD/backup_YYYY-MM-DD_...
       const match = filename.match(/(\d{4}-\d{2}-\d{2})/);
       if (match) {
-        const dateStr = match[1];
-        const date = dayjs(dateStr, 'YYYY-MM-DD').toDate();
+        const dateString = match[1];
+        const date = dayjs(dateString, 'YYYY-MM-DD').toDate();
         return date;
       }
       return null;

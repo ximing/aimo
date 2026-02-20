@@ -5,7 +5,7 @@ import { Service } from 'typedi';
 
 
 import { config } from '../config/config.js';
-import { LanceDbService } from '../sources/lancedb.js';
+import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
 
 import { AttachmentService } from './attachment.service.js';
 import { EmbeddingService } from './embedding.service.js';
@@ -87,7 +87,7 @@ export class ExploreService {
   constructor(
     private memoService: MemoService,
     private embeddingService: EmbeddingService,
-    private lanceDb: LanceDbService,
+    private lanceDatabase: LanceDatabaseService,
     private memoRelationService: MemoRelationService,
     private attachmentService: AttachmentService
   ) {
@@ -213,9 +213,9 @@ export class ExploreService {
 
       // Build relevance score map
       const relevanceScores: Record<string, number> = {};
-      relevantMemos.forEach((memo) => {
+      for (const memo of relevantMemos) {
         relevanceScores[memo.memoId] = memo.relevanceScore || 0;
-      });
+      }
 
       return {
         retrievedMemos: relevantMemos,
@@ -247,7 +247,7 @@ export class ExploreService {
       const context = retrievedMemos
         .map((memo, index) => {
           const score = state.relevanceScores?.[memo.memoId] || 0;
-          return `[${index + 1}] ${memo.content.substring(0, 500)}${
+          return `[${index + 1}] ${memo.content.slice(0, 500)}${
             memo.content.length > 500 ? '...' : ''
           }\n(Relevance: ${(score * 100).toFixed(1)}%)`;
         })
@@ -324,7 +324,7 @@ Provide a concise analysis focusing on how these notes can answer the user's que
             const relatedIds = await this.memoRelationService.getRelatedMemos(uid, memo.memoId);
             if (relatedIds.length > 0) {
               relationTypes[memo.memoId] = ['outgoing'];
-              relatedIds.forEach((id) => allRelatedIds.add(id));
+              for (const id of relatedIds) allRelatedIds.add(id);
             }
 
             // Get backlinks (others -> this memo)
@@ -333,7 +333,7 @@ Provide a concise analysis focusing on how these notes can answer the user's que
               backlinksMap.set(memo.memoId, backlinks);
               const existingTypes = relationTypes[memo.memoId] || [];
               relationTypes[memo.memoId] = [...existingTypes, 'incoming'];
-              backlinks.forEach((id) => allRelatedIds.add(id));
+              for (const id of backlinks) allRelatedIds.add(id);
             }
           } catch (error) {
             console.warn(`Failed to fetch relations for memo ${memo.memoId}:`, error);
@@ -342,7 +342,7 @@ Provide a concise analysis focusing on how these notes can answer the user's que
       );
 
       // Fetch the actual related memo content
-      const relatedMemoIds = Array.from(allRelatedIds).slice(0, 20); // Limit to 20 related memos
+      const relatedMemoIds = [...allRelatedIds].slice(0, 20); // Limit to 20 related memos
       let relatedMemos: MemoListItemDto[] = [];
       if (relatedMemoIds.length > 0) {
         try {
@@ -368,7 +368,7 @@ Provide a concise analysis focusing on how these notes can answer the user's que
       }
 
       // Analyze backlinks
-      const totalBacklinks = Array.from(backlinksMap.values()).flat().length;
+      const totalBacklinks = [...backlinksMap.values()].flat().length;
       if (totalBacklinks > 0) {
         analysisParts.push(
           `Found ${totalBacklinks} backlinks pointing to retrieved memos, indicating they are referenced by other notes.`
@@ -395,10 +395,10 @@ Provide a concise analysis focusing on how these notes can answer the user's que
           const relationPrompt = `Analyze the relationships between these memos and their connected notes to answer: "${query}"
 
 Retrieved Memos:
-${retrievedMemos.map((m, i) => `[${i + 1}] ${m.content.substring(0, 300)}${m.content.length > 300 ? '...' : ''}`).join('\n\n')}
+${retrievedMemos.map((m, index) => `[${index + 1}] ${m.content.slice(0, 300)}${m.content.length > 300 ? '...' : ''}`).join('\n\n')}
 
 Related Connected Memos:
-${relatedMemos.slice(0, 5).map((m, i) => `[R${i + 1}] ${m.content.substring(0, 200)}${m.content.length > 200 ? '...' : ''}`).join('\n\n')}
+${relatedMemos.slice(0, 5).map((m, index) => `[R${index + 1}] ${m.content.slice(0, 200)}${m.content.length > 200 ? '...' : ''}`).join('\n\n')}
 
 Identify:
 1. Key thematic connections between retrieved memos
@@ -507,21 +507,21 @@ Provide a brief analysis (2-3 sentences):`;
           if (isImage) {
             // For images, generate a description based on context
             // In a full implementation, this could use multimodal LLM capabilities
-            const contextMemos = Array.from(memoAttachmentsMap.entries())
+            const contextMemos = [...memoAttachmentsMap.entries()]
               .filter(([_, atts]) => atts.some((a) => a.attachmentId === attachment.attachmentId))
               .map(([memoId, _]) => retrievedMemos.find((m) => m.memoId === memoId))
               .filter(Boolean);
 
             const contextText = contextMemos
-              .map((m) => m?.content.substring(0, 200))
+              .map((m) => m?.content.slice(0, 200))
               .join('; ');
 
             attachmentSummaries[attachment.attachmentId] = `Image: ${attachment.filename}. ${contextText ? 'Referenced in context: ' + contextText : 'No direct context available.'}`;
 
             // Extract potential insights from image filename and context
-            if (attachment.filename.match(/chart|graph|diagram|flow/i)) {
+            if (/chart|graph|diagram|flow/i.test(attachment.filename)) {
               keyInsights.push(`Image "${attachment.filename}" may contain visual data or diagrams relevant to the query.`);
-            } else if (attachment.filename.match(/screenshot|screen/i)) {
+            } else if (/screenshot|screen/i.test(attachment.filename)) {
               keyInsights.push(`Screenshot "${attachment.filename}" captures a specific state or interface.`);
             }
           } else if (isPDF) {
@@ -541,10 +541,10 @@ Provide a brief analysis (2-3 sentences):`;
           const attachmentPrompt = `Given the query "${query}", analyze how these attachments might provide additional context:
 
 Attachments:
-${attachmentsToAnalyze.map((att, i) => `[${i + 1}] ${att.filename} (${att.type})`).join('\n')}
+${attachmentsToAnalyze.map((att, index) => `[${index + 1}] ${att.filename} (${att.type})`).join('\n')}
 
 Context from related memos:
-${retrievedMemos.slice(0, 3).map((m) => `- ${m.content.substring(0, 150)}...`).join('\n')}
+${retrievedMemos.slice(0, 3).map((m) => `- ${m.content.slice(0, 150)}...`).join('\n')}
 
 What key information might these attachments contain that could help answer the query?
 Provide 1-2 brief insights:`;
@@ -564,7 +564,7 @@ Provide 1-2 brief insights:`;
             const parsedInsights = llmInsights
               .split('\n')
               .map((line) => line.trim())
-              .filter((line) => line.length > 0 && !line.match(/^\d+[.)]/))
+              .filter((line) => line.length > 0 && !/^\d+[.)]/.test(line))
               .slice(0, 2);
 
             keyInsights.push(...parsedInsights);
@@ -680,12 +680,12 @@ Provide your answer:`;
       const sources: ExploreSourceDto[] = retrievedMemos.map((memo) => {
         // Generate title from first line or first 50 chars of content
         const firstLine = memo.content.split('\n')[0].trim();
-        const title = firstLine.length > 50 ? firstLine.substring(0, 50) + '...' : firstLine;
+        const title = firstLine.length > 50 ? firstLine.slice(0, 50) + '...' : firstLine;
 
         return {
           memoId: memo.memoId,
           title,
-          content: memo.content.substring(0, 200) + (memo.content.length > 200 ? '...' : ''),
+          content: memo.content.slice(0, 200) + (memo.content.length > 200 ? '...' : ''),
           relevanceScore: state.relevanceScores?.[memo.memoId] || 0,
           createdAt: memo.createdAt,
         };
@@ -721,7 +721,7 @@ Provide your answer:`;
 
 Original Question: ${query}
 
-Answer Summary: ${answer.substring(0, 300)}...
+Answer Summary: ${answer.slice(0, 300)}...
 
 Provide exactly 3 short, relevant follow-up questions (one per line, no numbering):`;
 
@@ -737,7 +737,7 @@ Provide exactly 3 short, relevant follow-up questions (one per line, no numberin
       return content
         .split('\n')
         .map((q) => q.trim())
-        .filter((q) => q.length > 0 && !q.match(/^\d+[.)]/))
+        .filter((q) => q.length > 0 && !/^\d+[.)]/.test(q))
         .slice(0, 3);
     } catch (error) {
       console.warn('Failed to generate suggested questions:', error);
@@ -778,7 +778,7 @@ Provide exactly 3 short, relevant follow-up questions (one per line, no numberin
       return {
         answer: result.answer || 'Unable to generate a response.',
         sources: result.sources || [],
-        relatedTopics: result.analysis ? [result.analysis.substring(0, 100)] : undefined,
+        relatedTopics: result.analysis ? [result.analysis.slice(0, 100)] : undefined,
         suggestedQuestions: result.suggestedQuestions,
       };
     } catch (error) {
@@ -835,7 +835,7 @@ Provide exactly 3 short, relevant follow-up questions (one per line, no numberin
           id: centerMemo.memoId,
           type: 'source',
           title: this.generateTitle(centerMemo.content),
-          content: centerMemo.content.substring(0, 200),
+          content: centerMemo.content.slice(0, 200),
           createdAt: centerMemo.createdAt,
         },
       ];
@@ -852,7 +852,7 @@ Provide exactly 3 short, relevant follow-up questions (one per line, no numberin
             id: memo.memoId,
             type: 'related',
             title: this.generateTitle(memo.content),
-            content: memo.content.substring(0, 200),
+            content: memo.content.slice(0, 200),
             createdAt: memo.createdAt,
           });
           processedIds.add(memo.memoId);
@@ -877,7 +877,7 @@ Provide exactly 3 short, relevant follow-up questions (one per line, no numberin
               id: memo.memoId,
               type: 'backlink',
               title: this.generateTitle(memo.content),
-              content: memo.content.substring(0, 200),
+              content: memo.content.slice(0, 200),
               createdAt: memo.createdAt,
             });
             processedIds.add(memo.memoId);
@@ -927,7 +927,7 @@ Provide exactly 3 short, relevant follow-up questions (one per line, no numberin
               id: thematicMemo.memoId,
               type: 'related',
               title: this.generateTitle(thematicMemo.content),
-              content: thematicMemo.content.substring(0, 200),
+              content: thematicMemo.content.slice(0, 200),
               createdAt: thematicMemo.createdAt,
             });
             processedIds.add(thematicMemo.memoId);
@@ -983,7 +983,7 @@ Provide exactly 3 short, relevant follow-up questions (one per line, no numberin
    */
   private generateTitle(content: string): string {
     const firstLine = content.split('\n')[0].trim();
-    return firstLine.length > 50 ? firstLine.substring(0, 50) + '...' : firstLine;
+    return firstLine.length > 50 ? firstLine.slice(0, 50) + '...' : firstLine;
   }
 
   /**
@@ -1022,7 +1022,7 @@ Provide exactly 3 short, relevant follow-up questions (one per line, no numberin
       // Use vector search to find thematically similar memos
       const searchResult = await this.memoService.vectorSearch({
         uid,
-        query: centerMemo.content.substring(0, 500),
+        query: centerMemo.content.slice(0, 500),
         page: 1,
         limit: 5,
       });

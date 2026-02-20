@@ -6,7 +6,7 @@ import { config } from '../../config/config.js';
 import { ErrorCode } from '../../constants/error-codes.js';
 import { AvatarService } from '../../services/avatar.service.js';
 import { UserService } from '../../services/user.service.js';
-import { ResponseUtil } from '../../utils/response.js';
+import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 
 import type { UserInfoDto, UpdateUserDto } from '@aimo/dto';
 import type { Request } from 'express';
@@ -18,12 +18,12 @@ const upload = multer({
   limits: {
     fileSize: config.attachment.maxFileSize,
   },
-  fileFilter: (req, file, cb) => {
+  fileFilter: (request, file, callback) => {
     // Only allow image files
     if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
+      callback(null, true);
     } else {
-      cb(new Error('Only image files are allowed'));
+      callback(new Error('Only image files are allowed'));
     }
   },
 });
@@ -40,12 +40,12 @@ export class UserV1Controller {
   async getUser(@CurrentUser() userDto: UserInfoDto) {
     try {
       if (!userDto?.uid) {
-        return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
       }
 
       const user = await this.userService.findUserByUid(userDto.uid);
       if (!user) {
-        return ResponseUtil.error(ErrorCode.USER_NOT_FOUND);
+        return ResponseUtility.error(ErrorCode.USER_NOT_FOUND);
       }
 
       // Generate avatar access URL with 7-day expiry
@@ -59,10 +59,10 @@ export class UserV1Controller {
         avatar: avatar,
       };
 
-      return ResponseUtil.success(userInfo);
+      return ResponseUtility.success(userInfo);
     } catch (error) {
       console.error('Get user info error:', error);
-      return ResponseUtil.error(ErrorCode.DB_ERROR);
+      return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
 
@@ -70,12 +70,12 @@ export class UserV1Controller {
   async updateUser(@Body() updateData: UpdateUserDto, @CurrentUser() userDto: UserInfoDto) {
     try {
       if (!userDto?.uid) {
-        return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
       }
 
       const updatedUser = await this.userService.updateUser(userDto.uid, updateData);
       if (!updatedUser) {
-        return ResponseUtil.error(ErrorCode.USER_NOT_FOUND);
+        return ResponseUtility.error(ErrorCode.USER_NOT_FOUND);
       }
 
       // Generate avatar access URL with 7-day expiry
@@ -91,13 +91,13 @@ export class UserV1Controller {
         avatar: avatar,
       };
 
-      return ResponseUtil.success({
+      return ResponseUtility.success({
         message: 'User info updated successfully',
         user: userInfo,
       });
     } catch (error) {
       console.error('Update user info error:', error);
-      return ResponseUtil.error(ErrorCode.DB_ERROR);
+      return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
 
@@ -105,28 +105,28 @@ export class UserV1Controller {
    * Upload avatar
    */
   @Post('/avatar')
-  async uploadAvatar(@Req() req: Request, @CurrentUser() userDto: UserInfoDto) {
+  async uploadAvatar(@Req() request: Request, @CurrentUser() userDto: UserInfoDto) {
     return new Promise((resolve) => {
-      upload.single('avatar')(req, {} as any, async (err: any) => {
-        if (err) {
-          if (err.message === 'Only image files are allowed') {
-            return resolve(ResponseUtil.error(ErrorCode.UNSUPPORTED_FILE_TYPE));
+      upload.single('avatar')(request, {} as any, async (error: any) => {
+        if (error) {
+          if (error.message === 'Only image files are allowed') {
+            return resolve(ResponseUtility.error(ErrorCode.UNSUPPORTED_FILE_TYPE));
           }
-          if (err.message.includes('File too large')) {
-            return resolve(ResponseUtil.error(ErrorCode.FILE_TOO_LARGE));
+          if (error.message.includes('File too large')) {
+            return resolve(ResponseUtility.error(ErrorCode.FILE_TOO_LARGE));
           }
-          console.error('Avatar upload error:', err);
-          return resolve(ResponseUtil.error(ErrorCode.FILE_UPLOAD_ERROR));
+          console.error('Avatar upload error:', error);
+          return resolve(ResponseUtility.error(ErrorCode.FILE_UPLOAD_ERROR));
         }
 
-        const file = (req as any).file;
+        const file = (request as any).file;
         if (!file) {
-          return resolve(ResponseUtil.error(ErrorCode.PARAMS_ERROR, 'No file uploaded'));
+          return resolve(ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'No file uploaded'));
         }
 
         try {
           if (!userDto?.uid) {
-            return resolve(ResponseUtil.error(ErrorCode.UNAUTHORIZED));
+            return resolve(ResponseUtility.error(ErrorCode.UNAUTHORIZED));
           }
 
           // Get old avatar path before update
@@ -155,14 +155,14 @@ export class UserV1Controller {
           }
 
           return resolve(
-            ResponseUtil.success({
+            ResponseUtility.success({
               message: 'Avatar uploaded successfully',
               avatar: avatarUrl,
             })
           );
         } catch (error) {
           console.error('Failed to upload avatar:', error);
-          return resolve(ResponseUtil.error(ErrorCode.STORAGE_ERROR));
+          return resolve(ResponseUtility.error(ErrorCode.STORAGE_ERROR));
         }
       });
     });

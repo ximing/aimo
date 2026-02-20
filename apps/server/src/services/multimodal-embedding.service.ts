@@ -1,9 +1,9 @@
-import { createHash } from 'crypto';
+import { createHash } from 'node:crypto';
 
 import { Service } from 'typedi';
 
 import { config } from '../config/config.js';
-import { LanceDbService } from '../sources/lancedb.js';
+import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
 
 /**
  * Multimodal content types
@@ -47,7 +47,7 @@ export class MultimodalEmbeddingService {
   private dimension: number;
   private modelHash: string;
 
-  constructor(private lanceDb: LanceDbService) {
+  constructor(private lanceDatabase: LanceDatabaseService) {
     this.dimension = config.multimodal.dimension;
     this.modelHash = this.generateModelHash();
   }
@@ -298,18 +298,18 @@ export class MultimodalEmbeddingService {
       const cachedResults: (number[] | null)[] = [];
       const indexesToGenerate: number[] = [];
 
-      for (let i = 0; i < contentWithHashes.length; i++) {
+      for (const [index, contentWithHash] of contentWithHashes.entries()) {
         const cached = await this.queryCacheByHash(
           this.modelHash,
-          contentWithHashes[i].contentHash,
-          contentWithHashes[i].modalityType
+          contentWithHash.contentHash,
+          contentWithHash.modalityType
         );
 
         if (cached) {
-          cachedResults[i] = cached;
+          cachedResults[index] = cached;
         } else {
-          cachedResults[i] = null;
-          indexesToGenerate.push(i);
+          cachedResults[index] = null;
+          indexesToGenerate.push(index);
         }
       }
 
@@ -320,7 +320,7 @@ export class MultimodalEmbeddingService {
       }
 
       // Generate embeddings for cache misses
-      const contentsToGenerate = indexesToGenerate.map((i) => contentWithHashes[i].content);
+      const contentsToGenerate = indexesToGenerate.map((index) => contentWithHashes[index].content);
       console.log(
         `Cache miss for ${indexesToGenerate.length} out of ${contents.length} multimodal embeddings, generating...`
       );
@@ -328,9 +328,9 @@ export class MultimodalEmbeddingService {
       const embeddings = await this.callDashScopeAPI(contentsToGenerate);
 
       // Save to cache and merge results
-      for (let i = 0; i < embeddings.length; i++) {
-        const originalIndex = indexesToGenerate[i];
-        const embedding = embeddings[i].embedding;
+      for (const [index, embedding_] of embeddings.entries()) {
+        const originalIndex = indexesToGenerate[index];
+        const embedding = embedding_.embedding;
         await this.saveToCache(
           this.modelHash,
           contentWithHashes[originalIndex].contentHash,

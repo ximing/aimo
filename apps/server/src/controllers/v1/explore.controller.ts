@@ -3,7 +3,7 @@ import { Service } from 'typedi';
 
 import { ErrorCode } from '../../constants/error-codes.js';
 import { ExploreService } from '../../services/explore.service.js';
-import { ResponseUtil } from '../../utils/response.js';
+import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 
 import type { ExploreQueryDto, UserInfoDto } from '@aimo/dto';
 
@@ -25,19 +25,19 @@ export class ExploreController {
   async explore(@Body() queryDto: ExploreQueryDto, @CurrentUser() user: UserInfoDto) {
     try {
       if (!user?.uid) {
-        return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
       }
 
       if (!queryDto.query || queryDto.query.trim().length === 0) {
-        return ResponseUtil.error(ErrorCode.PARAMS_ERROR, 'Query is required');
+        return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'Query is required');
       }
 
       const result = await this.exploreService.explore(queryDto, user.uid);
 
-      return ResponseUtil.success(result);
+      return ResponseUtility.success(result);
     } catch (error) {
       console.error('Explore error:', error);
-      return ResponseUtil.error(
+      return ResponseUtility.error(
         ErrorCode.SYSTEM_ERROR,
         error instanceof Error ? error.message : 'Exploration failed'
       );
@@ -56,11 +56,11 @@ export class ExploreController {
   ) {
     try {
       if (!user?.uid) {
-        return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
       }
 
       if (!body.query || body.query.trim().length === 0) {
-        return ResponseUtil.error(ErrorCode.PARAMS_ERROR, 'Query is required');
+        return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'Query is required');
       }
 
       const results = await this.exploreService.quickSearch(
@@ -69,13 +69,13 @@ export class ExploreController {
         body.limit || 5
       );
 
-      return ResponseUtil.success({
+      return ResponseUtility.success({
         items: results,
         total: results.length,
       });
     } catch (error) {
       console.error('Quick search error:', error);
-      return ResponseUtil.error(ErrorCode.SYSTEM_ERROR, 'Search failed');
+      return ResponseUtility.error(ErrorCode.SYSTEM_ERROR, 'Search failed');
     }
   }
 
@@ -92,11 +92,11 @@ export class ExploreController {
   ) {
     try {
       if (!user?.uid) {
-        return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
       }
 
       if (!memoId) {
-        return ResponseUtil.error(ErrorCode.PARAMS_ERROR, 'Memo ID is required');
+        return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'Memo ID is required');
       }
 
       const result = await this.exploreService.getRelationshipGraph(
@@ -105,10 +105,10 @@ export class ExploreController {
         includeBacklinks
       );
 
-      return ResponseUtil.success(result);
+      return ResponseUtility.success(result);
     } catch (error) {
       console.error('Get relations error:', error);
-      return ResponseUtil.error(
+      return ResponseUtility.error(
         ErrorCode.SYSTEM_ERROR,
         error instanceof Error ? error.message : 'Failed to get relationships'
       );

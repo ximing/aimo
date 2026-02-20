@@ -4,28 +4,12 @@ import { Service } from 'typedi';
 
 import { config } from '../config/config.js';
 import { MigrationManager } from '../migrations/index.js';
-import {
-  type UserRecord,
-  type MemoRecord,
-  type MemoRelationRecord,
-  type CategoryRecord,
-  type EmbeddingCacheRecord,
-  type AttachmentRecord,
-  type MultimodalEmbeddingCacheRecord,
-} from '../models/db/schema.js';
+
 
 import type { Connection, Table } from '@lancedb/lancedb';
 
 // Re-export for backward compatibility
-export type {
-  UserRecord,
-  MemoRecord,
-  MemoRelationRecord,
-  CategoryRecord,
-  EmbeddingCacheRecord,
-  AttachmentRecord,
-  MultimodalEmbeddingCacheRecord,
-};
+
 
 @Service()
 export class LanceDbService {
@@ -152,8 +136,8 @@ export class LanceDbService {
     }
 
     // Open table and cache it
-    const db = this.getDb();
-    const table = await db.openTable(tableName);
+    const database = this.getDb();
+    const table = await database.openTable(tableName);
     this.tableCache.set(tableName, table);
 
     return table;
@@ -266,3 +250,5 @@ export class LanceDbService {
     }
   }
 }
+
+export {type UserRecord, type MemoRecord, type MemoRelationRecord, type CategoryRecord, type EmbeddingCacheRecord, type AttachmentRecord, type MultimodalEmbeddingCacheRecord} from '../models/db/schema.js';

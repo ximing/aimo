@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { HttpError } from 'routing-controllers';
 
-export function errorHandler(error: Error, req: Request, res: Response, next: NextFunction) {
+export function errorHandler(error: Error, request: Request, res: Response, next: NextFunction) {
   console.error(error);
   if (error instanceof HttpError) {
     res.status(error.httpCode).json({

@@ -1,7 +1,7 @@
-import { loadEnv } from './env.js';
+import { loadEnv as loadEnvironment } from './env.js';
 
 // 先加载环境变量
-loadEnv();
+loadEnvironment();
 
 // 添加配置调试日志
 console.log('Current Environment:', process.env.NODE_ENV);
@@ -153,7 +153,7 @@ export const config: Config = {
   },
   backup: {
     enabled: process.env.BACKUP_ENABLED === 'true',
-    throttleIntervalMs: Number(process.env.BACKUP_THROTTLE_INTERVAL_MS) || 3600000, // 默认1小时
+    throttleIntervalMs: Number(process.env.BACKUP_THROTTLE_INTERVAL_MS) || 3_600_000, // 默认1小时
     storageType: (process.env.BACKUP_STORAGE_TYPE || 'local') as BackupStorageType,
     retentionPolicy: {
       maxCount: Number(process.env.BACKUP_MAX_COUNT) || 10,
@@ -192,7 +192,7 @@ export const config: Config = {
   },
   attachment: {
     storageType: (process.env.ATTACHMENT_STORAGE_TYPE || 'local') as AttachmentStorageType,
-    maxFileSize: Number(process.env.ATTACHMENT_MAX_FILE_SIZE) || 52428800, // 默认 50MB
+    maxFileSize: Number(process.env.ATTACHMENT_MAX_FILE_SIZE) || 52_428_800, // 默认 50MB
     allowedMimeTypes: process.env.ATTACHMENT_ALLOWED_MIME_TYPES
       ? process.env.ATTACHMENT_ALLOWED_MIME_TYPES.split(',')
       : [

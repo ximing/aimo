@@ -47,7 +47,7 @@ async function createIndexesForTable(connection: Connection, tableName: string):
   const table = await connection.openTable(tableName);
 
   switch (tableName) {
-    case 'users':
+    case 'users': {
       // uid: BTREE for exact match queries
       // email, phone: BTREE for login and lookup queries
       // status: BITMAP for low-cardinality filtering
@@ -56,8 +56,9 @@ async function createIndexesForTable(connection: Connection, tableName: string):
       await createIndexIfNotExists(table, 'phone', 'BTREE', 'users');
       await createIndexIfNotExists(table, 'status', 'BITMAP', 'users');
       break;
+    }
 
-    case 'memos':
+    case 'memos': {
       // uid: BTREE for filtering by user
       // categoryId: BTREE for filtering by category
       // createdAt, updatedAt: BTREE for range queries and sorting
@@ -68,8 +69,9 @@ async function createIndexesForTable(connection: Connection, tableName: string):
       await createIndexIfNotExists(table, 'createdAt', 'BTREE', 'memos');
       await createIndexIfNotExists(table, 'updatedAt', 'BTREE', 'memos');
       break;
+    }
 
-    case 'memo_relations':
+    case 'memo_relations': {
       // uid: BTREE for user isolation
       // relationId: BTREE for exact match lookup
       // sourceMemoId: BTREE for querying relations from a memo
@@ -79,8 +81,9 @@ async function createIndexesForTable(connection: Connection, tableName: string):
       await createIndexIfNotExists(table, 'sourceMemoId', 'BTREE', 'memo_relations');
       await createIndexIfNotExists(table, 'targetMemoId', 'BTREE', 'memo_relations');
       break;
+    }
 
-    case 'categories':
+    case 'categories': {
       // uid: BTREE for filtering by user
       // categoryId: BTREE for exact match lookup
       // createdAt: BTREE for date range queries
@@ -88,8 +91,9 @@ async function createIndexesForTable(connection: Connection, tableName: string):
       await createIndexIfNotExists(table, 'categoryId', 'BTREE', 'categories');
       await createIndexIfNotExists(table, 'createdAt', 'BTREE', 'categories');
       break;
+    }
 
-    case 'attachments':
+    case 'attachments': {
       // uid: BTREE for filtering by user
       // attachmentId: BTREE for exact match lookup
       // createdAt: BTREE for date range queries
@@ -97,15 +101,17 @@ async function createIndexesForTable(connection: Connection, tableName: string):
       await createIndexIfNotExists(table, 'attachmentId', 'BTREE', 'attachments');
       await createIndexIfNotExists(table, 'createdAt', 'BTREE', 'attachments');
       break;
+    }
 
-    case 'embedding_cache':
+    case 'embedding_cache': {
       // contentHash: BTREE for cache lookup
       // modelHash: BTREE for model-specific cache filtering
       await createIndexIfNotExists(table, 'contentHash', 'BTREE', 'embedding_cache');
       await createIndexIfNotExists(table, 'modelHash', 'BTREE', 'embedding_cache');
       break;
+    }
 
-    case 'multimodal_embedding_cache':
+    case 'multimodal_embedding_cache': {
       // contentHash: BTREE for cache lookup
       // modelHash: BTREE for model-specific cache filtering
       // modalityType: BITMAP for low-cardinality modality filtering (text, image, video)
@@ -113,11 +119,13 @@ async function createIndexesForTable(connection: Connection, tableName: string):
       await createIndexIfNotExists(table, 'modelHash', 'BTREE', 'multimodal_embedding_cache');
       await createIndexIfNotExists(table, 'modalityType', 'BITMAP', 'multimodal_embedding_cache');
       break;
+    }
 
-    case 'table_migrations':
+    case 'table_migrations': {
       // tableName: BTREE for version lookup
       await createIndexIfNotExists(table, 'tableName', 'BTREE', 'table_migrations');
       break;
+    }
   }
 }
 

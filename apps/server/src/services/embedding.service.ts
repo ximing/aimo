@@ -1,11 +1,11 @@
-import { createHash } from 'crypto';
+import { createHash } from 'node:crypto';
 
 import { createOpenAI } from '@ai-sdk/openai';
 import { embedMany, embed } from 'ai';
 import { Service } from 'typedi';
 
 import { config } from '../config/config.js';
-import { LanceDbService } from '../sources/lancedb.js';
+import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
 
 @Service()
 export class EmbeddingService {
@@ -13,7 +13,7 @@ export class EmbeddingService {
   private dimensions: number;
   private modelHash: string;
 
-  constructor(private lanceDb: LanceDbService) {
+  constructor(private lanceDatabase: LanceDatabaseService) {
     // Initialize OpenAI client with custom base URL if needed
     const openaiClient = createOpenAI({
       apiKey: config.openai.apiKey,
@@ -157,13 +157,13 @@ export class EmbeddingService {
       const cachedResults: (number[] | null)[] = [];
       const indexesToGenerate: number[] = [];
 
-      for (let i = 0; i < textWithHashes.length; i++) {
-        const cached = await this.queryCacheByHash(this.modelHash, textWithHashes[i].contentHash);
+      for (const [index, textWithHash] of textWithHashes.entries()) {
+        const cached = await this.queryCacheByHash(this.modelHash, textWithHash.contentHash);
         if (cached) {
-          cachedResults[i] = cached;
+          cachedResults[index] = cached;
         } else {
-          cachedResults[i] = null;
-          indexesToGenerate.push(i);
+          cachedResults[index] = null;
+          indexesToGenerate.push(index);
         }
       }
 
@@ -174,7 +174,7 @@ export class EmbeddingService {
       }
 
       // Generate embeddings for cache misses
-      const textsToGenerate = indexesToGenerate.map((i) => texts[i]);
+      const textsToGenerate = indexesToGenerate.map((index) => texts[index]);
       console.log(
         `Cache miss for ${indexesToGenerate.length} out of ${texts.length} embeddings, generating...`
       );
@@ -185,9 +185,8 @@ export class EmbeddingService {
       });
 
       // Save to cache and merge results
-      for (let i = 0; i < indexesToGenerate.length; i++) {
-        const originalIndex = indexesToGenerate[i];
-        const embedding = result.embeddings[i];
+      for (const [index, originalIndex] of indexesToGenerate.entries()) {
+        const embedding = result.embeddings[index];
         await this.saveToCache(
           this.modelHash,
           textWithHashes[originalIndex].contentHash,

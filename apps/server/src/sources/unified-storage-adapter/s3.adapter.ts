@@ -88,7 +88,7 @@ export class S3UnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
   }
 
   private getFullKey(key: string): string {
-    return `${this.prefix}/${key}`.replace(/\/+/g, '/');
+    return `${this.prefix}/${key}`.replaceAll(/\/+/g, '/');
   }
 
   async uploadFile(key: string, buffer: Buffer): Promise<void> {

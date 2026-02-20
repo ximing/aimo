@@ -8,7 +8,7 @@ import { Service } from 'typedi';
 
 import { ErrorCode } from '../../constants/error-codes.js';
 import { ASRService } from '../../services/asr.service.js';
-import { ResponseUtil } from '../../utils/response.js';
+import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 
 import type {
   ASRTranscribeRequestDto,
@@ -32,19 +32,19 @@ export class ASRV1Controller {
     try {
       // Validate request
       if (!request.fileUrls || request.fileUrls.length === 0) {
-        return ResponseUtil.error(ErrorCode.PARAMS_ERROR, 'At least one file URL is required');
+        return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'At least one file URL is required');
       }
 
       // Check if service is configured
       if (!this.asrService.isConfigured()) {
-        return ResponseUtil.error(ErrorCode.SYSTEM_ERROR, 'ASR service is not configured');
+        return ResponseUtility.error(ErrorCode.SYSTEM_ERROR, 'ASR service is not configured');
       }
 
       const result = await this.asrService.submitTranscription(request);
-      return ResponseUtil.success(result);
+      return ResponseUtility.success(result);
     } catch (error) {
       console.error('ASR transcription error:', error);
-      return ResponseUtil.error(
+      return ResponseUtility.error(
         ErrorCode.SYSTEM_ERROR,
         error instanceof Error ? error.message : 'Transcription failed'
       );
@@ -59,18 +59,18 @@ export class ASRV1Controller {
   async getTaskStatus(@Param('taskId') taskId: string) {
     try {
       if (!taskId) {
-        return ResponseUtil.error(ErrorCode.PARAMS_ERROR, 'Task ID is required');
+        return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'Task ID is required');
       }
 
       if (!this.asrService.isConfigured()) {
-        return ResponseUtil.error(ErrorCode.SYSTEM_ERROR, 'ASR service is not configured');
+        return ResponseUtility.error(ErrorCode.SYSTEM_ERROR, 'ASR service is not configured');
       }
 
       const result = await this.asrService.queryTaskStatus(taskId);
-      return ResponseUtil.success(result);
+      return ResponseUtility.success(result);
     } catch (error) {
       console.error('ASR task status error:', error);
-      return ResponseUtil.error(
+      return ResponseUtility.error(
         ErrorCode.SYSTEM_ERROR,
         error instanceof Error ? error.message : 'Failed to query task status'
       );
@@ -86,11 +86,11 @@ export class ASRV1Controller {
   async waitForTranscription(@Param('taskId') taskId: string) {
     try {
       if (!taskId) {
-        return ResponseUtil.error(ErrorCode.PARAMS_ERROR, 'Task ID is required');
+        return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'Task ID is required');
       }
 
       if (!this.asrService.isConfigured()) {
-        return ResponseUtil.error(ErrorCode.SYSTEM_ERROR, 'ASR service is not configured');
+        return ResponseUtility.error(ErrorCode.SYSTEM_ERROR, 'ASR service is not configured');
       }
 
       // Wait for transcription (max 5 minutes)
@@ -98,10 +98,10 @@ export class ASRV1Controller {
 
       // Get results
       const result = await this.asrService.getTranscriptionResult(taskId);
-      return ResponseUtil.success(result);
+      return ResponseUtility.success(result);
     } catch (error) {
       console.error('ASR wait error:', error);
-      return ResponseUtil.error(
+      return ResponseUtility.error(
         ErrorCode.SYSTEM_ERROR,
         error instanceof Error ? error.message : 'Failed to wait for transcription'
       );
@@ -116,18 +116,18 @@ export class ASRV1Controller {
   async getResult(@Param('taskId') taskId: string) {
     try {
       if (!taskId) {
-        return ResponseUtil.error(ErrorCode.PARAMS_ERROR, 'Task ID is required');
+        return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'Task ID is required');
       }
 
       if (!this.asrService.isConfigured()) {
-        return ResponseUtil.error(ErrorCode.SYSTEM_ERROR, 'ASR service is not configured');
+        return ResponseUtility.error(ErrorCode.SYSTEM_ERROR, 'ASR service is not configured');
       }
 
       const result = await this.asrService.getTranscriptionResult(taskId);
-      return ResponseUtil.success(result);
+      return ResponseUtility.success(result);
     } catch (error) {
       console.error('ASR result error:', error);
-      return ResponseUtil.error(
+      return ResponseUtility.error(
         ErrorCode.SYSTEM_ERROR,
         error instanceof Error ? error.message : 'Failed to get transcription result'
       );
@@ -143,19 +143,19 @@ export class ASRV1Controller {
   async transcribeAndWait(@Body() request: ASRTranscribeRequestDto) {
     try {
       if (!request.fileUrls || request.fileUrls.length === 0) {
-        return ResponseUtil.error(ErrorCode.PARAMS_ERROR, 'At least one file URL is required');
+        return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'At least one file URL is required');
       }
 
       if (!this.asrService.isConfigured()) {
-        return ResponseUtil.error(ErrorCode.SYSTEM_ERROR, 'ASR service is not configured');
+        return ResponseUtility.error(ErrorCode.SYSTEM_ERROR, 'ASR service is not configured');
       }
 
       // Transcribe with automatic wait (max 5 minutes)
       const result = await this.asrService.transcribe(request);
-      return ResponseUtil.success(result);
+      return ResponseUtility.success(result);
     } catch (error) {
       console.error('ASR transcribe and wait error:', error);
-      return ResponseUtil.error(
+      return ResponseUtility.error(
         ErrorCode.SYSTEM_ERROR,
         error instanceof Error ? error.message : 'Transcription failed'
       );

@@ -22,7 +22,7 @@ import { Service } from 'typedi';
 import { config } from '../../config/config.js';
 import { ErrorCode } from '../../constants/error-codes.js';
 import { AttachmentService } from '../../services/attachment.service.js';
-import { ResponseUtil } from '../../utils/response.js';
+import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 
 import type { UserInfoDto } from '@aimo/dto';
 import type { Request, Response } from 'express';
@@ -46,35 +46,33 @@ export class AttachmentV1Controller {
    * POST /api/v1/attachments/upload
    */
   @Post('/upload')
-  async uploadAttachment(@Req() req: Request, @CurrentUser() user: UserInfoDto) {
+  async uploadAttachment(@Req() request: Request, @CurrentUser() user: UserInfoDto) {
     try {
       if (!user?.uid) {
-        return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
       }
 
       // Use multer middleware to handle file upload
       return new Promise((resolve) => {
-        upload.single('file')(req, {} as Response, async (err) => {
-          if (err) {
-            if (err instanceof multer.MulterError) {
-              if (err.code === 'LIMIT_FILE_SIZE') {
-                return resolve(ResponseUtil.error(ErrorCode.FILE_TOO_LARGE));
+        upload.single('file')(request, {} as Response, async (error) => {
+          if (error) {
+            if (error instanceof multer.MulterError && error.code === 'LIMIT_FILE_SIZE') {
+                return resolve(ResponseUtility.error(ErrorCode.FILE_TOO_LARGE));
               }
-            }
-            console.error('File upload error:', err);
-            return resolve(ResponseUtil.error(ErrorCode.FILE_UPLOAD_ERROR));
+            console.error('File upload error:', error);
+            return resolve(ResponseUtility.error(ErrorCode.FILE_UPLOAD_ERROR));
           }
 
-          const file = (req as any).file;
+          const file = (request as any).file;
           if (!file) {
-            return resolve(ResponseUtil.error(ErrorCode.PARAMS_ERROR, 'No file uploaded'));
+            return resolve(ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'No file uploaded'));
           }
 
           // Validate file type
           const mimeType = file.mimetype;
           if (!config.attachment.allowedMimeTypes.includes(mimeType)) {
             return resolve(
-              ResponseUtil.error(
+              ResponseUtility.error(
                 ErrorCode.UNSUPPORTED_FILE_TYPE,
                 `File type ${mimeType} is not allowed`
               )
@@ -84,9 +82,9 @@ export class AttachmentV1Controller {
           try {
             // Parse optional createdAt parameter from FormData (for imports)
             let createdAt: number | undefined;
-            const createdAtStr = (req as any).body?.createdAt;
-            if (createdAtStr) {
-              const parsed = parseInt(createdAtStr as string, 10);
+            const createdAtString = (request as any).body?.createdAt;
+            if (createdAtString) {
+              const parsed = Number.parseInt(createdAtString as string, 10);
               if (!isNaN(parsed) && parsed > 0) {
                 createdAt = parsed;
               }
@@ -103,20 +101,20 @@ export class AttachmentV1Controller {
             });
 
             return resolve(
-              ResponseUtil.success({
+              ResponseUtility.success({
                 message: 'File uploaded successfully',
                 attachment,
               })
             );
           } catch (error) {
             console.error('Failed to save attachment:', error);
-            return resolve(ResponseUtil.error(ErrorCode.STORAGE_ERROR));
+            return resolve(ResponseUtility.error(ErrorCode.STORAGE_ERROR));
           }
         });
       });
     } catch (error) {
       console.error('Upload attachment error:', error);
-      return ResponseUtil.error(ErrorCode.SYSTEM_ERROR);
+      return ResponseUtility.error(ErrorCode.SYSTEM_ERROR);
     }
   }
 
@@ -132,7 +130,7 @@ export class AttachmentV1Controller {
   ) {
     try {
       if (!user?.uid) {
-        return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
       }
 
       const result = await this.attachmentService.getAttachmentsByUser({
@@ -141,10 +139,10 @@ export class AttachmentV1Controller {
         limit,
       });
 
-      return ResponseUtil.success(result);
+      return ResponseUtility.success(result);
     } catch (error) {
       console.error('Get attachments error:', error);
-      return ResponseUtil.error(ErrorCode.DB_ERROR);
+      return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
 
@@ -159,20 +157,20 @@ export class AttachmentV1Controller {
   ) {
     try {
       if (!user?.uid) {
-        return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
       }
 
       // attachmentId format: just the nano ID (stored in database)
       // The actual file path is stored in the attachment record
       const attachment = await this.attachmentService.getAttachment(attachmentId, user.uid);
       if (!attachment) {
-        return ResponseUtil.error(ErrorCode.ATTACHMENT_NOT_FOUND);
+        return ResponseUtility.error(ErrorCode.ATTACHMENT_NOT_FOUND);
       }
 
-      return ResponseUtil.success(attachment);
+      return ResponseUtility.success(attachment);
     } catch (error) {
       console.error('Get attachment error:', error);
-      return ResponseUtil.error(ErrorCode.DB_ERROR);
+      return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
 
@@ -187,19 +185,19 @@ export class AttachmentV1Controller {
   ) {
     try {
       if (!user?.uid) {
-        return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
       }
 
       // attachmentId format: just the nano ID (stored in database)
       const success = await this.attachmentService.deleteAttachment(attachmentId, user.uid);
       if (!success) {
-        return ResponseUtil.error(ErrorCode.ATTACHMENT_NOT_FOUND);
+        return ResponseUtility.error(ErrorCode.ATTACHMENT_NOT_FOUND);
       }
 
-      return ResponseUtil.success({ message: 'Attachment deleted successfully' });
+      return ResponseUtility.success({ message: 'Attachment deleted successfully' });
     } catch (error) {
       console.error('Delete attachment error:', error);
-      return ResponseUtil.error(ErrorCode.DB_ERROR);
+      return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
 
@@ -215,7 +213,7 @@ export class AttachmentV1Controller {
   ) {
     try {
       if (!user?.uid) {
-        return response.status(401).json(ResponseUtil.error(ErrorCode.UNAUTHORIZED));
+        return response.status(401).json(ResponseUtility.error(ErrorCode.UNAUTHORIZED));
       }
 
       // attachmentId format: just the nano ID (stored in database)
@@ -223,7 +221,7 @@ export class AttachmentV1Controller {
       const result = await this.attachmentService.getAttachmentBuffer(attachmentId, user.uid);
 
       if (!result) {
-        return response.status(404).json(ResponseUtil.error(ErrorCode.ATTACHMENT_NOT_FOUND));
+        return response.status(404).json(ResponseUtility.error(ErrorCode.ATTACHMENT_NOT_FOUND));
       }
 
       // Set response headers
@@ -239,7 +237,7 @@ export class AttachmentV1Controller {
       return response.send(result.buffer);
     } catch (error) {
       console.error('Download attachment error:', error);
-      return response.status(500).json(ResponseUtil.error(ErrorCode.SYSTEM_ERROR));
+      return response.status(500).json(ResponseUtility.error(ErrorCode.SYSTEM_ERROR));
     }
   }
 }

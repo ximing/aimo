@@ -1,5 +1,5 @@
-import { parse } from 'path';
-import { fileURLToPath } from 'url';
+import { parse } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import glob from 'glob';
 

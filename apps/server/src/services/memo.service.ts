@@ -1,7 +1,7 @@
 import { Service } from 'typedi';
 
 import { OBJECT_TYPE } from '../models/constant/type.js';
-import { LanceDbService } from '../sources/lancedb.js';
+import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
 import { generateTypeId } from '../utils/id.js';
 
 import { AttachmentService } from './attachment.service.js';
@@ -55,7 +55,7 @@ export interface MemoVectorSearchOptions {
 @Service()
 export class MemoService {
   constructor(
-    private lanceDb: LanceDbService,
+    private lanceDatabase: LanceDatabaseService,
     private embeddingService: EmbeddingService,
     private backupService: BackupService,
     private attachmentService: AttachmentService,
@@ -151,7 +151,7 @@ export class MemoService {
 
       // Prepare record for LanceDB with only attachment IDs
       // Convert embedding to array if it's an Arrow object
-      const embeddingArray = Array.isArray(embedding) ? embedding : Array.from(embedding || []);
+      const embeddingArray = Array.isArray(embedding) ? embedding : [...embedding || []];
 
       const memoRecord = {
         ...memo,
@@ -247,7 +247,7 @@ export class MemoService {
       }
 
       if (isUncategorizedFilter) {
-        allResults = allResults.filter((memo: any) => memo.categoryId == null);
+        allResults = allResults.filter((memo: any) => memo.categoryId == undefined);
       }
 
       const total = allResults.length;
@@ -401,7 +401,7 @@ export class MemoService {
       // Update the memo
       const now = Date.now();
       // Convert embedding to array if it's an Arrow object
-      const embeddingArray = Array.isArray(embedding) ? embedding : Array.from(embedding || []);
+      const embeddingArray = Array.isArray(embedding) ? embedding : [...embedding || []];
 
       const updateValues: Record<string, any> = {
         content,
@@ -411,31 +411,25 @@ export class MemoService {
 
       // Add type to update if provided (null = clear, undefined = no change)
       if (type !== undefined) {
-        if (type !== null) {
-          updateValues.type = type;
-        } else {
-          updateValues.type = null;
-        }
+        updateValues.type = type === null ? null : type;
       }
 
       // Add categoryId to update if provided
       if (categoryId !== undefined) {
         // Only add if not null/undefined (LanceDB doesn't support undefined values in update)
-        if (categoryId !== null) {
-          updateValues.categoryId = categoryId;
-        } else {
+        if (categoryId === null) {
           // For null, we need to set it explicitly (clearing the category)
           updateValues.categoryId = null;
+        } else {
+          updateValues.categoryId = categoryId;
         }
       }
 
       // Add attachments to update if provided (only store attachment IDs)
-      if (attachments !== undefined) {
-        // Only add attachments if there are any, otherwise omit to keep existing
-        if (attachments.length > 0) {
+      if (attachments !== undefined && // Only add attachments if there are any, otherwise omit to keep existing
+        attachments.length > 0) {
           updateValues.attachments = attachments;
         }
-      }
 
       // Update using proper update method with where clause
       await memosTable.update({
@@ -458,9 +452,9 @@ export class MemoService {
 
       // Build updated memo object with attachment DTOs
       const finalAttachmentIds =
-        attachments !== undefined
-          ? attachments
-          : this.convertArrowAttachments(existingMemo.attachments);
+        attachments === undefined
+          ? this.convertArrowAttachments(existingMemo.attachments)
+          : attachments;
       const finalAttachmentDtos: AttachmentDto[] =
         finalAttachmentIds.length > 0
           ? await this.attachmentService.getAttachmentsByIds(finalAttachmentIds, uid)
@@ -470,7 +464,7 @@ export class MemoService {
         memoId,
         uid,
         content,
-        categoryId: categoryId !== undefined ? categoryId || undefined : existingMemo.categoryId,
+        categoryId: categoryId === undefined ? existingMemo.categoryId : categoryId || undefined,
         attachments: finalAttachmentDtos,
         embedding,
         createdAt: existingMemo.createdAt,

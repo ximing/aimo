@@ -4,7 +4,7 @@ import { Container } from 'typedi';
 
 import { ErrorCode } from '../../constants/error-codes.js';
 import { BackupService } from '../../services/backup.service.js';
-import { ResponseUtil } from '../../utils/response.js';
+import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 
 /**
  * Backup management API endpoints
@@ -23,12 +23,12 @@ export class BackupV1Controller {
       const backupService = Container.get(BackupService);
       const status = backupService.getStatus();
 
-      return ResponseUtil.success({
+      return ResponseUtility.success({
         backup: status,
       });
     } catch (error) {
       console.error('Error getting backup status:', error);
-      return ResponseUtil.error(ErrorCode.DB_ERROR, 'Failed to get backup status');
+      return ResponseUtility.error(ErrorCode.DB_ERROR, 'Failed to get backup status');
     }
   }
 
@@ -43,13 +43,13 @@ export class BackupV1Controller {
       const backupService = Container.get(BackupService);
       await backupService.forceBackup();
 
-      return ResponseUtil.success({
+      return ResponseUtility.success({
         message: 'Backup started successfully',
       });
     } catch (error) {
       console.error('Error triggering manual backup:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to trigger backup';
-      return ResponseUtil.error(ErrorCode.DB_ERROR, errorMessage);
+      return ResponseUtility.error(ErrorCode.DB_ERROR, errorMessage);
     }
   }
 
@@ -63,12 +63,12 @@ export class BackupV1Controller {
       const backupService = Container.get(BackupService);
       await backupService.cleanupOldBackups();
 
-      return ResponseUtil.success({
+      return ResponseUtility.success({
         message: 'Backup cleanup completed',
       });
     } catch (error) {
       console.error('Error cleaning up backups:', error);
-      return ResponseUtil.error(ErrorCode.DB_ERROR, 'Failed to cleanup backups');
+      return ResponseUtility.error(ErrorCode.DB_ERROR, 'Failed to cleanup backups');
     }
   }
 }

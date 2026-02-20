@@ -2,6 +2,7 @@ import js from '@eslint/js';
 import eslintConfigPrettier from 'eslint-config-prettier';
 import importPlugin from 'eslint-plugin-import';
 import turboPlugin from 'eslint-plugin-turbo';
+import unicornPlugin from 'eslint-plugin-unicorn';
 import tseslint from 'typescript-eslint';
 import onlyWarn from 'eslint-plugin-only-warn';
 
@@ -14,6 +15,7 @@ export const config = [
   js.configs.recommended,
   eslintConfigPrettier,
   ...tseslint.configs.recommended,
+  unicornPlugin.configs.recommended,
   {
     plugins: {
       import: importPlugin,

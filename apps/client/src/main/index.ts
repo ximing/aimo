@@ -197,14 +197,14 @@ function createWindow(): void {
 
   // Handle close to tray - prevent default close and hide window instead
   mainWindow.on('close', (event) => {
-    if (!isQuiting) {
+    if (isQuiting) {
+      // Save window state before quitting
+      saveWindowState();
+    } else {
       // Save window state before hiding
       saveWindowState();
       event.preventDefault();
       mainWindow?.hide();
-    } else {
-      // Save window state before quitting
-      saveWindowState();
     }
   });
 }
@@ -298,15 +298,15 @@ function createTray(): void {
 // Auto-update setup
 function setupAutoUpdater(): void {
   // Configure autoUpdater to use GitHub releases (default behavior)
-  autoUpdater.checkForUpdatesAndNotify().catch((err) => {
-    console.warn('Failed to check for updates:', err);
+  autoUpdater.checkForUpdatesAndNotify().catch((error) => {
+    console.warn('Failed to check for updates:', error);
   });
 }
 
 // Manual check for updates - can be called from menu
 function checkForUpdates(): void {
-  autoUpdater.checkForUpdatesAndNotify().catch((err) => {
-    console.warn('Failed to check for updates:', err);
+  autoUpdater.checkForUpdatesAndNotify().catch((error) => {
+    console.warn('Failed to check for updates:', error);
   });
 }
 
@@ -409,23 +409,14 @@ function createApplicationMenu(): void {
   template.push({
     label: '编辑',
     submenu: editMenuItems,
-  });
-
-  // View menu
-  template.push({
+  }, {
     label: '视图',
     submenu: viewMenuItems,
-  });
-
-  // Window menu
-  template.push({
+  }, {
     label: '窗口',
     role: 'window',
     submenu: windowMenuItems,
-  });
-
-  // Help menu (common for all platforms)
-  template.push({
+  }, {
     label: '帮助',
     role: 'help',
     submenu: [
@@ -509,8 +500,8 @@ autoUpdater.on('update-downloaded', () => {
   console.log('Update downloaded - will be installed on quit');
 });
 
-autoUpdater.on('error', (err) => {
-  console.warn('Auto-updater error:', err);
+autoUpdater.on('error', (error) => {
+  console.warn('Auto-updater error:', error);
 });
 
 // Unregister all shortcuts when app is about to quit

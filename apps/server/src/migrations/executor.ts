@@ -7,7 +7,7 @@ import type { Migration, MigrationExecutionResult } from './types.js';
 import type { TableMigrationRecord } from '../models/db/schema.js';
 import type { Connection, Table } from '@lancedb/lancedb';
 
-export class MigrationExecutor {
+export const MigrationExecutor = {
   /**
    * Execute a single migration and update metadata
    * @param connection LanceDB connection
@@ -15,7 +15,7 @@ export class MigrationExecutor {
    * @param metadataTable Metadata table for tracking versions
    * @returns Execution result
    */
-  static async executeMigration(
+  async executeMigration(
     connection: Connection,
     migration: Migration,
     metadataTable: Table
@@ -39,14 +39,14 @@ export class MigrationExecutor {
       // Check if record exists by querying
       const existingRecords = (await metadataTable
         .query()
-        .where(`tableName = '${tableName.replace(/'/g, "''")}'`)
+        .where(`tableName = '${tableName.replaceAll('\'', "''")}'`)
         .limit(1)
         .toArray()) as TableMigrationRecord[];
 
       if (existingRecords.length > 0) {
         // For LanceDB, we need to delete old record and insert new one
         // or use merge. Since merge might have complex behavior, we delete and re-add
-        await metadataTable.delete(`tableName = '${tableName.replace(/'/g, "''")}'`);
+        await metadataTable.delete(`tableName = '${tableName.replaceAll('\'', "''")}'`);
       }
 
       // Insert/upsert the record
@@ -65,7 +65,7 @@ export class MigrationExecutor {
       console.error(`Failed to execute migration: ${tableName} v${version}`, error);
       throw new Error(`Migration failed for ${tableName} v${version}: ${(error as Error).message}`);
     }
-  }
+  },
 
   /**
    * Execute multiple migrations in sequence
@@ -74,7 +74,7 @@ export class MigrationExecutor {
    * @param metadataTable Metadata table
    * @returns Execution result
    */
-  static async executeMigrations(
+  async executeMigrations(
     connection: Connection,
     migrations: Migration[],
     metadataTable: Table
@@ -106,13 +106,13 @@ export class MigrationExecutor {
       console.error(`Failed during batch migration for ${tableName}`, error);
       throw error;
     }
-  }
+  },
 
   /**
    * Get the current version of a table from metadata
    * Returns 0 if table has no migration record
    */
-  static async getCurrentVersion(
+  async getCurrentVersion(
     metadataTable: Table,
     tableName: string
   ): Promise<number> {
@@ -120,7 +120,7 @@ export class MigrationExecutor {
       // Search for the table in metadata using query
       const results = (await metadataTable
         .query()
-        .where(`tableName = '${tableName.replace(/'/g, "''")}'`)
+        .where(`tableName = '${tableName.replaceAll('\'', "''")}'`)
         .limit(1)
         .toArray()) as TableMigrationRecord[];
 
@@ -134,12 +134,12 @@ export class MigrationExecutor {
       console.warn(`Could not get current version for ${tableName}:`, error);
       return 0;
     }
-  }
+  },
 
   /**
    * Ensure metadata table exists
    */
-  static async ensureMetadataTableExists(connection: Connection): Promise<Table> {
+  async ensureMetadataTableExists(connection: Connection): Promise<Table> {
     try {
       const tableNames = await connection.tableNames();
 
@@ -157,5 +157,5 @@ export class MigrationExecutor {
       console.error('Failed to ensure metadata table exists:', error);
       throw error;
     }
-  }
-}
+  },
+};

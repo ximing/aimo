@@ -1,20 +1,20 @@
 import { ErrorCode, ErrorMessage } from '../constants/error-codes.js';
 import { ApiResponse } from '../types/response.js';
 
-export class ResponseUtil {
-  static success<T>(data: T, msg: string = ErrorMessage[ErrorCode.SUCCESS]): ApiResponse<T> {
+export const ResponseUtil = {
+  success<T>(data: T, message: string = ErrorMessage[ErrorCode.SUCCESS]): ApiResponse<T> {
     return {
       code: ErrorCode.SUCCESS,
-      msg,
+      msg: message,
       data,
     };
-  }
+  },
 
-  static error(code: number = ErrorCode.SYSTEM_ERROR, msg?: string): ApiResponse<null> {
+  error(code: number = ErrorCode.SYSTEM_ERROR, message?: string): ApiResponse<null> {
     return {
       code,
-      msg: msg || ErrorMessage[code] || ErrorMessage[ErrorCode.SYSTEM_ERROR],
+      msg: message || ErrorMessage[code] || ErrorMessage[ErrorCode.SYSTEM_ERROR],
       data: null,
     };
-  }
-}
+  },
+};

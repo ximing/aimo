@@ -61,7 +61,7 @@ export class OSSUnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
   }
 
   private getFullKey(key: string): string {
-    return `${this.prefix}/${key}`.replace(/\/+/g, '/');
+    return `${this.prefix}/${key}`.replaceAll(/\/+/g, '/');
   }
 
   async uploadFile(key: string, buffer: Buffer): Promise<void> {
@@ -245,11 +245,7 @@ export class OSSUnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
       // Use custom endpoint if provided
       const domain = endpoint.replace(/^https?:\/\//, '').replace(/\/$/, '');
       // If domain already has bucket name, use as-is; otherwise prepend bucket
-      if (domain.startsWith(bucket + '.')) {
-        return `https://${domain}/${key}`;
-      } else {
-        return `https://${bucket}.${domain}/${key}`;
-      }
+      return domain.startsWith(bucket + '.') ? `https://${domain}/${key}` : `https://${bucket}.${domain}/${key}`;
     } else {
       // Use default Aliyun OSS URL format
       // https://bucket.oss-region.aliyuncs.com/key

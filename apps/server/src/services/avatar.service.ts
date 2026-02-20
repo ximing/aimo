@@ -45,11 +45,11 @@ export class AvatarService {
 
     // 生成唯一文件名
     const fileId = nanoid(24);
-    const ext = filename.split('.').pop() || 'png';
-    const dateStr = dayjs().format('YYYY-MM-DD');
+    const extension = filename.split('.').pop() || 'png';
+    const dateString = dayjs().format('YYYY-MM-DD');
 
     // 构建存储路径: avatar/{uid}/{YYYY-MM-DD}/{nanoid}.{ext}
-    const path = `avatar/${uid}/${dateStr}/${fileId}.${ext}`;
+    const path = `avatar/${uid}/${dateString}/${fileId}.${extension}`;
 
     // 上传到存储
     await this.storageAdapter.uploadFile(path, buffer);
@@ -131,7 +131,7 @@ export class AvatarService {
    * Get content type from file extension
    */
   private getContentType(path: string): string {
-    const ext = path.split('.').pop()?.toLowerCase() || '';
+    const extension = path.split('.').pop()?.toLowerCase() || '';
     const mimeTypes: Record<string, string> = {
       jpg: 'image/jpeg',
       jpeg: 'image/jpeg',
@@ -140,7 +140,7 @@ export class AvatarService {
       webp: 'image/webp',
       svg: 'image/svg+xml',
     };
-    return mimeTypes[ext] || 'application/octet-stream';
+    return mimeTypes[extension] || 'application/octet-stream';
   }
 
   /**
@@ -192,9 +192,10 @@ export class AvatarService {
     const storageType = attachmentConfig.storageType;
 
     switch (storageType) {
-      case 'local':
+      case 'local': {
         return undefined;
-      case 's3':
+      }
+      case 's3': {
         return attachmentConfig.s3?.[
           key === 'bucket'
             ? 'bucket'
@@ -208,7 +209,8 @@ export class AvatarService {
             ? 'isPublic'
             : 'prefix'
         ] as string | undefined;
-      case 'oss':
+      }
+      case 'oss': {
         return attachmentConfig.oss?.[
           key === 'bucket'
             ? 'bucket'
@@ -222,8 +224,10 @@ export class AvatarService {
             ? 'isPublic'
             : 'prefix'
         ] as string | undefined;
-      default:
+      }
+      default: {
         return undefined;
+      }
     }
   }
 }

@@ -26,12 +26,12 @@ async function createTableIfNotExists(
 ): Promise<void> {
   const tableNames = await connection.tableNames();
 
-  if (!tableNames.includes(tableName)) {
+  if (tableNames.includes(tableName)) {
+    console.log(`Table already exists: ${tableName}`);
+  } else {
     console.log(`Creating table: ${tableName}`);
     await connection.createEmptyTable(tableName, schema);
     console.log(`Table created: ${tableName}`);
-  } else {
-    console.log(`Table already exists: ${tableName}`);
   }
 }
 

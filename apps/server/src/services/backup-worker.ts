@@ -1,6 +1,6 @@
-import { createWriteStream } from 'fs';
-import path from 'path';
-import { parentPort } from 'worker_threads';
+import { createWriteStream } from 'node:fs';
+import path from 'node:path';
+import { parentPort } from 'node:worker_threads';
 
 import archiver from 'archiver';
 
@@ -35,14 +35,14 @@ async function handleCompressionTask(task: CompressionTask): Promise<Compression
       });
 
       // Error handlers
-      output.on('error', (err) => {
-        console.error('[Worker] Output stream error:', err);
-        reject(err);
+      output.on('error', (error) => {
+        console.error('[Worker] Output stream error:', error);
+        reject(error);
       });
 
-      archive.on('error', (err) => {
-        console.error('[Worker] Archive error:', err);
-        reject(err);
+      archive.on('error', (error) => {
+        console.error('[Worker] Archive error:', error);
+        reject(error);
       });
 
       // Pipe archive to output

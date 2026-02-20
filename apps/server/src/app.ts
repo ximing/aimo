@@ -1,5 +1,5 @@
-import { dirname, join } from 'path';
-import { fileURLToPath } from 'url';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import bodyParser from 'body-parser';
 import cookieParser from 'cookie-parser';
@@ -19,7 +19,7 @@ import { authHandler } from './middlewares/auth-handler.js';
 import { errorHandler } from './middlewares/error-handler.js';
 import { BackupService } from './services/backup.service.js';
 import { SchedulerService } from './services/scheduler.service.js';
-import { LanceDbService } from './sources/lancedb.js';
+import { LanceDbService as LanceDatabaseService } from './sources/lancedb.js';
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -30,7 +30,7 @@ useContainer(Container);
 
 export async function createApp() {
   await initIOC();
-  await Container.get(LanceDbService).init();
+  await Container.get(LanceDatabaseService).init();
 
   // Initialize backup service if enabled
   if (config.backup.enabled) {
@@ -87,7 +87,7 @@ export async function createApp() {
       etag: false,
       // Cache busting for JS and CSS files
       setHeaders: (res, path) => {
-        if (path.match(/\.(js|css)$/)) {
+        if (/\.(js|css)$/.test(path)) {
           res.set('Cache-Control', 'public, max-age=31536000, immutable');
         }
       },
@@ -126,7 +126,7 @@ export async function createApp() {
         }
 
         // Close LanceDB connections and release resources
-        await Container.get(LanceDbService).close();
+        await Container.get(LanceDatabaseService).close();
         console.log('All resources cleaned up');
         process.exit(0);
       } catch (error) {

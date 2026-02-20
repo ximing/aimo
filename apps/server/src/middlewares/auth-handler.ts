@@ -8,7 +8,7 @@ import { UserService } from '../services/user.service.js';
 import type { UserInfoDto } from '@aimo/dto';
 
 // Whitelist paths that don't require authentication
-const WHITELIST_PATHS = ['/', '/api/v1/auth/login', '/api/v1/auth/register'];
+const WHITELIST_PATHS = new Set(['/', '/api/v1/auth/login', '/api/v1/auth/register']);
 
 // Whitelist path prefixes for static assets and public resources
 const WHITELIST_PREFIXES = [
@@ -25,20 +25,20 @@ const WHITELIST_PREFIXES = [
  * Authentication middleware that validates the aimo_token from cookies or headers
  * and adds user information to the request context
  */
-export const authHandler = async (req: Request, res: Response, next: NextFunction) => {
+export const authHandler = async (request: Request, res: Response, next: NextFunction) => {
   try {
     // Check if path is in whitelist
-    if (WHITELIST_PATHS.includes(req.path)) {
+    if (WHITELIST_PATHS.has(request.path)) {
       return next();
     }
 
     // Check if path starts with any whitelisted prefix
-    if (WHITELIST_PREFIXES.some((prefix) => req.path.startsWith(prefix))) {
+    if (WHITELIST_PREFIXES.some((prefix) => request.path.startsWith(prefix))) {
       return next();
     }
 
     // Get token from cookie or Authorization header
-    const token = req.cookies?.aimo_token || req.headers.authorization?.replace('Bearer ', '');
+    const token = request.cookies?.aimo_token || request.headers.authorization?.replace('Bearer ', '');
 
     if (!token) {
       return res.status(401).json({
@@ -63,7 +63,7 @@ export const authHandler = async (req: Request, res: Response, next: NextFunctio
     }
 
     // Add user information to request context
-    req.user = {
+    request.user = {
       uid: user.uid,
       email: user.email,
       nickname: user.nickname,

@@ -1,6 +1,6 @@
-import { readFileSync, existsSync } from 'fs';
-import { join } from 'path';
-import { fileURLToPath } from 'url';
+import { readFileSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { Controller, Get, Res } from 'routing-controllers';
 import { Service } from 'typedi';

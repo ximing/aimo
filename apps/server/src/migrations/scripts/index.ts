@@ -86,5 +86,5 @@ export function getLatestVersion(tableName: string): number {
  * Get all table names that have migrations
  */
 export function getAllTableNames(): string[] {
-  return Array.from(new Set(ALL_MIGRATIONS.map((m) => m.tableName)));
+  return [...new Set(ALL_MIGRATIONS.map((m) => m.tableName))];
 }

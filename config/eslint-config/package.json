@@ -11,6 +11,7 @@
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-only-warn": "^1.1.0",
+    "eslint-plugin-unicorn": "^63.0.0",
     "eslint-plugin-react": "^7.37.4",
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-turbo": "^2.4.2",

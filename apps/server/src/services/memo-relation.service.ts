@@ -1,14 +1,14 @@
 import { Service } from 'typedi';
 
 import { OBJECT_TYPE } from '../models/constant/type.js';
-import { LanceDbService } from '../sources/lancedb.js';
+import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
 import { generateTypeId } from '../utils/id.js';
 
 import type { MemoRelationRecord } from '../models/db/schema.js';
 
 @Service()
 export class MemoRelationService {
-  constructor(private lanceDb: LanceDbService) {}
+  constructor(private lanceDatabase: LanceDatabaseService) {}
 
   /**
    * Create a relation from sourceMemoId to targetMemoId
