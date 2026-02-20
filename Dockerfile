@@ -21,6 +21,9 @@ RUN pnpm install --frozen-lockfile
 # Copy source code
 COPY . .
 
+# Build logger package first
+RUN pnpm --filter @aimo/logger build
+
 # Build DTO package first
 RUN pnpm --filter @aimo/dto build
 
