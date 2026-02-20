@@ -159,7 +159,7 @@ export class MemoService {
         attachments: attachments && attachments.length > 0 ? attachments : undefined,
       };
 
-      const memosTable = await this.lanceDb.openTable('memos');
+      const memosTable = await this.lanceDatabase.openTable('memos');
       await memosTable.add([memoRecord as unknown as Record<string, unknown>]);
 
       // Create relations if provided
@@ -210,7 +210,7 @@ export class MemoService {
         endDate,
       } = options;
 
-      const memosTable = await this.lanceDb.openTable('memos');
+      const memosTable = await this.lanceDatabase.openTable('memos');
 
       // Build filter conditions
       // Note: LanceDB Timestamp type cannot be compared with integer literals in SQL
@@ -307,7 +307,7 @@ export class MemoService {
    */
   async getMemoById(memoId: string, uid: string): Promise<MemoWithAttachmentsDto | null> {
     try {
-      const memosTable = await this.lanceDb.openTable('memos');
+      const memosTable = await this.lanceDatabase.openTable('memos');
 
       const results = await memosTable
         .query()
@@ -370,7 +370,7 @@ export class MemoService {
       }
 
       // Find existing memo (get original data with attachmentIds)
-      const memosTable = await this.lanceDb.openTable('memos');
+      const memosTable = await this.lanceDatabase.openTable('memos');
       const results = await memosTable
         .query()
         .where(`memoId = '${memoId}' AND uid = '${uid}'`)
@@ -486,7 +486,7 @@ export class MemoService {
         throw new Error('Memo not found');
       }
 
-      const memosTable = await this.lanceDb.openTable('memos');
+      const memosTable = await this.lanceDatabase.openTable('memos');
 
       // Delete the memo using LanceDB's delete method
       await memosTable.delete(`memoId = '${memoId}' AND uid = '${uid}'`);
@@ -536,7 +536,7 @@ export class MemoService {
       // Generate embedding for the query
       const queryEmbedding = await this.embeddingService.generateEmbedding(query);
 
-      const memosTable = await this.lanceDb.openTable('memos');
+      const memosTable = await this.lanceDatabase.openTable('memos');
 
       const offset = (page - 1) * limit;
 
@@ -608,7 +608,7 @@ export class MemoService {
    */
   async getAllMemosByUid(uid: string): Promise<Memo[]> {
     try {
-      const memosTable = await this.lanceDb.openTable('memos');
+      const memosTable = await this.lanceDatabase.openTable('memos');
 
       const results = await memosTable.query().where(`uid = '${uid}'`).toArray();
 
@@ -651,7 +651,7 @@ export class MemoService {
         throw new Error('Memo not found');
       }
 
-      const memosTable = await this.lanceDb.openTable('memos');
+      const memosTable = await this.lanceDatabase.openTable('memos');
 
       // Use the memo's existing embedding to search for similar memos
       const sourceEmbedding = sourceMemo.embedding;
@@ -721,7 +721,7 @@ export class MemoService {
         return [];
       }
 
-      const memosTable = await this.lanceDb.openTable('memos');
+      const memosTable = await this.lanceDatabase.openTable('memos');
 
       // Build filter for memo IDs
       const idConditions = memoIds.map((id) => `memoId = '${id}'`).join(' OR ');
@@ -766,7 +766,7 @@ export class MemoService {
     items: MemoListItemDto[]
   ): Promise<MemoListItemDto[]> {
     try {
-      const memosTable = await this.lanceDb.openTable('memos');
+      const memosTable = await this.lanceDatabase.openTable('memos');
       const memosMap = new Map<string, any>();
 
       // Build a map of all memos for quick lookup
@@ -822,7 +822,7 @@ export class MemoService {
    */
   async getActivityStats(uid: string, days: number = 90): Promise<MemoActivityStatsDto> {
     try {
-      const memosTable = await this.lanceDb.openTable('memos');
+      const memosTable = await this.lanceDatabase.openTable('memos');
 
       // Calculate date range in UTC
       const endDate = new Date();
@@ -899,7 +899,7 @@ export class MemoService {
       const todayMonthDay = `${String(currentMonth + 1).padStart(2, '0')}-${String(currentDay).padStart(2, '0')}`;
 
       // Get all memos for the user
-      const memosTable = await this.lanceDb.openTable('memos');
+      const memosTable = await this.lanceDatabase.openTable('memos');
       const allMemos = await memosTable.query().where(`uid = '${uid}'`).toArray();
 
       // Filter memos that match the current month/day but not current year

@@ -63,7 +63,7 @@ export class UserService {
         updatedAt: userData.updatedAt || now,
       };
 
-      const usersTable = await this.lanceDb.openTable('users');
+      const usersTable = await this.lanceDatabase.openTable('users');
       await usersTable.add([user as unknown as Record<string, unknown>]);
 
       // Trigger backup on user creation
@@ -91,7 +91,7 @@ export class UserService {
    */
   async findUserByEmail(email: string): Promise<User | null> {
     try {
-      const usersTable = await this.lanceDb.openTable('users');
+      const usersTable = await this.lanceDatabase.openTable('users');
 
       const results = await usersTable.query().where(`email = '${email}'`).limit(1).toArray();
 
@@ -107,7 +107,7 @@ export class UserService {
    */
   async findUserByUid(uid: string): Promise<User | null> {
     try {
-      const usersTable = await this.lanceDb.openTable('users');
+      const usersTable = await this.lanceDatabase.openTable('users');
 
       const results = await usersTable.query().where(`uid = '${uid}'`).limit(1).toArray();
 
@@ -149,7 +149,7 @@ export class UserService {
    */
   async updateUser(uid: string, updates: Partial<User>): Promise<User | null> {
     try {
-      const usersTable = await this.lanceDb.openTable('users');
+      const usersTable = await this.lanceDatabase.openTable('users');
 
       // Find existing user
       const existingUsers = await usersTable.query().where(`uid = '${uid}'`).limit(1).toArray();
@@ -197,7 +197,7 @@ export class UserService {
    */
   async deleteUser(uid: string): Promise<boolean> {
     try {
-      const usersTable = await this.lanceDb.openTable('users');
+      const usersTable = await this.lanceDatabase.openTable('users');
 
       // Check if user exists
       const existing = await usersTable.query().where(`uid = '${uid}'`).limit(1).toArray();

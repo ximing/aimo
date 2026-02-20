@@ -16,7 +16,7 @@ export class CategoryService {
    */
   async clearCategoryFromMemos(uid: string, categoryId: string): Promise<void> {
     try {
-      const memosTable = await this.lanceDb.openTable('memos');
+      const memosTable = await this.lanceDatabase.openTable('memos');
 
       // Find all memos with this category
       const results = await memosTable
@@ -68,7 +68,7 @@ export class CategoryService {
         updatedAt: now,
       };
 
-      const table = await this.lanceDb.openTable('categories');
+      const table = await this.lanceDatabase.openTable('categories');
       await table.add([category as unknown as Record<string, unknown>]);
 
       return this.toCategoryDto(category);
@@ -83,7 +83,7 @@ export class CategoryService {
    */
   async getCategoriesByUid(uid: string): Promise<CategoryDto[]> {
     try {
-      const table = await this.lanceDb.openTable('categories');
+      const table = await this.lanceDatabase.openTable('categories');
 
       const results = await table.query().where(`uid = '${uid}'`).toArray();
 
@@ -102,7 +102,7 @@ export class CategoryService {
    */
   async getCategoryByName(uid: string, name: string): Promise<CategoryDto | null> {
     try {
-      const table = await this.lanceDb.openTable('categories');
+      const table = await this.lanceDatabase.openTable('categories');
 
       // Query all categories for this user and filter by name (case-insensitive)
       const results = await table.query().where(`uid = '${uid}'`).toArray();
@@ -124,7 +124,7 @@ export class CategoryService {
    */
   async getCategoryById(categoryId: string, uid: string): Promise<CategoryDto | null> {
     try {
-      const table = await this.lanceDb.openTable('categories');
+      const table = await this.lanceDatabase.openTable('categories');
 
       const results = await table
         .query()
@@ -152,7 +152,7 @@ export class CategoryService {
     data: UpdateCategoryDto
   ): Promise<CategoryDto | null> {
     try {
-      const table = await this.lanceDb.openTable('categories');
+      const table = await this.lanceDatabase.openTable('categories');
 
       // Get existing category
       const category = await this.getCategoryById(categoryId, uid);
@@ -204,7 +204,7 @@ export class CategoryService {
    */
   async deleteCategory(categoryId: string, uid: string): Promise<boolean> {
     try {
-      const table = await this.lanceDb.openTable('categories');
+      const table = await this.lanceDatabase.openTable('categories');
 
       // Check if category exists
       const category = await this.getCategoryById(categoryId, uid);

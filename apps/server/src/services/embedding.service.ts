@@ -50,7 +50,7 @@ export class EmbeddingService {
    */
   private async queryCacheByHash(modelHash: string, contentHash: string): Promise<number[] | null> {
     try {
-      const cacheTable = await this.lanceDb.openTable('embedding_cache');
+      const cacheTable = await this.lanceDatabase.openTable('embedding_cache');
       const results = await cacheTable
         .query()
         .where(`modelHash = '${modelHash}' AND contentHash = '${contentHash}'`)
@@ -77,7 +77,7 @@ export class EmbeddingService {
     embedding: number[]
   ): Promise<void> {
     try {
-      const cacheTable = await this.lanceDb.openTable('embedding_cache');
+      const cacheTable = await this.lanceDatabase.openTable('embedding_cache');
       await cacheTable.add([
         {
           modelHash,

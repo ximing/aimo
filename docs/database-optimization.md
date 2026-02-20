@@ -119,7 +119,7 @@
 
 ```typescript
 try {
-  await this.lanceDb.optimizeTable('tableName');
+  await this.lanceDatabase.optimizeTable('tableName');
 } catch (error) {
   console.warn('Failed to optimize table:', error);
   // 继续执行，不中断业务逻辑

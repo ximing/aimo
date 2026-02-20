@@ -34,7 +34,7 @@ export class MemoRelationService {
         createdAt: now,
       };
 
-      const table = await this.lanceDb.openTable('memo_relations');
+      const table = await this.lanceDatabase.openTable('memo_relations');
       await table.add([relation as unknown as Record<string, unknown>]);
 
       return relation;
@@ -49,7 +49,7 @@ export class MemoRelationService {
    */
   async getRelatedMemos(uid: string, sourceMemoId: string): Promise<string[]> {
     try {
-      const table = await this.lanceDb.openTable('memo_relations');
+      const table = await this.lanceDatabase.openTable('memo_relations');
 
       const results = await table
         .query()
@@ -68,7 +68,7 @@ export class MemoRelationService {
    */
   async deleteRelation(uid: string, sourceMemoId: string, targetMemoId: string): Promise<boolean> {
     try {
-      const table = await this.lanceDb.openTable('memo_relations');
+      const table = await this.lanceDatabase.openTable('memo_relations');
 
       await table.delete(
         `uid = '${uid}' AND sourceMemoId = '${sourceMemoId}' AND targetMemoId = '${targetMemoId}'`
@@ -86,7 +86,7 @@ export class MemoRelationService {
    */
   async deleteRelationsBySourceMemo(uid: string, sourceMemoId: string): Promise<void> {
     try {
-      const table = await this.lanceDb.openTable('memo_relations');
+      const table = await this.lanceDatabase.openTable('memo_relations');
 
       await table.delete(`uid = '${uid}' AND sourceMemoId = '${sourceMemoId}'`);
     } catch (error) {
@@ -100,7 +100,7 @@ export class MemoRelationService {
    */
   async deleteRelationsByTargetMemo(uid: string, targetMemoId: string): Promise<void> {
     try {
-      const table = await this.lanceDb.openTable('memo_relations');
+      const table = await this.lanceDatabase.openTable('memo_relations');
 
       await table.delete(`uid = '${uid}' AND targetMemoId = '${targetMemoId}'`);
     } catch (error) {
@@ -139,7 +139,7 @@ export class MemoRelationService {
    */
   async getBacklinks(uid: string, targetMemoId: string): Promise<string[]> {
     try {
-      const table = await this.lanceDb.openTable('memo_relations');
+      const table = await this.lanceDatabase.openTable('memo_relations');
 
       const results = await table
         .query()

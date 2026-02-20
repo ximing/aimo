@@ -88,7 +88,7 @@ export class MultimodalEmbeddingService {
     modalityType: ModalityType
   ): Promise<number[] | null> {
     try {
-      const cacheTable = await this.lanceDb.openTable('multimodal_embedding_cache');
+      const cacheTable = await this.lanceDatabase.openTable('multimodal_embedding_cache');
       const results = await cacheTable
         .query()
         .where(
@@ -117,7 +117,7 @@ export class MultimodalEmbeddingService {
     embedding: number[]
   ): Promise<void> {
     try {
-      const cacheTable = await this.lanceDb.openTable('multimodal_embedding_cache');
+      const cacheTable = await this.lanceDatabase.openTable('multimodal_embedding_cache');
       await cacheTable.add([
         {
           modelHash,
