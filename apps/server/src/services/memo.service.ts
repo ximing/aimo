@@ -341,10 +341,9 @@ export class MemoService {
       // Enrich with relations using the same logic as getMemos
       const enrichedItems = await this.enrichMemosWithRelations(uid, [memoWithAttachments]);
 
-      // Return the enriched memo with embedding
+      // Return the enriched memo (without embedding)
       return {
         ...enrichedItems[0],
-        embedding: memo.embedding,
       } as MemoWithAttachmentsDto;
     } catch (error) {
       console.error('Error getting memo by ID:', error);
@@ -464,9 +463,9 @@ export class MemoService {
         memoId,
         uid,
         content,
+        type: existingMemo.type as 'text' | 'audio' | 'video',
         categoryId: categoryId === undefined ? existingMemo.categoryId : categoryId || undefined,
         attachments: finalAttachmentDtos,
-        embedding,
         createdAt: existingMemo.createdAt,
         updatedAt: now,
       } as MemoWithAttachmentsDto;
@@ -645,16 +644,20 @@ export class MemoService {
     limit: number = 10
   ): Promise<PaginatedMemoListWithScoreDto> {
     try {
-      // Get the memo to find related ones
-      const sourceMemo = await this.getMemoById(memoId, uid);
-      if (!sourceMemo) {
+      // Get the memo to verify access and get the embedding directly from DB
+      const memosTable = await this.lanceDatabase.openTable('memos');
+      const memoResults = await memosTable
+        .query()
+        .where(`memoId = '${memoId}' AND uid = '${uid}'`)
+        .limit(1)
+        .toArray();
+
+      if (memoResults.length === 0) {
         throw new Error('Memo not found');
       }
 
-      const memosTable = await this.lanceDatabase.openTable('memos');
-
-      // Use the memo's existing embedding to search for similar memos
-      const sourceEmbedding = sourceMemo.embedding;
+      const sourceMemoData = memoResults[0];
+      const sourceEmbedding = sourceMemoData.embedding;
       const offset = (page - 1) * limit;
 
       // Perform vector search with the memo's embedding
