@@ -15,6 +15,10 @@ import {
   ArrowLeft,
   ChevronRight,
   Clock,
+  MoreVertical,
+  Pencil,
+  Trash2,
+  X,
 } from 'lucide-react';
 import {
   SourceCard,
@@ -66,6 +70,13 @@ export const AIExplorePage = view(() => {
 
   // State for relationship graph
   const [showRelationshipGraph, setShowRelationshipGraph] = useState(false);
+
+  // State for conversation management
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [editingConversationId, setEditingConversationId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState('');
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -167,6 +178,49 @@ export const AIExplorePage = view(() => {
     navigate('/', { replace: true });
   }, [navigate]);
 
+  // Handle opening rename modal
+  const handleOpenRename = useCallback((conversationId: string, currentTitle: string) => {
+    setEditingConversationId(conversationId);
+    setEditingTitle(currentTitle);
+    setIsRenameModalOpen(true);
+    setActiveMenuId(null);
+  }, []);
+
+  // Handle rename submission
+  const handleRenameSubmit = useCallback(async () => {
+    if (!editingConversationId || !editingTitle.trim()) return;
+
+    const success = await exploreService.renameConversation(
+      editingConversationId,
+      editingTitle.trim()
+    );
+
+    if (success) {
+      setIsRenameModalOpen(false);
+      setEditingConversationId(null);
+      setEditingTitle('');
+    }
+  }, [editingConversationId, editingTitle, exploreService]);
+
+  // Handle opening delete modal
+  const handleOpenDelete = useCallback((conversationId: string) => {
+    setEditingConversationId(conversationId);
+    setIsDeleteModalOpen(true);
+    setActiveMenuId(null);
+  }, []);
+
+  // Handle delete confirmation
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!editingConversationId) return;
+
+    const success = await exploreService.deleteConversation(editingConversationId);
+
+    if (success) {
+      setIsDeleteModalOpen(false);
+      setEditingConversationId(null);
+    }
+  }, [editingConversationId, exploreService]);
+
   // Format timestamp
   const formatTime = (timestamp: number) => {
     const date = new Date(timestamp);
@@ -249,40 +303,95 @@ export const AIExplorePage = view(() => {
               /* Conversation Items */
               <div className="p-2 space-y-1">
                 {exploreService.conversations.map((conversation) => (
-                  <button
+                  <div
                     key={conversation.conversationId}
-                    onClick={() => handleSelectConversation(conversation.conversationId)}
-                    className={`w-full text-left p-3 rounded-lg transition-colors group ${
+                    className={`relative group rounded-lg transition-colors ${
                       exploreService.currentConversationId === conversation.conversationId
                         ? 'bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800'
                         : 'hover:bg-gray-100 dark:hover:bg-dark-700 border border-transparent'
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <p
-                        className={`text-sm font-medium truncate flex-1 ${
-                          exploreService.currentConversationId === conversation.conversationId
-                            ? 'text-primary-700 dark:text-primary-400'
-                            : 'text-gray-700 dark:text-gray-300'
-                        }`}
-                      >
-                        {conversation.title}
-                      </p>
-                      <ChevronRight
-                        className={`w-4 h-4 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity ${
-                          exploreService.currentConversationId === conversation.conversationId
-                            ? 'text-primary-500'
-                            : 'text-gray-400'
-                        }`}
-                      />
+                    <button
+                      onClick={() => handleSelectConversation(conversation.conversationId)}
+                      className="w-full text-left p-3"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <p
+                          className={`text-sm font-medium truncate flex-1 ${
+                            exploreService.currentConversationId === conversation.conversationId
+                              ? 'text-primary-700 dark:text-primary-400'
+                              : 'text-gray-700 dark:text-gray-300'
+                          }`}
+                        >
+                          {conversation.title}
+                        </p>
+                        <ChevronRight
+                          className={`w-4 h-4 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity ${
+                            exploreService.currentConversationId === conversation.conversationId
+                              ? 'text-primary-500'
+                              : 'text-gray-400'
+                          }`}
+                        />
+                      </div>
+                      <div className="flex items-center gap-1 mt-1">
+                        <Clock className="w-3 h-3 text-gray-400" />
+                        <span className="text-xs text-gray-400">
+                          {formatRelativeTime(conversation.updatedAt)}
+                        </span>
+                      </div>
+                    </button>
+
+                    {/* Hover Menu Button */}
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="relative">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveMenuId(
+                              activeMenuId === conversation.conversationId
+                                ? null
+                                : conversation.conversationId
+                            );
+                          }}
+                          className="p-1.5 rounded-md hover:bg-white dark:hover:bg-dark-700 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                        >
+                          <MoreVertical className="w-4 h-4" />
+                        </button>
+
+                        {/* Dropdown Menu */}
+                        {activeMenuId === conversation.conversationId && (
+                          <>
+                            <div
+                              className="fixed inset-0 z-10"
+                              onClick={() => setActiveMenuId(null)}
+                            />
+                            <div className="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-dark-800 rounded-lg shadow-lg border border-gray-200 dark:border-dark-700 py-1 z-20">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenRename(conversation.conversationId, conversation.title);
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors"
+                              >
+                                <Pencil className="w-4 h-4" />
+                                重命名
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenDelete(conversation.conversationId);
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                                删除
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1 mt-1">
-                      <Clock className="w-3 h-3 text-gray-400" />
-                      <span className="text-xs text-gray-400">
-                        {formatRelativeTime(conversation.updatedAt)}
-                      </span>
-                    </div>
-                  </button>
+                  </div>
                 ))}
               </div>
             )}
@@ -636,6 +745,120 @@ export const AIExplorePage = view(() => {
         isOpen={isDetailModalOpen}
         onClose={handleCloseDetailModal}
       />
+
+      {/* Rename Modal */}
+      {isRenameModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-white dark:bg-dark-800 rounded-xl shadow-lg border border-gray-200 dark:border-dark-700 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-50">
+                重命名对话
+              </h3>
+              <button
+                onClick={() => {
+                  setIsRenameModalOpen(false);
+                  setEditingConversationId(null);
+                  setEditingTitle('');
+                }}
+                className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <input
+              type="text"
+              value={editingTitle}
+              onChange={(e) => setEditingTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleRenameSubmit();
+                } else if (e.key === 'Escape') {
+                  setIsRenameModalOpen(false);
+                  setEditingConversationId(null);
+                  setEditingTitle('');
+                }
+              }}
+              placeholder="输入新标题"
+              className="w-full px-4 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-gray-900 dark:text-gray-50 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+              autoFocus
+            />
+
+            {exploreService.error && (
+              <p className="mt-2 text-sm text-red-600 dark:text-red-400">
+                {exploreService.error}
+              </p>
+            )}
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setIsRenameModalOpen(false);
+                  setEditingConversationId(null);
+                  setEditingTitle('');
+                }}
+                className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleRenameSubmit}
+                disabled={exploreService.loading || !editingTitle.trim()}
+                className="px-4 py-2 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+              >
+                {exploreService.loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                确认
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-white dark:bg-dark-800 rounded-xl shadow-lg border border-gray-200 dark:border-dark-700 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+                <Trash2 className="w-5 h-5 text-red-600 dark:text-red-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-50">
+                删除对话
+              </h3>
+            </div>
+
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              确定要删除这个对话吗？此操作不可恢复。
+            </p>
+
+            {exploreService.error && (
+              <p className="mb-4 text-sm text-red-600 dark:text-red-400">
+                {exploreService.error}
+              </p>
+            )}
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setIsDeleteModalOpen(false);
+                  setEditingConversationId(null);
+                }}
+                className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                disabled={exploreService.loading}
+                className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+              >
+                {exploreService.loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                删除
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 });

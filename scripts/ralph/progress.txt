@@ -137,3 +137,27 @@ Started: 2026年 2月15日 星期日 23时33分46秒 CST
   - The Layout component already provides a 70px left nav, so the sidebar is additional to that
   - `min-w-0` on flex children prevents overflow issues with long content
 ---
+
+## 2026-02-20 19:45:00 - US-006
+- Implemented conversation management features:
+  - Added hover menu (MoreVertical icon) that appears on conversation item hover
+  - Created dropdown menu with rename and delete options
+  - Implemented rename modal with input field and keyboard shortcuts (Enter to submit, Escape to cancel)
+  - Implemented delete confirmation modal with warning styling
+  - Delete automatically switches to the most recent conversation after deletion
+  - Rename updates the conversation list immediately after success
+- Used existing ExploreService methods (renameConversation, deleteConversation)
+- Added new state management for modals:
+  - activeMenuId: tracks which conversation's menu is open
+  - isRenameModalOpen, isDeleteModalOpen: modal visibility
+  - editingConversationId, editingTitle: form state
+- Files changed:
+  - apps/web/src/pages/ai-explore/ai-explore.tsx
+- Build and lint pass successfully
+- **Learnings for future iterations:**
+  - For hover menus, use a combination of `opacity-0 group-hover:opacity-100` with proper `z-index` management
+  - Click-outside handling for dropdowns can use a fixed overlay with `z-10` behind the menu
+  - Use `stopPropagation()` on menu buttons to prevent triggering the parent button click
+  - Keyboard shortcuts in modals: Enter to submit, Escape to cancel for better UX
+  - Position dropdown menus with `absolute right-0 top-full mt-1` for proper alignment
+---
