@@ -96,3 +96,44 @@ Started: 2026年 2月15日 星期日 23时33分46秒 CST
   - When converting API types to UI types, map carefully (e.g., AIMessageSourceDto -> ExploreSourceDto)
   - Auto-generating conversation titles from first message provides better UX than default titles
 ---
+
+## 2026-02-20 18:30:00 - US-004, US-005, US-007, US-008, US-009
+- Completely refactored AI Explore page layout:
+  - Removed top header from ai-explore.tsx
+  - Created left sidebar (280px fixed width) with conversation list
+  - Moved "AI 探索" title and Sparkles icon to sidebar header
+  - Added "返回首页" back button in sidebar
+  - Main content now takes full remaining width with no top padding
+- Implemented conversation list in sidebar (US-005):
+  - Displays conversations sorted by updatedAt (already sorted from API)
+  - Shows title and relative time (e.g., "2小时前")
+  - Highlights selected conversation with primary color background
+  - Click to switch conversations
+  - Added ChevronRight icon on hover for visual feedback
+- Added new topic button in sidebar (US-007):
+  - Plus icon button next to title
+  - Creates new conversation via API
+  - Auto-focuses input after creation
+- Implemented floating input box (US-008):
+  - Fixed at bottom with gradient fade background
+  - White background with shadow for visual separation
+  - Max-width constrained to match message area
+  - Added pb-32 to messages area to prevent content being hidden
+  - Uses left-[350px] to position correctly relative to sidebar (70px nav + 280px sidebar)
+- Added empty and loading states (US-009):
+  - Skeleton loading state for conversation list (3 placeholder items)
+  - Empty state with MessageSquare icon when no conversations
+  - Welcome screen when no conversation selected (with suggestion cards)
+  - Welcome state inside conversation when no messages yet
+- Added formatRelativeTime helper for displaying relative timestamps
+- Files changed:
+  - apps/web/src/pages/ai-explore/ai-explore.tsx (complete rewrite of layout)
+- Build and lint pass successfully
+- **Learnings for future iterations:**
+  - When using fixed positioning for the input area, account for the left sidebar width (350px = 70px nav + 280px sidebar)
+  - Use `pb-32` (padding-bottom) on scrollable content area to ensure content isn't hidden behind fixed input
+  - Gradient fade from background color helps blend fixed input with scrollable content
+  - For relative timestamps, use a simple helper function with time difference calculations
+  - The Layout component already provides a 70px left nav, so the sidebar is additional to that
+  - `min-w-0` on flex children prevents overflow issues with long content
+---
