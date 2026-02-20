@@ -10,9 +10,10 @@
  * This migration creates indexes for all business tables to ensure optimal query performance.
  */
 
-import type { Connection } from '@lancedb/lancedb';
 import * as lancedb from '@lancedb/lancedb';
+
 import type { Migration } from '../types.js';
+import type { Connection } from '@lancedb/lancedb';
 
 /**
  * Helper function to create a scalar index if it doesn't already exist

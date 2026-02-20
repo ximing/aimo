@@ -1,7 +1,9 @@
-import { Service } from 'typedi';
 import { createHash } from 'crypto';
-import { embedMany, embed } from 'ai';
+
 import { createOpenAI } from '@ai-sdk/openai';
+import { embedMany, embed } from 'ai';
+import { Service } from 'typedi';
+
 import { config } from '../config/config.js';
 import { LanceDbService } from '../sources/lancedb.js';
 

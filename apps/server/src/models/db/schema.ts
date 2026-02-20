@@ -16,6 +16,7 @@ import {
   Timestamp,
   TimeUnit,
 } from 'apache-arrow';
+
 import { config } from '../../config/config.js';
 
 /**

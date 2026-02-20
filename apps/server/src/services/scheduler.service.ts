@@ -1,7 +1,8 @@
-import { Service } from 'typedi';
 import cron from 'node-cron';
-import { LanceDbService } from '../sources/lancedb.js';
+import { Service } from 'typedi';
+
 import { config } from '../config/config.js';
+import { LanceDbService } from '../sources/lancedb.js';
 
 /**
  * 调度服务

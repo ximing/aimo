@@ -4,7 +4,9 @@
  */
 
 import { Service } from 'typedi';
+
 import { config } from '../config/config.js';
+
 import type {
   ASRTaskResponseDto,
   ASRTaskStatusDto,

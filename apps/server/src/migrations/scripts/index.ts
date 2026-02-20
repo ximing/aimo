@@ -3,7 +3,6 @@
  * Exports all available migrations
  */
 
-import type { Migration } from '../types.js';
 import {
   usersTableMigration,
   memosTableMigration,
@@ -17,6 +16,8 @@ import { createIndexesMigration } from './002-create-indexes.js';
 import { addMemoTypeMigration } from './003-add-memo-type.js';
 import { addDiaryCategoryMigration } from './004-add-diary-category.js';
 import { addAvatarToUsersMigration } from './005-add-avatar-field.js';
+
+import type { Migration } from '../types.js';
 
 /**
  * All available migrations organized by table and version

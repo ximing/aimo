@@ -1,7 +1,17 @@
-import { Service } from 'typedi';
-import { ChatOpenAI, OpenAIEmbeddings } from '@langchain/openai';
-import { StateGraph, END, START, Annotation } from '@langchain/langgraph';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
+import { StateGraph, END, START, Annotation } from '@langchain/langgraph';
+import { ChatOpenAI, OpenAIEmbeddings } from '@langchain/openai';
+import { Service } from 'typedi';
+
+
+import { config } from '../config/config.js';
+import { LanceDbService } from '../sources/lancedb.js';
+
+import { AttachmentService } from './attachment.service.js';
+import { EmbeddingService } from './embedding.service.js';
+import { MemoRelationService } from './memo-relation.service.js';
+import { MemoService } from './memo.service.js';
+
 import type {
   ExploreQueryDto,
   ExploreResponseDto,
@@ -13,12 +23,6 @@ import type {
   RelationGraphEdgeDto,
   ExploreRelationsResponseDto,
 } from '@aimo/dto';
-import { config } from '../config/config.js';
-import { MemoService } from './memo.service.js';
-import { EmbeddingService } from './embedding.service.js';
-import { LanceDbService } from '../sources/lancedb.js';
-import { MemoRelationService } from './memo-relation.service.js';
-import { AttachmentService } from './attachment.service.js';
 import type { MemoListItemWithScoreDto } from '@aimo/dto';
 
 /**

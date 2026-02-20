@@ -3,9 +3,9 @@
  * Handles execution of individual migrations and updates metadata
  */
 
-import type { Connection, Table } from '@lancedb/lancedb';
 import type { Migration, MigrationExecutionResult } from './types.js';
 import type { TableMigrationRecord } from '../models/db/schema.js';
+import type { Connection, Table } from '@lancedb/lancedb';
 
 export class MigrationExecutor {
   /**

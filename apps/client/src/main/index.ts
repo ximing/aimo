@@ -1,3 +1,7 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import {
   app,
   BrowserWindow,
@@ -9,9 +13,6 @@ import {
   type MenuItemConstructorOptions,
   screen,
 } from 'electron';
-import { fileURLToPath } from 'node:url';
-import path from 'node:path';
-import fs from 'node:fs';
 import Store from 'electron-store';
 import { autoUpdater } from 'electron-updater';
 

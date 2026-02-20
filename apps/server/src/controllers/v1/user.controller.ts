@@ -1,13 +1,16 @@
+import multer from 'multer';
 import { JsonController, Get, Put, Post, Body, CurrentUser, Req } from 'routing-controllers';
 import { Service, Inject } from 'typedi';
-import multer from 'multer';
-import type { Request } from 'express';
-import type { UserInfoDto, UpdateUserDto } from '@aimo/dto';
-import { UserService } from '../../services/user.service.js';
-import { AvatarService } from '../../services/avatar.service.js';
-import { ResponseUtil } from '../../utils/response.js';
-import { ErrorCode } from '../../constants/error-codes.js';
+
 import { config } from '../../config/config.js';
+import { ErrorCode } from '../../constants/error-codes.js';
+import { AvatarService } from '../../services/avatar.service.js';
+import { UserService } from '../../services/user.service.js';
+import { ResponseUtil } from '../../utils/response.js';
+
+import type { UserInfoDto, UpdateUserDto } from '@aimo/dto';
+import type { Request } from 'express';
+
 
 // Multer middleware for file upload
 const upload = multer({

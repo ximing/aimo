@@ -9,10 +9,12 @@ import {
   CurrentUser,
 } from 'routing-controllers';
 import { Service } from 'typedi';
-import type { CreateCategoryDto, UpdateCategoryDto, UserInfoDto } from '@aimo/dto';
+
+import { ErrorCode } from '../../constants/error-codes.js';
 import { CategoryService } from '../../services/category.service.js';
 import { ResponseUtil } from '../../utils/response.js';
-import { ErrorCode } from '../../constants/error-codes.js';
+
+import type { CreateCategoryDto, UpdateCategoryDto, UserInfoDto } from '@aimo/dto';
 
 @Service()
 @JsonController('/api/v1/categories')

@@ -3,6 +3,7 @@
  * Handles file upload, retrieval, and deletion
  */
 
+import multer from 'multer';
 import {
   JsonController,
   Controller,
@@ -17,13 +18,15 @@ import {
   UploadedFile,
 } from 'routing-controllers';
 import { Service } from 'typedi';
-import type { Request, Response } from 'express';
-import multer from 'multer';
-import type { UserInfoDto } from '@aimo/dto';
+
+import { config } from '../../config/config.js';
+import { ErrorCode } from '../../constants/error-codes.js';
 import { AttachmentService } from '../../services/attachment.service.js';
 import { ResponseUtil } from '../../utils/response.js';
-import { ErrorCode } from '../../constants/error-codes.js';
-import { config } from '../../config/config.js';
+
+import type { UserInfoDto } from '@aimo/dto';
+import type { Request, Response } from 'express';
+
 
 // Configure multer for memory storage
 const upload = multer({

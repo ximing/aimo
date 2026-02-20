@@ -1,6 +1,7 @@
-import { Service } from 'typedi';
 import * as lancedb from '@lancedb/lancedb';
-import type { Connection, Table } from '@lancedb/lancedb';
+import { Service } from 'typedi';
+
+
 import { config } from '../config/config.js';
 import { MigrationManager } from '../migrations/index.js';
 import {
@@ -12,6 +13,8 @@ import {
   type AttachmentRecord,
   type MultimodalEmbeddingCacheRecord,
 } from '../models/db/schema.js';
+
+import type { Connection, Table } from '@lancedb/lancedb';
 
 // Re-export for backward compatibility
 export type {

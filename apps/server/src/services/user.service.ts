@@ -1,10 +1,13 @@
-import { Service } from 'typedi';
 import * as bcrypt from 'bcrypt';
+import { Service } from 'typedi';
+
 import { LanceDbService } from '../sources/lancedb.js';
+import { generateUid } from '../utils/id.js';
+
 import { BackupService } from './backup.service.js';
 import { CategoryService } from './category.service.js';
+
 import type { User, NewUser } from '../models/db/user.schema.js';
-import { generateUid } from '../utils/id.js';
 
 // Type for LanceDB table records
 type UserRecord = Record<string, any>;

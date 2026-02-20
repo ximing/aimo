@@ -1,5 +1,5 @@
-import { ApiResponse } from '../types/response.js';
 import { ErrorCode, ErrorMessage } from '../constants/error-codes.js';
+import { ApiResponse } from '../types/response.js';
 
 export class ResponseUtil {
   static success<T>(data: T, msg: string = ErrorMessage[ErrorCode.SUCCESS]): ApiResponse<T> {

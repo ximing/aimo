@@ -1,9 +1,14 @@
 import { Service } from 'typedi';
+
+import { OBJECT_TYPE } from '../models/constant/type.js';
 import { LanceDbService } from '../sources/lancedb.js';
-import { EmbeddingService } from './embedding.service.js';
-import { BackupService } from './backup.service.js';
+import { generateTypeId } from '../utils/id.js';
+
 import { AttachmentService } from './attachment.service.js';
+import { BackupService } from './backup.service.js';
+import { EmbeddingService } from './embedding.service.js';
 import { MemoRelationService } from './memo-relation.service.js';
+
 import type { Memo, NewMemo } from '../models/db/memo.schema.js';
 import type {
   MemoWithAttachmentsDto,
@@ -18,8 +23,7 @@ import type {
   OnThisDayMemoDto,
   OnThisDayResponseDto,
 } from '@aimo/dto';
-import { generateTypeId } from '../utils/id.js';
-import { OBJECT_TYPE } from '../models/constant/type.js';
+
 
 const UNCATEGORIZED_CATEGORY_ID = '__uncategorized__';
 

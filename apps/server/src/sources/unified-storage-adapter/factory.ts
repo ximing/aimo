@@ -1,3 +1,8 @@
+import { LocalUnifiedStorageAdapter } from './local.adapter.js';
+import { OSSUnifiedStorageAdapter } from './oss.adapter.js';
+import { S3UnifiedStorageAdapter } from './s3.adapter.js';
+
+import type { UnifiedStorageAdapter } from './base.adapter.js';
 import type {
   AttachmentConfig,
   BackupConfig,
@@ -7,10 +12,6 @@ import type {
   AttachmentStorageType,
   BackupStorageType,
 } from '../../config/config.js';
-import type { UnifiedStorageAdapter } from './base.adapter.js';
-import { LocalUnifiedStorageAdapter } from './local.adapter.js';
-import { S3UnifiedStorageAdapter } from './s3.adapter.js';
-import { OSSUnifiedStorageAdapter } from './oss.adapter.js';
 
 /**
  * Factory for creating unified storage adapters based on configuration

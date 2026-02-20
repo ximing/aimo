@@ -1,9 +1,11 @@
-import { Controller, Get, Res } from 'routing-controllers';
-import { Service } from 'typedi';
-import type { Response } from 'express';
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
+
+import { Controller, Get, Res } from 'routing-controllers';
+import { Service } from 'typedi';
+
+import type { Response } from 'express';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = join(__filename, '..');

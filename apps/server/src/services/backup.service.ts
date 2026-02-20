@@ -1,9 +1,13 @@
-import { Service } from 'typedi';
 import { EventEmitter } from 'events';
+
+import { Service } from 'typedi';
+
 import { config } from '../config/config.js';
 import { UnifiedStorageAdapterFactory } from '../sources/unified-storage-adapter/index.js';
-import type { UnifiedStorageAdapter } from '../sources/unified-storage-adapter/index.js';
+
 import { BackupExecutor } from './backup-executor.js';
+
+import type { UnifiedStorageAdapter } from '../sources/unified-storage-adapter/index.js';
 
 /**
  * Backup service for managing database backups

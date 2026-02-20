@@ -1,6 +1,7 @@
-import { fileURLToPath } from 'url';
-import glob from 'glob';
 import { parse } from 'path';
+import { fileURLToPath } from 'url';
+
+import glob from 'glob';
 
 import { config } from './config/config.js';
 

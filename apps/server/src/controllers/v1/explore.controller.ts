@@ -1,9 +1,11 @@
 import { JsonController, Post, Body, CurrentUser, Get, QueryParam } from 'routing-controllers';
 import { Service } from 'typedi';
-import type { ExploreQueryDto, UserInfoDto } from '@aimo/dto';
+
+import { ErrorCode } from '../../constants/error-codes.js';
 import { ExploreService } from '../../services/explore.service.js';
 import { ResponseUtil } from '../../utils/response.js';
-import { ErrorCode } from '../../constants/error-codes.js';
+
+import type { ExploreQueryDto, UserInfoDto } from '@aimo/dto';
 
 /**
  * Controller for AI-powered exploration features

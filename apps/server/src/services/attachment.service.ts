@@ -3,16 +3,19 @@
  * Business logic for attachment management
  */
 
-import { Service } from 'typedi';
-import { LanceDbService } from '../sources/lancedb.js';
-import { UnifiedStorageAdapterFactory } from '../sources/unified-storage-adapter/index.js';
-import type { UnifiedStorageAdapter } from '../sources/unified-storage-adapter/index.js';
-import { MultimodalEmbeddingService } from './multimodal-embedding.service.js';
-import { config } from '../config/config.js';
-import type { AttachmentDto } from '@aimo/dto';
 import dayjs from 'dayjs';
 import { nanoid } from 'nanoid';
+import { Service } from 'typedi';
+
+import { config } from '../config/config.js';
+import { LanceDbService } from '../sources/lancedb.js';
+import { UnifiedStorageAdapterFactory } from '../sources/unified-storage-adapter/index.js';
+
+import { MultimodalEmbeddingService } from './multimodal-embedding.service.js';
+
 import type { AttachmentRecord } from '../models/db/schema.js';
+import type { UnifiedStorageAdapter } from '../sources/unified-storage-adapter/index.js';
+import type { AttachmentDto } from '@aimo/dto';
 
 export interface CreateAttachmentOptions {
   uid: string;

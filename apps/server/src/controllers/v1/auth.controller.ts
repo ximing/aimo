@@ -1,12 +1,15 @@
+import jwt from 'jsonwebtoken';
 import { JsonController, Post, Body, Res } from 'routing-controllers';
 import { Service } from 'typedi';
-import jwt from 'jsonwebtoken';
-import type { Response } from 'express';
-import type { RegisterDto, LoginDto } from '@aimo/dto';
+
+import { config } from '../../config/config.js';
+import { ErrorCode } from '../../constants/error-codes.js';
 import { UserService } from '../../services/user.service.js';
 import { ResponseUtil } from '../../utils/response.js';
-import { ErrorCode } from '../../constants/error-codes.js';
-import { config } from '../../config/config.js';
+
+import type { RegisterDto, LoginDto } from '@aimo/dto';
+import type { Response } from 'express';
+
 
 @Service()
 @JsonController('/api/v1/auth')

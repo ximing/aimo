@@ -1,6 +1,7 @@
-import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+
+import dotenv from 'dotenv';
 
 // 获取当前环境
 const env = process.env.NODE_ENV || 'development';

@@ -1,5 +1,7 @@
-import { Service } from 'typedi';
 import { createHash } from 'crypto';
+
+import { Service } from 'typedi';
+
 import { config } from '../config/config.js';
 import { LanceDbService } from '../sources/lancedb.js';
 

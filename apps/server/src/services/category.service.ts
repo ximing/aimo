@@ -1,9 +1,11 @@
 import { Service } from 'typedi';
-import { LanceDbService } from '../sources/lancedb.js';
-import type { CategoryDto, CreateCategoryDto, UpdateCategoryDto } from '@aimo/dto';
-import type { CategoryRecord } from '../models/db/schema.js';
-import { generateTypeId } from '../utils/id.js';
+
 import { OBJECT_TYPE } from '../models/constant/type.js';
+import { LanceDbService } from '../sources/lancedb.js';
+import { generateTypeId } from '../utils/id.js';
+
+import type { CategoryRecord } from '../models/db/schema.js';
+import type { CategoryDto, CreateCategoryDto, UpdateCategoryDto } from '@aimo/dto';
 
 @Service()
 export class CategoryService {

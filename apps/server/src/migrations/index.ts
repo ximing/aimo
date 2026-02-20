@@ -10,7 +10,6 @@
  * 5. Updates metadata after each successful migration
  */
 
-import type { Connection } from '@lancedb/lancedb';
 import { MigrationExecutor } from './executor.js';
 import {
   ALL_MIGRATIONS,
@@ -18,7 +17,9 @@ import {
   getLatestVersion,
   getAllTableNames,
 } from './scripts/index.js';
+
 import type { MigrationExecutionResult } from './types.js';
+import type { Connection } from '@lancedb/lancedb';
 
 export interface MigrationManagerOptions {
   /**

@@ -3,8 +3,6 @@
  * This is the initial schema setup for all core tables
  */
 
-import type { Connection } from '@lancedb/lancedb';
-import type { Migration } from '../types.js';
 import {
   usersSchema,
   memosSchema,
@@ -14,6 +12,9 @@ import {
   attachmentsSchema,
   multimodalEmbeddingCacheSchema,
 } from '../../models/db/schema.js';
+
+import type { Migration } from '../types.js';
+import type { Connection } from '@lancedb/lancedb';
 
 /**
  * Helper function to create a table if it doesn't exist

@@ -1,9 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import type { UserInfoDto } from '@aimo/dto';
-import { config } from '../config/config.js';
 import { Container } from 'typedi';
+
+import { config } from '../config/config.js';
 import { UserService } from '../services/user.service.js';
+
+import type { UserInfoDto } from '@aimo/dto';
 
 // Whitelist paths that don't require authentication
 const WHITELIST_PATHS = ['/', '/api/v1/auth/login', '/api/v1/auth/register'];

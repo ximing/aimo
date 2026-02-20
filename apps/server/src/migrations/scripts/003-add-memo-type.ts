@@ -4,8 +4,8 @@
  * Sets all existing memos to 'text' type for backward compatibility
  */
 
-import type { Connection } from '@lancedb/lancedb';
 import type { Migration } from '../types.js';
+import type { Connection } from '@lancedb/lancedb';
 
 /**
  * Migration to add type field to memos table

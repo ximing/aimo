@@ -3,12 +3,14 @@
  * 头像上传和管理服务
  */
 
-import { Service } from 'typedi';
-import { UnifiedStorageAdapterFactory } from '../sources/unified-storage-adapter/index.js';
-import type { UnifiedStorageAdapter } from '../sources/unified-storage-adapter/index.js';
-import { config } from '../config/config.js';
 import dayjs from 'dayjs';
 import { nanoid } from 'nanoid';
+import { Service } from 'typedi';
+
+import { config } from '../config/config.js';
+import { UnifiedStorageAdapterFactory } from '../sources/unified-storage-adapter/index.js';
+
+import type { UnifiedStorageAdapter } from '../sources/unified-storage-adapter/index.js';
 
 export interface UploadAvatarOptions {
   uid: string;

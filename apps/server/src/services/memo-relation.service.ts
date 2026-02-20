@@ -1,8 +1,10 @@
 import { Service } from 'typedi';
-import { LanceDbService } from '../sources/lancedb.js';
-import type { MemoRelationRecord } from '../models/db/schema.js';
-import { generateTypeId } from '../utils/id.js';
+
 import { OBJECT_TYPE } from '../models/constant/type.js';
+import { LanceDbService } from '../sources/lancedb.js';
+import { generateTypeId } from '../utils/id.js';
+
+import type { MemoRelationRecord } from '../models/db/schema.js';
 
 @Service()
 export class MemoRelationService {

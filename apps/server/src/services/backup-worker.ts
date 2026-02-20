@@ -1,7 +1,9 @@
-import { parentPort } from 'worker_threads';
-import path from 'path';
-import archiver from 'archiver';
 import { createWriteStream } from 'fs';
+import path from 'path';
+import { parentPort } from 'worker_threads';
+
+import archiver from 'archiver';
+
 
 interface CompressionTask {
   lancedbPath: string;

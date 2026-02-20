@@ -3,8 +3,8 @@
  * Adds avatar field for user profile pictures using LanceDB's addColumns()
  */
 
-import type { Connection } from '@lancedb/lancedb';
 import type { Migration } from '../types.js';
+import type { Connection } from '@lancedb/lancedb';
 
 /**
  * Migration to add avatar field to users table
