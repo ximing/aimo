@@ -2,13 +2,15 @@ import { ChatOpenAI } from '@langchain/openai';
 import { Service } from 'typedi';
 
 import { config } from '../config/config.js';
-import { generateTypeId } from '../utils/id.js';
-import { LanceDbService } from '../sources/lancedb.js';
-import { MemoService } from './memo.service.js';
 import { OBJECT_TYPE } from '../models/constant/type.js';
+import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
+import { generateTypeId } from '../utils/id.js';
 
-import type { MemoListItemDto } from '@aimo/dto';
+import { MemoService } from './memo.service.js';
+
+
 import type { DailyRecommendationRecord } from '../models/db/schema.js';
+import type { MemoListItemDto } from '@aimo/dto';
 
 /**
  * Service for generating daily memo recommendations using AI
@@ -20,7 +22,7 @@ export class RecommendationService {
 
   constructor(
     private memoService: MemoService,
-    private lanceDatabase: LanceDbService
+    private lanceDatabase: LanceDatabaseService
   ) {
     // Initialize LangChain ChatOpenAI
     this.model = new ChatOpenAI({

@@ -14,8 +14,13 @@ export function isElectron(): boolean {
 export function getPlatform(): string {
   if (!isElectron()) {
     return 'browser';
+  }  
+  const platform = window.electronAPI?.platform;
+  if (typeof platform === 'string' && platform.length > 0) {
+    return platform;
   }
-  return window.electronAPI?.platform || 'unknown';
+  
+  return 'unknown';
 }
 
 /**

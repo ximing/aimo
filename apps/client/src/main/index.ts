@@ -10,6 +10,7 @@ import {
   Menu,
   nativeImage,
   globalShortcut,
+  ipcMain,
   type MenuItemConstructorOptions,
   screen,
 } from 'electron';
@@ -31,7 +32,7 @@ const __dirname = path.dirname(__filename);
 
 export const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
 export const RENDERER_DIST = path.resolve(__dirname, '..');
-export const PRELOAD_PATH = path.join(__dirname, '../preload/index.mjs');
+export const PRELOAD_PATH = path.join(__dirname, '../preload/index.cjs');
 
 process.env.VITE_PUBLIC = RENDERER_DIST;
 
@@ -118,6 +119,7 @@ function createWindow(): void {
     show: false,
     title: 'AIMO',
     icon: iconPath,
+    titleBarStyle: 'hidden',
     webPreferences: {
       preload: PRELOAD_PATH,
       contextIsolation: true,
@@ -476,6 +478,12 @@ app.on('activate', () => {
   } else {
     createWindow();
   }
+});
+
+// Register IPC handlers
+ipcMain.handle('log-preload', (_event, data) => {
+  console.log('[Preload] Debug info:', data);
+  return { success: true };
 });
 
 app.whenReady().then(() => {

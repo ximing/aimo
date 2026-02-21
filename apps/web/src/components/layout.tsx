@@ -6,6 +6,7 @@ import { ThemeService } from '../services/theme.service';
 import { Zap, Sun, Moon, LogOut, Settings, Sparkles, Images } from 'lucide-react';
 import logoUrl from '../assets/logo.png';
 import logoDarkUrl from '../assets/logo-dark.png';
+import { isElectron, isMacOS } from '../electron/isElectron';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -57,12 +58,26 @@ export const Layout = view(({ children }: LayoutProps) => {
   const userEmail = authService.user?.email || '';
   const userAvatar = authService.user?.avatar;
 
+  const isElectronApp = isElectron();
+  const isMac = isMacOS();
+  // macOS Electron has traffic light buttons (~78px from left)
+  const needsTopPadding = isElectronApp && isMac;
+
   return (
     <div className="h-screen flex bg-gray-50 dark:bg-dark-900 text-gray-900 dark:text-gray-50 transition-colors">
+      {/* Electron macOS Drag Area - For traffic light buttons */}
+      {needsTopPadding && (
+        <div
+          className="fixed top-0 left-0 right-0 h-[30px] z-40 pointer-events-none"
+          // @ts-expect-error - WebkitAppRegion is a non-standard CSS property for Electron
+          style={{ WebkitAppRegion: 'drag' }}
+        />
+      )}
+      
       {/* Left Sidebar - Fixed 70px */}
       <aside className="w-[70px] flex-shrink-0 border-r border-gray-100 dark:border-dark-800 flex flex-col items-center py-4 gap-4">
-        {/* Logo Area - Top */}
-        <div className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+        {/* Logo Area - Top with padding for macOS Electron */}
+        <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden ${needsTopPadding ? 'mt-4' : ''}`}>
           <img
             src={logoUrl}
             alt="Aimo Logo"

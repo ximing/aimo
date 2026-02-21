@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Sparkles, FileText, AlertCircle } from 'lucide-react';
 import { getDailyRecommendations } from '../../../api/memo';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import type { MemoListItemDto } from '@aimo/dto';
 

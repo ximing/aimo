@@ -1,10 +1,9 @@
 import { Service } from 'typedi';
 
-import type { Table } from '@lancedb/lancedb';
 
+import { OBJECT_TYPE } from '../models/constant/type.js';
 import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
 import { generateTypeId } from '../utils/id.js';
-import { OBJECT_TYPE } from '../models/constant/type.js';
 
 import type {
   AIConversationDto,
@@ -15,6 +14,7 @@ import type {
   CreateConversationDto,
   UpdateConversationDto,
 } from '@aimo/dto';
+import type { Table } from '@lancedb/lancedb';
 
 /**
  * Service for managing AI conversations and messages
