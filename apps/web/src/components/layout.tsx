@@ -4,6 +4,8 @@ import { view, useService } from '@rabjs/react';
 import { AuthService } from '../services/auth.service';
 import { ThemeService } from '../services/theme.service';
 import { Zap, Sun, Moon, LogOut, Settings, Sparkles, Images } from 'lucide-react';
+import logoUrl from '../assets/logo.png';
+import logoDarkUrl from '../assets/logo-dark.png';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -62,12 +64,12 @@ export const Layout = view(({ children }: LayoutProps) => {
         {/* Logo Area - Top */}
         <div className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
           <img
-            src="/logo.png"
+            src={logoUrl}
             alt="Aimo Logo"
             className="w-full h-full object-cover block dark:hidden"
           />
           <img
-            src="/logo-dark.png"
+            src={logoDarkUrl}
             alt="Aimo Logo"
             className="w-full h-full object-cover hidden dark:block"
           />
