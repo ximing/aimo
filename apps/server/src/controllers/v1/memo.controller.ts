@@ -190,7 +190,15 @@ export class MemoV1Controller {
 
   @Post('/search/vector')
   async vectorSearch(
-    @Body() body: { query: string; page?: number; limit?: number },
+    @Body()
+    body: {
+      query: string;
+      page?: number;
+      limit?: number;
+      categoryId?: string;
+      startDate?: number;
+      endDate?: number;
+    },
     @CurrentUser() user: UserInfoDto
   ) {
     try {
@@ -202,11 +210,31 @@ export class MemoV1Controller {
         return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'Query is required');
       }
 
+      let startDateObject: Date | undefined;
+      let endDateObject: Date | undefined;
+
+      if (body.startDate !== undefined) {
+        const timestamp = Number(body.startDate);
+        if (!isNaN(timestamp)) {
+          startDateObject = new Date(timestamp);
+        }
+      }
+
+      if (body.endDate !== undefined) {
+        const timestamp = Number(body.endDate);
+        if (!isNaN(timestamp)) {
+          endDateObject = new Date(timestamp);
+        }
+      }
+
       const result = await this.memoService.vectorSearch({
         uid: user.uid,
         query: body.query,
         page: body.page || 1,
         limit: body.limit || 20,
+        categoryId: body.categoryId,
+        startDate: startDateObject,
+        endDate: endDateObject,
       });
 
       return ResponseUtility.success(result);

@@ -50,6 +50,9 @@ export interface MemoVectorSearchOptions {
   query: string;
   page?: number;
   limit?: number;
+  categoryId?: string;
+  startDate?: Date;
+  endDate?: Date;
 }
 
 @Service()
@@ -527,7 +530,15 @@ export class MemoService {
    */
   async vectorSearch(options: MemoVectorSearchOptions): Promise<PaginatedMemoListWithScoreDto> {
     try {
-      const { uid, query, page = 1, limit = 20 } = options;
+      const {
+        uid,
+        query,
+        page = 1,
+        limit = 20,
+        categoryId,
+        startDate,
+        endDate,
+      } = options;
 
       if (!query || query.trim().length === 0) {
         throw new Error('Search query cannot be empty');
@@ -540,26 +551,44 @@ export class MemoService {
 
       const offset = (page - 1) * limit;
 
+      const filterConditions: string[] = [`uid = '${uid}'`];
+      const isUncategorizedFilter = categoryId === UNCATEGORIZED_CATEGORY_ID;
+
+      if (categoryId && !isUncategorizedFilter) {
+        filterConditions.push(`categoryId = '${categoryId}'`);
+      }
+
+      const whereClause = filterConditions.join(' AND ');
+
       // Execute vector search with uid filtering for optimal performance
       // The BTREE index on uid column enables automatic prefiltering
       // LanceDB applies the uid filter BEFORE vector comparison (not after full table scan)
       // This ensures: 1) Only user's memos are searched, 2) Performance is optimized
-      const paginatedResults = await memosTable
+      let allResults = await memosTable
         .search(queryEmbedding)
-        .where(`uid = '${uid}'`) // BTREE index enables prefiltering, not postfiltering
-        .limit(limit)
-        .offset(offset)
+        .where(whereClause) // BTREE index enables prefiltering, not postfiltering
         .toArray();
 
-      // Get total count for pagination metadata
-      // Also filter by uid to count only user's memos efficiently
-      const allResults = await memosTable
-        .search(queryEmbedding)
-        .where(`uid = '${uid}'`) // Uses BTREE index for efficient counting
-        .toArray();
+      // Apply date range filters in JavaScript (LanceDB cannot compare Timestamp with Int64 literals in SQL)
+      const startTimestamp = startDate && !isNaN(startDate.getTime()) ? startDate.getTime() : null;
+      const endTimestamp = endDate && !isNaN(endDate.getTime()) ? endDate.getTime() : null;
+
+      if (startTimestamp !== null || endTimestamp !== null) {
+        allResults = allResults.filter((memo: any) => {
+          const memoTime = memo.createdAt as number;
+          if (startTimestamp !== null && memoTime < startTimestamp) return false;
+          if (endTimestamp !== null && memoTime > endTimestamp) return false;
+          return true;
+        });
+      }
+
+      if (isUncategorizedFilter) {
+        allResults = allResults.filter((memo: any) => memo.categoryId == undefined);
+      }
 
       const total = allResults.length;
       const totalPages = Math.ceil(total / limit);
+      const paginatedResults = allResults.slice(offset, offset + limit);
 
       // Map results to DTOs, preserving the distance-based sort order
       // Results are already sorted by relevance (distance ascending = most similar first)

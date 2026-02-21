@@ -37,6 +37,18 @@ Base URL: `/api/v1/memos`
 | startDate  | number | -         | 开始时间戳（毫秒）                               |
 | endDate    | number | -         | 结束时间戳（毫秒）                               |
 
+**过滤未分类:**
+
+- 传入 `categoryId=__uncategorized__` 仅返回未分类笔记（`categoryId` 为 `null` 或未设置）。
+- 不传 `categoryId` 则返回全部分类。
+
+**Example Request (Uncategorized):**
+
+```bash
+curl -X GET "http://localhost:3000/api/v1/memos?categoryId=__uncategorized__" \
+  -H "Authorization: Bearer <jwt_token>"
+```
+
 **Example Request:**
 
 ```bash
@@ -534,11 +546,19 @@ curl -X DELETE http://localhost:3000/api/v1/memos/memo_123456 \
 
 **Body Parameters (JSON):**
 
-| Parameter | Type   | Required | Description           |
-| --------- | ------ | -------- | --------------------- |
-| query     | string | Yes      | 搜索查询文本          |
-| page      | number | No       | 页码，默认为 1        |
-| limit     | number | No       | 每页记录数，默认为 20 |
+| Parameter  | Type   | Required | Description                                      |
+| ---------- | ------ | -------- | ------------------------------------------------ |
+| query      | string | Yes      | 搜索查询文本                                     |
+| page       | number | No       | 页码，默认为 1                                   |
+| limit      | number | No       | 每页记录数，默认为 20                            |
+| categoryId | string | No       | 按分类过滤，使用 `__uncategorized__` 查询未分类 |
+| startDate  | number | No       | 开始时间戳（毫秒）                               |
+| endDate    | number | No       | 结束时间戳（毫秒）                               |
+
+**过滤说明:**
+
+- 传入 `categoryId=__uncategorized__` 仅返回未分类笔记（`categoryId` 为 `null` 或未设置）。
+- `startDate`/`endDate` 为创建时间的毫秒级时间戳。
 
 **Example Request:**
 
@@ -548,6 +568,22 @@ curl -X POST http://localhost:3000/api/v1/memos/search/vector \
   -H "Authorization: Bearer <jwt_token>" \
   -d '{
     "query": "如何学习编程",
+    "page": 1,
+    "limit": 20
+  }'
+```
+
+**Example Request (With Filters):**
+
+```bash
+curl -X POST http://localhost:3000/api/v1/memos/search/vector \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <jwt_token>" \
+  -d '{
+    "query": "如何学习编程",
+    "categoryId": "__uncategorized__",
+    "startDate": 1704067200000,
+    "endDate": 1706659200000,
     "page": 1,
     "limit": 20
   }'
