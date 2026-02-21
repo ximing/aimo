@@ -1,4 +1,4 @@
-import { ipcRenderer, contextBridge, IpcRendererEvent } from 'electron';
+import { ipcRenderer, contextBridge, IpcRendererEvent, app } from 'electron';
 
 type MessageCallback = (message: string) => void;
 type FileDropCallback = (filePaths: string[]) => void;
@@ -11,6 +11,9 @@ const fileDropCallbackMap = new Map<FileDropCallback, (event: IpcRendererEvent, 
 contextBridge.exposeInMainWorld('electronAPI', {
   // Platform info
   platform: process.platform,
+
+  // App version
+  getVersion: () => app.getVersion(),
 
   // IPC communication
   onMainMessage: (callback: MessageCallback) => {
@@ -52,6 +55,7 @@ declare global {
   interface Window {
     electronAPI: {
       platform: string;
+      getVersion: () => string;
       onMainMessage: (callback: (message: string) => void) => void;
       removeMainMessageListener: (callback: (message: string) => void) => void;
       onFileDrop: (callback: (filePaths: string[]) => void) => void;

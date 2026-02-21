@@ -64,6 +64,7 @@ declare global {
   interface Window {
     electronAPI?: {
       platform: string;
+      getVersion: () => string;
       onFileDrop?: (callback: (filePaths: string[]) => void) => void;
       removeFileDropListener?: (callback: (filePaths: string[]) => void) => void;
     };
