@@ -11,7 +11,6 @@ import {
   MessageSquare,
   BookOpen,
   GitBranch,
-  ChevronRight,
   Clock,
   MoreVertical,
   Pencil,
@@ -301,24 +300,15 @@ export const AIExplorePage = view(() => {
                       onClick={() => handleSelectConversation(conversation.conversationId)}
                       className="w-full text-left p-3"
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <p
-                          className={`text-sm font-medium truncate flex-1 ${
-                            exploreService.currentConversationId === conversation.conversationId
-                              ? 'text-primary-700 dark:text-primary-400'
-                              : 'text-gray-700 dark:text-gray-300'
-                          }`}
-                        >
-                          {conversation.title}
-                        </p>
-                        <ChevronRight
-                          className={`w-4 h-4 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity ${
-                            exploreService.currentConversationId === conversation.conversationId
-                              ? 'text-primary-500'
-                              : 'text-gray-400'
-                          }`}
-                        />
-                      </div>
+                      <p
+                        className={`text-sm font-medium truncate ${
+                          exploreService.currentConversationId === conversation.conversationId
+                            ? 'text-primary-700 dark:text-primary-400'
+                            : 'text-gray-700 dark:text-gray-300'
+                        }`}
+                      >
+                        {conversation.title}
+                      </p>
                       <div className="flex items-center gap-1 mt-1">
                         <Clock className="w-3 h-3 text-gray-400" />
                         <span className="text-xs text-gray-400">
