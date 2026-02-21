@@ -181,9 +181,10 @@ export class MemoService {
           ? await this.attachmentService.getAttachmentsByIds(attachments, uid)
           : [];
 
-      // Return with attachment DTOs
+      // Return with attachment DTOs (exclude embedding to reduce payload)
+      const { embedding: _embedding, ...memoWithoutEmbedding } = memo;
       return {
-        ...memo,
+        ...memoWithoutEmbedding,
         type,
         attachments: attachmentDtos,
       };
