@@ -30,7 +30,7 @@ const __dirname = path.dirname(__filename);
 // │   └── index.html   > Web app (built from apps/web with ELECTRON=true)
 
 export const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
-export const RENDERER_DIST = path.resolve(__dirname, '../web');
+export const RENDERER_DIST = path.resolve(__dirname, '..');
 export const PRELOAD_PATH = path.join(__dirname, '../preload/index.mjs');
 
 process.env.VITE_PUBLIC = RENDERER_DIST;
