@@ -12,7 +12,36 @@ import type { AllVersionsResponseDto } from '@aimo/dto';
 const navItems = [
   { id: 'features', label: '功能' },
   { id: 'screenshots', label: '截图' },
+  { id: 'usecases', label: '场景' },
   { id: 'download', label: '下载' },
+];
+
+// Use Cases data
+const useCases = [
+  {
+    id: 1,
+    title: '个人知识库',
+    description: '将碎片化的信息整理成结构化的知识体系。无论是技术文档、读书笔记还是生活感悟，AIMO 都能帮你建立属于自己的知识网络，让知识触手可及。',
+    tags: ['知识管理', '信息整理', '长期积累'],
+    gradient: 'from-blue-500 to-indigo-600',
+    icon: Brain,
+  },
+  {
+    id: 2,
+    title: '学习笔记',
+    description: '在学习过程中快速记录要点，AI 自动生成摘要和关键词。通过语义关联发现知识点之间的联系，形成完整的学习地图，提升学习效率。',
+    tags: ['AI 摘要', '知识关联', '复习回顾'],
+    gradient: 'from-emerald-500 to-teal-600',
+    icon: Sparkles,
+  },
+  {
+    id: 3,
+    title: '灵感收集',
+    description: '随时捕捉脑海中闪过的灵感，支持文字、图片多种格式。智能标签和全文搜索让你在任何时刻都能快速找到当初的创意火花。',
+    tags: ['快速记录', '多媒体支持', '智能搜索'],
+    gradient: 'from-orange-500 to-red-600',
+    icon: Network,
+  },
 ];
 
 // Screenshot data with mock UI representations
@@ -658,6 +687,89 @@ export function LandingPage() {
           </div>
         </div>
       )}
+
+      {/* Use Cases Section */}
+      <section id="usecases" className="py-24 px-6">
+        <div className="max-w-6xl mx-auto">
+          {/* Section Header */}
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">
+              使用场景
+            </h2>
+            <p className="text-slate-600 dark:text-slate-400 max-w-xl mx-auto">
+              探索 AIMO 在实际生活和工作中的应用场景
+            </p>
+          </div>
+
+          {/* Use Cases */}
+          <div className="space-y-24">
+            {useCases.map((useCase, index) => {
+              const IconComponent = useCase.icon;
+              const isEven = index % 2 === 0;
+              return (
+                <div
+                  key={useCase.id}
+                  className={`flex flex-col ${isEven ? 'lg:flex-row' : 'lg:flex-row-reverse'} items-center gap-12 lg:gap-16`}
+                >
+                  {/* Text Content */}
+                  <div className="flex-1 space-y-6">
+                    <h3 className="text-2xl lg:text-3xl font-bold text-slate-900 dark:text-white">
+                      {useCase.title}
+                    </h3>
+                    <p className="text-lg text-slate-600 dark:text-slate-400 leading-relaxed">
+                      {useCase.description}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {useCase.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="px-3 py-1 text-sm font-medium bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 rounded-full"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Visual Representation */}
+                  <div className="flex-1 w-full max-w-md lg:max-w-none">
+                    <div
+                      className={`relative aspect-[4/3] rounded-2xl bg-gradient-to-br ${useCase.gradient} p-1 shadow-xl shadow-slate-900/10 dark:shadow-slate-900/30`}
+                    >
+                      <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/20 to-transparent" />
+                      <div className="relative h-full rounded-xl bg-white dark:bg-slate-900 overflow-hidden flex flex-col">
+                        {/* Mock Window Header */}
+                        <div className="px-4 py-3 bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2">
+                          <div className="flex gap-1.5">
+                            <div className="w-3 h-3 rounded-full bg-red-400" />
+                            <div className="w-3 h-3 rounded-full bg-yellow-400" />
+                            <div className="w-3 h-3 rounded-full bg-green-400" />
+                          </div>
+                          <div className="flex-1 text-center text-xs text-slate-500 dark:text-slate-400">
+                            AIMO - {useCase.title}
+                          </div>
+                        </div>
+                        {/* Mock Content */}
+                        <div className="flex-1 p-6 flex items-center justify-center">
+                          <div className="text-center space-y-4">
+                            <div className={`w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br ${useCase.gradient} flex items-center justify-center text-white shadow-lg`}>
+                              <IconComponent className="w-10 h-10" />
+                            </div>
+                            <div className="space-y-2">
+                              <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-32 mx-auto" />
+                              <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded w-24 mx-auto" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
 
       {/* Download Section */}
       <section id="download" className="py-24 px-6 bg-white/50 dark:bg-slate-800/50">
