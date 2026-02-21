@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router';
 import { useService } from '@rabjs/react';
 import { useState, useEffect } from 'react';
 import { ThemeService } from '../../services/theme.service';
-import { Sun, Moon, Menu, X, Github, Sparkles, Search, Link2, Smartphone } from 'lucide-react';
+import { Sun, Moon, Menu, X, Github, Sparkles, Search, Link2, Brain, Network, Shield } from 'lucide-react';
 
 const navItems = [
   { id: 'features', label: '功能' },
@@ -285,26 +285,36 @@ export function LandingPage() {
               强大的 AI 功能，助你高效管理知识
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <FeatureCard
               icon={<Sparkles className="w-6 h-6" />}
               title="AI 笔记"
-              description="智能生成笔记摘要，自动提取关键信息"
+              description="智能生成笔记摘要，自动提取关键信息，让记录更高效"
             />
             <FeatureCard
               icon={<Search className="w-6 h-6" />}
               title="语义搜索"
-              description="基于向量相似度的智能搜索，找到相关内容"
+              description="基于向量相似度的智能搜索，快速找到相关内容"
             />
             <FeatureCard
               icon={<Link2 className="w-6 h-6" />}
               title="知识关联"
-              description="自动发现笔记间的关联，构建知识图谱"
+              description="自动发现笔记间的关联，构建可视化知识图谱"
             />
             <FeatureCard
-              icon={<Smartphone className="w-6 h-6" />}
-              title="多平台同步"
-              description="支持桌面端和移动端，随时随地访问"
+              icon={<Brain className="w-6 h-6" />}
+              title="智能补全"
+              description="AI 辅助写作，智能补全内容，激发创作灵感"
+            />
+            <FeatureCard
+              icon={<Network className="w-6 h-6" />}
+              title="多端同步"
+              description="支持桌面端和移动端，随时随地访问你的知识库"
+            />
+            <FeatureCard
+              icon={<Shield className="w-6 h-6" />}
+              title="隐私安全"
+              description="本地优先存储，端到端加密，你的数据只属于你"
             />
           </div>
         </div>
@@ -368,14 +378,14 @@ function FeatureCard({
   description: string;
 }) {
   return (
-    <div className="p-6 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
-      <div className="w-12 h-12 rounded-lg bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400 mb-4">
+    <div className="group p-6 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:shadow-xl hover:shadow-primary-500/10 hover:-translate-y-2 hover:border-primary-200 dark:hover:border-primary-800 transition-all duration-300 cursor-default">
+      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-100 to-primary-50 dark:from-primary-900/40 dark:to-primary-800/20 flex items-center justify-center text-primary-600 dark:text-primary-400 mb-4 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
         {icon}
       </div>
-      <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+      <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-300">
         {title}
       </h3>
-      <p className="text-sm text-slate-600 dark:text-slate-400">{description}</p>
+      <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{description}</p>
     </div>
   );
 }
