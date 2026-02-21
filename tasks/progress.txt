@@ -1,55 +1,54 @@
-# Ralph Progress: daily-memo-recommendations
-# Branch: ralph/daily-memo-recommendations
-# Created: 2026-02-21
-
-## Status
-
-[US-001] ✅ 创建 RecommendationService 服务
-[US-002] ✅ 推荐结果缓存持久化
-[US-003] ✅ 后端 API - 获取每日推荐
-[US-004] ✅ 前端 API 模块 - 每日推荐
-[US-005] ✅ 前端 UI - 左侧推荐区域组件
-[US-006] ✅ 空状态和加载状态处理
-
 ## Codebase Patterns
-- LanceDB 表迁移：在 `001-init.ts` 中添加表迁移定义，然后在 `index.ts` 中导出并加入 `ALL_MIGRATIONS` 数组
-- Schema 定义：在 `schema.ts` 中定义 Apache Arrow Schema 和 TypeScript interface，然后在 `lancedb.ts` 中导出类型
-- Service 模式：使用 `@Service()` 装饰器和构造函数注入依赖
-- API 响应：使用 `{ code: number; data: T }` 格式，code 为 0 表示成功
-- DTO 共享：前后端共享 DTO 类型，定义在 `packages/dto/src/` 中
+- When modifying routes, always update related navigation components (layout.tsx, user-menu.tsx, etc.)
+- ProtectedRoute component handles auth redirects automatically
+- Auth redirects should go to `/home` for authenticated app entry, `/` for landing page
+- The landing page should be in `apps/web/src/pages/landing/`
+- Services use `@Service()` decorator from typedi for DI
+- Controllers use `@JsonController()` decorator with path prefix
+- DTOs should be added to `@aimo/dto` package and exported from index.ts
+- Use `undefined` instead of `null` per codebase convention (unicorn/no-null rule)
+- Error codes are defined in `apps/server/src/constants/error-codes.ts`
+- Use `ErrorCode.SYSTEM_ERROR` for general errors with custom message
 
-## Notes
-
-## [2026-02-21 16:30] - US-001/US-002/US-003/US-004/US-005/US-006
-- **What was implemented:**
-  - Created `RecommendationService` with AI-powered memo selection using OpenAI API
-  - Added `daily_recommendations` table schema and migration
-  - Implemented caching mechanism with daily expiration (YYYY-MM-DD format)
-  - Created GET `/api/v1/memos/daily-recommendations` API endpoint
-  - Added frontend API function `getDailyRecommendations()` in `apps/web/src/api/memo.ts`
-  - Created `DailyRecommendations` UI component with loading skeleton, error state, and empty state
-  - Integrated component into home page sidebar below OnThisDay banner
-  - Added `DailyRecommendationsResponseDto` to DTO package
-
+## 2026-02-21 - US-001 (创建公开访问的首页路由)
+- 创建 LandingPage 组件作为公开首页 (`apps/web/src/pages/landing/`)
+- 修改路由配置: `/` 为公开访问的 landing page
+- 添加 `/home` 路径作为登录后的主应用入口（需认证）
+- 更新登录/已认证用户的重定向目标为 `/home`
+- 更新 layout 组件中的首页导航和 active 状态检查 (`isHomePage` 检查改为 `/home`)
 - **Files changed:**
-  - `apps/server/src/services/recommendation.service.ts` (new)
-  - `apps/server/src/models/db/schema.ts`
-  - `apps/server/src/models/constant/type.ts`
-  - `apps/server/src/sources/lancedb.ts`
-  - `apps/server/src/migrations/scripts/001-init.ts`
-  - `apps/server/src/migrations/scripts/index.ts`
-  - `apps/server/src/controllers/v1/memo.controller.ts`
-  - `packages/dto/src/memo.ts`
-  - `apps/web/src/api/memo.ts`
-  - `apps/web/src/pages/home/components/daily-recommendations.tsx` (new)
-  - `apps/web/src/pages/home/home.tsx`
-
+  - `apps/web/src/App.tsx` - 添加 LandingPage 路由，/home 需认证
+  - `apps/web/src/pages/landing/landing.tsx` - 新建 landing page 组件
+  - `apps/web/src/pages/landing/index.tsx` - landing page 导出
+  - `apps/web/src/pages/auth/auth.tsx` - 更新已认证重定向到 /home
+  - `apps/web/src/pages/auth/components/login-form.tsx` - 更新登录成功重定向到 /home
+  - `apps/web/src/components/layout.tsx` - 更新首页导航和 active 状态检查
 - **Learnings for future iterations:**
-  - Pattern: LanceDB 表迁移需要在 3 个地方同步更新：schema 定义、001-init.ts 迁移、index.ts 导出列表
-  - Pattern: 前端组件放在 `pages/home/components/` 目录，复用现有的状态管理（rabjs）
-  - Pattern: AI 服务降级策略很重要 - 当 OpenAI 失败时自动回退到随机选择
-  - Pattern: 日期缓存使用 YYYY-MM-DD 字符串作为 key，避免时区问题
-  - Pattern: 移动端响应式通过父组件的 `isCompact` 和 `isCollapsed` 状态控制，子组件不需要额外处理
-  - Gotcha: DTO 包修改后需要重新构建 `pnpm --filter @aimo/dto build` 才能被其他包识别
-  - Gotcha: Arrow List 类型需要转换函数处理，不能直接当作数组使用
+  - 路由变更需要同步更新所有相关组件中的导航逻辑
+  - `ProtectedRoute` 会自动处理未认证用户访问 `/home` 的重定向
+  - Landing page 使用标准 button 元素，不需要额外的 UI 组件库
+  - 需要同时更新 login-form.tsx 和 auth.tsx 中的重定向逻辑
+---
+
+## 2026-02-21 - US-010 (GitHub Releases 版本获取服务)
+- Created GitHubReleaseService in `apps/server/src/services/github-release.service.ts`
+- Implemented 1-hour caching using Map to store version info with timestamps
+- Desktop version fetched from `ximing/aimo` GitHub releases
+- APK version fetched from `ximing/aimo-app` GitHub releases
+- Added public GET `/api/v1/system/app-versions` endpoint (no auth required)
+- Added VersionInfoDto and AllVersionsResponseDto to `@aimo/dto` package
+- Error handling: returns `{ version: undefined, error?: string }` on failure
+- Version tag cleaned up (removes 'v' prefix from GitHub tags)
+- **Files changed:**
+  - `apps/server/src/services/github-release.service.ts` - New service for GitHub API
+  - `apps/server/src/controllers/v1/system.controller.ts` - Added app-versions endpoint
+  - `packages/dto/src/version.ts` - New DTO types
+  - `packages/dto/src/index.ts` - Export version DTOs
+- **Learnings for future iterations:**
+  - GitHub API uses `tag_name` for release version, often prefixed with 'v'
+  - The codebase prefers `undefined` over `null` (enforced by unicorn/no-null lint rule)
+  - When adding DTOs, must rebuild `@aimo/dto` package before typecheck passes
+  - Use `ErrorCode` constants from error-codes.ts for consistent error handling
+  - Services use TypeDI `@Service()` decorator for dependency injection
+  - Controller methods can be public without auth by simply not using `@CurrentUser()`
 ---

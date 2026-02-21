@@ -131,6 +131,9 @@ export class MemoController {
 - Controllers auto-register via `src/controllers/index.ts` glob import
 - LanceDB auto-generates embeddings on memo create/update via `EmbeddingService`
 - Graceful shutdown handles LanceDB cleanup and scheduler stop
+- Public endpoints (no auth): Omit `@CurrentUser()` decorator from method parameters
+- Protected endpoints: Use `@CurrentUser() user: UserInfoDto` to get authenticated user
+- Error codes: Import from `ErrorCode` constants in `constants/error-codes.ts`
 
 ## Frontend Architecture (apps/web)
 
@@ -238,6 +241,13 @@ The Dockerfile is multi-stage:
 3. Update LanceDB schema in `apps/server/src/sources/lancedb.ts`
 4. Create migration if needed
 5. Update frontend types (auto-imported from DTO)
+
+### Adding New DTOs for API Response Types
+1. Create DTO file in `packages/dto/src/<feature>.ts`
+2. Export from `packages/dto/src/index.ts`
+3. Rebuild DTO package: `pnpm --filter @aimo/dto build`
+4. Import in server code from `@aimo/dto`
+5. Run typecheck to verify: `cd apps/server && pnpm typecheck`
 
 ### Working with Vector Search
 Embeddings are auto-generated via `EmbeddingService`. The flow:

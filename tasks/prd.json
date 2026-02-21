@@ -1,103 +1,165 @@
 {
   "project": "AIMO",
-  "branchName": "ralph/daily-memo-recommendations",
-  "description": "每日 Memo 推荐功能 - 在 memo 列表页左侧增加 AI 智能推荐的 3 个 memo 卡片，帮助用户回顾历史内容",
+  "branchName": "ralph/homepage-landing",
+  "description": "AIMO 官网首页 redesign - 公开访问的 Landing Page，展示产品价值、提供多平台下载，并保留登录入口",
   "userStories": [
     {
       "id": "US-001",
-      "title": "创建 RecommendationService 服务",
-      "description": "作为开发者，我需要创建一个推荐服务，使用 AI 分析 memo 内容并生成每日推荐",
+      "title": "创建公开访问的首页路由",
+      "description": "As a 访客, I want 无需登录即可访问首页，了解 AIMO 并下载应用",
       "acceptanceCriteria": [
-        "创建 RecommendationService 类，使用 @Service() 装饰器",
-        "实现 generateDailyRecommendations(userId) 方法",
-        "使用 OpenAI API 分析所有 memo，选择 3 个最推荐的",
-        "Prompt 设计：基于内容丰富度、独特性、回顾价值选择",
-        "AI 异常时降级为随机选择",
+        "修改路由配置，`/` 路径无需登录即可访问",
+        "保留 `/home` 路径作为登录后的主应用入口",
+        "未登录用户访问 `/home` 时自动重定向到 `/`",
         "Typecheck passes"
       ],
       "priority": 1,
       "passes": true,
-      "notes": ""
+      "notes": "Completed: 创建 LandingPage 组件，修改路由配置，/ 公开访问，/home 需登录"
     },
     {
-      "id": "US-002",
-      "title": "推荐结果缓存持久化",
-      "description": "作为开发者，我需要将每日推荐结果持久化，确保同一天内返回一致的结果",
+      "id": "US-010",
+      "title": "GitHub Releases 版本获取服务",
+      "description": "As a 开发者, I need 自动获取最新版本号用于展示在下载区域",
       "acceptanceCriteria": [
-        "在 LanceDB 中创建 daily_recommendations 表",
-        "表字段：userId, date, memoIds, createdAt",
-        "实现缓存检查：同一天同一用户直接返回缓存",
-        "实现缓存写入：新推荐生成后保存到数据库",
-        "日期格式使用 YYYY-MM-DD",
+        "创建 API 服务获取 GitHub Releases 最新版本",
+        "桌面端版本从 `ximing/aimo` 获取",
+        "APK 版本从 `ximing/aimo-app` 获取",
+        "缓存版本信息避免频繁请求（1小时缓存）",
+        "请求失败时显示默认版本或隐藏版本号",
         "Typecheck passes"
       ],
       "priority": 2,
       "passes": true,
+      "notes": "Completed: GitHubReleaseService created with caching, GET /api/v1/system/app-versions endpoint"
+    },
+    {
+      "id": "US-008",
+      "title": "实现明暗主题切换",
+      "description": "As a 访客, I want 根据我的偏好或系统设置选择合适的主题",
+      "acceptanceCriteria": [
+        "默认跟随系统主题设置",
+        "提供手动切换按钮（太阳/月亮图标）",
+        "主题偏好保存在 localStorage",
+        "切换时平滑过渡，无闪烁",
+        "所有组件正确适配暗色主题",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "实现固定导航栏",
+      "description": "As a 访客, I want 导航栏始终可见，方便快速跳转到不同区域或登录",
+      "acceptanceCriteria": [
+        "导航栏固定在顶部，滚动时保持可见",
+        "包含 Logo、功能、下载、GitHub 链接、登录按钮",
+        "点击导航项平滑滚动到对应区域",
+        "移动端显示汉堡菜单",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 4,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-003",
-      "title": "后端 API - 获取每日推荐",
-      "description": "作为开发者，我需要提供一个 API 端点供前端获取今日推荐的 memo",
+      "title": "设计 Hero 区域",
+      "description": "As a 访客, I want 一眼了解 AIMO 的核心价值，并被吸引继续浏览",
       "acceptanceCriteria": [
-        "创建 GET /api/v1/memos/daily-recommendations 接口",
-        "使用现有的 JWT 认证获取当前用户",
-        "调用 RecommendationService 获取推荐",
-        "返回完整的 memo 数据（id, title, content, tags, createdAt）",
-        "memo 少于 3 个时返回所有 memo",
-        "Typecheck passes"
-      ],
-      "priority": 3,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-004",
-      "title": "前端 API 模块 - 每日推荐",
-      "description": "作为开发者，我需要在前端创建 API 模块来调用推荐接口",
-      "acceptanceCriteria": [
-        "创建 dailyRecommendations API 模块",
-        "实现 getDailyRecommendations() 函数",
-        "返回类型使用 DTO 中的类型定义",
-        "添加错误处理",
-        "Typecheck passes"
-      ],
-      "priority": 4,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-005",
-      "title": "前端 UI - 左侧推荐区域组件",
-      "description": "作为用户，我需要在 memo 列表页左侧看到今日推荐的 3 个 memo 卡片",
-      "acceptanceCriteria": [
-        "创建 DailyRecommendations 组件",
-        "显示标题'今日推荐'和当前日期",
-        "展示 3 个 memo 卡片（标题 + 内容摘要前 80 字 + 创建日期）",
-        "点击卡片跳转到对应 memo 详情",
-        "在 memo 列表页左侧合适位置插入该组件",
-        "响应式：移动端隐藏或折叠",
+        "展示产品名称 'AIMO' 和标语（如 'AI 驱动的知识管理'）",
+        "简短的副标题描述产品定位",
+        "两个主要 CTA 按钮：'免费下载'（主按钮）和 '查看功能'（次按钮）",
+        "背景使用 subtle gradient 或抽象图形，不干扰内容",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 5,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
-      "id": "US-006",
-      "title": "空状态和加载状态处理",
-      "description": "作为用户，当 memo 数量不足或加载时，我需要看到友好的提示",
+      "id": "US-004",
+      "title": "实现功能特性展示区块",
+      "description": "As a 访客, I want 了解 AIMO 的核心功能，判断是否适合我的需求",
       "acceptanceCriteria": [
-        "少于 3 个 memo 时显示'创建更多 memo 来获取推荐'",
-        "推荐服务异常时显示'今日推荐暂时不可用'",
-        "加载时显示骨架屏或 loading 指示器",
-        "空状态有引导用户创建 memo 的提示",
+        "展示 4-6 个核心功能卡片：AI 笔记、语义搜索、知识关联、多平台同步等",
+        "每个卡片包含图标、标题、简短描述",
+        "使用网格布局，桌面端 3 列，平板 2 列，移动端 1 列",
+        "卡片有 hover 效果（轻微上浮或阴影变化）",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 6,
-      "passes": true,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "设计下载区域",
+      "description": "As a 访客, I want 方便地下载适合我设备的应用版本",
+      "acceptanceCriteria": [
+        "桌面端区域：Mac、Windows、Linux 下载按钮并排展示",
+        "移动端区域：Android APK 下载按钮",
+        "显示当前版本号（从 GitHub API 获取最新 release 版本）",
+        "点击下载按钮直接下载对应平台的安装包",
+        "显示系统要求（如 macOS 12+、Windows 10+ 等）",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "实现应用截图展示",
+      "description": "As a 访客, I want 预览应用界面，了解实际使用体验",
+      "acceptanceCriteria": [
+        "展示 3-5 张应用界面截图",
+        "支持轮播或网格展示",
+        "图片懒加载优化性能",
+        "点击可放大查看（可选 lightbox）",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "设计使用场景区块",
+      "description": "As a 访客, I want 了解 AIMO 在实际生活和工作中的应用场景",
+      "acceptanceCriteria": [
+        "展示 2-3 个使用场景：个人知识库、学习笔记、灵感收集等",
+        "每个场景包含标题、描述、相关功能标签",
+        "使用左右交替布局（图文并排）",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "实现页脚区域",
+      "description": "As a 访客, I want 在页面底部找到更多资源和链接",
+      "acceptanceCriteria": [
+        "包含 GitHub 仓库链接",
+        "包含登录入口",
+        "版权声明和许可证信息",
+        "可选：Twitter/X、Discord 等社交链接",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 10,
+      "passes": false,
       "notes": ""
     }
   ]
