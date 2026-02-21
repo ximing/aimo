@@ -52,3 +52,20 @@
   - Services use TypeDI `@Service()` decorator for dependency injection
   - Controller methods can be public without auth by simply not using `@CurrentUser()`
 ---
+
+## 2026-02-21 - US-008 (实现明暗主题切换)
+- ThemeService already existed with system preference detection, localStorage persistence, and toggle functionality
+- Added theme toggle button to landing page header with Sun/Moon icons
+- Added smooth CSS transitions for theme color changes in index.css
+- Theme is initialized early in main.tsx to prevent flash of wrong theme
+- Landing page now supports both light and dark modes with gradient backgrounds
+- **Files changed:**
+  - `apps/web/src/pages/landing/landing.tsx` - Added header with theme toggle button
+  - `apps/web/src/index.css` - Added smooth theme transition CSS
+- **Learnings for future iterations:**
+  - ThemeService uses `@rabjs/react` Service class for reactive state
+  - `loadTheme()` is called early in main.tsx (before React render) to prevent flash
+  - The `dark` class is applied to `<html>` element for Tailwind dark mode
+  - `window.matchMedia('(prefers-color-scheme: dark)')` detects system preference
+  - Use `useService(ThemeService)` to access theme state in components
+---

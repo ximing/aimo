@@ -88,3 +88,9 @@ html.dark ::-webkit-scrollbar-thumb:hover {
 html.dark {
   scrollbar-color: #4b5563 transparent;
 }
+
+/* Smooth theme transitions for elements with transition-colors */
+.transition-colors,
+[class*="transition-colors"] {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}

@@ -47,8 +47,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: ThemeService already existed with system preference, localStorage, and toggle. Added theme toggle button to landing page header, added smooth CSS transitions for theme changes."
     },
     {
       "id": "US-002",
