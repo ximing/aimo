@@ -4,6 +4,8 @@ import { view, useService } from '@rabjs/react';
 import { AuthService } from '../../services/auth.service';
 import { LoginForm } from './components/login-form';
 import { RegisterForm } from './components/register-form';
+import logoLight from '../../assets/logo.png';
+import logoDark from '../../assets/logo-dark.png';
 
 export const AuthPage = view(() => {
   const [searchParams] = useSearchParams();
@@ -22,6 +24,20 @@ export const AuthPage = view(() => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-dark-950 dark:to-dark-900 px-4">
       <div className="w-full max-w-md">
         <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-xl dark:shadow-2xl p-8 animate-fade-in">
+          {/* Logo */}
+          <div className="text-center mb-6">
+            <img
+              src={logoLight}
+              alt="Aimo Logo"
+              className="h-12 w-12 mx-auto dark:hidden"
+            />
+            <img
+              src={logoDark}
+              alt="Aimo Logo"
+              className="h-12 w-12 mx-auto hidden dark:block"
+            />
+          </div>
+
           {/* Header */}
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">

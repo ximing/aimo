@@ -1,0 +1,55 @@
+# Ralph Progress: daily-memo-recommendations
+# Branch: ralph/daily-memo-recommendations
+# Created: 2026-02-21
+
+## Status
+
+[US-001] ✅ 创建 RecommendationService 服务
+[US-002] ✅ 推荐结果缓存持久化
+[US-003] ✅ 后端 API - 获取每日推荐
+[US-004] ✅ 前端 API 模块 - 每日推荐
+[US-005] ✅ 前端 UI - 左侧推荐区域组件
+[US-006] ✅ 空状态和加载状态处理
+
+## Codebase Patterns
+- LanceDB 表迁移：在 `001-init.ts` 中添加表迁移定义，然后在 `index.ts` 中导出并加入 `ALL_MIGRATIONS` 数组
+- Schema 定义：在 `schema.ts` 中定义 Apache Arrow Schema 和 TypeScript interface，然后在 `lancedb.ts` 中导出类型
+- Service 模式：使用 `@Service()` 装饰器和构造函数注入依赖
+- API 响应：使用 `{ code: number; data: T }` 格式，code 为 0 表示成功
+- DTO 共享：前后端共享 DTO 类型，定义在 `packages/dto/src/` 中
+
+## Notes
+
+## [2026-02-21 16:30] - US-001/US-002/US-003/US-004/US-005/US-006
+- **What was implemented:**
+  - Created `RecommendationService` with AI-powered memo selection using OpenAI API
+  - Added `daily_recommendations` table schema and migration
+  - Implemented caching mechanism with daily expiration (YYYY-MM-DD format)
+  - Created GET `/api/v1/memos/daily-recommendations` API endpoint
+  - Added frontend API function `getDailyRecommendations()` in `apps/web/src/api/memo.ts`
+  - Created `DailyRecommendations` UI component with loading skeleton, error state, and empty state
+  - Integrated component into home page sidebar below OnThisDay banner
+  - Added `DailyRecommendationsResponseDto` to DTO package
+
+- **Files changed:**
+  - `apps/server/src/services/recommendation.service.ts` (new)
+  - `apps/server/src/models/db/schema.ts`
+  - `apps/server/src/models/constant/type.ts`
+  - `apps/server/src/sources/lancedb.ts`
+  - `apps/server/src/migrations/scripts/001-init.ts`
+  - `apps/server/src/migrations/scripts/index.ts`
+  - `apps/server/src/controllers/v1/memo.controller.ts`
+  - `packages/dto/src/memo.ts`
+  - `apps/web/src/api/memo.ts`
+  - `apps/web/src/pages/home/components/daily-recommendations.tsx` (new)
+  - `apps/web/src/pages/home/home.tsx`
+
+- **Learnings for future iterations:**
+  - Pattern: LanceDB 表迁移需要在 3 个地方同步更新：schema 定义、001-init.ts 迁移、index.ts 导出列表
+  - Pattern: 前端组件放在 `pages/home/components/` 目录，复用现有的状态管理（rabjs）
+  - Pattern: AI 服务降级策略很重要 - 当 OpenAI 失败时自动回退到随机选择
+  - Pattern: 日期缓存使用 YYYY-MM-DD 字符串作为 key，避免时区问题
+  - Pattern: 移动端响应式通过父组件的 `isCompact` 和 `isCollapsed` 状态控制，子组件不需要额外处理
+  - Gotcha: DTO 包修改后需要重新构建 `pnpm --filter @aimo/dto build` 才能被其他包识别
+  - Gotcha: Arrow List 类型需要转换函数处理，不能直接当作数组使用
+---

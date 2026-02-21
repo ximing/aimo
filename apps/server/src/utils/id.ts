@@ -51,6 +51,9 @@ export const generateTypeId = (type: (typeof OBJECT_TYPE)[keyof typeof OBJECT_TY
     case OBJECT_TYPE.MESSAGE: {
       return `msg${typeid()}`;
     }
+    case OBJECT_TYPE.RECOMMENDATION: {
+      return `rec${typeid()}`;
+    }
   }
   throw new Error(`Invalid type: ${type}`);
 };

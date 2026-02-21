@@ -11,6 +11,7 @@ import {
   embeddingCacheSchema,
   attachmentsSchema,
   multimodalEmbeddingCacheSchema,
+  dailyRecommendationsSchema,
 } from '../../models/db/schema.js';
 
 import type { Migration } from '../types.js';
@@ -116,5 +117,17 @@ export const multimodalEmbeddingCacheTableMigration: Migration = {
   description: 'Initialize multimodal_embedding_cache table for caching multimodal embeddings',
   up: async (connection: Connection) => {
     await createTableIfNotExists(connection, 'multimodal_embedding_cache', multimodalEmbeddingCacheSchema);
+  },
+};
+
+/**
+ * Migration for daily_recommendations table
+ */
+export const dailyRecommendationsTableMigration: Migration = {
+  version: 1,
+  tableName: 'daily_recommendations',
+  description: 'Initialize daily_recommendations table for caching daily memo recommendations',
+  up: async (connection: Connection) => {
+    await createTableIfNotExists(connection, 'daily_recommendations', dailyRecommendationsSchema);
   },
 };

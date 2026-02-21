@@ -262,4 +262,5 @@ export {
   type AIConversationRecord,
   type AIMessageRecord,
   type AIMessageSource,
+  type DailyRecommendationRecord,
 } from '../models/db/schema.js';

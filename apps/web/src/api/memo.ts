@@ -9,6 +9,7 @@ import type {
   PaginatedMemoListWithScoreDto,
   MemoActivityStatsDto,
   OnThisDayResponseDto,
+  DailyRecommendationsResponseDto,
 } from '@aimo/dto';
 import request from '../utils/request';
 
@@ -100,7 +101,7 @@ export const getBacklinks = (memoId: string, page: number = 1, limit: number = 2
  */
 export const getActivityStats = (days: number = 90) => {
   return request.get<unknown, { code: number; data: MemoActivityStatsDto }>(
-    '/api/v1/memos/stats/activity',
+    '/api/v1/insights/activity',
     {
       params: { days },
     }
@@ -113,6 +114,16 @@ export const getActivityStats = (days: number = 90) => {
  */
 export const getOnThisDayMemos = () => {
   return request.get<unknown, { code: number; data: OnThisDayResponseDto }>(
-    '/api/v1/memos/on-this-day'
+    '/api/v1/insights/on-this-day'
+  );
+};
+
+/**
+ * Get daily memo recommendations
+ * Returns AI-curated 3 memos for daily review, cached per day
+ */
+export const getDailyRecommendations = () => {
+  return request.get<unknown, { code: number; data: DailyRecommendationsResponseDto }>(
+    '/api/v1/insights/daily-recommendations'
   );
 };

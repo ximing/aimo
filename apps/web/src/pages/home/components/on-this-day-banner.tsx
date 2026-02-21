@@ -70,7 +70,7 @@ export const OnThisDayBanner = view(() => {
   // If no memos and not loading, show empty state message
   if (!isLoading && memos.length === 0) {
     return (
-      <div className="w-full py-3 border-b border-gray-100 dark:border-dark-800">
+      <div className="w-full py-3">
         {/* Header */}
         <div className="flex items-center gap-2 px-4 mb-2">
           <Clock className="w-4 h-4 text-primary-500" />
@@ -90,7 +90,7 @@ export const OnThisDayBanner = view(() => {
   }
 
   return (
-    <div className="w-full py-3 border-b border-gray-100 dark:border-dark-800">
+    <div className="w-full py-3">
       {/* Header */}
       <div className="flex items-center gap-2 px-4 mb-2">
         <Clock className="w-4 h-4 text-primary-500" />

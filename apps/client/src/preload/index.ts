@@ -7,6 +7,11 @@ type FileDropCallback = (filePaths: string[]) => void;
 const messageCallbackMap = new Map<MessageCallback, (event: IpcRendererEvent, message: string) => void>();
 const fileDropCallbackMap = new Map<FileDropCallback, (event: IpcRendererEvent, filePaths: string[]) => void>();
 
+// Log platform info for debugging
+console.log('Preload script loaded, platform:', process.platform);
+// Also send to main process via IPC for better visibility
+ipcRenderer.invoke('log-preload', { platform: process.platform });
+
 // --------- Expose API to Renderer process ---------
 contextBridge.exposeInMainWorld('electronAPI', {
   // Platform info

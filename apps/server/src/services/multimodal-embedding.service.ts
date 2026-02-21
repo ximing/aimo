@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 
-import urllib from 'urllib';
 import { Service } from 'typedi';
+import urllib from 'urllib';
 
 import { config } from '../config/config.js';
 import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
@@ -157,7 +157,7 @@ export class MultimodalEmbeddingService {
     const hasImage = typeof content.image === 'string' && content.image.trim().length > 0;
     const hasVideo = typeof content.video === 'string' && content.video.trim().length > 0;
     const hasMultiImages =
-      Array.isArray(content.multi_images) && content.multi_images.filter(Boolean).length > 0;
+      Array.isArray(content.multi_images) && content.multi_images.some(Boolean);
 
     return {
       hasText,

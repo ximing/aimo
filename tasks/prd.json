@@ -1,17 +1,18 @@
 {
   "project": "AIMO",
-  "branchName": "ralph/ai-explore-conversation-storage",
-  "description": "AI探索对话持久化与侧边栏改造 - 将对话数据从localStorage迁移到LanceDB，左侧增加对话历史列表，移除header，输入框悬浮固定",
+  "branchName": "ralph/daily-memo-recommendations",
+  "description": "每日 Memo 推荐功能 - 在 memo 列表页左侧增加 AI 智能推荐的 3 个 memo 卡片，帮助用户回顾历史内容",
   "userStories": [
     {
       "id": "US-001",
-      "title": "创建对话数据表结构",
-      "description": "作为开发者，我需要在LanceDB中创建对话存储结构，以便持久化保存用户对话数据",
+      "title": "创建 RecommendationService 服务",
+      "description": "作为开发者，我需要创建一个推荐服务，使用 AI 分析 memo 内容并生成每日推荐",
       "acceptanceCriteria": [
-        "在LanceDB中创建ai_conversations表，包含字段：id, userId, title, createdAt, updatedAt",
-        "创建ai_messages表，包含字段：id, conversationId, role, content, sources, createdAt",
-        "创建数据库迁移脚本",
-        "运行迁移成功，表结构验证通过",
+        "创建 RecommendationService 类，使用 @Service() 装饰器",
+        "实现 generateDailyRecommendations(userId) 方法",
+        "使用 OpenAI API 分析所有 memo，选择 3 个最推荐的",
+        "Prompt 设计：基于内容丰富度、独特性、回顾价值选择",
+        "AI 异常时降级为随机选择",
         "Typecheck passes"
       ],
       "priority": 1,
@@ -20,15 +21,14 @@
     },
     {
       "id": "US-002",
-      "title": "后端API - 对话CRUD",
-      "description": "作为开发者，我需要提供后端API来管理对话数据",
+      "title": "推荐结果缓存持久化",
+      "description": "作为开发者，我需要将每日推荐结果持久化，确保同一天内返回一致的结果",
       "acceptanceCriteria": [
-        "GET /api/explore/conversations - 获取用户的对话列表（按updatedAt倒序）",
-        "GET /api/explore/conversations/:id - 获取单个对话详情（含消息列表）",
-        "POST /api/explore/conversations - 创建新对话",
-        "PUT /api/explore/conversations/:id - 更新对话（重命名标题）",
-        "DELETE /api/explore/conversations/:id - 删除对话",
-        "POST /api/explore/conversations/:id/messages - 添加消息到对话",
+        "在 LanceDB 中创建 daily_recommendations 表",
+        "表字段：userId, date, memoIds, createdAt",
+        "实现缓存检查：同一天同一用户直接返回缓存",
+        "实现缓存写入：新推荐生成后保存到数据库",
+        "日期格式使用 YYYY-MM-DD",
         "Typecheck passes"
       ],
       "priority": 2,
@@ -37,13 +37,14 @@
     },
     {
       "id": "US-003",
-      "title": "前端服务层改造",
-      "description": "作为开发者，我需要改造前端数据层，从调用localStorage改为调用后端API",
+      "title": "后端 API - 获取每日推荐",
+      "description": "作为开发者，我需要提供一个 API 端点供前端获取今日推荐的 memo",
       "acceptanceCriteria": [
-        "创建exploreConversation API模块，封装所有对话相关接口",
-        "更新ExploreService，使用API替代localStorage",
-        "保持现有对话状态的响应式特性",
-        "添加错误处理和网络失败降级提示",
+        "创建 GET /api/v1/memos/daily-recommendations 接口",
+        "使用现有的 JWT 认证获取当前用户",
+        "调用 RecommendationService 获取推荐",
+        "返回完整的 memo 数据（id, title, content, tags, createdAt）",
+        "memo 少于 3 个时返回所有 memo",
         "Typecheck passes"
       ],
       "priority": 3,
@@ -52,16 +53,14 @@
     },
     {
       "id": "US-004",
-      "title": "移除Header改造页面布局",
-      "description": "作为用户，我希望页面布局更简洁，移除顶部header，将导航整合到左侧边栏",
+      "title": "前端 API 模块 - 每日推荐",
+      "description": "作为开发者，我需要在前端创建 API 模块来调用推荐接口",
       "acceptanceCriteria": [
-        "移除AI探索页面原有的顶部header",
-        "将页面标题AI探索移到左侧边栏顶部",
-        "主内容区占满剩余宽度，无顶部留白",
-        "边栏顶部包含返回首页的返回按钮",
-        "整体布局左右结构：左侧边栏 + 右侧主内容区",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "创建 dailyRecommendations API 模块",
+        "实现 getDailyRecommendations() 函数",
+        "返回类型使用 DTO 中的类型定义",
+        "添加错误处理",
+        "Typecheck passes"
       ],
       "priority": 4,
       "passes": true,
@@ -69,16 +68,15 @@
     },
     {
       "id": "US-005",
-      "title": "左侧对话列表边栏",
-      "description": "作为用户，我需要左侧边栏展示历史对话列表，方便快速切换不同对话",
+      "title": "前端 UI - 左侧推荐区域组件",
+      "description": "作为用户，我需要在 memo 列表页左侧看到今日推荐的 3 个 memo 卡片",
       "acceptanceCriteria": [
-        "页面左侧固定宽度边栏（280px）",
-        "边栏顶部显示页面标题AI探索和新建话题按钮",
-        "对话列表按最后更新时间倒序排列",
-        "每个对话项显示标题和最后更新时间（相对时间，如2小时前）",
-        "当前选中的对话高亮显示",
-        "点击对话项加载对应对话内容",
-        "边栏支持滚动，当对话较多时可滚动查看",
+        "创建 DailyRecommendations 组件",
+        "显示标题'今日推荐'和当前日期",
+        "展示 3 个 memo 卡片（标题 + 内容摘要前 80 字 + 创建日期）",
+        "点击卡片跳转到对应 memo 详情",
+        "在 memo 列表页左侧合适位置插入该组件",
+        "响应式：移动端隐藏或折叠",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
@@ -88,68 +86,17 @@
     },
     {
       "id": "US-006",
-      "title": "对话管理功能",
-      "description": "作为用户，我需要对对话进行管理，包括删除和重命名",
+      "title": "空状态和加载状态处理",
+      "description": "作为用户，当 memo 数量不足或加载时，我需要看到友好的提示",
       "acceptanceCriteria": [
-        "对话项hover时显示操作按钮（更多菜单）",
-        "点击重命名弹出输入框修改对话标题",
-        "点击删除弹出确认对话框，确认后删除",
-        "删除后自动切换到最新的其他对话，若无则显示空状态",
-        "重命名后列表实时更新",
+        "少于 3 个 memo 时显示'创建更多 memo 来获取推荐'",
+        "推荐服务异常时显示'今日推荐暂时不可用'",
+        "加载时显示骨架屏或 loading 指示器",
+        "空状态有引导用户创建 memo 的提示",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 6,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-007",
-      "title": "新建话题功能迁移",
-      "description": "作为用户，我需要在左侧边栏中方便地新建话题",
-      "acceptanceCriteria": [
-        "左侧边栏顶部有新建话题按钮（+ 图标或文字按钮）",
-        "点击后创建新对话，标题默认为新对话或基于第一条消息生成",
-        "新建后自动切换到新对话",
-        "新对话出现在列表顶部",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 7,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-008",
-      "title": "悬浮输入框改造",
-      "description": "作为用户，我希望输入框固定在底部，始终可见，类似ChatGPT的交互体验",
-      "acceptanceCriteria": [
-        "输入框固定在视口底部，不随消息滚动",
-        "输入框宽度适应主内容区，左右有合适边距",
-        "输入框有白色背景和阴影，与消息列表有视觉区分",
-        "消息列表区域底部预留输入框高度，避免内容被遮挡",
-        "输入框支持多行文本，自动增高",
-        "发送按钮在输入框右侧",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 8,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-009",
-      "title": "空状态和加载状态",
-      "description": "作为用户，我希望在无对话或加载时有清晰的反馈",
-      "acceptanceCriteria": [
-        "无对话时，左侧列表显示暂无对话提示",
-        "首次进入页面无选中对话时，主区域显示欢迎界面（引导新建话题）",
-        "加载对话列表时显示骨架屏或loading状态",
-        "切换对话时主区域显示loading状态",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 9,
       "passes": true,
       "notes": ""
     }
