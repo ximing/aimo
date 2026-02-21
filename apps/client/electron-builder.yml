@@ -95,3 +95,10 @@ deb:
 
 # Auto-update Configuration
 electronUpdaterCompatibility: '>=6.0.0'
+
+# GitHub Releases publish configuration
+publish:
+  provider: github
+  owner: ximing
+  repo: aimo
+  releaseType: release

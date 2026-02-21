@@ -1,6 +1,6 @@
 {
   "name": "@aimo/client",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "license": "BSL-1.1",
   "type": "module",
@@ -19,11 +19,11 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
-    "dist": "electron-builder --publish=never",
-    "dist:all": "electron-builder -mwl --publish=never",
-    "dist:mac": "electron-builder --mac --publish=never",
-    "dist:win": "electron-builder --win --publish=never",
-    "dist:linux": "electron-builder --linux --publish=never"
+    "dist": "electron-builder",
+    "dist:all": "electron-builder -mwl",
+    "dist:mac": "electron-builder --mac",
+    "dist:win": "electron-builder --win",
+    "dist:linux": "electron-builder --linux"
   },
   "dependencies": {
     "electron-store": "^10.0.0",

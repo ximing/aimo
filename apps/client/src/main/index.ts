@@ -13,9 +13,14 @@ import {
   ipcMain,
   type MenuItemConstructorOptions,
   screen,
+  dialog,
+  Notification,
 } from 'electron';
 import Store from 'electron-store';
-import { autoUpdater } from 'electron-updater';
+import { autoUpdater, type UpdateInfo } from 'electron-updater';
+
+// Enable auto-updater logging
+autoUpdater.logger = console;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -299,17 +304,40 @@ function createTray(): void {
 
 // Auto-update setup
 function setupAutoUpdater(): void {
-  // Configure autoUpdater to use GitHub releases (default behavior)
-  autoUpdater.checkForUpdatesAndNotify().catch((error) => {
+  // Configure autoUpdater to use GitHub releases
+  autoUpdater.autoDownload = false; // Don't auto-download, let user confirm
+  autoUpdater.autoInstallOnAppQuit = true; // Install on quit
+
+  // Check for updates
+  autoUpdater.checkForUpdates().catch((error) => {
     console.warn('Failed to check for updates:', error);
   });
 }
 
-// Manual check for updates - can be called from menu
-function checkForUpdates(): void {
-  autoUpdater.checkForUpdatesAndNotify().catch((error) => {
+// Manual check for updates - can be called from menu or renderer
+async function checkForUpdates(): Promise<UpdateInfo | null> {
+  try {
+    const result = await autoUpdater.checkForUpdates();
+    return result?.updateInfo || null;
+  } catch (error) {
     console.warn('Failed to check for updates:', error);
-  });
+    return null;
+  }
+}
+
+// Download update
+async function downloadUpdate(): Promise<void> {
+  try {
+    await autoUpdater.downloadUpdate();
+  } catch (error) {
+    console.warn('Failed to download update:', error);
+    throw error;
+  }
+}
+
+// Install update and restart
+function installUpdate(): void {
+  autoUpdater.quitAndInstall();
 }
 
 function createApplicationMenu(): void {
@@ -423,9 +451,16 @@ function createApplicationMenu(): void {
     role: 'help',
     submenu: [
       {
-        label: '检查更新',
-        click: () => {
-          checkForUpdates();
+        label: `检查更新 (v${app.getVersion()})`,
+        click: async () => {
+          const updateInfo = await checkForUpdates();
+          if (!updateInfo) {
+            dialog.showMessageBox({
+              type: 'info',
+              title: '检查更新',
+              message: '当前已是最新版本',
+            });
+          }
         },
       },
       { type: 'separator' },
@@ -486,6 +521,24 @@ ipcMain.handle('log-preload', (_event, data) => {
   return { success: true };
 });
 
+// Update-related IPC handlers
+ipcMain.handle('check-for-updates', async () => {
+  return await checkForUpdates();
+});
+
+ipcMain.handle('download-update', async () => {
+  await downloadUpdate();
+  return { success: true };
+});
+
+ipcMain.handle('install-update', () => {
+  installUpdate();
+});
+
+ipcMain.handle('get-app-version', () => {
+  return app.getVersion();
+});
+
 app.whenReady().then(() => {
   createWindow();
   createTray();
@@ -499,17 +552,78 @@ app.whenReady().then(() => {
 });
 
 // Auto-updater event handlers
-autoUpdater.on('update-available', () => {
-  // System notification is handled automatically by checkForUpdatesAndNotify()
-  console.log('Update available - will be downloaded automatically');
+autoUpdater.on('checking-for-update', () => {
+  console.log('Checking for update...');
+  mainWindow?.webContents.send('update-status', { status: 'checking' });
 });
 
-autoUpdater.on('update-downloaded', () => {
-  console.log('Update downloaded - will be installed on quit');
+autoUpdater.on('update-available', (info: UpdateInfo) => {
+  console.log('Update available:', info.version);
+  mainWindow?.webContents.send('update-status', {
+    status: 'available',
+    version: info.version,
+    releaseNotes: info.releaseNotes,
+  });
+
+  // Show system notification
+  if (Notification.isSupported()) {
+    new Notification({
+      title: '发现新版本',
+      body: `版本 ${info.version} 可用，是否立即下载？`,
+    }).show();
+  }
+});
+
+autoUpdater.on('update-not-available', () => {
+  console.log('Update not available');
+  mainWindow?.webContents.send('update-status', { status: 'not-available' });
+});
+
+autoUpdater.on('download-progress', (progress) => {
+  console.log('Download progress:', progress.percent);
+  mainWindow?.webContents.send('update-status', {
+    status: 'downloading',
+    percent: progress.percent,
+  });
+});
+
+autoUpdater.on('update-downloaded', (info: UpdateInfo) => {
+  console.log('Update downloaded:', info.version);
+  mainWindow?.webContents.send('update-status', {
+    status: 'downloaded',
+    version: info.version,
+  });
+
+  // Show system notification
+  if (Notification.isSupported()) {
+    new Notification({
+      title: '更新已下载',
+      body: '新版本已下载完成，重启应用即可安装',
+    }).show();
+  }
+
+  // Ask user if they want to restart now
+  dialog.showMessageBox({
+    type: 'info',
+    title: '更新已就绪',
+    message: `版本 ${info.version} 已下载完成`,
+    detail: '是否立即重启应用以安装更新？',
+    buttons: ['立即重启', '稍后重启'],
+    defaultId: 0,
+    cancelId: 1,
+  }).then((result) => {
+    if (result.response === 0) {
+      installUpdate();
+    }
+  });
 });
 
 autoUpdater.on('error', (error) => {
-  console.warn('Auto-updater error:', error);
+  console.error('Auto-updater error:', error);
+  mainWindow?.webContents.send('update-status', {
+    status: 'error',
+    error: error.message,
+  });
 });
 
 // Unregister all shortcuts when app is about to quit

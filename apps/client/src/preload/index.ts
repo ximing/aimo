@@ -3,9 +3,29 @@ import { ipcRenderer, contextBridge, IpcRendererEvent, app } from 'electron';
 type MessageCallback = (message: string) => void;
 type FileDropCallback = (filePaths: string[]) => void;
 
+// Update status callback type
+type UpdateStatusCallback = (status: UpdateStatus) => void;
+
+// Update status type
+export interface UpdateStatus {
+  status: 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error';
+  version?: string;
+  releaseNotes?: string;
+  percent?: number;
+  error?: string;
+}
+
+// Update info type
+export interface UpdateInfo {
+  version: string;
+  releaseDate?: string;
+  releaseNotes?: string;
+}
+
 // Store wrapped callbacks to allow proper removal
 const messageCallbackMap = new Map<MessageCallback, (event: IpcRendererEvent, message: string) => void>();
 const fileDropCallbackMap = new Map<FileDropCallback, (event: IpcRendererEvent, filePaths: string[]) => void>();
+const updateStatusCallbackMap = new Map<UpdateStatusCallback, (event: IpcRendererEvent, status: UpdateStatus) => void>();
 
 // Log platform info for debugging
 console.log('Preload script loaded, platform:', process.platform);
@@ -53,6 +73,29 @@ contextBridge.exposeInMainWorld('electronAPI', {
       fileDropCallbackMap.delete(callback);
     }
   },
+
+  // Auto-update APIs
+  checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+  downloadUpdate: () => ipcRenderer.invoke('download-update'),
+  installUpdate: () => ipcRenderer.invoke('install-update'),
+  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+
+  // Update status listener
+  onUpdateStatus: (callback: UpdateStatusCallback) => {
+    const wrappedCallback = (_event: IpcRendererEvent, status: UpdateStatus) => {
+      callback(status);
+    };
+    updateStatusCallbackMap.set(callback, wrappedCallback);
+    ipcRenderer.on('update-status', wrappedCallback);
+  },
+
+  removeUpdateStatusListener: (callback: UpdateStatusCallback) => {
+    const wrappedCallback = updateStatusCallbackMap.get(callback);
+    if (wrappedCallback) {
+      ipcRenderer.removeListener('update-status', wrappedCallback);
+      updateStatusCallbackMap.delete(callback);
+    }
+  },
 });
 
 // --------- Type definitions for Renderer process ---------
@@ -65,6 +108,13 @@ declare global {
       removeMainMessageListener: (callback: (message: string) => void) => void;
       onFileDrop: (callback: (filePaths: string[]) => void) => void;
       removeFileDropListener: (callback: (filePaths: string[]) => void) => void;
+      // Auto-update APIs
+      checkForUpdates: () => Promise<UpdateInfo | null>;
+      downloadUpdate: () => Promise<{ success: boolean }>;
+      installUpdate: () => void;
+      getAppVersion: () => Promise<string>;
+      onUpdateStatus: (callback: (status: UpdateStatus) => void) => void;
+      removeUpdateStatusListener: (callback: (status: UpdateStatus) => void) => void;
     };
   }
 }
