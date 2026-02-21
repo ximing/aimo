@@ -1,3 +1,20 @@
+## 2026-02-21 - US-002 (实现固定导航栏)
+- Implemented fixed navigation bar with scroll-aware background blur effect
+- Desktop navigation includes: Logo, Features link, Download link, GitHub link, Login button
+- Mobile hamburger menu with smooth expand/collapse animation
+- Smooth scroll navigation to section IDs using `scrollIntoView({ behavior: 'smooth' })`
+- Added placeholder sections (Hero, Features, Download) with IDs for navigation targets
+- Created reusable FeatureCard and DownloadCard components
+- **Files changed:**
+  - `apps/web/src/pages/landing/landing.tsx` - Complete redesign with fixed navbar
+- **Learnings for future iterations:**
+  - Use `window.scrollY > threshold` to detect scroll for navbar styling changes
+  - Mobile menu animation uses `max-height` transition with `overflow-hidden`
+  - `scrollIntoView({ behavior: 'smooth' })` provides native smooth scrolling
+  - Backdrop blur effect: `backdrop-blur-md` with semi-transparent background
+  - State for mobile menu: `isMobileMenuOpen` controls visibility
+---
+
 ## Codebase Patterns
 - When modifying routes, always update related navigation components (layout.tsx, user-menu.tsx, etc.)
 - ProtectedRoute component handles auth redirects automatically
