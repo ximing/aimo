@@ -559,7 +559,7 @@ export const MemoEditorForm = view(
             ref={fileInputRef}
             type="file"
             multiple
-            accept="image/*,video/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt,.md"
+            accept="image/*,video/*,audio/mp4,audio/mpeg,.m4a,.doc,.docx,.xls,.xlsx,.txt,.md"
             onChange={handleFileSelect}
             className="hidden"
             disabled={loading}

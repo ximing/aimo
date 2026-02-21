@@ -31,21 +31,21 @@ import type { Request, Response } from 'express';
 
 
 /**
- * Check if a MIME type is allowed, supporting wildcard patterns like "image/*"
- * @param mimeType - The MIME type to check (e.g., "image/heic", "image/png")
- * @param allowedTypes - Array of allowed MIME types, can include wildcards (e.g., "image/*", "video/*")
- * @returns true if the MIME type is allowed, false otherwise
+ * Check if a MIME type is blocked (blacklist)
+ * @param mimeType - The MIME type to check
+ * @param blockedTypes - Array of blocked MIME types
+ * @returns true if the MIME type is blocked, false otherwise
  */
-function isMimeTypeAllowed(mimeType: string, allowedTypes: string[]): boolean {
+function isMimeTypeBlocked(mimeType: string, blockedTypes: string[]): boolean {
   // First try exact match
-  if (allowedTypes.includes(mimeType)) {
+  if (blockedTypes.includes(mimeType)) {
     return true;
   }
 
-  // Then check wildcard patterns (e.g., "image/*", "video/*", "audio/*")
-  for (const allowed of allowedTypes) {
-    if (allowed.endsWith('/*')) {
-      const prefix = allowed.slice(0, -2); // Remove "/*"
+  // Then check wildcard patterns (e.g., "text/*" to block all text types)
+  for (const blocked of blockedTypes) {
+    if (blocked.endsWith('/*')) {
+      const prefix = blocked.slice(0, -2); // Remove "/*"
       if (mimeType.startsWith(prefix + '/')) {
         return true;
       }
@@ -96,13 +96,15 @@ export class AttachmentV1Controller {
             return resolve(ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'No file uploaded'));
           }
 
-          // Validate file type (supports wildcard like "image/*")
+          // Validate file type - check blacklist only
           const mimeType = file.mimetype;
-          if (!isMimeTypeAllowed(mimeType, config.attachment.allowedMimeTypes)) {
+
+          // Check blacklist (blocked types)
+          if (isMimeTypeBlocked(mimeType, config.attachment.blockedMimeTypes)) {
             return resolve(
               ResponseUtility.error(
                 ErrorCode.UNSUPPORTED_FILE_TYPE,
-                `File type ${mimeType} is not allowed`
+                `File type ${mimeType} is not allowed due to security restrictions`
               )
             );
           }
@@ -118,6 +120,19 @@ export class AttachmentV1Controller {
               }
             }
 
+            // Parse optional properties parameter from FormData
+            let properties: string | undefined;
+            const propertiesString = (request as any).body?.properties;
+            if (propertiesString && typeof propertiesString === 'string') {
+              // Validate that it's valid JSON
+              try {
+                JSON.parse(propertiesString);
+                properties = propertiesString;
+              } catch {
+                // Invalid JSON, ignore
+              }
+            }
+
             // Create attachment
             const attachment = await this.attachmentService.createAttachment({
               uid: user.uid,
@@ -126,6 +141,7 @@ export class AttachmentV1Controller {
               mimeType: file.mimetype,
               size: file.size,
               createdAt,
+              properties,
             });
 
             return resolve(

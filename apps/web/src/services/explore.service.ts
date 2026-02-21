@@ -34,6 +34,10 @@ interface NetworkError {
  * Explore Service
  * Manages AI exploration chat state and operations
  */
+
+// LocalStorage key for persisting selected conversation
+const STORAGE_KEY = 'ai-explore-current-conversation';
+
 export class ExploreService extends Service {
   // Chat messages (current conversation)
   messages: ChatMessage[] = [];
@@ -66,6 +70,33 @@ export class ExploreService extends Service {
 
   // Maximum number of messages per conversation (10 rounds = 20 messages)
   private readonly MAX_MESSAGES = 20;
+
+  /**
+   * Save selected conversation ID to localStorage
+   */
+  private saveSelectedConversation(conversationId: string | null) {
+    try {
+      if (conversationId) {
+        localStorage.setItem(STORAGE_KEY, conversationId);
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    } catch (error) {
+      console.error('Failed to save selected conversation:', error);
+    }
+  }
+
+  /**
+   * Get saved conversation ID from localStorage
+   */
+  private getSavedConversationId(): string | null {
+    try {
+      return localStorage.getItem(STORAGE_KEY);
+    } catch (error) {
+      console.error('Failed to get saved conversation:', error);
+      return null;
+    }
+  }
 
   /**
    * Initialize service
@@ -103,10 +134,19 @@ export class ExploreService extends Service {
         this.conversations = response.data.items || [];
         this.isOnline = true;
 
-        // If there are conversations but none selected, select the most recent
-        if (this.conversations.length > 0 && !this.currentConversationId) {
-          // Don't auto-select; let the UI show empty state
-          // User can explicitly select a conversation
+        // Check if there's a saved conversation ID and restore it
+        const savedConversationId = this.getSavedConversationId();
+        if (savedConversationId && this.conversations.length > 0) {
+          // Verify the saved conversation still exists
+          const exists = this.conversations.some(
+            (c) => c.conversationId === savedConversationId
+          );
+          if (exists) {
+            await this.loadConversation(savedConversationId);
+          } else {
+            // Clear invalid saved ID
+            this.saveSelectedConversation(null);
+          }
         }
       }
     } catch (err: unknown) {
@@ -392,6 +432,8 @@ export class ExploreService extends Service {
         this.messages = [];
         this.conversationContext = '';
         this.isOnline = true;
+        // Save to localStorage when creating a new conversation
+        this.saveSelectedConversation(conversation.conversationId);
         return conversation.conversationId;
       } else {
         // Handle API error response
@@ -416,6 +458,8 @@ export class ExploreService extends Service {
   async selectConversation(conversationId: string) {
     if (conversationId === this.currentConversationId) return;
     await this.loadConversation(conversationId);
+    // Save to localStorage when user selects a conversation
+    this.saveSelectedConversation(conversationId);
   }
 
   /**
@@ -439,6 +483,8 @@ export class ExploreService extends Service {
           this.currentConversationId = null;
           this.messages = [];
           this.conversationContext = '';
+          // Clear saved conversation ID
+          this.saveSelectedConversation(null);
 
           // Auto-select most recent if available
           if (this.conversations.length > 0) {

@@ -12,6 +12,7 @@ import { MemoEditorForm } from '../../../components/memo-editor-form';
 import { AttachmentPreviewModal } from '../../../components/attachment-preview-modal';
 import { downloadFileFromUrl } from '../../../utils/download';
 import { toast } from '../../../services/toast.service';
+import { AudioItem } from './audio-item';
 
 interface MemoCardProps {
   memo: MemoListItemDto | MemoListItemWithScoreDto;
@@ -79,7 +80,7 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
       attachmentService.setSelectedAttachment(attachment);
       setIsPreviewOpen(true);
     } else {
-      // Download other file types
+      // Download other file types (audio files are handled by AudioItem component)
       handleDownloadAttachment(attachment);
     }
   };
@@ -147,77 +148,110 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
   const renderAttachments = () => {
     if (!memo.attachments || memo.attachments.length === 0) return null;
 
-    return (
-      <div className="grid grid-cols-5 gap-2">
-        {memo.attachments.map((attachment) => {
-          const isImage = attachment.type.startsWith('image/');
-          const isVideo = attachment.type.startsWith('video/');
-          const isDocument = !isImage && !isVideo;
-          const isAttachmentDownloading = isDownloading === attachment.attachmentId;
+    // 分离音频附件和其他附件
+    const audioAttachments = memo.attachments.filter((a) => a.type.startsWith('audio/'));
+    const otherAttachments = memo.attachments.filter((a) => !a.type.startsWith('audio/'));
 
-          return (
-            <button
-              key={attachment.attachmentId}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleAttachmentClick(attachment);
-              }}
-              disabled={isAttachmentDownloading}
-              className={`relative aspect-square ${
-                isDocument
-                  ? 'bg-gray-100 dark:bg-dark-800'
-                  : 'bg-gray-100 dark:bg-dark-800 group-hover:bg-transparent dark:group-hover:bg-transparent'
-              } rounded overflow-hidden hover:shadow-lg hover:scale-105 transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50`}
-              title={`点击${isDocument ? '下载' : '预览'}: ${attachment.filename}`}
-            >
-              {isImage ? (
-                <img
-                  src={attachment.url}
-                  alt={attachment.filename}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
-              ) : isVideo ? (
-                <>
+    // 渲染非音频附件（九宫格）
+    const renderOtherAttachments = () => {
+      if (otherAttachments.length === 0) return null;
+
+      return (
+        <div className="grid grid-cols-5 gap-2">
+          {otherAttachments.map((attachment) => {
+            const isImage = attachment.type.startsWith('image/');
+            const isVideo = attachment.type.startsWith('video/');
+            const isDocument = !isImage && !isVideo;
+            const isAttachmentDownloading = isDownloading === attachment.attachmentId;
+
+            return (
+              <button
+                key={attachment.attachmentId}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleAttachmentClick(attachment);
+                }}
+                disabled={isAttachmentDownloading}
+                className={`relative aspect-square ${
+                  isDocument
+                    ? 'bg-gray-100 dark:bg-dark-800'
+                    : 'bg-gray-100 dark:bg-dark-800 group-hover:bg-transparent dark:group-hover:bg-transparent'
+                } rounded overflow-hidden hover:shadow-lg hover:scale-105 transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50`}
+                title={`点击${isDocument ? '下载' : '预览'}: ${attachment.filename}`}
+              >
+                {isImage ? (
                   <img
                     src={attachment.url}
                     alt={attachment.filename}
                     className="w-full h-full object-cover"
                     loading="lazy"
                   />
-                  <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                ) : isVideo ? (
+                  <>
+                    <img
+                      src={attachment.url}
+                      alt={attachment.filename}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+                        <Film className="w-5 h-5 text-gray-900 fill-current" />
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-1">
+                    <FileText className="w-6 h-6 text-gray-400 dark:text-gray-600" />
+                    <span className="text-xs text-gray-500 dark:text-gray-500 truncate max-w-full px-1">
+                      {attachment.filename}
+                    </span>
+                  </div>
+                )}
+
+                {/* Download indicator overlay for documents */}
+                {isDocument && (
+                  <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
                     <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
-                      <Film className="w-5 h-5 text-gray-900 fill-current" />
+                      <Download className="w-5 h-5 text-gray-900 fill-current" />
                     </div>
                   </div>
-                </>
-              ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center gap-1">
-                  <FileText className="w-6 h-6 text-gray-400 dark:text-gray-600" />
-                  <span className="text-xs text-gray-500 dark:text-gray-500 truncate max-w-full px-1">
-                    {attachment.filename}
-                  </span>
-                </div>
-              )}
+                )}
 
-              {/* Download indicator overlay for documents */}
-              {isDocument && (
-                <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-                  <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
-                    <Download className="w-5 h-5 text-gray-900 fill-current" />
+                {/* Loading indicator */}
+                {isAttachmentDownloading && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                    <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   </div>
-                </div>
-              )}
+                )}
+              </button>
+            );
+          })}
+        </div>
+      );
+    };
 
-              {/* Loading indicator */}
-              {isAttachmentDownloading && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                </div>
-              )}
-            </button>
-          );
-        })}
+    // 渲染音频附件（微信录音样式）
+    const renderAudioAttachments = () => {
+      if (audioAttachments.length === 0) return null;
+
+      return (
+        <div className="flex flex-col gap-2">
+          {audioAttachments.map((attachment) => (
+            <AudioItem
+              key={attachment.attachmentId}
+              attachment={attachment}
+              isDownloading={isDownloading === attachment.attachmentId}
+            />
+          ))}
+        </div>
+      );
+    };
+
+    return (
+      <div className="flex flex-col gap-1">
+        {renderAudioAttachments()}
+        {renderOtherAttachments()}
       </div>
     );
   };
@@ -251,7 +285,7 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
         ) : (
           <div className="space-y-2">
             {/* Content Section */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
                 {displayText}
                 {shouldTruncate && !isExpanded && (

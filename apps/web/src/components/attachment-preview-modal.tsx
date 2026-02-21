@@ -6,7 +6,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { view, useService } from '@rabjs/react';
-import { X, ChevronLeft, ChevronRight, Trash2, ZoomIn, ZoomOut } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Trash2, ZoomIn, ZoomOut, Music } from 'lucide-react';
 import { AttachmentService } from '../services/attachment.service';
 import { toast } from '../services/toast.service';
 import { ConfirmDeleteModal } from '../pages/home/components/confirm-delete-modal';
@@ -130,6 +130,7 @@ const AttachmentPreviewModalContent = view(({ isOpen, onClose }: AttachmentPrevi
 
   const isImage = attachment.type.startsWith('image/');
   const isVideo = attachment.type.startsWith('video/');
+  const isAudio = attachment.type.startsWith('audio/');
 
   const canGoPrev = attachmentService.getPrevAttachment() !== null;
   const canGoNext = attachmentService.getNextAttachment() !== null;
@@ -178,6 +179,20 @@ const AttachmentPreviewModalContent = view(({ isOpen, onClose }: AttachmentPrevi
             className="max-w-[90%] max-h-[90%] object-contain"
             autoPlay
           />
+        )}
+
+        {/* Audio Preview */}
+        {isAudio && (
+          <div className="flex flex-col items-center justify-center gap-6">
+            <div className="w-24 h-24 rounded-full bg-primary-500/20 flex items-center justify-center">
+              <Music className="w-12 h-12 text-primary-500" />
+            </div>
+            <audio
+              src={attachment.url}
+              controls
+              className="max-w-[80%] w-full"
+            />
+          </div>
         )}
       </div>
 

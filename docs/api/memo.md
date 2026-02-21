@@ -59,6 +59,7 @@ curl -X GET "http://localhost:3000/api/v1/memos?page=1&limit=20&sortBy=updatedAt
 >   type: string;         // MIME 类型
 >   size: number;         // 文件大小（字节）
 >   createdAt: number;     // 创建时间戳（毫秒）
+>   properties?: Record<string, unknown>; // 附件属性：audio(duration), image(width,height), video(duration)
 > }
 >
 > interface MemoListItemDto {
@@ -163,6 +164,7 @@ curl -X GET http://localhost:3000/api/v1/memos/memo_123456 \
 >   type: string;         // MIME 类型
 >   size: number;         // 文件大小（字节）
 >   createdAt: number;     // 创建时间戳（毫秒）
+>   properties?: Record<string, unknown>; // 附件属性：audio(duration), image(width,height), video(duration)
 > }
 >
 > interface MemoWithAttachmentsDto {
@@ -285,6 +287,7 @@ curl -X POST http://localhost:3000/api/v1/memos \
 >   type: string;         // MIME 类型
 >   size: number;         // 文件大小（字节）
 >   createdAt: number;     // 创建时间戳（毫秒）
+>   properties?: Record<string, unknown>; // 附件属性：audio(duration), image(width,height), video(duration)
 > }
 >
 > interface MemoWithAttachmentsDto {
@@ -412,6 +415,7 @@ curl -X PUT http://localhost:3000/api/v1/memos/memo_123456 \
 >   type: string;         // MIME 类型
 >   size: number;         // 文件大小（字节）
 >   createdAt: number;     // 创建时间戳（毫秒）
+>   properties?: Record<string, unknown>; // 附件属性：audio(duration), image(width,height), video(duration)
 > }
 >
 > interface MemoWithAttachmentsDto {
@@ -564,6 +568,7 @@ curl -X POST http://localhost:3000/api/v1/memos/search/vector \
 >   type: string;         // MIME 类型
 >   size: number;         // 文件大小（字节）
 >   createdAt: number;     // 创建时间戳（毫秒）
+>   properties?: Record<string, unknown>; // 附件属性：audio(duration), image(width,height), video(duration)
 > }
 >
 > interface MemoListItemWithScoreDto {

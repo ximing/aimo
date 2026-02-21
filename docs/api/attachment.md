@@ -58,6 +58,7 @@ curl -X POST http://localhost:3000/api/v1/attachments/upload \
 >   type: string;         // MIME 类型
 >   size: number;         // 文件大小（字节）
 >   createdAt: number;    // 创建时间戳（毫秒）
+>   properties?: Record<string, unknown>; // 附件属性：audio(duration), image(width,height), video(duration)
 > }
 >
 > interface UploadAttachmentResponseDto {
@@ -78,7 +79,8 @@ curl -X POST http://localhost:3000/api/v1/attachments/upload \
       "url": "user_123456/2024-01-01/attachment_123456.pdf",
       "type": "application/pdf",
       "size": 102400,
-      "createdAt": 1704067200000
+      "createdAt": 1704067200000,
+      "properties": {}
     }
   }
 }
@@ -139,6 +141,7 @@ curl -X GET "http://localhost:3000/api/v1/attachments?page=1&limit=20" \
 >   type: string;         // MIME 类型
 >   size: number;         // 文件大小（字节）
 >   createdAt: number;    // 创建时间戳（毫秒）
+>   properties?: Record<string, unknown>; // 附件属性
 > }
 >
 > interface AttachmentListResponseDto {
@@ -169,7 +172,11 @@ curl -X GET "http://localhost:3000/api/v1/attachments?page=1&limit=20" \
         "url": "user_123456/2024-01-01/attachment_789012.png",
         "type": "image/png",
         "size": 204800,
-        "createdAt": 1704067200000
+        "createdAt": 1704067200000,
+        "properties": {
+          "width": 1920,
+          "height": 1080
+        }
       }
     ],
     "total": 50,
@@ -230,6 +237,7 @@ curl -X GET http://localhost:3000/api/v1/attachments/attachment_123456 \
 >   type: string;         // MIME 类型
 >   size: number;         // 文件大小（字节）
 >   createdAt: number;    // 创建时间戳（毫秒）
+>   properties?: Record<string, unknown>; // 附件属性
 > }
 > ```
 
@@ -360,6 +368,104 @@ Cache-Control: private, max-age=3600
 | 401    | 未授权      |
 | 404    | 附件不存在  |
 | 500    | 系统错误    |
+
+---
+
+### 6. Update Attachment Properties
+
+**PATCH** `/api/v1/attachments/:attachmentId/properties`
+
+更新附件的属性信息。属性会与现有属性合并（新值覆盖旧值）。
+
+支持的属性类型：
+- **图片 (image/\*)**: `width` (宽度), `height` (高度)
+- **音频 (audio/\*)**: `duration` (时长，单位：秒)
+- **视频 (video/\*)**: `duration` (时长，单位：秒)
+
+#### Request
+
+**Headers:**
+
+| Header | Required | Description |
+| ------ | -------- | ----------- |
+| Authorization | Yes | JWT Token |
+| Content-Type | Yes | application/json |
+
+**Path Parameters:**
+
+| Parameter    | Type   | Description |
+| ------------ | ------ | ----------- |
+| attachmentId | string | 附件 ID     |
+
+**Request Body:**
+
+| Parameter  | Type   | Required | Description                   |
+| ---------- | ------ | -------- | ----------------------------- |
+| properties | object | Yes      | 要更新的属性对象               |
+
+**Example Request:**
+
+```bash
+curl -X PATCH http://localhost:3000/api/v1/attachments/attachment_123456/properties \
+  -H "Authorization: Bearer <jwt_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"properties": {"width": 1920, "height": 1080}}'
+```
+
+#### Response
+
+**Success Response (200 OK):**
+
+> **Response Type:** `ApiSuccessDto<UpdateAttachmentPropertiesResponseDto>`
+>
+> **UpdateAttachmentPropertiesResponseDto 类型定义:**
+> ```typescript
+> interface AttachmentDto {
+>   attachmentId: string;  // 附件唯一标识符
+>   filename: string;      // 文件名
+>   url: string;          // 访问 URL（存储访问地址）
+>   type: string;         // MIME 类型
+>   size: number;         // 文件大小（字节）
+>   createdAt: number;    // 创建时间戳（毫秒）
+>   properties?: Record<string, unknown>; // 附件属性
+> }
+>
+> interface UpdateAttachmentPropertiesResponseDto {
+>   message: string;
+>   attachment: AttachmentDto;
+> }
+> ```
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "message": "Properties updated successfully",
+    "attachment": {
+      "attachmentId": "attachment_123456",
+      "filename": "image.png",
+      "url": "user_123456/2024-01-01/attachment_123456.png",
+      "type": "image/png",
+      "size": 204800,
+      "createdAt": 1704067200000,
+      "properties": {
+        "width": 1920,
+        "height": 1080
+      }
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+| Status | Description |
+| ------ | ----------- |
+| 400    | 参数错误或缺少 properties |
+| 401    | 未授权      |
+| 404    | 附件不存在  |
+| 500    | 数据库错误  |
 
 ---
 

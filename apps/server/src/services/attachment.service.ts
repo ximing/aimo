@@ -24,6 +24,7 @@ export interface CreateAttachmentOptions {
   mimeType: string;
   size: number;
   createdAt?: number; // Optional timestamp in milliseconds (for imports)
+  properties?: string; // Optional JSON string for properties (audio duration, image dimensions, etc.)
 }
 
 export interface GetAttachmentsOptions {
@@ -41,9 +42,7 @@ export class AttachmentService {
     private multimodalEmbeddingService: MultimodalEmbeddingService
   ) {
     // Create storage adapter for attachments
-    this.storageAdapter = UnifiedStorageAdapterFactory.createAttachmentAdapter(
-      config.attachment
-    );
+    this.storageAdapter = UnifiedStorageAdapterFactory.createAttachmentAdapter(config.attachment);
   }
 
   /**
@@ -52,7 +51,7 @@ export class AttachmentService {
    * @param options - Options for creating the attachment, including optional createdAt for imports
    */
   async createAttachment(options: CreateAttachmentOptions): Promise<AttachmentDto> {
-    const { uid, buffer, filename, mimeType, size, createdAt } = options;
+    const { uid, buffer, filename, mimeType, size, createdAt, properties } = options;
 
     // Generate storage path: {uid}/{YYYY-MM-DD}/{nanoid24}.{ext}
     // Note: prefix (e.g., 'attachments') is added by the storage adapter
@@ -81,6 +80,7 @@ export class AttachmentService {
       endpoint: this.getStorageMetadata('endpoint', attachmentConfig),
       region: this.getStorageMetadata('region', attachmentConfig),
       isPublicBucket: this.getStorageMetadata('isPublicBucket', attachmentConfig),
+      properties: properties || '{}', // Use provided properties or default to empty object
       createdAt: attachmentCreatedAt,
     };
 
