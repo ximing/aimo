@@ -45,6 +45,7 @@ RUN npm install -g pnpm@10.22.0
 COPY --from=builder /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
 COPY --from=builder /app/apps/server/package.json ./apps/server/
 COPY --from=builder /app/packages/dto/package.json ./packages/dto/
+COPY --from=builder /app/packages/logger/package.json ./packages/logger/
 
 # Install production dependencies only
 RUN HUSKY=0 pnpm install --prod --frozen-lockfile --prefer-offline
@@ -53,6 +54,7 @@ RUN HUSKY=0 pnpm install --prod --frozen-lockfile --prefer-offline
 COPY --from=builder /app/apps/server/dist/ ./apps/server/dist/
 COPY --from=builder /app/apps/server/public/ ./apps/server/public/
 COPY --from=builder /app/packages/dto/dist/ ./packages/dto/dist/
+COPY --from=builder /app/packages/logger/lib/ ./packages/logger/lib/
 
 # Create .env file with default values if not provided
 ENV NODE_ENV=production
