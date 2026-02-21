@@ -21,7 +21,7 @@ export const Layout = view(({ children }: LayoutProps) => {
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Check active routes
-  const isHomePage = location.pathname === '/';
+  const isHomePage = location.pathname === '/home';
   const isAIExplorePage = location.pathname === '/ai-explore';
   const isGalleryPage = location.pathname === '/gallery';
   const isSettingsPage = location.pathname.startsWith('/settings');
@@ -51,7 +51,7 @@ export const Layout = view(({ children }: LayoutProps) => {
   };
 
   const handleMemoClick = () => {
-    navigate('/', { replace: true });
+    navigate('/home', { replace: true });
   };
 
   const userName = authService.user?.nickname || authService.user?.email?.split('@')[0] || 'User';

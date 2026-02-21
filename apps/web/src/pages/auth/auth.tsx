@@ -16,7 +16,7 @@ export const AuthPage = view(() => {
   // Redirect to home if already authenticated
   useEffect(() => {
     if (authService.isAuthenticated) {
-      navigate('/', { replace: true });
+      navigate('/home', { replace: true });
     }
   }, [authService.isAuthenticated, navigate]);
 

@@ -39,7 +39,7 @@ export const LoginForm = view(() => {
     setLoading(false);
 
     if (result.success) {
-      navigate('/', { replace: true });
+      navigate('/home', { replace: true });
     } else {
       setError(result.message || 'Login failed. Please try again.');
     }

@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-route
 import { useEffect } from 'react';
 import AuthPage from './pages/auth';
 import HomePage from './pages/home';
+import LandingPage from './pages/landing';
 import SettingsPage from './pages/settings';
 import { AccountSettings } from './pages/settings/components/account-settings';
 import { ImportData } from './pages/settings/components/import-data';
@@ -9,6 +10,7 @@ import { ExportData } from './pages/settings/components/export-data';
 import { About } from './pages/settings/components/about';
 import AIExplorePage from './pages/ai-explore';
 import GalleryPage from './pages/gallery';
+import NotFoundPage from './pages/not-found';
 import { ProtectedRoute } from './components/protected-route';
 import { ToastContainer } from './components/toast';
 import { setNavigate } from './utils/navigation';
@@ -31,7 +33,16 @@ function App() {
       <AppContent />
       <ToastContainer />
       <Routes>
+        <Route path="/" element={<LandingPage />} />
         <Route path="/auth" element={<AuthPage />} />
+        <Route
+          path="/home"
+          element={
+            <ProtectedRoute>
+              <HomePage />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/settings"
           element={
@@ -46,14 +57,6 @@ function App() {
           <Route path="export" element={<ExportData />} />
           <Route path="about" element={<About />} />
         </Route>
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <HomePage />
-            </ProtectedRoute>
-          }
-        />
         <Route
           path="/ai-explore"
           element={
@@ -70,7 +73,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
   );
