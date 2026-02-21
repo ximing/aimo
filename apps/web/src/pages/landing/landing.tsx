@@ -857,27 +857,153 @@ export function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="w-full px-6 py-8 text-center border-t border-slate-200 dark:border-slate-700">
+      <footer className="w-full px-6 py-12 border-t border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-800/30">
         <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-slate-500 dark:text-slate-500">
-              © 2025 AIMO. All rights reserved.
-            </p>
-            <div className="flex items-center gap-6">
-              <a
-                href="https://github.com/ximing/aimo"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-slate-500 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
-              >
-                GitHub
-              </a>
-              <button
-                onClick={() => navigate('/auth')}
-                className="text-sm text-slate-500 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
-              >
-                登录
-              </button>
+          {/* Main Footer Content */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
+            {/* Brand Column */}
+            <div className="md:col-span-1">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-xl font-bold text-slate-900 dark:text-white">AIMO</span>
+              </div>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+                AI 驱动的知识管理工具，让知识管理更智能。
+              </p>
+              {/* Social Links */}
+              <div className="flex items-center gap-3">
+                <a
+                  href="https://github.com/ximing/aimo"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600 hover:text-slate-900 dark:hover:text-white transition-all duration-200"
+                  aria-label="GitHub"
+                >
+                  <Github className="w-5 h-5" />
+                </a>
+                <a
+                  href="https://twitter.com/ximing"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600 hover:text-slate-900 dark:hover:text-white transition-all duration-200"
+                  aria-label="Twitter/X"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                  </svg>
+                </a>
+              </div>
+            </div>
+
+            {/* Product Column */}
+            <div>
+              <h4 className="text-sm font-semibold text-slate-900 dark:text-white mb-4">产品</h4>
+              <ul className="space-y-3">
+                <li>
+                  <button
+                    onClick={() => scrollToSection('features')}
+                    className="text-sm text-slate-600 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                  >
+                    功能特性
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => scrollToSection('download')}
+                    className="text-sm text-slate-600 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                  >
+                    下载应用
+                  </button>
+                </li>
+                <li>
+                  <a
+                    href="https://github.com/ximing/aimo/releases"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-slate-600 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                  >
+                    更新日志
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Resources Column */}
+            <div>
+              <h4 className="text-sm font-semibold text-slate-900 dark:text-white mb-4">资源</h4>
+              <ul className="space-y-3">
+                <li>
+                  <a
+                    href="https://github.com/ximing/aimo"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-slate-600 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                  >
+                    GitHub 仓库
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="https://github.com/ximing/aimo/issues"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-slate-600 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                  >
+                    问题反馈
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="https://github.com/ximing/aimo/blob/main/README.md"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-slate-600 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                  >
+                    使用文档
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Auth Column */}
+            <div>
+              <h4 className="text-sm font-semibold text-slate-900 dark:text-white mb-4">账户</h4>
+              <ul className="space-y-3">
+                <li>
+                  <button
+                    onClick={() => navigate('/auth')}
+                    className="text-sm text-slate-600 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                  >
+                    登录
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => navigate('/auth')}
+                    className="text-sm text-slate-600 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                  >
+                    注册账户
+                  </button>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Bottom Bar */}
+          <div className="pt-8 border-t border-slate-200 dark:border-slate-700">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+              <p className="text-sm text-slate-500 dark:text-slate-500">
+                © 2025 AIMO. All rights reserved.
+              </p>
+              <div className="flex items-center gap-6">
+                <a
+                  href="https://github.com/ximing/aimo/blob/main/LICENSE"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-slate-500 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
+                >
+                  Business Source License 1.1
+                </a>
+              </div>
             </div>
           </div>
         </div>

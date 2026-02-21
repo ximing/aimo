@@ -103,6 +103,45 @@
   - `e.stopPropagation()` needed on lightbox content to prevent closing when clicking inside
 ---
 
+## 2026-02-21 - US-007 (设计使用场景区块)
+- Added Use Cases section with 3 scenarios: 个人知识库, 学习笔记, 灵感收集
+- Implemented alternating left-right layout using `lg:flex-row` and `lg:flex-row-reverse`
+- Each use case includes title, description, related feature tags, and visual mock UI
+- Feature tags styled as badges with primary color scheme
+- Added '场景' to navigation items between Screenshots and Download
+- Mock UI representations use gradient backgrounds matching each use case theme
+- Visual hierarchy established with icon containers, mock window headers, and placeholder content
+- **Files changed:**
+  - `apps/web/src/pages/landing/landing.tsx` - Added useCases data array and Use Cases section
+- **Learnings for future iterations:**
+  - Use alternating layout pattern: `{isEven ? 'lg:flex-row' : 'lg:flex-row-reverse'}`
+  - Store icon components in data array and render dynamically with `const IconComponent = useCase.icon`
+  - Feature tags work well as small rounded badges with bg-primary-50/text-primary-700
+  - Mock UI representations can match section gradients for visual cohesion
+  - `aspect-[4/3]` provides good proportions for visual representations
+  - Add new nav items to `navItems` array for smooth scroll navigation
+---
+
+## 2026-02-21 - US-009 (实现页脚区域)
+- Implemented comprehensive footer section with 4-column layout
+- Added brand column with AIMO description and social links (GitHub, Twitter/X)
+- Added Product column with links to Features, Download, and Changelog
+- Added Resources column with links to GitHub repo, Issues, and Documentation
+- Added Account column with Login and Register links
+- Added bottom bar with copyright notice and Business Source License 1.1 link
+- Footer is responsive: stacks on mobile, 4-column grid on desktop
+- All external links open in new tab with proper rel attributes
+- Navigation links use smooth scroll to sections
+- **Files changed:**
+  - `apps/web/src/pages/landing/landing.tsx` - Enhanced Footer section
+- **Learnings for future iterations:**
+  - Multi-column footer layout: `grid grid-cols-1 md:grid-cols-4`
+  - Social icons: Use consistent wrapper with `p-2 rounded-lg bg-slate-100` styling
+  - Section navigation from footer: reuse `scrollToSection()` function
+  - License link points to LICENSE file in GitHub repo
+  - Keep footer background consistent with section backgrounds (white/50 or slate-800/30)
+---
+
 ## Codebase Patterns
 - When modifying routes, always update related navigation components (layout.tsx, user-menu.tsx, etc.)
 - ProtectedRoute component handles auth redirects automatically

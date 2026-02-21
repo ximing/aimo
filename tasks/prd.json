@@ -143,8 +143,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 9,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Added 3 use cases with alternating layout, feature tags, and visual mock UI representations"
     },
     {
       "id": "US-009",
@@ -159,8 +159,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 10,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Enhanced footer with 4-column layout (Brand, Product, Resources, Account), social links (GitHub, Twitter/X), license info (BSL 1.1), login/register links"
     }
   ]
 }
