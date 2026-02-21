@@ -21,3 +21,6 @@ export * from './asr.js';
 
 // Explore DTOs
 export * from './explore.js';
+
+// Insights DTOs
+export * from './insights.js';

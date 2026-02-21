@@ -107,7 +107,7 @@ export function DailyRecommendations() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="rounded-xl p-4">
+      <div className="rounded-xl">
         <div className="flex items-center gap-2 mb-3">
           <Sparkles size={16} className="text-amber-500" />
           <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">今日推荐</h3>
@@ -170,7 +170,7 @@ export function DailyRecommendations() {
   }
 
   return (
-    <div className="rounded-xl p-4">
+    <div className="rounded-xl">
       <div className="flex items-center gap-2 mb-3">
         <Sparkles size={16} className="text-amber-500" />
         <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">今日推荐</h3>
