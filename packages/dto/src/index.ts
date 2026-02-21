@@ -24,3 +24,6 @@ export * from './explore.js';
 
 // Insights DTOs
 export * from './insights.js';
+
+// Version DTOs
+export * from './version.js';
