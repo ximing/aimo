@@ -14,6 +14,7 @@ import { Service } from 'typedi';
 import { ErrorCode } from '../../constants/error-codes.js';
 import { MemoRelationService } from '../../services/memo-relation.service.js';
 import { MemoService } from '../../services/memo.service.js';
+import { RecommendationService } from '../../services/recommendation.service.js';
 import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 
 import type { CreateMemoDto, UpdateMemoDto, UserInfoDto } from '@aimo/dto';
@@ -23,7 +24,8 @@ import type { CreateMemoDto, UpdateMemoDto, UserInfoDto } from '@aimo/dto';
 export class MemoV1Controller {
   constructor(
     private memoService: MemoService,
-    private memoRelationService: MemoRelationService
+    private memoRelationService: MemoRelationService,
+    private recommendationService: RecommendationService
   ) {}
 
   @Get()
@@ -344,6 +346,25 @@ export class MemoV1Controller {
       return ResponseUtility.success(result);
     } catch (error) {
       console.error('Get on this day memos error:', error);
+      return ResponseUtility.error(ErrorCode.DB_ERROR);
+    }
+  }
+
+  @Get('/daily-recommendations')
+  async getDailyRecommendations(@CurrentUser() user: UserInfoDto) {
+    try {
+      if (!user?.uid) {
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
+      }
+
+      const memos = await this.recommendationService.generateDailyRecommendations(user.uid);
+
+      return ResponseUtility.success({
+        items: memos,
+        total: memos.length,
+      });
+    } catch (error) {
+      console.error('Get daily recommendations error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }

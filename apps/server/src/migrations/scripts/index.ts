@@ -11,6 +11,7 @@ import {
   embeddingCacheTableMigration,
   attachmentsTableMigration,
   multimodalEmbeddingCacheTableMigration,
+  dailyRecommendationsTableMigration,
 } from './001-init.js';
 import { createIndexesMigration } from './002-create-indexes.js';
 import { addMemoTypeMigration } from './003-add-memo-type.js';
@@ -42,6 +43,7 @@ export const ALL_MIGRATIONS: Migration[] = [
   embeddingCacheTableMigration,
   attachmentsTableMigration,
   multimodalEmbeddingCacheTableMigration,
+  dailyRecommendationsTableMigration,
 
   // Version 2: Create scalar indexes for query optimization
   createIndexesMigration,

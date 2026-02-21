@@ -175,3 +175,12 @@ export interface OnThisDayResponseDto {
   total: number;
   todayMonthDay: string; // MM-DD format
 }
+
+/**
+ * Response for daily recommendations API
+ * Returns AI-curated memos for daily review
+ */
+export interface DailyRecommendationsResponseDto {
+  items: MemoListItemDto[];
+  total: number;
+}

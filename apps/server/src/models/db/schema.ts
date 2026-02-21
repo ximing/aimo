@@ -339,3 +339,30 @@ export interface AIMessageRecord {
   sources?: AIMessageSource[];
   createdAt: number; // timestamp in milliseconds
 }
+
+/**
+ * Daily recommendations table schema
+ * Stores cached daily memo recommendations per user
+ */
+export const dailyRecommendationsSchema = new Schema([
+  new Field('recommendationId', new Utf8(), false), // non-nullable unique recommendation id
+  new Field('uid', new Utf8(), false), // non-nullable user id
+  new Field('date', new Utf8(), false), // non-nullable date in YYYY-MM-DD format
+  new Field(
+    'memoIds',
+    new List(new Field('item', new Utf8(), true)),
+    false
+  ), // non-nullable list of recommended memo IDs
+  new Field('createdAt', new Timestamp(TimeUnit.MILLISECOND), false), // non-nullable creation timestamp in milliseconds
+]);
+
+/**
+ * Type definition for daily recommendation records
+ */
+export interface DailyRecommendationRecord {
+  recommendationId: string;
+  uid: string;
+  date: string; // YYYY-MM-DD format
+  memoIds: string[];
+  createdAt: number; // timestamp in milliseconds
+}
