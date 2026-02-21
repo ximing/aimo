@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-route
 import { useEffect } from 'react';
 import AuthPage from './pages/auth';
 import HomePage from './pages/home';
+import LandingPage from './pages/landing';
 import SettingsPage from './pages/settings';
 import { AccountSettings } from './pages/settings/components/account-settings';
 import { ImportData } from './pages/settings/components/import-data';
@@ -31,7 +32,16 @@ function App() {
       <AppContent />
       <ToastContainer />
       <Routes>
+        <Route path="/" element={<LandingPage />} />
         <Route path="/auth" element={<AuthPage />} />
+        <Route
+          path="/home"
+          element={
+            <ProtectedRoute>
+              <HomePage />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/settings"
           element={
@@ -46,14 +56,6 @@ function App() {
           <Route path="export" element={<ExportData />} />
           <Route path="about" element={<About />} />
         </Route>
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <HomePage />
-            </ProtectedRoute>
-          }
-        />
         <Route
           path="/ai-explore"
           element={
