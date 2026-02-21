@@ -7,19 +7,26 @@ import { UserService } from '../services/user.service.js';
 
 import type { UserInfoDto } from '@aimo/dto';
 
-// Whitelist paths that don't require authentication
-const WHITELIST_PATHS = new Set(['/', '/api/v1/auth/login', '/api/v1/auth/register']);
+// Paths that require authentication
+const PROTECTED_PATHS = ['/api', '/home', '/ai-explore', '/gallery', '/settings'];
 
-// Whitelist path prefixes for static assets and public resources
-const WHITELIST_PREFIXES = [
-  '/assets/', // Static assets (JS, CSS, images)
-  '/fonts/', // Static assets (JS, CSS, images)
-  '/open', // Open API endpoints
-  '/logo.png', // Logo image
-  '/logo-dark.png', // Dark logo image
-  '/vite.svg', // Favicon and public assets
-  '/favicon', // Favicon
+// Paths that don't require authentication even if they match protected prefixes
+const AUTH_EXCLUDED_PATHS = [
+  '/api/v1/auth/login',
+  '/api/v1/auth/register',
 ];
+
+/**
+ * Check if the request path requires authentication
+ */
+const requiresAuth = (path: string): boolean => {
+  // First check if path is explicitly excluded from auth
+  if (AUTH_EXCLUDED_PATHS.some((excluded) => path === excluded || path.startsWith(excluded))) {
+    return false;
+  }
+  // Then check if path requires authentication
+  return PROTECTED_PATHS.some((prefix) => path.startsWith(prefix));
+};
 
 /**
  * Authentication middleware that validates the aimo_token from cookies or headers
@@ -27,13 +34,8 @@ const WHITELIST_PREFIXES = [
  */
 export const authHandler = async (request: Request, res: Response, next: NextFunction) => {
   try {
-    // Check if path is in whitelist
-    if (WHITELIST_PATHS.has(request.path)) {
-      return next();
-    }
-
-    // Check if path starts with any whitelisted prefix
-    if (WHITELIST_PREFIXES.some((prefix) => request.path.startsWith(prefix))) {
+    // Check if path requires authentication
+    if (!requiresAuth(request.path)) {
       return next();
     }
 

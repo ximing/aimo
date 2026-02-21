@@ -10,6 +10,7 @@ import { ExportData } from './pages/settings/components/export-data';
 import { About } from './pages/settings/components/about';
 import AIExplorePage from './pages/ai-explore';
 import GalleryPage from './pages/gallery';
+import NotFoundPage from './pages/not-found';
 import { ProtectedRoute } from './components/protected-route';
 import { ToastContainer } from './components/toast';
 import { setNavigate } from './utils/navigation';
@@ -72,7 +73,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
   );

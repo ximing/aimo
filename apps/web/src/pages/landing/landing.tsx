@@ -2,11 +2,18 @@ import { useNavigate } from 'react-router';
 import { useService } from '@rabjs/react';
 import { useState, useEffect } from 'react';
 import { ThemeService } from '../../services/theme.service';
+import { AuthService } from '../../services/auth.service';
 import { getAppVersions } from '../../api/system';
 import {
   Sun, Moon, Menu, X, Github, Sparkles, Search, Link2, Brain, Network, Shield,
   Monitor, Smartphone, Download, Apple, ChevronLeft, ChevronRight, X as XIcon, Images
 } from 'lucide-react';
+import screenshot00 from '../../assets/landing/00.png';
+import screenshot01 from '../../assets/landing/01.png';
+import screenshot02 from '../../assets/landing/02.png';
+import screenshot03 from '../../assets/landing/03.png';
+import screenshot04 from '../../assets/landing/04.png';
+import screenshot05 from '../../assets/landing/05.png';
 import type { AllVersionsResponseDto } from '@aimo/dto';
 
 const navItems = [
@@ -51,30 +58,42 @@ const screenshots = [
     title: '智能笔记编辑',
     description: 'AI 辅助写作，实时生成摘要和关键词',
     gradient: 'from-blue-500 to-purple-600',
+    image: screenshot00,
   },
   {
     id: 2,
     title: '语义搜索',
     description: '基于向量相似度的智能搜索，快速找到相关内容',
     gradient: 'from-emerald-500 to-teal-600',
+    image: screenshot01,
   },
   {
     id: 3,
     title: '知识图谱',
     description: '可视化展示笔记间的关联关系',
     gradient: 'from-orange-500 to-red-600',
+    image: screenshot02,
   },
   {
     id: 4,
     title: '多媒体支持',
     description: '支持图片、音频等多种附件类型',
     gradient: 'from-pink-500 to-rose-600',
+    image: screenshot03,
   },
   {
     id: 5,
-    title: '每日回顾',
+    title: 'AI探索',
     description: '智能推荐历史上的今天记录的笔记',
     gradient: 'from-indigo-500 to-blue-600',
+    image: screenshot04,
+  },
+  {
+    id: 6,
+    title: '主题切换',
+    description: '支持亮色和暗色两种主题，灵活满足不同场景需求',
+    gradient: 'from-violet-500 to-purple-600',
+    image: screenshot05,
   },
 ];
 
@@ -85,11 +104,21 @@ const screenshots = [
 export function LandingPage() {
   const navigate = useNavigate();
   const themeService = useService(ThemeService);
+  const authService = useService(AuthService);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [versions, setVersions] = useState<AllVersionsResponseDto | undefined>(undefined);
   const [currentScreenshot, setCurrentScreenshot] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+
+  // Check if user is logged in
+  const isLoggedIn = authService.isAuthenticated;
+  const currentUser = authService.user;
+
+  useEffect(() => {
+    // Check auth status on mount
+    authService.checkAuth();
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -209,13 +238,25 @@ export function LandingPage() {
                 )}
               </button>
 
-              {/* Login Button - Desktop */}
-              <button
-                onClick={() => navigate('/auth')}
-                className="hidden md:flex px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
-              >
-                登录
-              </button>
+              {/* User Info - Logged in */}
+              {isLoggedIn && currentUser ? (
+                <button
+                  onClick={() => navigate('/home')}
+                  className="hidden md:flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors"
+                >
+                  <div className="w-6 h-6 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400 text-xs font-semibold">
+                    {currentUser.nickname?.[0] || currentUser.email?.[0]?.toUpperCase() || 'U'}
+                  </div>
+                  {currentUser.nickname || currentUser.email?.split('@')[0]}
+                </button>
+              ) : (
+                <button
+                  onClick={() => navigate('/auth')}
+                  className="hidden md:flex px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
+                >
+                  登录
+                </button>
+              )}
 
               {/* Mobile Menu Button */}
               <button
@@ -259,15 +300,19 @@ export function LandingPage() {
                 <Github className="w-4 h-4" />
                 GitHub
               </a>
-              <button
-                onClick={() => {
+            <button
+              onClick={() => {
+                if (isLoggedIn) {
+                  navigate('/home');
+                } else {
                   navigate('/auth');
                   setIsMobileMenuOpen(false);
-                }}
-                className="text-left text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
-              >
-                登录
-              </button>
+                }
+              }}
+              className="text-left text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
+            >
+              {isLoggedIn ? '去使用' : '登录'}
+            </button>
             </nav>
           </div>
         </div>
@@ -338,10 +383,10 @@ export function LandingPage() {
               </svg>
             </button>
             <button
-              onClick={() => scrollToSection('features')}
+              onClick={() => isLoggedIn ? navigate('/home') : scrollToSection('features')}
               className="group px-8 py-4 border-2 border-slate-300 dark:border-slate-600 hover:border-primary-400 dark:hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 text-slate-700 dark:text-slate-300 hover:text-primary-700 dark:hover:text-primary-300 font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
             >
-              <span>查看功能</span>
+              <span>{isLoggedIn ? '去使用' : '查看功能'}</span>
               <svg
                 className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5"
                 fill="none"
@@ -470,56 +515,20 @@ export function LandingPage() {
                         : 'opacity-0 translate-x-full'
                   }`}
                 >
-                  {/* Mock UI Representation */}
+                  {/* Screenshot Image */}
                   <div
                     className={`w-full h-full bg-gradient-to-br ${screenshot.gradient} p-8 flex items-center justify-center cursor-pointer group`}
                     onClick={() => openLightbox(index)}
                   >
                     {/* Mock App Window */}
                     <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-xl shadow-2xl overflow-hidden transform transition-transform duration-300 group-hover:scale-[1.02]">
-                      {/* Window Header */}
-                      <div className="px-4 py-3 bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2">
-                        <div className="flex gap-1.5">
-                          <div className="w-3 h-3 rounded-full bg-red-400" />
-                          <div className="w-3 h-3 rounded-full bg-yellow-400" />
-                          <div className="w-3 h-3 rounded-full bg-green-400" />
-                        </div>
-                        <div className="flex-1 text-center text-xs text-slate-500 dark:text-slate-400">
-                          AIMO - {screenshot.title}
-                        </div>
-                      </div>
-                      {/* Window Content - Mock UI */}
-                      <div className="p-6 h-64 flex flex-col gap-4">
-                        <div className="flex gap-4">
-                          <div className="w-1/3 space-y-3">
-                            <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded-lg" />
-                            <div className="h-20 bg-primary-100 dark:bg-primary-900/30 rounded-lg" />
-                            <div className="h-12 bg-slate-200 dark:bg-slate-700 rounded-lg" />
-                          </div>
-                          <div className="flex-1 space-y-3">
-                            <div className="h-6 bg-slate-200 dark:bg-slate-700 rounded w-3/4" />
-                            <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-full" />
-                            <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-5/6" />
-                            <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-4/5" />
-                            <div className="flex gap-2 mt-4">
-                              <div className="h-8 w-16 bg-primary-200 dark:bg-primary-800 rounded" />
-                              <div className="h-8 w-16 bg-slate-200 dark:bg-slate-700 rounded" />
-                            </div>
-                          </div>
-                        </div>
-                        <div className="mt-auto flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
-                          <div className="flex gap-2">
-                            <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700" />
-                            <div className="space-y-1">
-                              <div className="w-20 h-3 bg-slate-200 dark:bg-slate-700 rounded" />
-                              <div className="w-12 h-2 bg-slate-100 dark:bg-slate-800 rounded" />
-                            </div>
-                          </div>
-                          <div className="flex gap-1">
-                            <div className="w-6 h-6 rounded bg-slate-200 dark:bg-slate-700" />
-                            <div className="w-6 h-6 rounded bg-slate-200 dark:bg-slate-700" />
-                          </div>
-                        </div>
+                      {/* Screenshot Image */}
+                      <div className="relative">
+                        <img
+                          src={screenshot.image}
+                          alt={screenshot.title}
+                          className="w-full h-auto object-cover"
+                        />
                       </div>
                     </div>
                     {/* Zoom Hint */}
@@ -629,35 +638,11 @@ export function LandingPage() {
               className={`w-full h-full bg-gradient-to-br ${screenshots[currentScreenshot].gradient} p-12 flex items-center justify-center`}
             >
               <div className="w-full max-w-3xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden">
-                <div className="px-6 py-4 bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2">
-                  <div className="flex gap-2">
-                    <div className="w-4 h-4 rounded-full bg-red-400" />
-                    <div className="w-4 h-4 rounded-full bg-yellow-400" />
-                    <div className="w-4 h-4 rounded-full bg-green-400" />
-                  </div>
-                  <div className="flex-1 text-center text-sm text-slate-500 dark:text-slate-400">
-                    AIMO - {screenshots[currentScreenshot].title}
-                  </div>
-                </div>
-                <div className="p-8 h-80 flex flex-col gap-6">
-                  <div className="flex gap-6">
-                    <div className="w-1/3 space-y-4">
-                      <div className="h-10 bg-slate-200 dark:bg-slate-700 rounded-xl" />
-                      <div className="h-28 bg-primary-100 dark:bg-primary-900/30 rounded-xl" />
-                      <div className="h-16 bg-slate-200 dark:bg-slate-700 rounded-xl" />
-                    </div>
-                    <div className="flex-1 space-y-4">
-                      <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded-xl w-3/4" />
-                      <div className="h-5 bg-slate-100 dark:bg-slate-800 rounded-lg w-full" />
-                      <div className="h-5 bg-slate-100 dark:bg-slate-800 rounded-lg w-5/6" />
-                      <div className="h-5 bg-slate-100 dark:bg-slate-800 rounded-lg w-4/5" />
-                      <div className="flex gap-3 mt-6">
-                        <div className="h-10 w-20 bg-primary-200 dark:bg-primary-800 rounded-lg" />
-                        <div className="h-10 w-20 bg-slate-200 dark:bg-slate-700 rounded-lg" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <img
+                  src={screenshots[currentScreenshot].image}
+                  alt={screenshots[currentScreenshot].title}
+                  className="w-full h-auto object-cover"
+                />
               </div>
             </div>
           </div>
