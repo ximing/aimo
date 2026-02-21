@@ -83,21 +83,116 @@ export class MemoV1Controller {
     }
   }
 
-  @Get('/:memoId')
-  async getMemo(@Param('memoId') memoId: string, @CurrentUser() user: UserInfoDto) {
+  @Get('/daily-recommendations')
+  async getDailyRecommendations(@CurrentUser() user: UserInfoDto) {
     try {
       if (!user?.uid) {
         return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
       }
 
-      const memo = await this.memoService.getMemoById(memoId, user.uid);
-      if (!memo) {
-        return ResponseUtility.error(ErrorCode.NOT_FOUND);
+      const memos = await this.recommendationService.generateDailyRecommendations(user.uid);
+
+      return ResponseUtility.success({
+        items: memos,
+        total: memos.length,
+      });
+    } catch (error) {
+      console.error('Get daily recommendations error:', error);
+      return ResponseUtility.error(ErrorCode.DB_ERROR);
+    }
+  }
+
+  @Get('/on-this-day')
+  async getOnThisDayMemos(@CurrentUser() user: UserInfoDto) {
+    try {
+      if (!user?.uid) {
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
       }
 
-      return ResponseUtility.success(memo);
+      const result = await this.memoService.getOnThisDayMemos(user.uid);
+
+      return ResponseUtility.success(result);
     } catch (error) {
-      console.error('Get memo error:', error);
+      console.error('Get on this day memos error:', error);
+      return ResponseUtility.error(ErrorCode.DB_ERROR);
+    }
+  }
+
+  @Get('/stats/activity')
+  async getActivityStats(
+    @QueryParam('days') days: number = 90,
+    @CurrentUser() user: UserInfoDto
+  ) {
+    try {
+      if (!user?.uid) {
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
+      }
+
+      // Validate days parameter
+      const validDays = Math.min(Math.max(days, 1), 365);
+
+      const stats = await this.memoService.getActivityStats(user.uid, validDays);
+
+      return ResponseUtility.success(stats);
+    } catch (error) {
+      console.error('Get activity stats error:', error);
+      return ResponseUtility.error(ErrorCode.DB_ERROR);
+    }
+  }
+
+  
+  @Post('/search/vector')
+  async vectorSearch(
+    @Body()
+    body: {
+      query: string;
+      page?: number;
+      limit?: number;
+      categoryId?: string;
+      startDate?: number;
+      endDate?: number;
+    },
+    @CurrentUser() user: UserInfoDto
+  ) {
+    try {
+      if (!user?.uid) {
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
+      }
+
+      if (!body.query) {
+        return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'Query is required');
+      }
+
+      let startDateObject: Date | undefined;
+      let endDateObject: Date | undefined;
+
+      if (body.startDate !== undefined) {
+        const timestamp = Number(body.startDate);
+        if (!isNaN(timestamp)) {
+          startDateObject = new Date(timestamp);
+        }
+      }
+
+      if (body.endDate !== undefined) {
+        const timestamp = Number(body.endDate);
+        if (!isNaN(timestamp)) {
+          endDateObject = new Date(timestamp);
+        }
+      }
+
+      const result = await this.memoService.vectorSearch({
+        uid: user.uid,
+        query: body.query,
+        page: body.page || 1,
+        limit: body.limit || 20,
+        categoryId: body.categoryId,
+        startDate: startDateObject,
+        endDate: endDateObject,
+      });
+
+      return ResponseUtility.success(result);
+    } catch (error) {
+      console.error('Vector search error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
@@ -129,6 +224,25 @@ export class MemoV1Controller {
       });
     } catch (error) {
       console.error('Create memo error:', error);
+      return ResponseUtility.error(ErrorCode.DB_ERROR);
+    }
+  }
+
+  @Get('/:memoId')
+  async getMemo(@Param('memoId') memoId: string, @CurrentUser() user: UserInfoDto) {
+    try {
+      if (!user?.uid) {
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
+      }
+
+      const memo = await this.memoService.getMemoById(memoId, user.uid);
+      if (!memo) {
+        return ResponseUtility.error(ErrorCode.NOT_FOUND);
+      }
+
+      return ResponseUtility.success(memo);
+    } catch (error) {
+      console.error('Get memo error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
@@ -186,62 +300,6 @@ export class MemoV1Controller {
       return ResponseUtility.success({ message: 'Memo deleted successfully' });
     } catch (error) {
       console.error('Delete memo error:', error);
-      return ResponseUtility.error(ErrorCode.DB_ERROR);
-    }
-  }
-
-  @Post('/search/vector')
-  async vectorSearch(
-    @Body()
-    body: {
-      query: string;
-      page?: number;
-      limit?: number;
-      categoryId?: string;
-      startDate?: number;
-      endDate?: number;
-    },
-    @CurrentUser() user: UserInfoDto
-  ) {
-    try {
-      if (!user?.uid) {
-        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
-      }
-
-      if (!body.query) {
-        return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'Query is required');
-      }
-
-      let startDateObject: Date | undefined;
-      let endDateObject: Date | undefined;
-
-      if (body.startDate !== undefined) {
-        const timestamp = Number(body.startDate);
-        if (!isNaN(timestamp)) {
-          startDateObject = new Date(timestamp);
-        }
-      }
-
-      if (body.endDate !== undefined) {
-        const timestamp = Number(body.endDate);
-        if (!isNaN(timestamp)) {
-          endDateObject = new Date(timestamp);
-        }
-      }
-
-      const result = await this.memoService.vectorSearch({
-        uid: user.uid,
-        query: body.query,
-        page: body.page || 1,
-        limit: body.limit || 20,
-        categoryId: body.categoryId,
-        startDate: startDateObject,
-        endDate: endDateObject,
-      });
-
-      return ResponseUtility.success(result);
-    } catch (error) {
-      console.error('Vector search error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
@@ -308,63 +366,6 @@ export class MemoV1Controller {
       });
     } catch (error) {
       console.error('Get backlinks error:', error);
-      return ResponseUtility.error(ErrorCode.DB_ERROR);
-    }
-  }
-
-  @Get('/stats/activity')
-  async getActivityStats(
-    @QueryParam('days') days: number = 90,
-    @CurrentUser() user: UserInfoDto
-  ) {
-    try {
-      if (!user?.uid) {
-        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
-      }
-
-      // Validate days parameter
-      const validDays = Math.min(Math.max(days, 1), 365);
-
-      const stats = await this.memoService.getActivityStats(user.uid, validDays);
-
-      return ResponseUtility.success(stats);
-    } catch (error) {
-      console.error('Get activity stats error:', error);
-      return ResponseUtility.error(ErrorCode.DB_ERROR);
-    }
-  }
-
-  @Get('/on-this-day')
-  async getOnThisDayMemos(@CurrentUser() user: UserInfoDto) {
-    try {
-      if (!user?.uid) {
-        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
-      }
-
-      const result = await this.memoService.getOnThisDayMemos(user.uid);
-
-      return ResponseUtility.success(result);
-    } catch (error) {
-      console.error('Get on this day memos error:', error);
-      return ResponseUtility.error(ErrorCode.DB_ERROR);
-    }
-  }
-
-  @Get('/daily-recommendations')
-  async getDailyRecommendations(@CurrentUser() user: UserInfoDto) {
-    try {
-      if (!user?.uid) {
-        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
-      }
-
-      const memos = await this.recommendationService.generateDailyRecommendations(user.uid);
-
-      return ResponseUtility.success({
-        items: memos,
-        total: memos.length,
-      });
-    } catch (error) {
-      console.error('Get daily recommendations error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }

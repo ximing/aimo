@@ -187,12 +187,12 @@ export const HomePage = view(() => {
               </div>
 
               {/* On This Day Banner - Below heatmap */}
-              <div className="flex-shrink-0 mt-4">
+              <div className="flex-shrink-0">
                 <OnThisDayBanner />
               </div>
 
               {/* Daily Recommendations - AI curated memos */}
-              <div className="flex-shrink-0 mt-4">
+              <div className="flex-shrink-0">
                 <DailyRecommendations />
               </div>
 

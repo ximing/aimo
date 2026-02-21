@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Sparkles, FileText, AlertCircle } from 'lucide-react';
 import { getDailyRecommendations } from '../../../api/memo';
-import { useNavigate } from 'react-router';
+import { MemoDetailModal } from './memo-detail-modal';
 
 import type { MemoListItemDto } from '@aimo/dto';
 
@@ -10,11 +10,12 @@ import type { MemoListItemDto } from '@aimo/dto';
  * Displays AI-curated daily memo recommendations in the sidebar
  */
 export function DailyRecommendations() {
-  const navigate = useNavigate();
   const [recommendations, setRecommendations] = useState<MemoListItemDto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [memoCount, setMemoCount] = useState(0);
+  const [selectedMemoId, setSelectedMemoId] = useState<string | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   // Get today's date formatted
   const getTodayDate = useCallback(() => {
@@ -78,9 +79,16 @@ export function DailyRecommendations() {
     return `${year}-${month}-${day}`;
   };
 
-  // Handle memo click
+  // Handle memo click - open detail modal
   const handleMemoClick = (memoId: string) => {
-    navigate(`/memo/${memoId}`);
+    setSelectedMemoId(memoId);
+    setIsDetailModalOpen(true);
+  };
+
+  // Handle close detail modal
+  const handleCloseDetailModal = () => {
+    setIsDetailModalOpen(false);
+    setSelectedMemoId(null);
   };
 
   // Handle create memo click
@@ -99,7 +107,7 @@ export function DailyRecommendations() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-dark-800 rounded-xl border border-gray-100 dark:border-dark-700 p-4">
+      <div className="rounded-xl p-4">
         <div className="flex items-center gap-2 mb-3">
           <Sparkles size={16} className="text-amber-500" />
           <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">今日推荐</h3>
@@ -162,7 +170,7 @@ export function DailyRecommendations() {
   }
 
   return (
-    <div className="bg-white dark:bg-dark-800 rounded-xl border border-gray-100 dark:border-dark-700 p-4">
+    <div className="rounded-xl p-4">
       <div className="flex items-center gap-2 mb-3">
         <Sparkles size={16} className="text-amber-500" />
         <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">今日推荐</h3>
@@ -193,11 +201,12 @@ export function DailyRecommendations() {
         ))}
       </div>
 
-      <div className="mt-3 pt-3 border-t border-gray-100 dark:border-dark-700">
-        <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
-          AI 智能推荐 · 每日更新
-        </p>
-      </div>
+      {/* Memo Detail Modal */}
+      <MemoDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={handleCloseDetailModal}
+        memoId={selectedMemoId}
+      />
     </div>
   );
 }

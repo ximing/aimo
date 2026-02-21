@@ -211,7 +211,7 @@ export const MemoDetailModal = view(({ isOpen, onClose, memoId }: MemoDetailModa
             >
               <Dialog.Panel className="w-full max-w-lg mx-4 sm:mx-6 transform overflow-hidden rounded-xl bg-white dark:bg-dark-800 shadow-xl transition-all">
                 {/* Header */}
-                <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-dark-700">
+                <div className="flex items-center justify-between px-4 sm:px-6 py-4">
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-1.5 px-2.5 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 text-sm font-medium rounded-full">
                       <Calendar className="w-3.5 h-3.5" />
@@ -220,7 +220,7 @@ export const MemoDetailModal = view(({ isOpen, onClose, memoId }: MemoDetailModa
                   </div>
                   <button
                     onClick={onClose}
-                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer"
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer p-1 rounded-full hover:bg-gray-100 dark:hover:bg-dark-700"
                     aria-label="关闭"
                   >
                     <X className="w-5 h-5" />
@@ -257,7 +257,7 @@ export const MemoDetailModal = view(({ isOpen, onClose, memoId }: MemoDetailModa
                       {renderAttachments()}
 
                       {/* Footer - Date */}
-                      <div className="flex items-center gap-2 pt-4 border-t border-gray-100 dark:border-dark-700">
+                      <div className="flex items-center gap-2 mt-6">
                         <Clock className="w-4 h-4 text-gray-400 dark:text-gray-500" />
                         <span className="text-sm text-gray-500 dark:text-gray-400">
                           {formatDate(memo.createdAt)}
@@ -268,7 +268,7 @@ export const MemoDetailModal = view(({ isOpen, onClose, memoId }: MemoDetailModa
                 </div>
 
                 {/* Footer */}
-                <div className="border-t border-gray-200 dark:border-dark-700 px-4 sm:px-6 py-3 flex justify-end">
+                <div className="px-4 sm:px-6 py-3 flex justify-end">
                   <button
                     onClick={onClose}
                     className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors cursor-pointer"
