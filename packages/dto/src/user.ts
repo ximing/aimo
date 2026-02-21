@@ -34,3 +34,12 @@ export interface UserProfileDto extends UserInfoDto {
   createdAt: number;    // 创建时间戳 (毫秒)
   updatedAt: number;    // 更新时间戳 (毫秒)
 }
+
+/**
+ * 修改密码 DTO
+ * 用于修改用户密码的请求体
+ */
+export interface ChangePasswordDto {
+  oldPassword: string;  // 当前密码
+  newPassword: string; // 新密码
+}

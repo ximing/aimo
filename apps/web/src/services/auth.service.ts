@@ -1,5 +1,5 @@
 import { Service } from '@rabjs/react';
-import type { LoginDto, RegisterDto, UpdateUserDto, UserInfoDto } from '@aimo/dto';
+import type { LoginDto, RegisterDto, UpdateUserDto, UserInfoDto, ChangePasswordDto } from '@aimo/dto';
 import * as authApi from '../api/auth';
 import * as userApi from '../api/user';
 
@@ -199,6 +199,30 @@ export class AuthService extends Service {
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Avatar upload failed',
+      };
+    }
+  }
+
+  /**
+   * Change user password
+   */
+  async changePassword(data: ChangePasswordDto) {
+    try {
+      const response = await userApi.changePassword(data);
+
+      if (response.code === 0 && response.data) {
+        return { success: true, message: response.data.message };
+      }
+
+      return {
+        success: false,
+        message: response.data?.message || 'Password change failed',
+      };
+    } catch (error: unknown) {
+      console.error('Change password error:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Password change failed',
       };
     }
   }

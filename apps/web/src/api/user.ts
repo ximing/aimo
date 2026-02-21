@@ -1,4 +1,4 @@
-import type { UserInfoDto, UpdateUserDto } from '@aimo/dto';
+import type { UserInfoDto, UpdateUserDto, ChangePasswordDto } from '@aimo/dto';
 import request from '../utils/request';
 
 /**
@@ -14,6 +14,16 @@ export const getUserInfo = () => {
 export const updateUserInfo = (data: UpdateUserDto) => {
   return request.put<unknown, { code: number; data: { message: string; user: UserInfoDto } }>(
     '/api/v1/user/info',
+    data
+  );
+};
+
+/**
+ * Change password
+ */
+export const changePassword = (data: ChangePasswordDto) => {
+  return request.post<unknown, { code: number; data: { message: string } }>(
+    '/api/v1/user/password',
     data
   );
 };

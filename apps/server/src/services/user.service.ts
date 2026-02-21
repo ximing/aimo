@@ -224,4 +224,41 @@ export class UserService {
       throw error;
     }
   }
+
+  /**
+   * Change user password
+   */
+  async changePassword(
+    uid: string,
+    oldPassword: string,
+    newPassword: string
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      // Find user by UID
+      const user = await this.findUserByUid(uid);
+      if (!user) {
+        return { success: false, message: '用户不存在' };
+      }
+
+      // Verify old password
+      const isPasswordValid = await this.verifyPassword(oldPassword, user.password);
+      if (!isPasswordValid) {
+        return { success: false, message: '当前密码错误' };
+      }
+
+      // Hash new password
+      const { hashedPassword, salt } = await this.hashPassword(newPassword);
+
+      // Update password
+      await this.updateUser(uid, {
+        password: hashedPassword,
+        salt: salt,
+      });
+
+      return { success: true, message: '密码修改成功' };
+    } catch (error) {
+      console.error('Error changing password:', error);
+      return { success: false, message: '密码修改失败' };
+    }
+  }
 }

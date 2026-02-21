@@ -8,7 +8,7 @@ import { AvatarService } from '../../services/avatar.service.js';
 import { UserService } from '../../services/user.service.js';
 import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 
-import type { UserInfoDto, UpdateUserDto } from '@aimo/dto';
+import type { UserInfoDto, UpdateUserDto, ChangePasswordDto } from '@aimo/dto';
 import type { Request } from 'express';
 
 
@@ -97,6 +97,43 @@ export class UserV1Controller {
       });
     } catch (error) {
       console.error('Update user info error:', error);
+      return ResponseUtility.error(ErrorCode.DB_ERROR);
+    }
+  }
+
+  @Post('/password')
+  async changePassword(@Body() passwordData: ChangePasswordDto, @CurrentUser() userDto: UserInfoDto) {
+    try {
+      if (!userDto?.uid) {
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
+      }
+
+      // Validate input
+      if (!passwordData.oldPassword || !passwordData.newPassword) {
+        return ResponseUtility.error(ErrorCode.PARAMS_ERROR, '请填写完整信息');
+      }
+
+      // Check password length
+      if (passwordData.newPassword.length < 6) {
+        return ResponseUtility.error(ErrorCode.PARAMS_ERROR, '新密码长度至少6位');
+      }
+
+      // Change password
+      const result = await this.userService.changePassword(
+        userDto.uid,
+        passwordData.oldPassword,
+        passwordData.newPassword
+      );
+
+      if (!result.success) {
+        return ResponseUtility.error(ErrorCode.PASSWORD_ERROR, result.message);
+      }
+
+      return ResponseUtility.success({
+        message: result.message,
+      });
+    } catch (error) {
+      console.error('Change password error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }

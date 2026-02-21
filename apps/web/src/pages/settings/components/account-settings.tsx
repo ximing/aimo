@@ -94,18 +94,39 @@ export const AccountSettings = view(() => {
     toast.error(result.message || '保存失败');
   };
 
-  const handleUpdatePassword = (e: React.FormEvent) => {
+  const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      toast.warning('请填写完整信息');
+      return;
+    }
+
     if (newPassword !== confirmPassword) {
       toast.warning('新密码和确认密码不匹配');
       return;
     }
-    // TODO: Implement password update API call
-    console.log('Update password');
-    // Clear password fields after submission
-    setOldPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
+
+    if (newPassword.length < 6) {
+      toast.warning('新密码长度至少6位');
+      return;
+    }
+
+    const result = await authService.changePassword({
+      oldPassword,
+      newPassword,
+    });
+
+    if (result.success) {
+      toast.success(result.message || '密码修改成功');
+      // Clear password fields after submission
+      setOldPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      return;
+    }
+
+    toast.error(result.message || '密码修改失败');
   };
 
   return (
