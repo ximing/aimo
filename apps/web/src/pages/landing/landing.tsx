@@ -5,13 +5,48 @@ import { ThemeService } from '../../services/theme.service';
 import { getAppVersions } from '../../api/system';
 import {
   Sun, Moon, Menu, X, Github, Sparkles, Search, Link2, Brain, Network, Shield,
-  Monitor, Smartphone, Download, Apple
+  Monitor, Smartphone, Download, Apple, ChevronLeft, ChevronRight, X as XIcon, Images
 } from 'lucide-react';
 import type { AllVersionsResponseDto } from '@aimo/dto';
 
 const navItems = [
   { id: 'features', label: '功能' },
+  { id: 'screenshots', label: '截图' },
   { id: 'download', label: '下载' },
+];
+
+// Screenshot data with mock UI representations
+const screenshots = [
+  {
+    id: 1,
+    title: '智能笔记编辑',
+    description: 'AI 辅助写作，实时生成摘要和关键词',
+    gradient: 'from-blue-500 to-purple-600',
+  },
+  {
+    id: 2,
+    title: '语义搜索',
+    description: '基于向量相似度的智能搜索，快速找到相关内容',
+    gradient: 'from-emerald-500 to-teal-600',
+  },
+  {
+    id: 3,
+    title: '知识图谱',
+    description: '可视化展示笔记间的关联关系',
+    gradient: 'from-orange-500 to-red-600',
+  },
+  {
+    id: 4,
+    title: '多媒体支持',
+    description: '支持图片、音频等多种附件类型',
+    gradient: 'from-pink-500 to-rose-600',
+  },
+  {
+    id: 5,
+    title: '每日回顾',
+    description: '智能推荐历史上的今天记录的笔记',
+    gradient: 'from-indigo-500 to-blue-600',
+  },
 ];
 
 /**
@@ -24,6 +59,8 @@ export function LandingPage() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [versions, setVersions] = useState<AllVersionsResponseDto | undefined>(undefined);
+  const [currentScreenshot, setCurrentScreenshot] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -51,6 +88,35 @@ export function LandingPage() {
   const handleThemeToggle = () => {
     themeService.toggleTheme();
   };
+
+  const nextScreenshot = () => {
+    setCurrentScreenshot((prev) => (prev + 1) % screenshots.length);
+  };
+
+  const prevScreenshot = () => {
+    setCurrentScreenshot((prev) => (prev - 1 + screenshots.length) % screenshots.length);
+  };
+
+  const openLightbox = (index: number) => {
+    setCurrentScreenshot(index);
+    setLightboxOpen(true);
+  };
+
+  const closeLightbox = () => {
+    setLightboxOpen(false);
+  };
+
+  // Handle body scroll when lightbox opens/closes
+  useEffect(() => {
+    if (lightboxOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [lightboxOpen]);
 
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
@@ -340,6 +406,258 @@ export function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Screenshots Section */}
+      <section id="screenshots" className="py-24 px-6 overflow-hidden">
+        <div className="max-w-6xl mx-auto">
+          {/* Section Header */}
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 mb-4">
+              <Images className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+              <span className="text-sm font-medium text-primary-700 dark:text-primary-300">
+                界面预览
+              </span>
+            </div>
+            <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">
+              应用截图
+            </h2>
+            <p className="text-slate-600 dark:text-slate-400 max-w-xl mx-auto">
+              探索 AIMO 的优雅界面，体验流畅的知识管理之旅
+            </p>
+          </div>
+
+          {/* Carousel Container */}
+          <div className="relative">
+            {/* Main Carousel */}
+            <div className="relative overflow-hidden rounded-2xl bg-slate-100 dark:bg-slate-800 aspect-[16/10] max-w-4xl mx-auto shadow-2xl shadow-slate-900/10 dark:shadow-slate-900/30">
+              {screenshots.map((screenshot, index) => (
+                <div
+                  key={screenshot.id}
+                  className={`absolute inset-0 transition-all duration-500 ease-out ${
+                    index === currentScreenshot
+                      ? 'opacity-100 translate-x-0'
+                      : index < currentScreenshot
+                        ? 'opacity-0 -translate-x-full'
+                        : 'opacity-0 translate-x-full'
+                  }`}
+                >
+                  {/* Mock UI Representation */}
+                  <div
+                    className={`w-full h-full bg-gradient-to-br ${screenshot.gradient} p-8 flex items-center justify-center cursor-pointer group`}
+                    onClick={() => openLightbox(index)}
+                  >
+                    {/* Mock App Window */}
+                    <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-xl shadow-2xl overflow-hidden transform transition-transform duration-300 group-hover:scale-[1.02]">
+                      {/* Window Header */}
+                      <div className="px-4 py-3 bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2">
+                        <div className="flex gap-1.5">
+                          <div className="w-3 h-3 rounded-full bg-red-400" />
+                          <div className="w-3 h-3 rounded-full bg-yellow-400" />
+                          <div className="w-3 h-3 rounded-full bg-green-400" />
+                        </div>
+                        <div className="flex-1 text-center text-xs text-slate-500 dark:text-slate-400">
+                          AIMO - {screenshot.title}
+                        </div>
+                      </div>
+                      {/* Window Content - Mock UI */}
+                      <div className="p-6 h-64 flex flex-col gap-4">
+                        <div className="flex gap-4">
+                          <div className="w-1/3 space-y-3">
+                            <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded-lg" />
+                            <div className="h-20 bg-primary-100 dark:bg-primary-900/30 rounded-lg" />
+                            <div className="h-12 bg-slate-200 dark:bg-slate-700 rounded-lg" />
+                          </div>
+                          <div className="flex-1 space-y-3">
+                            <div className="h-6 bg-slate-200 dark:bg-slate-700 rounded w-3/4" />
+                            <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-full" />
+                            <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-5/6" />
+                            <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-4/5" />
+                            <div className="flex gap-2 mt-4">
+                              <div className="h-8 w-16 bg-primary-200 dark:bg-primary-800 rounded" />
+                              <div className="h-8 w-16 bg-slate-200 dark:bg-slate-700 rounded" />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="mt-auto flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
+                          <div className="flex gap-2">
+                            <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700" />
+                            <div className="space-y-1">
+                              <div className="w-20 h-3 bg-slate-200 dark:bg-slate-700 rounded" />
+                              <div className="w-12 h-2 bg-slate-100 dark:bg-slate-800 rounded" />
+                            </div>
+                          </div>
+                          <div className="flex gap-1">
+                            <div className="w-6 h-6 rounded bg-slate-200 dark:bg-slate-700" />
+                            <div className="w-6 h-6 rounded bg-slate-200 dark:bg-slate-700" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    {/* Zoom Hint */}
+                    <div className="absolute bottom-4 right-4 p-2 bg-black/50 backdrop-blur-sm rounded-lg text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      点击查看大图
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+            </div>
+
+            {/* Navigation Arrows */}
+            <button
+              onClick={prevScreenshot}
+              className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-lg text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 hover:scale-110 transition-all duration-200 z-10"
+              aria-label="上一张"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+            <button
+              onClick={nextScreenshot}
+              className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm shadow-lg text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 hover:scale-110 transition-all duration-200 z-10"
+              aria-label="下一张"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </button>
+          </div>
+
+          {/* Thumbnail Navigation */}
+          <div className="flex justify-center gap-3 mt-8">
+            {screenshots.map((screenshot, index) => (
+              <button
+                key={screenshot.id}
+                onClick={() => setCurrentScreenshot(index)}
+                className={`relative w-20 h-14 rounded-lg overflow-hidden transition-all duration-200 ${
+                  index === currentScreenshot
+                    ? 'ring-2 ring-primary-500 ring-offset-2 dark:ring-offset-slate-900 scale-110'
+                    : 'opacity-60 hover:opacity-100 hover:scale-105'
+                }`}
+              >
+                <div className={`w-full h-full bg-gradient-to-br ${screenshot.gradient}`} />
+                <div className="absolute inset-0 bg-black/20" />
+                <div className="absolute inset-1 bg-white dark:bg-slate-800 rounded opacity-90">
+                  <div className="h-1.5 bg-slate-200 dark:bg-slate-700 m-1 rounded" />
+                  <div className="h-1 bg-slate-100 dark:bg-slate-700 m-1 rounded w-2/3" />
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {/* Screenshot Info */}
+          <div className="text-center mt-8">
+            <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">
+              {screenshots[currentScreenshot].title}
+            </h3>
+            <p className="text-slate-600 dark:text-slate-400">
+              {screenshots[currentScreenshot].description}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Lightbox */}
+      {lightboxOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-sm"
+          onClick={closeLightbox}
+        >
+          {/* Close Button */}
+          <button
+            onClick={closeLightbox}
+            className="absolute top-4 right-4 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors z-10"
+            aria-label="关闭"
+          >
+            <XIcon className="w-6 h-6" />
+          </button>
+
+          {/* Lightbox Navigation */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              prevScreenshot();
+            }}
+            className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+            aria-label="上一张"
+          >
+            <ChevronLeft className="w-8 h-8" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              nextScreenshot();
+            }}
+            className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+            aria-label="下一张"
+          >
+            <ChevronRight className="w-8 h-8" />
+          </button>
+
+          {/* Enlarged Screenshot */}
+          <div
+            className="max-w-5xl w-full mx-8 aspect-[16/10] rounded-xl overflow-hidden shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className={`w-full h-full bg-gradient-to-br ${screenshots[currentScreenshot].gradient} p-12 flex items-center justify-center`}
+            >
+              <div className="w-full max-w-3xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden">
+                <div className="px-6 py-4 bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2">
+                  <div className="flex gap-2">
+                    <div className="w-4 h-4 rounded-full bg-red-400" />
+                    <div className="w-4 h-4 rounded-full bg-yellow-400" />
+                    <div className="w-4 h-4 rounded-full bg-green-400" />
+                  </div>
+                  <div className="flex-1 text-center text-sm text-slate-500 dark:text-slate-400">
+                    AIMO - {screenshots[currentScreenshot].title}
+                  </div>
+                </div>
+                <div className="p-8 h-80 flex flex-col gap-6">
+                  <div className="flex gap-6">
+                    <div className="w-1/3 space-y-4">
+                      <div className="h-10 bg-slate-200 dark:bg-slate-700 rounded-xl" />
+                      <div className="h-28 bg-primary-100 dark:bg-primary-900/30 rounded-xl" />
+                      <div className="h-16 bg-slate-200 dark:bg-slate-700 rounded-xl" />
+                    </div>
+                    <div className="flex-1 space-y-4">
+                      <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded-xl w-3/4" />
+                      <div className="h-5 bg-slate-100 dark:bg-slate-800 rounded-lg w-full" />
+                      <div className="h-5 bg-slate-100 dark:bg-slate-800 rounded-lg w-5/6" />
+                      <div className="h-5 bg-slate-100 dark:bg-slate-800 rounded-lg w-4/5" />
+                      <div className="flex gap-3 mt-6">
+                        <div className="h-10 w-20 bg-primary-200 dark:bg-primary-800 rounded-lg" />
+                        <div className="h-10 w-20 bg-slate-200 dark:bg-slate-700 rounded-lg" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Lightbox Indicators */}
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2">
+            {screenshots.map((_, index) => (
+              <button
+                key={index}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCurrentScreenshot(index);
+                }}
+                className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                  index === currentScreenshot
+                    ? 'bg-white w-8'
+                    : 'bg-white/40 hover:bg-white/60'
+                }`}
+                aria-label={`跳转到第 ${index + 1} 张`}
+              />
+            ))}
+          </div>
+
+          {/* Screenshot Counter */}
+          <div className="absolute bottom-8 right-8 text-white/60 text-sm">
+            {currentScreenshot + 1} / {screenshots.length}
+          </div>
+        </div>
+      )}
 
       {/* Download Section */}
       <section id="download" className="py-24 px-6 bg-white/50 dark:bg-slate-800/50">

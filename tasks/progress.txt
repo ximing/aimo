@@ -54,6 +54,55 @@
   - Gradient backgrounds on icons add visual depth without being distracting
 ---
 
+## 2026-02-21 - US-005 (设计下载区域)
+- Added `getAppVersions()` API function to `apps/web/src/api/system.ts` for fetching GitHub release versions
+- Enhanced download section with separate Desktop and Mobile areas
+- Desktop downloads: Mac, Windows, Linux with platform-specific icons (Apple, Windows, Linux SVGs)
+- Mobile downloads: Android APK with Android robot icon
+- Version badges displayed next to section titles (fetched from GitHub API with 1-hour server-side caching)
+- System requirements shown for each platform: macOS 12+, Windows 10+, Ubuntu 20.04+, Android 8.0+
+- Download cards link directly to GitHub releases pages
+- Enhanced DownloadCard component with:
+  - Icon container with hover color transition
+  - Download icon indicator
+  - Platform name with hover color change
+  - System requirements text
+- **Files changed:**
+  - `apps/web/src/api/system.ts` - Added getAppVersions API function
+  - `apps/web/src/pages/landing/landing.tsx` - Enhanced download section with desktop/mobile areas
+- **Learnings for future iterations:**
+  - Use `AllVersionsResponseDto` type from `@aimo/dto` for version data
+  - GitHub releases follow pattern: `https://github.com/{owner}/{repo}/releases/latest`
+  - SVG icons can be embedded directly for platform logos (Windows, Linux, Android)
+  - Version badges use `bg-primary-100 dark:bg-primary-900/30` for subtle highlight
+  - Download cards use `<a>` tags with `target="_blank"` for external links
+  - Group related downloads with clear section headers using icons (Monitor, Smartphone)
+---
+
+## 2026-02-21 - US-006 (实现应用截图展示)
+- Added screenshots section with 5 mock UI representations showing key app features
+- Implemented carousel with smooth slide transitions (translate-x animations)
+- Added thumbnail navigation bar below the main carousel
+- Implemented full-screen lightbox with:
+  - Click to open enlarged view
+  - Navigation arrows (previous/next)
+  - Dot indicators at bottom
+  - Screenshot counter (e.g., "2 / 5")
+  - Click outside or X button to close
+  - Keyboard navigation support
+- Each screenshot shows a stylized mock UI window with gradient backgrounds
+- Used useEffect for body scroll locking when lightbox is open (lint requirement)
+- Added "截图" to navigation items between Features and Download
+- **Files changed:**
+  - `apps/web/src/pages/landing/landing.tsx` - Added screenshots array data, carousel state, lightbox state, Screenshots section, and Lightbox component
+- **Learnings for future iterations:**
+  - Mock UI representations can be created using CSS gradients and divs (no actual images needed)
+  - Carousel transitions use `translate-x` with `overflow-hidden` on container
+  - Lightbox should use `useEffect` to modify `document.body.style.overflow` instead of direct modification in event handlers (react-hooks/immutability rule)
+  - Always clean up body overflow in useEffect cleanup function
+  - `e.stopPropagation()` needed on lightbox content to prevent closing when clicking inside
+---
+
 ## Codebase Patterns
 - When modifying routes, always update related navigation components (layout.tsx, user-menu.tsx, etc.)
 - ProtectedRoute component handles auth redirects automatically
