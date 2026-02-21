@@ -15,6 +15,45 @@
   - State for mobile menu: `isMobileMenuOpen` controls visibility
 ---
 
+## 2026-02-21 - US-003 (设计 Hero 区域)
+- Redesigned Hero section with compelling visual design
+- Added abstract gradient orbs as background elements (3 animated blur circles)
+- Added grid pattern overlay for subtle texture
+- Enhanced typography with gradient text effect on AIMO title
+- Added badge highlighting "AI 驱动的知识管理"
+- Improved CTA buttons with icons and hover animations
+- Added trust indicators (开源免费, 隐私优先, 多平台支持)
+- Added scroll indicator with bounce animation
+- **Files changed:**
+  - `apps/web/src/pages/landing/landing.tsx` - Enhanced Hero section
+- **Learnings for future iterations:**
+  - Gradient orbs: Use `blur-3xl` with low opacity colors for subtle background effects
+  - Grid pattern: Use CSS `linear-gradient` with `backgroundSize` for technical aesthetic
+  - Gradient text: Use `bg-clip-text text-transparent` with gradient background
+  - `animate-pulse` with animation-delay creates varied floating effects
+  - Trust indicators build credibility - always include social proof elements
+---
+
+## 2026-02-21 - US-004 (实现功能特性展示区块)
+- Enhanced Features section with 6 core feature cards
+- Changed grid layout from 4 columns to 3 columns (lg:grid-cols-3) for better visual balance
+- Added 6 features: AI 笔记, 语义搜索, 知识关联, 智能补全, 多端同步, 隐私安全
+- Improved hover effects:
+  - Cards lift up with translate-y-2 on hover
+  - Colored shadow (shadow-primary-500/10) appears on hover
+  - Border color changes to primary on hover
+  - Icons scale and rotate slightly on hover
+  - Title color changes to primary on hover
+- Added gradient background to icon containers (from-primary-100 to-primary-50)
+- **Files changed:**
+  - `apps/web/src/pages/landing/landing.tsx` - Enhanced Features section with 6 cards
+- **Learnings for future iterations:**
+  - Use `group` class on parent and `group-hover:` on children for coordinated hover effects
+  - `shadow-primary-500/10` creates a subtle colored glow effect
+  - Grid layout: `grid-cols-1 md:grid-cols-2 lg:grid-cols-3` for responsive 1/2/3 column layout
+  - Gradient backgrounds on icons add visual depth without being distracting
+---
+
 ## Codebase Patterns
 - When modifying routes, always update related navigation components (layout.tsx, user-menu.tsx, etc.)
 - ProtectedRoute component handles auth redirects automatically

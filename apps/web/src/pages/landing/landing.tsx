@@ -2,7 +2,12 @@ import { useNavigate } from 'react-router';
 import { useService } from '@rabjs/react';
 import { useState, useEffect } from 'react';
 import { ThemeService } from '../../services/theme.service';
-import { Sun, Moon, Menu, X, Github, Sparkles, Search, Link2, Brain, Network, Shield } from 'lucide-react';
+import { getAppVersions } from '../../api/system';
+import {
+  Sun, Moon, Menu, X, Github, Sparkles, Search, Link2, Brain, Network, Shield,
+  Monitor, Smartphone, Download, Apple
+} from 'lucide-react';
+import type { AllVersionsResponseDto } from '@aimo/dto';
 
 const navItems = [
   { id: 'features', label: '功能' },
@@ -18,6 +23,7 @@ export function LandingPage() {
   const themeService = useService(ThemeService);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [versions, setVersions] = useState<AllVersionsResponseDto | undefined>(undefined);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -25,6 +31,21 @@ export function LandingPage() {
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    // Fetch app versions from GitHub releases
+    const fetchVersions = async () => {
+      try {
+        const response = await getAppVersions();
+        if (response.code === 200 && response.data) {
+          setVersions(response.data);
+        }
+      } catch {
+        // Silently fail - UI will handle undefined versions
+      }
+    };
+    fetchVersions();
   }, []);
 
   const handleThemeToggle = () => {
@@ -322,18 +343,85 @@ export function LandingPage() {
 
       {/* Download Section */}
       <section id="download" className="py-24 px-6 bg-white/50 dark:bg-slate-800/50">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">
-            下载 AIMO
-          </h2>
-          <p className="text-slate-600 dark:text-slate-400 mb-12">
-            选择适合你的平台，开始高效的知识管理之旅
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <DownloadCard platform="macOS" icon="🍎" />
-            <DownloadCard platform="Windows" icon="🪟" />
-            <DownloadCard platform="Linux" icon="🐧" />
-            <DownloadCard platform="Android" icon="🤖" />
+        <div className="max-w-5xl mx-auto">
+          {/* Section Header */}
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">
+              下载 AIMO
+            </h2>
+            <p className="text-slate-600 dark:text-slate-400">
+              选择适合你的平台，开始高效的知识管理之旅
+            </p>
+          </div>
+
+          {/* Desktop Downloads */}
+          <div className="mb-12">
+            <div className="flex items-center gap-2 mb-6">
+              <Monitor className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+              <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
+                桌面端
+              </h3>
+              {versions?.desktop.version && (
+                <span className="px-2 py-0.5 text-xs font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full">
+                  v{versions.desktop.version}
+                </span>
+              )}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <DownloadCard
+                platform="macOS"
+                icon={<Apple className="w-8 h-8" />}
+                downloadUrl="https://github.com/ximing/aimo/releases/latest"
+                requirements="macOS 12+"
+              />
+              <DownloadCard
+                platform="Windows"
+                icon={
+                  <svg className="w-8 h-8" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801" />
+                  </svg>
+                }
+                downloadUrl="https://github.com/ximing/aimo/releases/latest"
+                requirements="Windows 10+"
+              />
+              <DownloadCard
+                platform="Linux"
+                icon={
+                  <svg className="w-8 h-8" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12.504 0c-.155 0-.315.008-.48.021-4.226.333-3.105 4.807-3.17 6.298-.076 1.092-.3 1.953-1.05 3.02-.885 1.051-2.127 2.75-2.716 4.521-.278.832-.41 1.684-.287 2.489a.424.424 0 00-.11.135c-.26.268-.45.6-.663.839-.199.199-.485.267-.797.4-.313.136-.658.269-.864.68-.09.189-.136.394-.132.602 0 .199.027.4.055.536.058.399.116.728.04.97-.249.68-.28 1.145-.106 1.484.174.334.535.47.94.601.81.2 1.91.135 2.774.6.926.466 1.866.67 2.616.47.526-.116.97-.464 1.208-.946.587-.003 1.23-.269 2.26-.334.699-.058 1.574.267 2.577.2.025.134.063.198.114.333l.003.003c.391.778 1.113 1.132 1.884 1.071.771-.06 1.592-.536 2.257-1.306.631-.765 1.683-1.084 2.378-1.503.348-.199.629-.469.649-.853.023-.4-.2-.811-.714-1.376v-.097l-.003-.003c-.17-.2-.25-.535-.338-.926-.085-.401-.182-.786-.492-1.046h-.003c-.059-.054-.123-.067-.188-.135a.357.357 0 00-.19-.064c.431-1.278.264-2.55-.173-3.694-.533-1.41-1.465-2.638-2.175-3.483-.796-1.005-1.576-1.957-1.56-3.368.026-2.152.236-6.133-3.544-6.139zm.529 3.405h.013c.213 0 .396.062.584.198.19.135.33.332.438.533.105.259.158.459.166.724 0-.02.006-.04.006-.06v.105a.086.086 0 01-.004-.021l-.004-.024a1.807 1.807 0 01-.15.706.953.953 0 01-.213.335.71.71 0 00-.088-.042c-.104-.045-.198-.064-.284-.133a1.312 1.312 0 00-.22-.066c.05-.06.146-.133.183-.198.053-.128.082-.264.088-.402v-.02a1.21 1.21 0 00-.061-.4c-.045-.134-.101-.2-.183-.333-.084-.066-.167-.132-.267-.132h-.016c-.093 0-.176.03-.262.132a.8.8 0 00-.205.334 1.18 1.18 0 00-.09.41c.007.133.034.266.09.394.024.059.081.126.128.188a1.617 1.617 0 00-.336.123c-.08.034-.15.072-.206.108a.968.968 0 01-.217-.329 1.52 1.52 0 01-.15-.703v-.133c.01-.135.057-.264.137-.376.108-.169.266-.305.467-.37a1.08 1.08 0 01.357-.062zm3.067 3.075c.175.145.35.283.525.415a3.24 3.24 0 01-.264 1.123c-.138.343-.324.638-.537.87a1.48 1.48 0 00-.093-.134c-.114-.15-.205-.3-.29-.47a2.133 2.133 0 01-.083-.2c.132-.197.247-.42.35-.673.102-.255.185-.52.252-.8h.14zm-2.578.028c.062.28.14.544.243.792.1.245.216.467.349.66a3.08 3.08 0 01-.369.876c-.083.156-.174.303-.27.432-.101-.215-.227-.408-.37-.579a2.881 2.881 0 00-.472-.467c.123-.14.237-.295.338-.466.102-.169.192-.35.273-.543.08-.192.147-.396.2-.606l.078.001zm1.576.604c.07.197.15.39.243.579a4.02 4.02 0 00-.562-.003 4.18 4.18 0 00-.24-.576c.185.011.371.011.559 0zm-.697 1.534c.163.056.325.124.487.201.16.077.32.164.475.263-.146.119-.3.227-.464.32a2.552 2.552 0 01-.516.234c-.052-.158-.111-.313-.176-.464a3.723 3.723 0 00-.206-.454c.13-.034.267-.066.4-.1zm1.346 0c.133.034.27.066.4.1-.068.148-.13.3-.182.457-.063.149-.12.303-.175.46a2.555 2.555 0 01-.48-.23 2.52 2.52 0 01-.5-.318c.155-.102.313-.19.476-.27.163-.079.325-.147.46-.199z" />
+                  </svg>
+                }
+                downloadUrl="https://github.com/ximing/aimo/releases/latest"
+                requirements="Ubuntu 20.04+"
+              />
+            </div>
+          </div>
+
+          {/* Mobile Downloads */}
+          <div>
+            <div className="flex items-center gap-2 mb-6">
+              <Smartphone className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+              <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
+                移动端
+              </h3>
+              {versions?.apk.version && (
+                <span className="px-2 py-0.5 text-xs font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full">
+                  v{versions.apk.version}
+                </span>
+              )}
+            </div>
+            <div className="max-w-xs">
+              <DownloadCard
+                platform="Android APK"
+                icon={
+                  <svg className="w-8 h-8" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.5511 0 .9993.4482.9993.9993.0001.5511-.4482.9997-.9993.9997m-11.046 0c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.5511 0 .9993.4482.9993.9993 0 .5511-.4482.9997-.9993.9997m11.4045-6.02l1.9973-3.4592a.416.416 0 00-.1521-.5676.416.416 0 00-.5676.1521l-2.0225 3.503c-1.4655-.6712-3.1128-1.0456-4.8573-1.0456-1.7456 0-3.3945.3744-4.8621 1.0472L4.7932 5.4465a.4161.4161 0 00-.5677-.1521.4156.4156 0 00-.1521.5676l1.9973 3.4592C2.6889 11.1867.3432 14.6589.3432 18.6617h23.3136c0-4.0028-2.3457-7.475-5.7748-9.3403" />
+                  </svg>
+                }
+                downloadUrl="https://github.com/ximing/aimo-app/releases/latest"
+                requirements="Android 8.0+"
+              />
+            </div>
           </div>
         </div>
       </section>
@@ -390,14 +478,36 @@ function FeatureCard({
   );
 }
 
-function DownloadCard({ platform, icon }: { platform: string; icon: string }) {
+function DownloadCard({
+  platform,
+  icon,
+  downloadUrl,
+  requirements,
+}: {
+  platform: string;
+  icon: React.ReactNode;
+  downloadUrl: string;
+  requirements: string;
+}) {
   return (
-    <button className="p-6 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:shadow-lg hover:-translate-y-1 hover:border-primary-300 dark:hover:border-primary-700 transition-all duration-300">
-      <div className="text-4xl mb-3">{icon}</div>
-      <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">
+    <a
+      href={downloadUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group block p-6 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:shadow-lg hover:-translate-y-1 hover:border-primary-300 dark:hover:border-primary-700 transition-all duration-300"
+    >
+      <div className="flex items-start justify-between">
+        <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-300 group-hover:bg-primary-100 dark:group-hover:bg-primary-900/30 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-300">
+          {icon}
+        </div>
+        <Download className="w-5 h-5 text-slate-400 group-hover:text-primary-500 transition-colors duration-300" />
+      </div>
+      <h3 className="mt-4 text-lg font-semibold text-slate-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-300">
         {platform}
       </h3>
-      <p className="text-xs text-slate-500 dark:text-slate-500">即将推出</p>
-    </button>
+      <p className="mt-1 text-xs text-slate-500 dark:text-slate-500">
+        {requirements}
+      </p>
+    </a>
   );
 }
