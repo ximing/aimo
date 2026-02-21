@@ -20,6 +20,7 @@ import {
   aiConversationsTableMigration,
   aiMessagesTableMigration,
 } from './006-add-ai-conversations.js';
+import { addPropertiesToAttachmentsMigration } from './007-add-attachment-properties.js';
 
 import type { Migration } from '../types.js';
 
@@ -57,6 +58,9 @@ export const ALL_MIGRATIONS: Migration[] = [
   // Version 6: Add AI conversations and messages tables
   aiConversationsTableMigration,
   aiMessagesTableMigration,
+
+  // Version 7: Add properties field to attachments table
+  addPropertiesToAttachmentsMigration,
 
   // Add future migrations here
   // Example:

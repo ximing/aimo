@@ -199,6 +199,7 @@ export const attachmentsSchema = new Schema([
     true
   ), // nullable multimodal embedding vector (1024-dim)
   new Field('multimodalModelHash', new Utf8(), true), // nullable model hash for multimodal embedding
+  new Field('properties', new Utf8(), true), // nullable JSON string for properties: audio(duration), image(width,height), video(duration)
   new Field('createdAt', new Timestamp(TimeUnit.MILLISECOND), false), // non-nullable creation timestamp in milliseconds
 ]);
 
@@ -243,6 +244,7 @@ export interface AttachmentRecord {
   isPublicBucket?: string; // 'true' | 'false' - whether bucket is public
   multimodalEmbedding?: number[]; // optional multimodal embedding vector for images and videos
   multimodalModelHash?: string; // optional model hash for multimodal embedding
+  properties?: string; // optional JSON string for properties: audio(duration), image(width,height), video(duration)
   createdAt: number; // timestamp in milliseconds
 }
 

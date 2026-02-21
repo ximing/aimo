@@ -12,6 +12,22 @@ export interface AttachmentDto {
   type: string; // MIME type
   size: number; // file size in bytes
   createdAt: number; // timestamp in milliseconds
+  properties?: Record<string, unknown>; // optional properties: audio(duration), image(width,height), video(duration)
+}
+
+/**
+ * Update attachment properties request DTO
+ */
+export interface UpdateAttachmentPropertiesDto {
+  properties: Record<string, unknown>; // properties to update: audio(duration), image(width,height), video(duration)
+}
+
+/**
+ * Update attachment properties response DTO
+ */
+export interface UpdateAttachmentPropertiesResponseDto {
+  message: string;
+  attachment: AttachmentDto;
 }
 
 /**

@@ -10,12 +10,14 @@ import {
   Post,
   Get,
   Delete,
+  Patch,
   Param,
   QueryParam,
   CurrentUser,
   Req,
   Res,
   UploadedFile,
+  Body,
 } from 'routing-controllers';
 import { Service } from 'typedi';
 
@@ -24,7 +26,7 @@ import { ErrorCode } from '../../constants/error-codes.js';
 import { AttachmentService } from '../../services/attachment.service.js';
 import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 
-import type { UserInfoDto } from '@aimo/dto';
+import type { UserInfoDto, UpdateAttachmentPropertiesDto } from '@aimo/dto';
 import type { Request, Response } from 'express';
 
 
@@ -264,6 +266,46 @@ export class AttachmentV1Controller {
     } catch (error) {
       console.error('Download attachment error:', error);
       return response.status(500).json(ResponseUtility.error(ErrorCode.SYSTEM_ERROR));
+    }
+  }
+
+  /**
+   * Update attachment properties
+   * PATCH /api/v1/attachments/:attachmentId/properties
+   */
+  @Patch('/:attachmentId/properties')
+  async updateAttachmentProperties(
+    @Param('attachmentId') attachmentId: string,
+    @CurrentUser() user: UserInfoDto,
+    @Body() body: UpdateAttachmentPropertiesDto
+  ) {
+    try {
+      if (!user?.uid) {
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
+      }
+
+      if (!body || !body.properties) {
+        return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'Properties are required');
+      }
+
+      // Update attachment properties
+      const attachment = await this.attachmentService.updateAttachmentProperties(
+        attachmentId,
+        user.uid,
+        body.properties
+      );
+
+      if (!attachment) {
+        return ResponseUtility.error(ErrorCode.ATTACHMENT_NOT_FOUND);
+      }
+
+      return ResponseUtility.success({
+        message: 'Properties updated successfully',
+        attachment,
+      });
+    } catch (error) {
+      console.error('Update attachment properties error:', error);
+      return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
 }

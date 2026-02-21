@@ -120,7 +120,96 @@ export class AttachmentService {
       type: mimeType,
       size,
       createdAt: attachmentCreatedAt,
+      properties: {},
     };
+  }
+
+  /**
+   * Convert attachment record to DTO with generated access URL
+   * Handles both regular and Arrow-based property data
+   */
+  private convertToAttachmentDto(record: AttachmentRecord, accessUrl: string): AttachmentDto {
+    let properties: Record<string, unknown> = {};
+
+    // Handle properties field - could be string (JSON) or already parsed object
+    if (record.properties) {
+      if (typeof record.properties === 'string') {
+        try {
+          properties = JSON.parse(record.properties);
+        } catch {
+          properties = {};
+        }
+      } else if (typeof record.properties === 'object') {
+        properties = record.properties as Record<string, unknown>;
+      }
+    }
+
+    return {
+      attachmentId: record.attachmentId,
+      filename: record.filename,
+      url: accessUrl,
+      type: record.type,
+      size: record.size,
+      createdAt: record.createdAt,
+      properties: Object.keys(properties).length > 0 ? properties : undefined,
+    };
+  }
+
+  /**
+   * Update attachment properties
+   * @param attachmentId - The attachment ID to update
+   * @param uid - User ID for permission check
+   * @param properties - The properties to set (will be merged with existing)
+   * @returns Updated AttachmentDto or null if not found
+   */
+  async updateAttachmentProperties(
+    attachmentId: string,
+    uid: string,
+    properties: Record<string, unknown>
+  ): Promise<AttachmentDto | null> {
+    const table = await this.lanceDatabaseService.openTable('attachments');
+
+    // Find attachment
+    const results = await table
+      .query()
+      .where(`attachmentId = '${attachmentId}' AND uid = '${uid}'`)
+      .limit(1)
+      .toArray();
+
+    if (!results || results.length === 0) {
+      return null;
+    }
+
+    const existingRecord = results[0] as unknown as AttachmentRecord;
+
+    // Merge existing properties with new ones
+    let existingProperties: Record<string, unknown> = {};
+    if (existingRecord.properties) {
+      try {
+        existingProperties =
+          typeof existingRecord.properties === 'string'
+            ? JSON.parse(existingRecord.properties)
+            : existingRecord.properties;
+      } catch {
+        existingProperties = {};
+      }
+    }
+
+    const mergedProperties = { ...existingProperties, ...properties };
+
+    // Create updated record
+    const updatedRecord: AttachmentRecord = {
+      ...existingRecord,
+      properties: JSON.stringify(mergedProperties),
+    };
+
+    // Delete the old record and add the updated one
+    await table.delete(`attachmentId = '${attachmentId}'`);
+    await table.add([updatedRecord as unknown as Record<string, unknown>]);
+
+    // Generate access URL and return DTO
+    const accessUrl = await this.generateAccessUrl(updatedRecord);
+    return this.convertToAttachmentDto(updatedRecord, accessUrl);
   }
 
   /**
@@ -207,14 +296,7 @@ export class AttachmentService {
     const record = results[0] as unknown as AttachmentRecord;
     const accessUrl = await this.generateAccessUrl(record);
 
-    return {
-      attachmentId: record.attachmentId,
-      filename: record.filename,
-      url: accessUrl,
-      type: record.type,
-      size: record.size,
-      createdAt: record.createdAt,
-    };
+    return this.convertToAttachmentDto(record, accessUrl);
   }
 
   /**
@@ -245,14 +327,7 @@ export class AttachmentService {
       paginatedResults.map(async (record) => {
         const r = record as unknown as AttachmentRecord;
         const accessUrl = await this.generateAccessUrl(r);
-        return {
-          attachmentId: r.attachmentId,
-          filename: r.filename,
-          url: accessUrl,
-          type: r.type,
-          size: r.size,
-          createdAt: r.createdAt,
-        };
+        return this.convertToAttachmentDto(r, accessUrl);
       })
     );
 
@@ -321,14 +396,7 @@ export class AttachmentService {
     for (const record of results) {
       const r = record as unknown as AttachmentRecord;
       const accessUrl = await this.generateAccessUrl(r);
-      attachmentMap.set(r.attachmentId, {
-        attachmentId: r.attachmentId,
-        filename: r.filename,
-        url: accessUrl,
-        type: r.type,
-        size: r.size,
-        createdAt: r.createdAt,
-      });
+      attachmentMap.set(r.attachmentId, this.convertToAttachmentDto(r, accessUrl));
     }
 
     // Return in the original order of attachmentIds

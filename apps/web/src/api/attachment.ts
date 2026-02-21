@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { AttachmentDto, UploadAttachmentResponseDto } from '@aimo/dto';
+import type { AttachmentDto, UploadAttachmentResponseDto, UpdateAttachmentPropertiesResponseDto } from '@aimo/dto';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 const API_BASE = `${API_BASE_URL}/api/v1/attachments`;
@@ -84,5 +84,26 @@ export const attachmentApi = {
     if (response.data.code !== 0) {
       throw new Error(response.data.message || 'Delete failed');
     }
+  },
+
+  /**
+   * 更新附件属性
+   * @param attachmentId - 附件 ID
+   * @param properties - 要更新的属性 (audio: duration, image: width/height, video: duration)
+   */
+  async updateProperties(
+    attachmentId: string,
+    properties: Record<string, unknown>
+  ): Promise<AttachmentDto> {
+    const response = await axios.patch<ApiResponse<UpdateAttachmentPropertiesResponseDto>>(
+      `${API_BASE}/${attachmentId}/properties`,
+      { properties }
+    );
+
+    if (response.data.code === 0) {
+      return response.data.data.attachment;
+    }
+
+    throw new Error(response.data.message || 'Update properties failed');
   },
 };

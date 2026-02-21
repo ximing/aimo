@@ -75,7 +75,7 @@ export class AuthService extends Service {
       } else {
         return {
           success: false,
-          message: 'Login failed',
+          message: response.msg || 'Login failed',
         };
       }
     } catch (error: unknown) {
