@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
   const isElectron = process.env.ELECTRON === 'true';
 
   // Determine API base URL for Electron build
-  const apiBaseUrl = isElectron ? 'https://aimo.fun' : env.VITE_API_BASE_URL || '';
+  const apiBaseUrl = isElectron ? 'https://aimo.plus' : env.VITE_API_BASE_URL || '';
 
   return {
     // Inject environment variables
