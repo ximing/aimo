@@ -65,6 +65,20 @@ export function onFileDrop(callback: (filePaths: string[]) => void): () => void 
 /**
  * Type definition for the Electron API exposed via preload script
  */
+export interface UpdateStatus {
+  status: 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error';
+  version?: string;
+  releaseNotes?: string;
+  percent?: number;
+  error?: string;
+}
+
+export interface UpdateInfo {
+  version: string;
+  releaseDate?: string;
+  releaseNotes?: string;
+}
+
 declare global {
   interface Window {
     electronAPI?: {
@@ -72,6 +86,13 @@ declare global {
       getVersion: () => string;
       onFileDrop?: (callback: (filePaths: string[]) => void) => void;
       removeFileDropListener?: (callback: (filePaths: string[]) => void) => void;
+      // Auto-update APIs
+      checkForUpdates: () => Promise<UpdateInfo | null>;
+      downloadUpdate: () => Promise<{ success: boolean }>;
+      installUpdate: () => void;
+      getAppVersion: () => Promise<string>;
+      onUpdateStatus?: (callback: (status: UpdateStatus) => void) => void;
+      removeUpdateStatusListener?: (callback: (status: UpdateStatus) => void) => void;
     };
   }
 }

@@ -424,7 +424,6 @@ function createApplicationMenu(): void {
         { type: 'separator' },
         {
           label: `退出 ${app.getName()}`,
-          role: 'quit',
           accelerator: 'Command+Q',
           click: () => {
             isQuiting = true;
