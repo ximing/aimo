@@ -1,9 +1,15 @@
 /**
  * Detect if the app is running in Electron environment
  * Checks for the presence of 'Electron' in the user agent string
+ * or the presence of electronAPI (exposed by preload script)
  */
 export function isElectron(): boolean {
-  return typeof navigator !== 'undefined' && navigator.userAgent.includes('Electron');
+  // First check userAgent (fast, synchronous)
+  const hasElectronInUA = typeof navigator !== 'undefined' && navigator.userAgent.includes('Electron');
+  // Also check for electronAPI (more reliable, exposed by preload script)
+  const hasElectronAPI = typeof window !== 'undefined' && !!window.electronAPI;
+
+  return hasElectronInUA || hasElectronAPI;
 }
 
 /**

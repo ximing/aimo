@@ -32,8 +32,7 @@ const __dirname = path.dirname(__filename);
 // │ │ └── index.js     > Electron-Main
 // │ ├─┬ preload
 // │ │ └── index.mjs    > Preload-Scripts
-// │ └─┬ web
-// │   └── index.html   > Web app (built from apps/web with ELECTRON=true)
+// │ └─┬ index.html   > Web app (built from apps/web with ELECTRON=true)
 
 export const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
 export const RENDERER_DIST = path.resolve(__dirname, '..');

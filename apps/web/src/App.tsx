@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router';
+import { BrowserRouter, HashRouter, Routes, Route, Navigate, useNavigate } from 'react-router';
 import { useEffect } from 'react';
 import AuthPage from './pages/auth';
 import HomePage from './pages/home';
@@ -37,8 +37,10 @@ function AppContent() {
 }
 
 function App() {
+  const Router = isElectron() ? HashRouter : BrowserRouter;
+
   return (
-    <BrowserRouter>
+    <Router>
       <AppContent />
       <ToastContainer />
       <Routes>
@@ -84,7 +86,7 @@ function App() {
         />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
-    </BrowserRouter>
+    </Router>
   );
 }
 
