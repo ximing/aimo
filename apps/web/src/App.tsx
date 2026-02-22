@@ -19,11 +19,7 @@ import { isElectron } from './electron/isElectron';
 // 内部组件，用于根据环境渲染根路由
 function RootRoute() {
   if (isElectron()) {
-    return (
-      <ProtectedRoute>
-        <HomePage />
-      </ProtectedRoute>
-    );
+    return <Navigate to="/home" replace />;
   }
   return <LandingPage />;
 }
