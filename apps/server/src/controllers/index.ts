@@ -2,7 +2,6 @@
 import { ASRV1Controller } from './v1/asr.controller.js';
 import { AttachmentV1Controller } from './v1/attachment.controller.js';
 import { AuthV1Controller } from './v1/auth.controller.js';
-import { BackupV1Controller } from './v1/backup.controller.js';
 import { CategoryV1Controller } from './v1/category.controller.js';
 import { ExploreController } from './v1/explore.controller.js';
 import { InsightsController } from './v1/insights.controller.js';
@@ -21,7 +20,6 @@ export const controllers = [
   AttachmentV1Controller,
   ASRV1Controller,
   ExploreController,
-  BackupV1Controller,
   SystemController,
   StaticController,
 ];

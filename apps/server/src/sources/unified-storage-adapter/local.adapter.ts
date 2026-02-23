@@ -4,7 +4,7 @@ import path from 'node:path';
 import { BaseUnifiedStorageAdapter, type StorageMetadata } from './base.adapter.js';
 
 /**
- * Local file system storage adapter for attachments and backups
+ * Local file system storage adapter for attachments
  */
 export class LocalUnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
   constructor(private basePath: string) {

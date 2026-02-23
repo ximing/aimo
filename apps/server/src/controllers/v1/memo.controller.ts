@@ -13,7 +13,9 @@ import { Service } from 'typedi';
 
 import { ErrorCode } from '../../constants/error-codes.js';
 import { MemoRelationService } from '../../services/memo-relation.service.js';
+import { AvatarService } from '../../services/avatar.service.js';
 import { MemoService } from '../../services/memo.service.js';
+import { UserService } from '../../services/user.service.js';
 import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 
 import type { CreateMemoDto, UpdateMemoDto, UserInfoDto } from '@aimo/dto';
@@ -23,7 +25,9 @@ import type { CreateMemoDto, UpdateMemoDto, UserInfoDto } from '@aimo/dto';
 export class MemoV1Controller {
   constructor(
     private memoService: MemoService,
-    private memoRelationService: MemoRelationService
+    private memoRelationService: MemoRelationService,
+    private userService: UserService,
+    private avatarService: AvatarService
   ) {}
 
   @Get()
@@ -364,6 +368,47 @@ export class MemoV1Controller {
       return ResponseUtility.success(memo);
     } catch (error) {
       console.error('Get random public memo error:', error);
+      return ResponseUtility.error(ErrorCode.DB_ERROR);
+    }
+  }
+
+  /**
+   * Get a single public memo by ID (no authentication required)
+   * Returns a memo if it exists and is marked as public
+   */
+  @Get('/public/memo/:memoId')
+  async getPublicMemoById(@Param('memoId') memoId: string) {
+    try {
+      if (!memoId) {
+        return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'Memo ID is required');
+      }
+
+      const memo = await this.memoService.getPublicMemoById(memoId);
+
+      if (!memo) {
+        return ResponseUtility.error(ErrorCode.NOT_FOUND, 'Public memo not found');
+      }
+
+      // Get user info
+      const user = await this.userService.findUserByUid(memo.uid);
+
+      if (!user) {
+        return ResponseUtility.error(ErrorCode.NOT_FOUND, 'User not found');
+      }
+
+      const userInfo: UserInfoDto = {
+        uid: user.uid,
+        email: user.email,
+        nickname: user.nickname,
+        avatar: await this.avatarService.generateAvatarAccessUrl(user.avatar || ''),
+      };
+
+      return ResponseUtility.success({
+        memo,
+        user: userInfo,
+      });
+    } catch (error) {
+      console.error('Get public memo error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }

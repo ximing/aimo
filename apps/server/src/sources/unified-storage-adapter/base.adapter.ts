@@ -15,7 +15,7 @@ export interface StorageMetadata {
 }
 
 /**
- * Unified storage adapter interface for attachment and backup operations
+ * Unified storage adapter interface for attachment operations
  * Abstracts different storage backends (local, s3, oss)
  */
 export interface UnifiedStorageAdapter {

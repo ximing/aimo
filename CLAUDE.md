@@ -106,7 +106,6 @@ Business logic lives in `src/services/`:
 - `memo.service.ts` - CRUD + embedding generation
 - `search.service.ts` - Vector similarity search
 - `attachment.service.ts` - File storage (local/S3/OSS)
-- `backup.service.ts` - Automated backups
 - `user.service.ts` - User management
 
 ### Storage Adapters (Multi-adapter Pattern)
@@ -189,10 +188,6 @@ LANCEDB_PATH=./lancedb_data
 # File attachments
 ATTACHMENT_STORAGE_TYPE=local  # or s3
 ATTACHMENT_LOCAL_PATH=./attachments
-
-# Backups
-BACKUP_ENABLED=false
-BACKUP_STORAGE_TYPE=local
 ```
 
 ### S3 Configuration (when using cloud storage)

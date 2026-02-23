@@ -13,7 +13,7 @@ export interface OSSUnifiedStorageAdapterConfig {
 }
 
 /**
- * Aliyun OSS unified storage adapter for attachments and backups
+ * Aliyun OSS unified storage adapter for attachments
  * Uses ali-oss official library for complete feature support
  */
 export class OSSUnifiedStorageAdapter extends BaseUnifiedStorageAdapter {

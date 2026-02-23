@@ -21,7 +21,7 @@ export interface S3UnifiedStorageAdapterConfig {
 }
 
 /**
- * S3 (and S3-compatible) unified storage adapter for attachments and backups
+ * S3 (and S3-compatible) unified storage adapter for attachments
  *
  * Supports all S3-compatible services:
  * - AWS S3

@@ -14,5 +14,4 @@ apps/server/public
 
 # Data directories
 lancedb_data/
-backups/
 attachments/

@@ -3,6 +3,7 @@
  */
 
 import type { AttachmentDto } from './attachment.js';
+import type { UserInfoDto } from './user.js';
 
 export interface CreateMemoDto {
   content: string;
@@ -142,4 +143,12 @@ export interface PaginatedMemoListWithScoreDto {
     limit: number;
     totalPages: number;
   };
+}
+
+/**
+ * Public memo DTO for share page (includes user info)
+ */
+export interface PublicMemoDto {
+  memo: MemoWithAttachmentsDto;
+  user: UserInfoDto;
 }

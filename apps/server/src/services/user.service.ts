@@ -4,7 +4,6 @@ import { Service } from 'typedi';
 import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
 import { generateUid } from '../utils/id.js';
 
-import { BackupService } from './backup.service.js';
 import { CategoryService } from './category.service.js';
 
 import type { User, NewUser } from '../models/db/user.schema.js';
@@ -19,25 +18,9 @@ const DEFAULT_CATEGORY_NAME = '日记';
 export class UserService {
   constructor(
     private lanceDatabase: LanceDatabaseService,
-    private backupService: BackupService,
     private categoryService: CategoryService
   ) {}
 
-  /**
-   * Trigger backup for data changes
-   */
-  private async triggerBackup(reason: string): Promise<void> {
-    try {
-      await this.backupService.triggerBackup(reason);
-    } catch (error) {
-      console.warn('Failed to trigger backup:', error);
-      // Don't throw - backup failure shouldn't interrupt normal operations
-    }
-  }
-
-  /**
-   * Create a new user
-   */
   async createUser(userData: NewUser): Promise<User> {
     try {
       // Check if user with email already exists
@@ -65,9 +48,6 @@ export class UserService {
 
       const usersTable = await this.lanceDatabase.openTable('users');
       await usersTable.add([user as unknown as Record<string, unknown>]);
-
-      // Trigger backup on user creation
-      this.triggerBackup('user_created');
 
       // Create default category for new user
       try {
@@ -182,9 +162,6 @@ export class UserService {
         values: updateValues,
       });
 
-      // Trigger backup on user update
-      this.triggerBackup('user_updated');
-
       return updatedUser as User;
     } catch (error) {
       console.error('Error updating user:', error);
@@ -214,9 +191,6 @@ export class UserService {
           updatedAt: Date.now(),
         },
       });
-
-      // Trigger backup on user deletion
-      this.triggerBackup('user_deleted');
 
       return true;
     } catch (error) {

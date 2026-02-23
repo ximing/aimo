@@ -17,7 +17,6 @@ import { controllers } from './controllers/index.js';
 import { initIOC } from './ioc.js';
 import { authHandler } from './middlewares/auth-handler.js';
 import { errorHandler } from './middlewares/error-handler.js';
-import { BackupService } from './services/backup.service.js';
 import { SchedulerService } from './services/scheduler.service.js';
 import { LanceDbService as LanceDatabaseService } from './sources/lancedb.js';
 
@@ -31,18 +30,6 @@ useContainer(Container);
 export async function createApp() {
   await initIOC();
   await Container.get(LanceDatabaseService).init();
-
-  // Initialize backup service if enabled
-  if (config.backup.enabled) {
-    try {
-      const backupService = Container.get(BackupService);
-      await backupService.initialize();
-      console.log('Backup service initialized');
-    } catch (error) {
-      console.error('Failed to initialize backup service:', error);
-      // Continue app startup even if backup service fails to initialize
-    }
-  }
 
   // Initialize scheduler service for periodic tasks
   try {

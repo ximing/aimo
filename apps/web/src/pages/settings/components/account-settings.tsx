@@ -188,6 +188,11 @@ export const AccountSettings = view(() => {
         </div>
 
         <form onSubmit={handleUpdateUserInfo} className="space-y-4">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">UID</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400 font-mono">{user?.uid || '-'}</span>
+          </div>
+
           <div>
             <label
               htmlFor="nickname"

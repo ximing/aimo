@@ -7,13 +7,7 @@ loadEnvironment();
 console.log('Current Environment:', process.env.NODE_ENV);
 
 export type StorageType = 'local' | 's3';
-export type BackupStorageType = 'local' | 's3' | 'oss';
 export type AttachmentStorageType = 'local' | 's3' | 'oss';
-
-export interface BackupRetentionPolicy {
-  maxCount?: number; // 最多保留N个备份
-  maxDays?: number; // 保留N天内的备份
-}
 
 // 通用 S3 存储配置（支持 AWS S3、MinIO、Aliyun OSS 作为 S3-compatible 等）
 export interface S3StorageConfig {
@@ -40,18 +34,6 @@ export interface OSSStorageConfig {
 // 本地存储配置
 export interface LocalStorageConfig {
   path: string;
-}
-
-export interface BackupConfig {
-  enabled: boolean;
-  throttleIntervalMs: number; // 最小备份间隔（毫秒）
-  storageType: BackupStorageType;
-  retentionPolicy: BackupRetentionPolicy;
-  // Note: Backup is automatically disabled if LanceDB uses S3 storage
-  // S3 provides built-in redundancy and managed storage, making local backups unnecessary
-  local?: LocalStorageConfig;
-  s3?: S3StorageConfig;
-  oss?: OSSStorageConfig;
 }
 
 export interface AttachmentConfig {
@@ -103,7 +85,6 @@ export interface Config {
       endpoint?: string; // S3 endpoint URL (e.g., http://minio:9000)
     };
   };
-  backup: BackupConfig;
   attachment: AttachmentConfig;
   scheduler?: {
     dbOptimizationCron: string; // Cron expression for database optimization (default: '0 2 * * *' - daily at 2 AM)
@@ -149,45 +130,6 @@ export const config: Config = {
             awsSecretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
             region: process.env.AWS_REGION || 'us-east-1',
             endpoint: process.env.LANCEDB_S3_ENDPOINT,
-          }
-        : undefined,
-  },
-  backup: {
-    enabled: process.env.BACKUP_ENABLED === 'true',
-    throttleIntervalMs: Number(process.env.BACKUP_THROTTLE_INTERVAL_MS) || 3_600_000, // 默认1小时
-    storageType: (process.env.BACKUP_STORAGE_TYPE || 'local') as BackupStorageType,
-    retentionPolicy: {
-      maxCount: Number(process.env.BACKUP_MAX_COUNT) || 10,
-      maxDays: Number(process.env.BACKUP_MAX_DAYS) || 30,
-    },
-    local:
-      process.env.BACKUP_STORAGE_TYPE === 'local'
-        ? {
-            path: process.env.BACKUP_LOCAL_PATH || './backups',
-          }
-        : undefined,
-    s3:
-      process.env.BACKUP_STORAGE_TYPE === 's3'
-        ? {
-            bucket: process.env.BACKUP_S3_BUCKET || '',
-            prefix: process.env.BACKUP_S3_PREFIX || 'backups',
-            awsAccessKeyId: process.env.BACKUP_S3_ACCESS_KEY_ID,
-            awsSecretAccessKey: process.env.BACKUP_S3_SECRET_ACCESS_KEY,
-            region: process.env.BACKUP_S3_REGION || 'us-east-1',
-            endpoint: process.env.BACKUP_S3_ENDPOINT,
-            isPublic: process.env.BACKUP_S3_IS_PUBLIC === 'true',
-          }
-        : undefined,
-    oss:
-      process.env.BACKUP_STORAGE_TYPE === 'oss'
-        ? {
-            bucket: process.env.BACKUP_OSS_BUCKET || '',
-            prefix: process.env.BACKUP_OSS_PREFIX || 'backups',
-            accessKeyId: process.env.BACKUP_OSS_ACCESS_KEY_ID || '',
-            accessKeySecret: process.env.BACKUP_OSS_ACCESS_KEY_SECRET || '',
-            region: process.env.BACKUP_OSS_REGION || 'cn-hangzhou',
-            endpoint: process.env.BACKUP_OSS_ENDPOINT,
-            isPublic: process.env.BACKUP_OSS_IS_PUBLIC === 'true',
           }
         : undefined,
   },

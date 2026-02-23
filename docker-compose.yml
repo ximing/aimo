@@ -21,8 +21,6 @@ services:
       - ./data/lancedb:/app/lancedb_data
       # 附件文件映射到外部磁盘
       - ./data/attachments:/app/attachments
-      # 备份文件映射到外部磁盘
-      - ./data/backups:/app/backups
     environment:
       # ===== 基础配置 =====
       - NODE_ENV=production
@@ -43,21 +41,6 @@ services:
       # - LANCEDB_S3_BUCKET=${LANCEDB_S3_BUCKET}
       # - LANCEDB_S3_PREFIX=${LANCEDB_S3_PREFIX:-lancedb}
       # - LANCEDB_S3_ENDPOINT=${LANCEDB_S3_ENDPOINT}
-
-      # ===== 备份配置 =====
-      - BACKUP_ENABLED=${BACKUP_ENABLED:-false}
-      - BACKUP_STORAGE_TYPE=${BACKUP_STORAGE_TYPE:-local}
-      - BACKUP_THROTTLE_INTERVAL_MS=${BACKUP_THROTTLE_INTERVAL_MS:-3600000}
-      - BACKUP_MAX_COUNT=${BACKUP_MAX_COUNT:-10}
-      - BACKUP_MAX_DAYS=${BACKUP_MAX_DAYS:-30}
-      - BACKUP_LOCAL_PATH=${BACKUP_LOCAL_PATH:-./backups}
-      # 备份 S3 配置 (当 BACKUP_STORAGE_TYPE=s3 时使用)
-      # - BACKUP_S3_BUCKET=${BACKUP_S3_BUCKET}
-      # - BACKUP_S3_PREFIX=${BACKUP_S3_PREFIX:-backups}
-      # - BACKUP_S3_ENDPOINT=${BACKUP_S3_ENDPOINT}
-      # - BACKUP_AWS_ACCESS_KEY_ID=${BACKUP_AWS_ACCESS_KEY_ID}
-      # - BACKUP_AWS_SECRET_ACCESS_KEY=${BACKUP_AWS_SECRET_ACCESS_KEY}
-      # - BACKUP_AWS_REGION=${BACKUP_AWS_REGION:-us-east-1}
 
       # ===== 附件存储配置 =====
       - ATTACHMENT_STORAGE_TYPE=${ATTACHMENT_STORAGE_TYPE:-local}

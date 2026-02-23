@@ -152,14 +152,6 @@ ATTACHMENT_LOCAL_PATH=./attachments
 ATTACHMENT_MAX_FILE_SIZE=52428800  # 50MB
 ```
 
-### Backup Configuration
-
-```env
-BACKUP_ENABLED=false
-BACKUP_STORAGE_TYPE=local
-BACKUP_LOCAL_PATH=./backups
-```
-
 For more configuration options, see [.env.example](./.env.example)
 
 ## 📁 Project Structure

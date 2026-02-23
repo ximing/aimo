@@ -5,7 +5,6 @@ import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
 import { generateTypeId } from '../utils/id.js';
 
 import { AttachmentService } from './attachment.service.js';
-import { BackupService } from './backup.service.js';
 import { EmbeddingService } from './embedding.service.js';
 import { MemoRelationService } from './memo-relation.service.js';
 
@@ -60,7 +59,6 @@ export class MemoService {
   constructor(
     private lanceDatabase: LanceDatabaseService,
     private embeddingService: EmbeddingService,
-    private backupService: BackupService,
     private attachmentService: AttachmentService,
     private memoRelationService: MemoRelationService
   ) {}
@@ -92,21 +90,6 @@ export class MemoService {
     return [];
   }
 
-  /**
-   * Trigger backup for data changes
-   */
-  private async triggerBackup(reason: string): Promise<void> {
-    try {
-      await this.backupService.triggerBackup(reason);
-    } catch (error) {
-      console.warn('Failed to trigger backup:', error);
-      // Don't throw - backup failure shouldn't interrupt normal operations
-    }
-  }
-
-  /**
-   * Create a new memo with automatic embedding and denormalized attachments
-   */
   async createMemo(
     uid: string,
     content: string,
@@ -176,9 +159,6 @@ export class MemoService {
           // Don't throw - allow memo creation even if relations fail
         }
       }
-
-      // Trigger backup on memo creation
-      this.triggerBackup('memo_created');
 
       // Get full attachment DTOs for response
       const attachmentDtos: AttachmentDto[] =
@@ -460,9 +440,6 @@ export class MemoService {
         }
       }
 
-      // Trigger backup on memo update
-      this.triggerBackup('memo_updated');
-
       // Build updated memo object with attachment DTOs
       const finalAttachmentIds =
         attachments === undefined
@@ -520,9 +497,6 @@ export class MemoService {
         console.warn('Failed to delete memo relations during memo deletion:', error);
         // Don't throw - allow memo deletion even if relation cleanup fails
       }
-
-      // Trigger backup on memo deletion
-      this.triggerBackup('memo_deleted');
 
       return true;
     } catch (error) {
