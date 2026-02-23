@@ -10,6 +10,7 @@ export interface CreateMemoDto {
   categoryId?: string; // Optional category ID (undefined = uncategorized)
   attachments?: string[]; // Array of attachment IDs (max 9)
   relationIds?: string[]; // Array of target memo IDs to relate to
+  isPublic?: boolean; // Whether this memo is public (visible to others without auth)
   createdAt?: number; // Optional timestamp in milliseconds (for imports)
   updatedAt?: number; // Optional timestamp in milliseconds (for imports)
 }
@@ -20,6 +21,7 @@ export interface UpdateMemoDto {
   categoryId?: string | null; // Optional category ID (undefined/null = uncategorized)
   attachments?: string[]; // Array of attachment IDs (max 9)
   relationIds?: string[]; // Array of target memo IDs to relate to (replaces all existing relations)
+  isPublic?: boolean; // Whether this memo is public (visible to others without auth)
 }
 
 export interface MemoDto {
@@ -30,6 +32,7 @@ export interface MemoDto {
   categoryId?: string; // Optional category ID
   attachments?: string[]; // Array of attachment IDs
   relations?: MemoDto[]; // Array of related memos (populated when fetching lists)
+  isPublic?: boolean; // Whether this memo is public (visible to others without auth)
   createdAt: number; // timestamp in milliseconds
   updatedAt: number; // timestamp in milliseconds
 }
@@ -45,6 +48,7 @@ export interface MemoWithAttachmentsDto {
   categoryId?: string; // Optional category ID
   attachments?: AttachmentDto[]; // Array of full attachment objects
   relations?: MemoWithAttachmentsDto[]; // Array of related memos with attachment details
+  isPublic?: boolean; // Whether this memo is public (visible to others without auth)
   createdAt: number; // timestamp in milliseconds
   updatedAt: number; // timestamp in milliseconds
 }
@@ -60,6 +64,7 @@ export interface MemoListItemDto {
   categoryId?: string; // Optional category ID
   attachments?: AttachmentDto[]; // Array of full attachment objects
   relations?: MemoListItemDto[]; // Array of related memos
+  isPublic?: boolean; // Whether this memo is public (visible to others without auth)
   createdAt: number; // timestamp in milliseconds
   updatedAt: number; // timestamp in milliseconds
 }

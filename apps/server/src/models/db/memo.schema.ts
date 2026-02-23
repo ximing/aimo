@@ -11,6 +11,7 @@ export interface Memo {
   type?: string; // Optional memo type: 'text' | 'audio' | 'video' (defaults to 'text' if not set)
   attachments?: string[]; // Attachment IDs
   embedding: number[]; // Vector embedding for semantic search
+  isPublic?: boolean; // Whether this memo is public (visible to others without auth)
   createdAt: number; // timestamp in milliseconds
   updatedAt: number; // timestamp in milliseconds
 }

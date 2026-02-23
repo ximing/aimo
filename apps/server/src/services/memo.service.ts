@@ -114,6 +114,7 @@ export class MemoService {
     attachments?: string[],
     categoryId?: string,
     relationIds?: string[],
+    isPublic?: boolean,
     createdAt?: number,
     updatedAt?: number
   ): Promise<MemoWithAttachmentsDto> {
@@ -148,6 +149,7 @@ export class MemoService {
         content,
         attachments,
         embedding,
+        isPublic: isPublic || false,
         createdAt: createdAt || now,
         updatedAt: updatedAt || now,
       };
@@ -283,6 +285,7 @@ export class MemoService {
           type: (memo.type as 'text' | 'audio' | 'video') || 'text',
           categoryId: memo.categoryId,
           attachments: attachmentDtos,
+          isPublic: memo.isPublic ?? false,
           createdAt: memo.createdAt,
           updatedAt: memo.updatedAt,
         });
@@ -338,6 +341,7 @@ export class MemoService {
         type: (memo.type as 'text' | 'audio' | 'video') || 'text',
         categoryId: memo.categoryId,
         attachments: attachmentDtos,
+        isPublic: memo.isPublic ?? false,
         createdAt: memo.createdAt,
         updatedAt: memo.updatedAt,
       };
@@ -365,7 +369,8 @@ export class MemoService {
     type?: 'text' | 'audio' | 'video' | null,
     attachments?: string[],
     categoryId?: string | null,
-    relationIds?: string[]
+    relationIds?: string[],
+    isPublic?: boolean
   ): Promise<MemoWithAttachmentsDto | null> {
     try {
       if (!content || content.trim().length === 0) {
@@ -434,6 +439,11 @@ export class MemoService {
           updateValues.attachments = attachments;
         }
 
+      // Add isPublic to update if provided
+      if (isPublic !== undefined) {
+        updateValues.isPublic = isPublic;
+      }
+
       // Update using proper update method with where clause
       await memosTable.update({
         where: `memoId = '${memoId}' AND uid = '${uid}'`,
@@ -470,6 +480,7 @@ export class MemoService {
         type: existingMemo.type as 'text' | 'audio' | 'video',
         categoryId: categoryId === undefined ? existingMemo.categoryId : categoryId || undefined,
         attachments: finalAttachmentDtos,
+        isPublic: isPublic !== undefined ? isPublic : (existingMemo.isPublic ?? false),
         createdAt: existingMemo.createdAt,
         updatedAt: now,
       } as MemoWithAttachmentsDto;
@@ -664,6 +675,56 @@ export class MemoService {
   }
 
   /**
+   * Get total count of memos for a user
+   * Uses countRows() which is more efficient than loading all records
+   */
+  async getMemoCount(uid: string): Promise<number> {
+    try {
+      const memosTable = await this.lanceDatabase.openTable('memos');
+      const count = await memosTable.countRows(`uid = '${uid}'`);
+      return count;
+    } catch (error) {
+      console.error('Error getting memo count:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get a single memo by offset position
+   * Used for efficient random sampling without loading all IDs
+   */
+  async getMemoByOffset(uid: string, offset: number): Promise<Memo | null> {
+    try {
+      const memosTable = await this.lanceDatabase.openTable('memos');
+      const results = await memosTable
+        .query()
+        .where(`uid = '${uid}'`)
+        .offset(offset)
+        .limit(1)
+        .toArray();
+
+      if (results.length === 0) {
+        return null;
+      }
+
+      const memo = results[0];
+      const attachmentIds = this.convertArrowAttachments(memo.attachments);
+      const attachmentDtos: AttachmentDto[] =
+        attachmentIds.length > 0
+          ? await this.attachmentService.getAttachmentsByIds(attachmentIds, uid)
+          : [];
+
+      return {
+        ...memo,
+        attachments: attachmentDtos,
+      } as Memo;
+    } catch (error) {
+      console.error('Error getting memo by offset:', error);
+      return null;
+    }
+  }
+
+  /**
    * Find related memos based on vector similarity to a given memo
    * Excludes the memo itself and returns paginated similar memos with relevance scores
    */
@@ -778,6 +839,7 @@ export class MemoService {
           type: (memo.type as 'text' | 'audio' | 'video') || 'text',
           categoryId: memo.categoryId,
           attachments: attachmentDtos,
+          isPublic: memo.isPublic ?? false,
           createdAt: memo.createdAt,
           updatedAt: memo.updatedAt,
         });
@@ -969,6 +1031,133 @@ export class MemoService {
       };
     } catch (error) {
       console.error('Error getting on this day memos:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get public memos for a user (no authentication required)
+   * Returns memos where isPublic = true for the specified user
+   * Supports pagination and sorting
+   */
+  async getPublicMemos(
+    uid: string,
+    page: number = 1,
+    limit: number = 20,
+    sortBy: 'createdAt' | 'updatedAt' = 'createdAt',
+    sortOrder: 'asc' | 'desc' = 'desc'
+  ): Promise<PaginatedMemoListDto> {
+    try {
+      const memosTable = await this.lanceDatabase.openTable('memos');
+
+      // Query memos that are public for this user
+      const whereClause = `uid = '${uid}' AND isPublic = true`;
+      let allResults = await memosTable.query().where(whereClause).toArray();
+
+      const total = allResults.length;
+
+      // Get paginated results
+      const offset = (page - 1) * limit;
+      const results = allResults
+        .sort((a: any, b: any) => {
+          const aValue = sortBy === 'createdAt' ? a.createdAt : a.updatedAt;
+          const bValue = sortBy === 'createdAt' ? b.createdAt : b.updatedAt;
+          const comparison = aValue - bValue;
+          return sortOrder === 'asc' ? comparison : -comparison;
+        })
+        .slice(offset, offset + limit);
+
+      // Get attachment IDs and convert to DTOs
+      const items: MemoListItemDto[] = [];
+      for (const memo of results) {
+        const attachmentIds = this.convertArrowAttachments(memo.attachments);
+        const attachmentDtos: AttachmentDto[] =
+          attachmentIds.length > 0
+            ? await this.attachmentService.getAttachmentsByIds(attachmentIds, uid)
+            : [];
+
+        items.push({
+          memoId: memo.memoId,
+          uid: memo.uid,
+          content: memo.content,
+          type: (memo.type as 'text' | 'audio' | 'video') || 'text',
+          categoryId: memo.categoryId,
+          attachments: attachmentDtos,
+          isPublic: memo.isPublic ?? false,
+          createdAt: memo.createdAt,
+          updatedAt: memo.updatedAt,
+        });
+      }
+
+      return {
+        items,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+        },
+      };
+    } catch (error) {
+      console.error('Error getting public memos:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get a random public memo for a user (no authentication required)
+   * Returns a single random memo where isPublic = true
+   * Uses efficient count + offset approach to avoid loading all memos into memory
+   */
+  async getRandomPublicMemo(uid: string): Promise<MemoListItemDto | null> {
+    try {
+      const memosTable = await this.lanceDatabase.openTable('memos');
+
+      // Get count of public memos for this user
+      const whereClause = `uid = '${uid}' AND isPublic = true`;
+      const totalCount = await memosTable.countRows(whereClause);
+
+      if (totalCount === 0) {
+        return null;
+      }
+
+      // Pick a random offset
+      const randomOffset = Math.floor(Math.random() * totalCount);
+
+      // Get memo at the random offset position
+      const results = await memosTable
+        .query()
+        .where(whereClause)
+        .offset(randomOffset)
+        .limit(1)
+        .toArray();
+
+      if (results.length === 0) {
+        return null;
+      }
+
+      const memo = results[0];
+
+      // Get attachment DTOs
+      const attachmentIds = this.convertArrowAttachments(memo.attachments);
+      const attachmentDtos: AttachmentDto[] =
+        attachmentIds.length > 0
+          ? await this.attachmentService.getAttachmentsByIds(attachmentIds, uid)
+          : [];
+
+      return {
+        memoId: memo.memoId,
+        uid: memo.uid,
+        content: memo.content,
+        type: (memo.type as 'text' | 'audio' | 'video') || 'text',
+        categoryId: memo.categoryId,
+        attachments: attachmentDtos,
+        isPublic: memo.isPublic ?? false,
+        createdAt: memo.createdAt,
+        updatedAt: memo.updatedAt,
+      };
+    } catch (error) {
+      console.error('Error getting random public memo:', error);
       throw error;
     }
   }

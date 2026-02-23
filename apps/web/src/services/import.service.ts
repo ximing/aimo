@@ -281,11 +281,17 @@ export class ImportService extends Service {
         const createdAtMs = new Date(exportedMemo.created_at).getTime();
         const updatedAtMs = new Date(exportedMemo.updated_at).getTime();
 
+        // Parse visibility field to determine isPublic
+        // visibility can be: 'private', 'public', 'protected' or custom string
+        // Default to false (private) if not specified
+        const isPublic = exportedMemo.visibility === 'public';
+
         const createData: CreateMemoDto = {
           content: exportedMemo.content,
           attachments: attachmentIds.length > 0 ? attachmentIds : undefined,
           createdAt: createdAtMs,
           updatedAt: updatedAtMs,
+          isPublic,
         };
 
         const response = await memoApi.createMemo(createData);

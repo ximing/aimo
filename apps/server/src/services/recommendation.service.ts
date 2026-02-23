@@ -122,6 +122,22 @@ export class RecommendationService {
   }
 
   /**
+   * Generate unique random offsets for sampling
+   */
+  private generateRandomOffsets(max: number, count: number): number[] {
+    if (max <= count) {
+      return Array.from({ length: max }, (_, i) => i);
+    }
+
+    const offsets = new Set<number>();
+    while (offsets.size < count) {
+      const randomOffset = Math.floor(Math.random() * max);
+      offsets.add(randomOffset);
+    }
+    return Array.from(offsets);
+  }
+
+  /**
    * Generate daily recommendations using AI
    * Falls back to random selection if AI fails
    */
@@ -141,19 +157,37 @@ export class RecommendationService {
           .filter((m): m is MemoListItemDto => m !== undefined);
       }
 
-      // Get all memos for the user
-      const allMemos = await this.memoService.getAllMemosByUid(uid);
+      // Get memo count only (efficient - doesn't load all data)
+      const totalCount = await this.memoService.getMemoCount(uid);
 
-      // If less than 3 memos, return all of them
-      if (allMemos.length <= 3) {
+      // If less than 3 memos, get all of them
+      if (totalCount <= 3) {
+        const allMemos = await this.memoService.getAllMemosByUid(uid);
         const memoIds = allMemos.map((m) => m.memoId);
         await this.cacheRecommendations(uid, today, memoIds);
         return this.memoService.getMemosByIds(memoIds, uid);
       }
 
-      // Try AI-based selection
+      // Randomly select 10 offsets and fetch memos by offset (avoid loading all memos)
+      const randomOffsets = this.generateRandomOffsets(totalCount, 10);
+
+      // Fetch memos at random offsets in parallel
+      const sampledMemosPromises = randomOffsets.map((offset) =>
+        this.memoService.getMemoByOffset(uid, offset)
+      );
+      const sampledMemosResults = await Promise.all(sampledMemosPromises);
+      const sampledMemos = sampledMemosResults.filter((m): m is NonNullable<typeof m> => m !== null);
+
+      // If we got less than 3 memos, return all we have
+      if (sampledMemos.length <= 3) {
+        const memoIds = sampledMemos.map((m) => m.memoId);
+        await this.cacheRecommendations(uid, today, memoIds);
+        return this.memoService.getMemosByIds(memoIds, uid);
+      }
+
+      // Try AI-based selection from sampled memos
       try {
-        const selectedIds = await this.selectMemosWithAI(allMemos);
+        const selectedIds = await this.selectMemosWithAI(sampledMemos);
         if (selectedIds.length > 0) {
           await this.cacheRecommendations(uid, today, selectedIds);
           return this.memoService.getMemosByIds(selectedIds, uid);
@@ -162,8 +196,8 @@ export class RecommendationService {
         console.warn('AI recommendation failed, falling back to random selection:', aiError);
       }
 
-      // Fallback: random selection
-      const randomIds = this.selectRandomMemos(allMemos, 3);
+      // Fallback: random selection from sampled memos
+      const randomIds = this.selectRandomMemos(sampledMemos, 3);
       await this.cacheRecommendations(uid, today, randomIds);
       return this.memoService.getMemosByIds(randomIds, uid);
     } catch (error) {

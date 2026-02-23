@@ -5,7 +5,7 @@ import { MemoService } from '../../../services/memo.service';
 import { AttachmentService } from '../../../services/attachment.service';
 import { CategoryService } from '../../../services/category.service';
 import copyToClipboard from 'copy-to-clipboard';
-import { FileText, Film, Edit2, Trash2, Link, Download, Folder, Copy } from 'lucide-react';
+import { FileText, Film, Edit2, Trash2, Link, Download, Folder, Copy, Globe } from 'lucide-react';
 import { RelatedMemosModal } from './related-memos-modal';
 import { ConfirmDeleteModal } from './confirm-delete-modal';
 import { MemoEditorForm } from '../../../components/memo-editor-form';
@@ -370,6 +370,16 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
                 <span className="text-xs text-gray-500 dark:text-gray-500">
                   {formatDate(memo.createdAt)}
                 </span>
+                {/* Public Badge */}
+                {memo.isPublic && (
+                  <span
+                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 text-xs rounded-full"
+                    title="公开笔记"
+                  >
+                    <Globe className="w-3 h-3" />
+                    公开
+                  </span>
+                )}
                 {/* Category Badge */}
                 {memo.categoryId && (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary-50 dark:bg-primary-950/30 text-primary-700 dark:text-primary-400 text-xs rounded-full">

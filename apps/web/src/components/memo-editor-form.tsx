@@ -5,7 +5,7 @@ import { CategoryService } from '../services/category.service';
 import { AttachmentUploader, type AttachmentItem } from './attachment-uploader';
 import { attachmentApi } from '../api/attachment';
 import * as memoApi from '../api/memo';
-import { Paperclip, X, Check, ChevronDown, Plus } from 'lucide-react';
+import { Paperclip, X, Check, ChevronDown, Plus, Globe, Lock } from 'lucide-react';
 import type { MemoListItemDto, MemoWithAttachmentsDto } from '@aimo/dto';
 import { CreateCategoryModal } from '../pages/home/components/create-category-modal';
 
@@ -36,6 +36,7 @@ export const MemoEditorForm = view(
     const [isCreateCategoryModalOpen, setIsCreateCategoryModalOpen] = useState(false);
     const [isEditorActive, setIsEditorActive] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false); // 标记是否正在提交中，用于防止推荐接口时序问题
+    const [isPublic, setIsPublic] = useState<boolean>(initialMemo?.isPublic ?? false);
 
     // 当 defaultCategoryId 变化时，同步更新 selectedCategoryId（创建模式下）
     useEffect(() => {
@@ -159,7 +160,8 @@ export const MemoEditorForm = view(
             'text', // type: default to text
             selectedCategoryId || undefined,
             attachmentIds.length > 0 ? attachmentIds : undefined,
-            relationIds.length > 0 ? relationIds : undefined
+            relationIds.length > 0 ? relationIds : undefined,
+            isPublic
           );
         } else {
           // 更新 memo
@@ -172,7 +174,8 @@ export const MemoEditorForm = view(
             'text', // type: default to text
             selectedCategoryId,
             attachmentIds.length > 0 ? attachmentIds : undefined,
-            relationIds.length > 0 ? relationIds : undefined
+            relationIds.length > 0 ? relationIds : undefined,
+            isPublic
           );
         }
 
@@ -677,6 +680,22 @@ export const MemoEditorForm = view(
                   )}
                 </div>
               )}
+              {/* Public Toggle */}
+              <button
+                type="button"
+                onClick={() => setIsPublic(!isPublic)}
+                disabled={loading}
+                className={`flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  isPublic
+                    ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-700'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                aria-pressed={isPublic}
+                title={isPublic ? '此笔记将对其他人公开' : '此笔记仅自己可见'}
+              >
+                {isPublic ? <Globe size={14} /> : <Lock size={14} />}
+                <span>{isPublic ? '公开' : '私有'}</span>
+              </button>
               <button
                 type="submit"
                 disabled={loading || !content.trim()}

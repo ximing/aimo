@@ -155,6 +155,7 @@ export class MemoV1Controller {
         memoData.attachments,
         memoData.categoryId,
         memoData.relationIds,
+        memoData.isPublic,
         memoData.createdAt,
         memoData.updatedAt
       );
@@ -209,7 +210,8 @@ export class MemoV1Controller {
         memoData.type,
         memoData.attachments,
         memoData.categoryId,
-        memoData.relationIds
+        memoData.relationIds,
+        memoData.isPublic
       );
       if (!memo) {
         return ResponseUtility.error(ErrorCode.NOT_FOUND);
@@ -306,6 +308,62 @@ export class MemoV1Controller {
       });
     } catch (error) {
       console.error('Get backlinks error:', error);
+      return ResponseUtility.error(ErrorCode.DB_ERROR);
+    }
+  }
+
+  /**
+   * Get public memos for a user (no authentication required)
+   * This endpoint allows anyone to view public memos by user ID
+   */
+  @Get('/public/:uid')
+  async getPublicMemos(
+    @Param('uid') uid: string,
+    @QueryParam('page') page: number = 1,
+    @QueryParam('limit') limit: number = 20,
+    @QueryParam('sortBy') sortBy: 'createdAt' | 'updatedAt' = 'createdAt',
+    @QueryParam('sortOrder') sortOrder: 'asc' | 'desc' = 'desc'
+  ) {
+    try {
+      if (!uid) {
+        return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'User ID is required');
+      }
+
+      const result = await this.memoService.getPublicMemos(
+        uid,
+        page,
+        limit,
+        sortBy,
+        sortOrder
+      );
+
+      return ResponseUtility.success(result);
+    } catch (error) {
+      console.error('Get public memos error:', error);
+      return ResponseUtility.error(ErrorCode.DB_ERROR);
+    }
+  }
+
+  /**
+   * Get a random public memo for a user (no authentication required)
+   * Returns a single random memo from the user's public memos
+   */
+  @Get('/public/:uid/random')
+  async getRandomPublicMemo(@Param('uid') uid: string) {
+    try {
+      if (!uid) {
+        return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'User ID is required');
+      }
+
+      const memo = await this.memoService.getRandomPublicMemo(uid);
+
+      if (!memo) {
+        return ResponseUtility.error(ErrorCode.NOT_FOUND, 'No public memos found for this user');
+      }
+
+      return ResponseUtility.success(memo);
+    } catch (error) {
+      console.error('Get random public memo error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }

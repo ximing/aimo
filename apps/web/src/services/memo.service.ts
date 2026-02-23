@@ -160,10 +160,11 @@ export class MemoService extends Service {
     type: 'text' | 'audio' | 'video' = 'text',
     categoryId?: string,
     attachments?: string[],
-    relationIds?: string[]
+    relationIds?: string[],
+    isPublic?: boolean
   ) {
     try {
-      const data: CreateMemoDto = { content, type, categoryId, attachments, relationIds };
+      const data: CreateMemoDto = { content, type, categoryId, attachments, relationIds, isPublic };
       const response = await memoApi.createMemo(data);
 
       if (response.code === 0 && response.data) {
@@ -210,10 +211,11 @@ export class MemoService extends Service {
     type?: 'text' | 'audio' | 'video' | null,
     categoryId?: string | null,
     attachments?: string[],
-    relationIds?: string[]
+    relationIds?: string[],
+    isPublic?: boolean
   ) {
     try {
-      const data: UpdateMemoDto = { content, type, categoryId, attachments, relationIds };
+      const data: UpdateMemoDto = { content, type, categoryId, attachments, relationIds, isPublic };
       const response = await memoApi.updateMemo(memoId, data);
 
       if (response.code === 0 && response.data) {

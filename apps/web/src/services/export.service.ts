@@ -119,7 +119,7 @@ export class ExportService extends Service {
       created_at: new Date(memo.createdAt).toISOString(),
       updated_at: new Date(memo.updatedAt).toISOString(),
       display_time: new Date(memo.createdAt).toISOString(),
-      visibility: 'PRIVATE',
+      visibility: memo.isPublic ? 'PUBLIC' : 'PRIVATE',
       pinned: false,
       tags: [], // We don't have tags in the current schema
       snippet: memo.content.substring(0, 100),
