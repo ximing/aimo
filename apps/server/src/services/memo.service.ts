@@ -1142,4 +1142,52 @@ export class MemoService {
       throw error;
     }
   }
+
+  /**
+   * Get a single public memo by ID (no authentication required)
+   * Returns a memo where isPublic = true for the specified memoId
+   */
+  async getPublicMemoById(memoId: string): Promise<MemoWithAttachmentsDto | null> {
+    try {
+      const memosTable = await this.lanceDatabase.openTable('memos');
+
+      // Query memo that is public with the given memoId
+      const results = await memosTable
+        .query()
+        .where(`memoId = '${memoId}' AND isPublic = true`)
+        .limit(1)
+        .toArray();
+
+      if (results.length === 0) {
+        return null;
+      }
+
+      const memo: any = results[0];
+      const attachmentIds = this.convertArrowAttachments(memo.attachments);
+
+      // For public memos, we need to get attachments with the owner's uid
+      const attachmentDtos: AttachmentDto[] =
+        attachmentIds.length > 0
+          ? await this.attachmentService.getAttachmentsByIds(attachmentIds, memo.uid)
+          : [];
+
+      // Build memo object with attachment DTOs
+      const memoWithAttachments: MemoListItemDto = {
+        memoId: memo.memoId,
+        uid: memo.uid,
+        content: memo.content,
+        type: (memo.type as 'text' | 'audio' | 'video') || 'text',
+        categoryId: memo.categoryId,
+        attachments: attachmentDtos,
+        isPublic: memo.isPublic ?? false,
+        createdAt: memo.createdAt,
+        updatedAt: memo.updatedAt,
+      };
+
+      return memoWithAttachments as MemoWithAttachmentsDto;
+    } catch (error) {
+      console.error('Error getting public memo by ID:', error);
+      throw error;
+    }
+  }
 }

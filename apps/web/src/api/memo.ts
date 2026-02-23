@@ -10,6 +10,7 @@ import type {
   MemoActivityStatsDto,
   OnThisDayResponseDto,
   DailyRecommendationsResponseDto,
+  PublicMemoDto,
 } from '@aimo/dto';
 import request from '../utils/request';
 
@@ -125,5 +126,14 @@ export const getOnThisDayMemos = () => {
 export const getDailyRecommendations = () => {
   return request.get<unknown, { code: number; data: DailyRecommendationsResponseDto }>(
     '/api/v1/insights/daily-recommendations'
+  );
+};
+
+/**
+ * Get a single public memo by ID (no authentication required)
+ */
+export const getPublicMemoById = (memoId: string) => {
+  return request.get<unknown, { code: number; data: PublicMemoDto }>(
+    `/api/v1/memos/public/memo/${memoId}`
   );
 };

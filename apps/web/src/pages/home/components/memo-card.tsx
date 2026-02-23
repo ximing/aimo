@@ -372,13 +372,17 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
                 </span>
                 {/* Public Badge */}
                 {memo.isPublic && (
-                  <span
-                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 text-xs rounded-full"
-                    title="公开笔记"
+                  <a
+                    href={`/share/${memo.memoId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 text-xs rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors cursor-pointer"
+                    title="公开笔记 - 点击新窗口打开"
+                    onClick={(e) => e.stopPropagation()}
                   >
                     <Globe className="w-3 h-3" />
                     公开
-                  </span>
+                  </a>
                 )}
                 {/* Category Badge */}
                 {memo.categoryId && (

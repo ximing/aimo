@@ -10,6 +10,7 @@ import { ExportData } from './pages/settings/components/export-data';
 import { About } from './pages/settings/components/about';
 import AIExplorePage from './pages/ai-explore';
 import GalleryPage from './pages/gallery';
+import SharePage from './pages/share';
 import NotFoundPage from './pages/not-found';
 import { ProtectedRoute } from './components/protected-route';
 import { ToastContainer } from './components/toast';
@@ -84,6 +85,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="/share/:memoId" element={<SharePage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Router>
