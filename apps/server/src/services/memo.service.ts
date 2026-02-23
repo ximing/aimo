@@ -473,7 +473,7 @@ export class MemoService {
           ? await this.attachmentService.getAttachmentsByIds(finalAttachmentIds, uid)
           : [];
 
-      return {
+      const updatedMemo: MemoListItemDto = {
         memoId,
         uid,
         content,
@@ -483,6 +483,13 @@ export class MemoService {
         isPublic: isPublic !== undefined ? isPublic : (existingMemo.isPublic ?? false),
         createdAt: existingMemo.createdAt,
         updatedAt: now,
+      };
+
+      // Enrich with relations (same logic as getMemoById)
+      const enrichedItems = await this.enrichMemosWithRelations(uid, [updatedMemo]);
+
+      return {
+        ...enrichedItems[0],
       } as MemoWithAttachmentsDto;
     } catch (error) {
       console.error('Error updating memo:', error);
