@@ -9,6 +9,19 @@
 
 ---
 
+## 2026-02-24 - US-006
+- Implemented Create tag suggestions display modal (US-006)
+- Files changed:
+  - `apps/web/src/components/ai/tag-generator-modal.tsx` - Complete rewrite with loading state, tag chips, custom input, summary section
+- **Learnings for future iterations:**
+  - Tag chips use conditional classes for selected/unselected states with smooth transitions
+  - Input ref focus with setTimeout allows UI to settle before focusing
+  - Use flex-wrap gap-2 for responsive tag layout
+  - Selected tags summary provides visual confirmation before saving
+  - Check icon on selected tags adds clear visual affordance
+  - Full keyboard support: Escape to close, Enter to add custom tags
+---
+
 ## 2026-02-24 - US-002
 - Implemented Backend API - Batch update memo tags (US-002)
 - Files changed:
