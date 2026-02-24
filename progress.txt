@@ -71,3 +71,20 @@
   - DTO changes require rebuilding the @aimo/dto package before they're available in other packages
   - LanceDB filtering: SQL WHERE clause for basic filters, JavaScript filter for complex logic like tag matching
 ---
+
+## 2026-02-24T15:30:00Z - US-002
+- Implemented tag list component for sidebar
+- Files changed:
+  - apps/web/src/api/tag.ts (new) - API layer for tag endpoints
+  - apps/web/src/services/tag.service.ts (new) - TagService for state management
+  - apps/web/src/pages/home/components/tag-list.tsx (new) - TagList component with sidebar integration
+  - apps/web/src/pages/home/home.tsx - Added TagList component below DailyRecommendations
+- **Learnings for future iterations:**
+  - Tags are sorted by usageCount (descending) in TagService.fetchTags()
+  - TagList has 300px max-height with overflow-y-auto for scrolling
+  - Empty state shows "暂无标签" when no tags exist
+  - Toggle behavior: clicking selected tag clears filter, clicking new tag switches filter
+  - Selected state uses primary-50 background with primary-700 text
+  - Tag count shown in parentheses next to tag name
+  - Tag icon from lucide-react used for section header
+---

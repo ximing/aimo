@@ -77,11 +77,18 @@ export const HomePage = view(() => {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const dateParam = urlParams.get('date');
+    const tagParam = urlParams.get('tag');
 
     if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
       memoService.setSelectedDate(dateParam);
     } else {
       memoService.setSelectedDate(null);
+    }
+
+    if (tagParam) {
+      memoService.setTagFilter(tagParam);
+    } else {
+      memoService.setTagFilter(null);
     }
   }, []);
 
@@ -97,6 +104,36 @@ export const HomePage = view(() => {
 
     window.history.replaceState({}, '', url.toString());
   }, [memoService.selectedDate]);
+
+  // Update URL when tag filter changes
+  useEffect(() => {
+    const url = new URL(window.location.href);
+
+    if (memoService.tagFilter) {
+      url.searchParams.set('tag', memoService.tagFilter);
+    } else {
+      url.searchParams.delete('tag');
+    }
+
+    window.history.replaceState({}, '', url.toString());
+  }, [memoService.tagFilter]);
+
+  // Handle browser back/forward buttons
+  useEffect(() => {
+    const handlePopState = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tagParam = urlParams.get('tag');
+
+      if (tagParam && tagParam !== memoService.tagFilter) {
+        memoService.setTagFilter(tagParam);
+      } else if (!tagParam && memoService.tagFilter) {
+        memoService.setTagFilter(null);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [memoService.tagFilter]);
 
   // Fetch memos on mount (only once)
   useEffect(() => {
