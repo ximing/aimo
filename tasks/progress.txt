@@ -51,3 +51,19 @@
   - Response parsing includes fallback regex extraction for robustness
   - Truncate content to 2000 chars to keep API costs reasonable
 ---
+
+## 2026-02-24 - US-005
+- Implemented Create AI tool selection modal (US-005)
+- Files changed:
+  - `apps/web/src/components/ai/ai-tool-selector-modal.tsx` (new) - AI tool selection modal with tool listing
+  - `apps/web/src/components/ai/tag-generator-modal.tsx` (new) - Placeholder for tag generator (US-006)
+  - `apps/web/src/components/ai/index.ts` (new) - Barrel export for AI components
+  - `apps/web/src/pages/home/components/memo-card.tsx` - Integrated AI modals, removed local state, uses AIToolsService
+  - `apps/web/src/main.tsx` - Registered AIToolsService for DI
+- **Learnings for future iterations:**
+  - Services using @rabjs/react must be registered with `register(ServiceClass)` in main.tsx
+  - Modal components should be separate files with index.ts barrel export
+  - Tool selector uses iconMap to dynamically render Lucide icons by name
+  - Modal styling follows pattern: `bg-white dark:bg-dark-800 rounded-lg shadow-xl w-full max-w-md`
+  - Backdrop click closes modal: `if (e.target === e.currentTarget) onClose()`
+---
