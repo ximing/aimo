@@ -27,3 +27,6 @@ export * from './insights.js';
 
 // Version DTOs
 export * from './version.js';
+
+// AI DTOs
+export * from './ai.js';
