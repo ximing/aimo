@@ -179,8 +179,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 10,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented in tag-generator-modal.tsx with loading state, selectable pills, select all/deselect all, custom tag input"
     },
     {
       "id": "US-011",
@@ -194,8 +194,8 @@
         "Typecheck passes"
       ],
       "priority": 11,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented in ai-tools.service.ts - addCustomTag and updateTag methods prevent duplicates via case-insensitive comparison"
     },
     {
       "id": "US-012",
@@ -212,8 +212,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 12,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented via onConfirm callback in memo-editor-form.tsx - handleAITagsConfirm merges tags with duplicate prevention"
     },
     {
       "id": "US-013",
@@ -227,8 +227,8 @@
         "Typecheck passes"
       ],
       "priority": 13,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented in ai-tools.service.ts - tools array with AIToolDefinition interface, dynamic rendering in AIToolSelectorModal"
     }
   ]
 }

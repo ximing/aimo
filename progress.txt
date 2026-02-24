@@ -146,3 +146,53 @@
   - Loading state prevents UI blocking and provides visual feedback during operations
   - Backend filtering is more efficient than client-side for large datasets
 ---
+
+## 2026-02-24T18:00:00Z - US-010
+- Verified AI tag generation modal implementation
+- Files changed: Verified existing implementation
+  - apps/web/src/components/ai/tag-generator-modal.tsx - Modal with loading state, selectable pills, select all/deselect all, custom tag input
+  - apps/web/src/services/ai-tools.service.ts - Tag generation state management
+- **Learnings for future iterations:**
+  - Modal auto-generates tags on open when content is available
+  - Loading state shows spinner with "AI 正在分析内容..." message
+  - Tags displayed as pills with checkbox-style selection
+  - Select all / Deselect all buttons control all suggested tags
+  - Custom tag input allows adding user-defined tags
+  - 确认添加 button shows count of selected tags
+---
+
+## 2026-02-24T18:05:00Z - US-011
+- Verified tag deduplication logic
+- Files changed: Verified existing implementation
+  - apps/web/src/services/ai-tools.service.ts - addCustomTag and updateTag methods
+- **Learnings for future iterations:**
+  - Deduplication is case-insensitive (toLowerCase comparison)
+  - addCustomTag prevents adding duplicates to selectedTags
+  - updateTag prevents renaming to an existing tag name
+  - Both methods return boolean indicating success/failure
+---
+
+## 2026-02-24T18:10:00Z - US-012
+- Verified tags write-back to editor state
+- Files changed: Verified existing implementation
+  - apps/web/src/components/memo-editor-form.tsx - handleAITagsConfirm callback
+- **Learnings for future iterations:**
+  - onConfirm callback passes selected tags to parent component
+  - Tags merged with existing tags using filter to prevent duplicates
+  - Case-insensitive comparison prevents "Tag" and "tag" from being added separately
+  - Works in both create mode (callback) and edit mode (API call)
+  - Tags appear in TagInput component immediately after modal closes
+---
+
+## 2026-02-24T18:15:00Z - US-013
+- Verified extensible AI tools architecture
+- Files changed: Verified existing implementation
+  - apps/web/src/services/ai-tools.service.ts - AIToolDefinition interface and tools array
+  - apps/web/src/components/ai/ai-tool-selector-modal.tsx - Dynamic tool rendering
+- **Learnings for future iterations:**
+  - AIToolType union type defines all available tool IDs
+  - AIToolDefinition interface specifies: id, name, description, icon, component
+  - Adding new tool: 1) Add to AIToolType, 2) Add to tools array, 3) Create modal component
+  - Tools array drives both dropdown menu and tool selector modal
+  - Reserved tool slots commented in code: summarize, translate, expand, grammar-check
+---
