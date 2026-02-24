@@ -1,97 +1,15 @@
-## Codebase Patterns
-- Use `@Service()` decorator from typedi for dependency injection
-- Controllers use `@JsonController('/api/v1/...')` from routing-controllers
-- AI services use `ChatOpenAI` from `@langchain/openai` with temperature 0.3 for consistent results
-- DTOs should be defined in `packages/dto/src/` and exported from `index.ts`
-- Error handling: Use `ResponseUtility.error(ErrorCode.XXX)` with appropriate error codes
-- Controller registration: Add to `controllers/index.ts` array (StaticController must stay last)
-- Always run `pnpm --filter @aimo/dto build` after modifying DTOs before typechecking server
-- Use `toast.success()` and `toast.error()` from `toast.service.ts` for user notifications
-- Use `resolve(ServiceClass)` from `@rabjs/react` to access other services within a service
-- When updating memo data, update both MemoService.memos array and currentMemo for immediate UI reflection
+# Ralph Progress: Tag Display and Filter Feature
 
----
+Branch: ralph/tag-display-and-filter
 
-## 2026-02-24 - US-006
-- Implemented Create tag suggestions display modal (US-006)
-- Files changed:
-  - `apps/web/src/components/ai/tag-generator-modal.tsx` - Complete rewrite with loading state, tag chips, custom input, summary section
-- **Learnings for future iterations:**
-  - Tag chips use conditional classes for selected/unselected states with smooth transitions
-  - Input ref focus with setTimeout allows UI to settle before focusing
-  - Use flex-wrap gap-2 for responsive tag layout
-  - Selected tags summary provides visual confirmation before saving
-  - Check icon on selected tags adds clear visual affordance
-  - Full keyboard support: Escape to close, Enter to add custom tags
----
+## Status
 
-## 2026-02-24 - US-002
-- Implemented Backend API - Batch update memo tags (US-002)
-- Files changed:
-  - `packages/dto/src/memo.ts` - Added tags field to all Memo DTOs
-  - `apps/server/src/models/db/memo.schema.ts` - Added tags field to Memo interface
-  - `apps/server/src/models/db/schema.ts` - Added tags field to memosSchema and MemoRecord
-  - `apps/server/src/migrations/scripts/009-add-tags-field.ts` (new) - Migration v9 to add tags column
-  - `apps/server/src/migrations/scripts/index.ts` - Registered new migration
-  - `apps/server/src/services/memo.service.ts` - Added updateTags method
-  - `apps/server/src/controllers/v1/memo.controller.ts` - Added PUT /:memoId/tags endpoint
-- **Learnings for future iterations:**
-  - LanceDB supports adding list columns with default empty array using `valueSql: '[]'`
-  - Tags should be added to all memo DTO variants for consistency (MemoDto, MemoWithAttachmentsDto, MemoListItemDto)
-  - The updateTags method follows the same pattern as updateMemo but only modifies the tags field
-  - Migration error handling should check for 'already exists', 'duplicate', and 'Type conflicts between' messages
----
+- [ ] US-001: Display tags on memo cards
+- [ ] US-002: Create tag list component for sidebar
+- [ ] US-003: Implement single-select tag filtering
+- [ ] US-004: Implement multi-select tag filtering
+- [ ] US-005: Display active filter state
+- [ ] US-006: Tag filtering performance optimization
 
-## 2026-02-24 - US-004
-- Implemented Add AI button to memo card (US-004)
-- Files changed:
-  - `apps/web/src/pages/home/components/memo-card.tsx` - Added Sparkles import, showAIToolsModal state, AI button in actions, placeholder modal
-- **Learnings for future iterations:**
-  - Action buttons use `group-hover:opacity-100` to show on card hover
-  - Color scheme uses purple (text-purple-600, border-purple-200) for AI-related actions
-  - Button should have `title` attribute for tooltip and `aria-label` for accessibility
-  - Actions are placed in the footer section of the memo card with `flex items-center gap-2`
----
+## Notes
 
-## 2026-02-24 - US-001
-- Implemented Backend API - AI generate tags (US-001)
-- Files changed:
-  - `packages/dto/src/ai.ts` (new) - DTOs for AI features
-  - `packages/dto/src/index.ts` - Added AI DTOs export
-  - `apps/server/src/services/ai.service.ts` (new) - AIService with tag generation
-  - `apps/server/src/controllers/v1/ai.controller.ts` (new) - AIV1Controller with /generate-tags endpoint
-  - `apps/server/src/controllers/index.ts` - Registered AIV1Controller
-- **Learnings for future iterations:**
-  - The codebase uses LangChain's ChatOpenAI (not @ai-sdk/openai) for chat completions
-  - Temperature 0.3 works well for consistent tag generation
-  - Response parsing includes fallback regex extraction for robustness
-  - Truncate content to 2000 chars to keep API costs reasonable
----
-
-## 2026-02-24 - US-008
-- Implemented Frontend tag confirmation and submission (US-008)
-- Files changed:
-  - `apps/web/src/services/ai-tools.service.ts` - Enhanced saveTags method to show toast notifications and update MemoService state
-- **Learnings for future iterations:**
-  - Use `toast.success()` and `toast.error()` for user feedback after API operations
-  - Use `resolve(MemoService)` to access and update other service state for immediate UI reflection
-  - The saveTags method now updates both the memos list and shows appropriate toast notifications
-  - Loading state `isSaving` prevents duplicate submissions while API call is in progress
-  - Error handling shows toast error and preserves user selection state for retry
----
-
-## 2026-02-24 - US-005
-- Implemented Create AI tool selection modal (US-005)
-- Files changed:
-  - `apps/web/src/components/ai/ai-tool-selector-modal.tsx` (new) - AI tool selection modal with tool listing
-  - `apps/web/src/components/ai/tag-generator-modal.tsx` (new) - Placeholder for tag generator (US-006)
-  - `apps/web/src/components/ai/index.ts` (new) - Barrel export for AI components
-  - `apps/web/src/pages/home/components/memo-card.tsx` - Integrated AI modals, removed local state, uses AIToolsService
-  - `apps/web/src/main.tsx` - Registered AIToolsService for DI
-- **Learnings for future iterations:**
-  - Services using @rabjs/react must be registered with `register(ServiceClass)` in main.tsx
-  - Modal components should be separate files with index.ts barrel export
-  - Tool selector uses iconMap to dynamically render Lucide icons by name
-  - Modal styling follows pattern: `bg-white dark:bg-dark-800 rounded-lg shadow-xl w-full max-w-md`
-  - Backdrop click closes modal: `if (e.target === e.currentTarget) onClose()`
----

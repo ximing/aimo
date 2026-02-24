@@ -1,145 +1,109 @@
 {
   "project": "AIMO",
-  "branchName": "ralph/ai-tag-assistant",
-  "description": "AI Tag Assistant - Add AI-powered smart tagging feature to memo cards with tag generation, editing, and batch update capabilities",
+  "branchName": "ralph/tag-display-and-filter",
+  "description": "Tag Display and Filter Feature - Display tags on memos with hashtag format and provide sidebar tag list for quick filtering",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Backend API - AI generate tags",
-      "description": "As a developer, I need a backend API to call AI to analyze note content and generate tag suggestions.",
+      "title": "Display tags on memo cards",
+      "description": "As a user, I want to see tags displayed at the beginning of memo content so I can quickly identify categorized notes.",
       "acceptanceCriteria": [
-        "Create POST /api/v1/ai/generate-tags endpoint",
-        "Accept memoId and content parameters",
-        "Use OpenAI API to analyze content and generate 3-8 relevant tags",
-        "Return array of tag strings",
-        "Require user authentication (@CurrentUser)",
-        "Response time under 3 seconds",
+        "Tags appear at the beginning of memo text content in `#tag-name` format",
+        "Multiple tags are separated by spaces (e.g., `#工作 #重要 #项目A`)",
+        "Tags have distinct visual styling (color, hover effect) to differentiate from regular text",
+        "Clicking a tag in memo content filters by that tag",
+        "Memos without tags show no tag prefix",
         "Typecheck passes",
-        "Tests pass"
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 1,
-      "passes": true,
-      "notes": "Implemented on 2026-02-24. Created AIService with OpenAI integration, AIController with POST /api/v1/ai/generate-tags endpoint, and DTOs. All quality checks pass."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-002",
-      "title": "Backend API - Batch update memo tags",
-      "description": "As a developer, I need an API to batch add user-confirmed tags to a memo.",
+      "title": "Create tag list component for sidebar",
+      "description": "As a user, I want to see all available tags in the sidebar below 'Today's Recommendations' so I can discover and navigate to tagged content.",
       "acceptanceCriteria": [
-        "Create PUT /api/v1/memos/:id/tags endpoint (or reuse existing update endpoint)",
-        "Accept tags array parameter (string array)",
-        "Update memo's tags field",
-        "Return updated memo data",
-        "Check user has permission to modify the memo",
+        "Tag list section appears below 'Today's Recommendations' in left sidebar",
+        "Section has header 'Tags' with tag icon",
+        "Each tag displays with usage count in parentheses (e.g., `工作 (12)`)",
+        "Tags sorted by usage frequency (most used first)",
+        "Empty state shows when no tags exist: 'No tags yet'",
+        "Component scrolls independently if tag list is long",
         "Typecheck passes",
-        "Tests pass"
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 2,
-      "passes": true,
-      "notes": "Implemented on 2026-02-24. Added tags field to schema, DTOs, created migration v9, added updateTags method to MemoService, and created PUT /api/v1/memos/:memoId/tags endpoint. All quality checks pass."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-003",
-      "title": "AI tools architecture extension support",
-      "description": "As a developer, I want the architecture to support easily adding more AI tools in the future.",
+      "title": "Implement single-select tag filtering",
+      "description": "As a user, I want to click a tag to filter memos so I can focus on one category at a time.",
       "acceptanceCriteria": [
-        "Frontend: AI tool config uses array/object structure for easy extension",
-        "Frontend: Modal content dynamically renders based on tool type",
-        "Backend: AI routes have clear structure (/api/v1/ai/*)",
-        "Create AIService class to centrally manage AI logic",
-        "Reserve endpoint slots for other AI tools (e.g., /ai/summarize, /ai/translate)",
-        "Typecheck passes"
+        "Clicking a tag in sidebar filters memo list to show only matching memos",
+        "Selected tag visually highlighted in sidebar (different background/border)",
+        "Clicking same tag again clears the filter",
+        "Filter state persists in URL query params (e.g., `?tag=工作`)",
+        "Browser back/forward buttons navigate filter history",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": "Implemented on 2026-02-24. Created AIToolsService with extensible tool configuration, AI API layer (ai.ts), and GET /api/v1/ai/tools endpoint. Architecture supports future tools via AIToolDefinition structure with reserved slots for summarize, translate, etc."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-004",
-      "title": "Add AI button to memo card",
-      "description": "As a user, I want to quickly find the AI tool entry on the memo card to use smart features.",
+      "title": "Implement multi-select tag filtering",
+      "description": "As a user, I want to filter by multiple tags simultaneously so I can find memos that match several criteria.",
       "acceptanceCriteria": [
-        "Add AI tool button to top-right corner of memo card (icon like Sparkles or Wand)",
-        "Show tooltip 'AI Tools' on hover",
-        "Clicking button opens AI tool selection modal",
-        "Button style coordinates with existing card design",
+        "UI toggle to switch between single-select and multi-select modes",
+        "In multi-select mode, clicking tags adds/removes them from filter set",
+        "Multiple selected tags shown as active filters with AND logic (all tags must match)",
+        "URL params support multiple tags (e.g., `?tags=工作&tags=重要`)",
+        "Clear all button removes all active tag filters",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 4,
-      "passes": true,
-      "notes": "Implemented on 2026-02-24. Added Sparkles icon and AI Tools button to memo card actions. Button has purple hover state and opens placeholder modal. Verified in browser."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-005",
-      "title": "Create AI tool selection modal",
-      "description": "As a user, I want to see a list of tools after clicking the AI button so I can choose the AI function I need.",
+      "title": "Display active filter state",
+      "description": "As a user, I want to see what filters are active and be able to clear them easily.",
       "acceptanceCriteria": [
-        "Modal title is 'AI Tools'",
-        "Currently only shows one tool: 'Smart Add Tags' (with icon, name, and description)",
-        "Clicking tool enters that tool's specific interface",
-        "Modal has close button in top-right, clicking outside also closes",
-        "Modal style is consistent with system design",
+        "Active filter indicator appears at top of memo list when filter is active",
+        "Shows tag name(s) with 'Filtered by:' label",
+        "Each active tag has an X button to remove it individually",
+        "'Clear all' button removes all tag filters at once",
+        "Clicking clear returns to unfiltered view",
+        "Empty state shows 'No memos match the selected tag(s)' when filter yields no results",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 5,
-      "passes": true,
-      "notes": "Implemented on 2026-02-24. Created AIToolSelectorModal component with tool listing UI, TagGeneratorModal placeholder, integrated with memo-card.tsx and AIToolsService. Verified in browser."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-006",
-      "title": "Create tag suggestions display modal",
-      "description": "As a user, I want to see AI-generated tag suggestions after selecting 'Smart Add Tags' so I can decide which to use.",
+      "title": "Tag filtering performance optimization",
+      "description": "As a user, I want tag filtering to be responsive even with hundreds of memos.",
       "acceptanceCriteria": [
-        "Modal shows loading state ('AI is analyzing content...')",
-        "After loading, display generated tag list",
-        "Each tag displays as checkable chip/checkbox style",
-        "All tags are selected by default",
-        "Provide input field for user to add custom tags",
-        "Bottom shows 'Confirm Add' and 'Cancel' buttons",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "Tag filtering completes within 100ms for up to 1000 memos",
+        "Tag counts update efficiently when memos change",
+        "No unnecessary re-renders when filtering",
+        "Loading state shown briefly if filter computation takes time",
+        "Typecheck passes"
       ],
       "priority": 6,
-      "passes": true,
-      "notes": "Implemented on 2026-02-24. Updated TagGeneratorModal with loading state, checkable tag chips, custom tag input, selected tags summary, and Confirm/Cancel buttons. All tags selected by default via service's selectAllTags. Verified in browser."
-    },
-    {
-      "id": "US-007",
-      "title": "Tag secondary editing functionality",
-      "description": "As a user, I want to be able to modify AI-generated tags to better fit my needs.",
-      "acceptanceCriteria": [
-        "Clicking a generated tag enters edit mode",
-        "Edit mode shows input field allowing modification of tag text",
-        "Press Enter or lose focus to confirm modification",
-        "Each tag has delete button (X icon) to remove it",
-        "Input field supports adding brand new tags (press Enter to add)",
-        "Prevent adding duplicate tags (case-insensitive)",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 7,
-      "passes": true,
-      "notes": "Implemented on 2026-02-24. Added inline editing with Pencil edit button, X delete button (hover reveal), Enter/Blur to save, Escape to cancel. Enhanced service methods to sync selectedTags and suggestedTags. All quality checks pass."
-    },
-    {
-      "id": "US-008",
-      "title": "Frontend tag confirmation and submission",
-      "description": "As a user, I want to add the selected and edited tags to my note with one click.",
-      "acceptanceCriteria": [
-        "Clicking 'Confirm Add' calls API to save tags",
-        "After successful save, close modal and show success toast",
-        "Memo card immediately displays new tags",
-        "Clicking 'Cancel' closes modal without saving changes",
-        "During save, button shows loading state to prevent duplicate submission",
-        "If API fails, show error message and preserve user selection state",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 8,
-      "passes": true,
-      "notes": "Implemented on 2026-02-24. Enhanced saveTags method in AIToolsService to show toast.success on success and toast.error on failure. Updates MemoService.memos array immediately so UI reflects changes without refresh. Loading state prevents duplicate submissions. All quality checks pass."
+      "passes": false,
+      "notes": ""
     }
   ]
 }
