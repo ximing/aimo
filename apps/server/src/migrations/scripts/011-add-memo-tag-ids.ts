@@ -18,12 +18,12 @@ export const addTagIdsToMemosMigration: Migration = {
     try {
       const memosTable = await connection.openTable('memos');
 
-      // Add the tagIds column - use NULL as default value
-      // Existing records will have NULL, which code handles as empty array
+      // Add the tagIds column - explicitly cast NULL to list type
+      // This prevents the column from being inferred as a Null type
       const newColumns = [
         {
           name: 'tagIds',
-          valueSql: 'NULL',
+          valueSql: "arrow_cast(NULL, 'List(Utf8)')",
         },
       ];
 

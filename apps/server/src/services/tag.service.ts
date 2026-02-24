@@ -314,16 +314,35 @@ export class TagService {
     }
 
     // Update each memo
+    // Note: LanceDB cannot automatically convert empty array to NULL for List types
+    // We need to use valuesSql to explicitly set NULL when array is empty
     const now = Date.now();
     for (const { memoId, newTagIds, newTags } of memosToUpdate) {
-      await memosTable.update({
+      const updateValues: Record<string, any> = { updatedAt: now };
+      const updateValuesSql: Record<string, string> = {};
+
+      if (newTagIds.length > 0) {
+        updateValues.tagIds = newTagIds;
+      } else {
+        updateValuesSql.tagIds = 'arrow_cast(NULL, \'List(Utf8)\')';
+      }
+
+      if (newTags && newTags.length > 0) {
+        updateValues.tags = newTags;
+      } else if (newTags && newTags.length === 0) {
+        updateValuesSql.tags = 'arrow_cast(NULL, \'List(Utf8)\')';
+      }
+
+      const updateOptions: { where: string; values: Record<string, any>; valuesSql?: Record<string, string> } = {
         where: `memoId = '${memoId}' AND uid = '${uid}'`,
-        values: {
-          tagIds: newTagIds,
-          tags: newTags,
-          updatedAt: now,
-        },
-      });
+        values: updateValues,
+      };
+
+      if (Object.keys(updateValuesSql).length > 0) {
+        updateOptions.valuesSql = updateValuesSql;
+      }
+
+      await memosTable.update(updateOptions);
     }
   }
 

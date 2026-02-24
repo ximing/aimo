@@ -74,7 +74,7 @@ export class MigrationManager {
     } catch (error) {
       console.error('Migration manager initialization failed:', error);
       throw error;
-    }
+    }    
   }
 
   /**

@@ -16,6 +16,20 @@ export const addTagsTableMigration: Migration = {
   tableName: 'tags',
   description: 'Create tags table for tag metadata storage',
   up: async (connection: Connection) => {
-    return;
+    try {
+      const tableNames = await connection.tableNames();
+
+      if (tableNames.includes('tags')) {
+        console.log('Table already exists: tags');
+        return;
+      }
+
+      console.log('Creating table: tags');
+      await connection.createEmptyTable('tags', tagsSchema);
+      console.log('Table created: tags');
+    } catch (error: any) {
+      console.error('Error running migration v10:', error);
+      throw error;
+    }
   },
 };
