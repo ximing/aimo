@@ -248,6 +248,23 @@ export class AIToolsService extends Service {
   }
 
   /**
+   * Delete a tag entirely (from both selection and suggestions)
+   */
+  deleteTag(tag: string) {
+    // Remove from selectedTags
+    const selectedIndex = this.tagGeneration.selectedTags.indexOf(tag);
+    if (selectedIndex > -1) {
+      this.tagGeneration.selectedTags.splice(selectedIndex, 1);
+    }
+
+    // Remove from suggestedTags
+    const suggestedIndex = this.tagGeneration.suggestedTags.indexOf(tag);
+    if (suggestedIndex > -1) {
+      this.tagGeneration.suggestedTags.splice(suggestedIndex, 1);
+    }
+  }
+
+  /**
    * Update a tag in the selection (for editing)
    */
   updateTag(oldTag: string, newTag: string) {
@@ -264,12 +281,19 @@ export class AIToolsService extends Service {
       return false;
     }
 
-    const index = this.tagGeneration.selectedTags.indexOf(oldTag);
-    if (index > -1 && normalizedNewTag) {
-      this.tagGeneration.selectedTags[index] = newTag.trim();
-      return true;
+    // Update in selectedTags
+    const selectedIndex = this.tagGeneration.selectedTags.indexOf(oldTag);
+    if (selectedIndex > -1 && normalizedNewTag) {
+      this.tagGeneration.selectedTags[selectedIndex] = newTag.trim();
     }
-    return false;
+
+    // Also update in suggestedTags to keep them in sync
+    const suggestedIndex = this.tagGeneration.suggestedTags.indexOf(oldTag);
+    if (suggestedIndex > -1 && normalizedNewTag) {
+      this.tagGeneration.suggestedTags[suggestedIndex] = newTag.trim();
+    }
+
+    return selectedIndex > -1 || suggestedIndex > -1;
   }
 
   /**

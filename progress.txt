@@ -27,3 +27,18 @@
   - Tag generation state is separate and includes loading, suggestedTags, selectedTags, error
   - Pattern for adding new AI tool: 1) Add to AIToolType, 2) Add to tools array, 3) Add tool-specific state if needed, 4) Add API method, 5) Add backend endpoint
 ---
+
+## 2026-02-24T13:30:00Z - US-007
+- Implemented tag secondary editing functionality
+- Files changed:
+  - apps/web/src/components/ai/tag-generator-modal.tsx - Added inline editing with input field, edit/save/cancel handlers, edit/delete buttons on hover
+  - apps/web/src/services/ai-tools.service.ts - Enhanced updateTag to sync suggestedTags, added deleteTag method
+- **Learnings for future iterations:**
+  - Tag editing uses local component state (editingTag, editValue) separate from service state
+  - Edit input auto-focuses via useEffect when entering edit mode
+  - Edit/delete buttons use opacity-0/group-hover:opacity-100 pattern for hover reveal
+  - updateTag now syncs both selectedTags and suggestedTags to keep UI consistent
+  - deleteTag removes from both arrays (complete removal vs removeTag which just deselects)
+  - Keyboard handling: Enter to save, Escape to cancel, onBlur saves
+  - Duplicate prevention is handled in service layer (updateTag, addCustomTag)
+---

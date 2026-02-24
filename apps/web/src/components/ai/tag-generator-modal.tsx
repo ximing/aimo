@@ -8,6 +8,7 @@ import {
   Check,
   Plus,
   Sparkles,
+  Pencil,
 } from 'lucide-react';
 import { AIToolsService } from '../../services/ai-tools.service';
 
@@ -21,7 +22,10 @@ export const TagGeneratorModal = view(
   ({ isOpen, onClose, onBack }: TagGeneratorModalProps) => {
     const aiToolsService = useService(AIToolsService);
     const [customTagInput, setCustomTagInput] = useState('');
+    const [editingTag, setEditingTag] = useState<string | null>(null);
+    const [editValue, setEditValue] = useState('');
     const inputRef = useRef<HTMLInputElement>(null);
+    const editInputRef = useRef<HTMLInputElement>(null);
 
     // Handle escape key to close modal
     const handleKeyDown = useCallback(
@@ -48,7 +52,54 @@ export const TagGeneratorModal = view(
 
     // Handle toggle tag selection
     const handleToggleTag = (tag: string) => {
+      // Don't toggle if in edit mode
+      if (editingTag) return;
       aiToolsService.toggleTagSelection(tag);
+    };
+
+    // Handle start editing a tag
+    const handleStartEdit = (tag: string, e: React.MouseEvent) => {
+      e.stopPropagation();
+      setEditingTag(tag);
+      setEditValue(tag);
+    };
+
+    // Handle save edited tag
+    const handleSaveEdit = () => {
+      if (editingTag && editValue.trim()) {
+        const success = aiToolsService.updateTag(editingTag, editValue.trim());
+        if (success) {
+          setEditingTag(null);
+          setEditValue('');
+        }
+      }
+    };
+
+    // Handle cancel edit
+    const handleCancelEdit = () => {
+      setEditingTag(null);
+      setEditValue('');
+    };
+
+    // Handle edit input keydown
+    const handleEditKeyDown = (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleSaveEdit();
+      } else if (e.key === 'Escape') {
+        handleCancelEdit();
+      }
+    };
+
+    // Handle delete tag
+    const handleDeleteTag = (tag: string, e: React.MouseEvent) => {
+      e.stopPropagation();
+      // If deleting the tag currently being edited, cancel edit mode first
+      if (editingTag === tag) {
+        setEditingTag(null);
+        setEditValue('');
+      }
+      aiToolsService.deleteTag(tag);
     };
 
     // Handle add custom tag
@@ -96,6 +147,17 @@ export const TagGeneratorModal = view(
       aiToolsService.tagGeneration.suggestedTags.length,
       aiToolsService.tagGeneration.isLoading,
     ]);
+
+    // Auto-focus edit input when entering edit mode
+    useEffect(() => {
+      if (editingTag) {
+        const timeout = setTimeout(() => {
+          editInputRef.current?.focus();
+          editInputRef.current?.select();
+        }, 50);
+        return () => clearTimeout(timeout);
+      }
+    }, [editingTag]);
 
     // Check if any tags are selected
     const hasSelectedTags = aiToolsService.tagGeneration.selectedTags.length > 0;
@@ -215,14 +277,36 @@ export const TagGeneratorModal = view(
 
                     <div className="flex flex-wrap gap-2">
                       {aiToolsService.tagGeneration.suggestedTags.map((tag) => {
-                        const isSelected =
-                          aiToolsService.tagGeneration.selectedTags.includes(tag);
+                        const isSelected = aiToolsService.tagGeneration.selectedTags.includes(tag);
+                        const isEditing = editingTag === tag;
+
+                        if (isEditing) {
+                          return (
+                            <div
+                              key={`edit-${tag}`}
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm
+                                bg-purple-100 dark:bg-purple-950/50 border border-purple-300 dark:border-purple-700"
+                            >
+                              <input
+                                ref={editInputRef}
+                                type="text"
+                                value={editValue}
+                                onChange={(e) => setEditValue(e.target.value)}
+                                onKeyDown={handleEditKeyDown}
+                                onBlur={handleSaveEdit}
+                                className="w-20 px-1 py-0.5 text-sm bg-white dark:bg-dark-700
+                                  text-gray-900 dark:text-white rounded border-0
+                                  focus:outline-none focus:ring-2 focus:ring-purple-500"
+                              />
+                            </div>
+                          );
+                        }
+
                         return (
-                          <button
+                          <div
                             key={tag}
-                            onClick={() => handleToggleTag(tag)}
                             className={`
-                              inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium
+                              group inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium
                               transition-all duration-200 border
                               ${
                                 isSelected
@@ -231,11 +315,37 @@ export const TagGeneratorModal = view(
                               }
                             `}
                           >
+                            {/* Checkbox to toggle selection */}
+                            <button
+                              onClick={() => handleToggleTag(tag)}
+                              className="flex items-center gap-1.5"
+                            >
+                              {isSelected && <Check className="w-3.5 h-3.5" />}
+                              <span>{tag}</span>
+                            </button>
+                            {/* Edit button - appears on hover when selected */}
                             {isSelected && (
-                              <Check className="w-3.5 h-3.5" />
+                              <button
+                                onClick={(e) => handleStartEdit(tag, e)}
+                                className="ml-0.5 p-0.5 rounded-full opacity-0 group-hover:opacity-100
+                                  hover:bg-purple-200 dark:hover:bg-purple-800 transition-all"
+                                aria-label={`Edit ${tag}`}
+                              >
+                                <Pencil className="w-3 h-3" />
+                              </button>
                             )}
-                            <span>{tag}</span>
-                          </button>
+                            {/* Delete button - appears on hover when selected */}
+                            {isSelected && (
+                              <button
+                                onClick={(e) => handleDeleteTag(tag, e)}
+                                className="p-0.5 rounded-full opacity-0 group-hover:opacity-100
+                                  hover:bg-purple-200 dark:hover:bg-purple-800 transition-all"
+                                aria-label={`Delete ${tag}`}
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
                         );
                       })}
                     </div>
