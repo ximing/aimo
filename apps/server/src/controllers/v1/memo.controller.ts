@@ -40,6 +40,7 @@ export class MemoV1Controller {
     @QueryParam('search') search?: string,
     @QueryParam('categoryId') categoryId?: string,
     @QueryParam('tag') tag?: string,
+    @QueryParam('tags') tags?: string[],
     @QueryParam('startDate') startDate?: string,
     @QueryParam('endDate') endDate?: string
   ) {
@@ -76,6 +77,7 @@ export class MemoV1Controller {
         search,
         categoryId,
         tag,
+        tags,
         startDate: startDateObject,
         endDate: endDateObject,
       });

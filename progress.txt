@@ -88,3 +88,16 @@
   - Tag count shown in parentheses next to tag name
   - Tag icon from lucide-react used for section header
 ---
+
+## 2026-02-24T16:00:00Z - US-003
+- Implemented single-select tag filtering with URL persistence
+- Files changed:
+  - apps/web/src/pages/home/home.tsx - Added URL query param handling for tag filter and popstate listener
+- **Learnings for future iterations:**
+  - URL persistence uses `?tag=xxx` format for single tag filter
+  - Parse tag param on mount alongside date param (both can coexist)
+  - Use `window.history.replaceState()` for URL updates (no page reload)
+  - Use `window.addEventListener('popstate')` to handle browser back/forward
+  - URL state synced with MemoService.tagFilter for shareable filtered views
+  - Tag filter and date filter can work together (AND logic between different filter types)
+---

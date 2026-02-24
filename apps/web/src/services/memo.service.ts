@@ -76,7 +76,9 @@ export class MemoService extends Service {
   endDate: Date | null = null;
   categoryFilter: string | null = loadCategoryFilterFromStorage();
   selectedDate: string | null = null; // YYYY-MM-DD format for date filter
-  tagFilter: string | null = null; // Single tag filter for now
+  tagFilter: string | null = null; // Single tag filter (for backward compatibility)
+  tagsFilter: string[] = []; // Multi-select tag filter
+  multiSelectMode = false; // Toggle between single and multi-select tag filtering
 
   /**
    * Computed: Get filtered memos (for client-side filtering if needed)
@@ -122,7 +124,10 @@ export class MemoService extends Service {
         params.categoryId = this.categoryFilter;
       }
 
-      if (this.tagFilter) {
+      // Use tags filter in multi-select mode, otherwise use single tag filter
+      if (this.multiSelectMode && this.tagsFilter.length > 0) {
+        params.tags = this.tagsFilter;
+      } else if (this.tagFilter) {
         params.tag = this.tagFilter;
       }
 
@@ -317,11 +322,71 @@ export class MemoService extends Service {
   }
 
   /**
-   * Set tag filter
+   * Set tag filter (single-select mode)
    */
   setTagFilter(tagName: string | null) {
     this.tagFilter = tagName;
+    // Clear multi-select when using single-select
+    if (tagName) {
+      this.tagsFilter = [];
+      this.multiSelectMode = false;
+    }
     this.fetchMemos(true);
+  }
+
+  /**
+   * Toggle multi-select mode
+   */
+  toggleMultiSelectMode(enabled: boolean) {
+    this.multiSelectMode = enabled;
+    if (enabled) {
+      // Convert single tag to multi-select if exists
+      if (this.tagFilter) {
+        this.tagsFilter = [this.tagFilter];
+        this.tagFilter = null;
+      }
+    } else {
+      // Convert multi-select to single tag if exactly one selected
+      if (this.tagsFilter.length === 1) {
+        this.tagFilter = this.tagsFilter[0];
+      }
+      this.tagsFilter = [];
+    }
+    this.fetchMemos(true);
+  }
+
+  /**
+   * Toggle a tag in multi-select mode
+   */
+  toggleTagInFilter(tagName: string) {
+    const index = this.tagsFilter.indexOf(tagName);
+    if (index > -1) {
+      // Remove tag if already selected
+      this.tagsFilter = this.tagsFilter.filter((t) => t !== tagName);
+    } else {
+      // Add tag if not selected
+      this.tagsFilter = [...this.tagsFilter, tagName];
+    }
+    this.fetchMemos(true);
+  }
+
+  /**
+   * Clear all tag filters
+   */
+  clearAllTagFilters() {
+    this.tagFilter = null;
+    this.tagsFilter = [];
+    this.fetchMemos(true);
+  }
+
+  /**
+   * Check if a tag is selected (works for both single and multi-select)
+   */
+  isTagSelected(tagName: string): boolean {
+    if (this.multiSelectMode) {
+      return this.tagsFilter.includes(tagName);
+    }
+    return this.tagFilter === tagName;
   }
 
   /**

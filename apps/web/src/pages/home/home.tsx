@@ -78,6 +78,7 @@ export const HomePage = view(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const dateParam = urlParams.get('date');
     const tagParam = urlParams.get('tag');
+    const tagsParams = urlParams.getAll('tags');
 
     if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
       memoService.setSelectedDate(dateParam);
@@ -85,7 +86,15 @@ export const HomePage = view(() => {
       memoService.setSelectedDate(null);
     }
 
-    if (tagParam) {
+    // Handle multi-select tags first (if present)
+    if (tagsParams.length > 0) {
+      memoService.multiSelectMode = true;
+      memoService.tagsFilter = tagsParams;
+      memoService.tagFilter = null;
+    } else if (tagParam) {
+      // Single tag mode
+      memoService.multiSelectMode = false;
+      memoService.tagsFilter = [];
       memoService.setTagFilter(tagParam);
     } else {
       memoService.setTagFilter(null);
@@ -105,35 +114,62 @@ export const HomePage = view(() => {
     window.history.replaceState({}, '', url.toString());
   }, [memoService.selectedDate]);
 
-  // Update URL when tag filter changes
+  // Update URL when tag filter changes (single-select)
   useEffect(() => {
     const url = new URL(window.location.href);
 
     if (memoService.tagFilter) {
       url.searchParams.set('tag', memoService.tagFilter);
-    } else {
+      // Remove multi-select params if switching to single
+      url.searchParams.delete('tags');
+    } else if (!memoService.multiSelectMode) {
       url.searchParams.delete('tag');
     }
 
     window.history.replaceState({}, '', url.toString());
   }, [memoService.tagFilter]);
 
+  // Update URL when multi-select tags change
+  useEffect(() => {
+    const url = new URL(window.location.href);
+
+    if (memoService.multiSelectMode && memoService.tagsFilter.length > 0) {
+      url.searchParams.delete('tag');
+      url.searchParams.delete('tags');
+      memoService.tagsFilter.forEach((tag) => {
+        url.searchParams.append('tags', tag);
+      });
+    } else if (memoService.multiSelectMode && memoService.tagsFilter.length === 0) {
+      url.searchParams.delete('tags');
+    }
+
+    window.history.replaceState({}, '', url.toString());
+  }, [memoService.tagsFilter, memoService.multiSelectMode]);
+
   // Handle browser back/forward buttons
   useEffect(() => {
     const handlePopState = () => {
       const urlParams = new URLSearchParams(window.location.search);
       const tagParam = urlParams.get('tag');
+      const tagsParams = urlParams.getAll('tags');
 
-      if (tagParam && tagParam !== memoService.tagFilter) {
+      if (tagsParams.length > 0) {
+        // Multi-select mode from URL
+        memoService.multiSelectMode = true;
+        memoService.tagsFilter = tagsParams;
+        memoService.tagFilter = null;
+      } else if (tagParam && tagParam !== memoService.tagFilter) {
+        memoService.multiSelectMode = false;
+        memoService.tagsFilter = [];
         memoService.setTagFilter(tagParam);
-      } else if (!tagParam && memoService.tagFilter) {
-        memoService.setTagFilter(null);
+      } else if (!tagParam && !tagsParams.length && (memoService.tagFilter || memoService.tagsFilter.length > 0)) {
+        memoService.clearAllTagFilters();
       }
     };
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [memoService.tagFilter]);
+  }, [memoService.tagFilter, memoService.tagsFilter.length]);
 
   // Fetch memos on mount (only once)
   useEffect(() => {
