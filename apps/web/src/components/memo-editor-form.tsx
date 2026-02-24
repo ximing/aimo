@@ -229,6 +229,8 @@ export const MemoEditorForm = view(
             setSelectedTags([]);
             setRows(3);
           }
+          // 刷新标签列表（更新使用计数）
+          void tagService.fetchTags();
           // 调用 onSave 回调
           if (onSave && result.memo) {
             onSave(result.memo);

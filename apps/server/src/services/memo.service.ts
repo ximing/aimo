@@ -580,6 +580,9 @@ export class MemoService {
           ? await this.attachmentService.getAttachmentsByIds(finalAttachmentIds, uid)
           : [];
 
+      // Get existing tagIds
+      const existingTagIds = this.convertArrowAttachments(existingMemo.tagIds);
+
       const updatedMemo: MemoListItemDto = {
         memoId,
         uid,
@@ -587,13 +590,15 @@ export class MemoService {
         type: existingMemo.type as 'text' | 'audio' | 'video',
         categoryId: categoryId === undefined ? existingMemo.categoryId : categoryId || undefined,
         attachments: finalAttachmentDtos,
+        tagIds: existingTagIds,
         isPublic: isPublic !== undefined ? isPublic : (existingMemo.isPublic ?? false),
         createdAt: existingMemo.createdAt,
         updatedAt: now,
       };
 
-      // Enrich with relations (same logic as getMemoById)
-      const enrichedItems = await this.enrichMemosWithRelations(uid, [updatedMemo]);
+      // Enrich with tags and relations (same logic as getMemoById)
+      const itemsWithTags = await this.enrichTags(uid, [updatedMemo]);
+      const enrichedItems = await this.enrichMemosWithRelations(uid, itemsWithTags);
 
       return {
         ...enrichedItems[0],
