@@ -119,3 +119,18 @@
   - Selected count badge shows number of selected tags in header
   - Tag filtering uses AND logic - memos must have ALL selected tags
 ---
+
+## 2026-02-24T17:00:00Z - US-005
+- Implemented active filter state display
+- Files changed:
+  - apps/web/src/pages/home/home.tsx - Added active tag filter indicator in header
+  - apps/web/src/pages/home/components/memo-list.tsx - Added filter-specific empty state
+- **Learnings for future iterations:**
+  - Active filter indicator uses blue (blue-50/blue-900) styling to distinguish from date filter (primary)
+  - Shows '筛选:' label followed by selected tags with # prefix
+  - Multi-select tags show + separator between tags
+  - Each tag has individual X button to remove it
+  - Clear all button (X) appears at end of filter badge
+  - Empty state shows search icon and '未找到匹配的备忘录' message when filters active
+  - Different empty state for no memos vs filtered no results
+---
