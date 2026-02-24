@@ -51,8 +51,8 @@
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented on 2026-02-24. Created AIToolsService with extensible tool configuration, AI API layer (ai.ts), and GET /api/v1/ai/tools endpoint. Architecture supports future tools via AIToolDefinition structure with reserved slots for summarize, translate, etc."
     },
     {
       "id": "US-004",

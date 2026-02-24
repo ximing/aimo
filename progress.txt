@@ -7,5 +7,23 @@
 - DTOs are in packages/dto/ and shared between frontend and backend
 - Frontend uses @rabjs/react for reactive state management
 - API calls are abstracted in apps/web/src/services/ and apps/web/src/api/
+- Services extend @rabjs/react Service class for reactive state
+- When adding new DTOs: 1) Update packages/dto/src/, 2) Rebuild DTO package, 3) Import from @aimo/dto
 
+---
+
+## 2026-02-24T12:00:00Z - US-003
+- Implemented AI tools architecture extension support
+- Files changed:
+  - apps/web/src/api/ai.ts (new) - API layer for AI endpoints
+  - apps/web/src/services/ai-tools.service.ts (new) - AIToolsService with extensible tool configuration
+  - apps/server/src/controllers/v1/ai.controller.ts - Added GET /api/v1/ai/tools endpoint
+- **Learnings for future iterations:**
+  - AIToolsService is the central place for AI tool state management
+  - Tool definitions are in the `tools` array - add new tools there for automatic UI rendering
+  - AIToolType union type defines all available tools - add new types there
+  - Reserved slots documented for future tools: summarize, translate, expand, grammar-check
+  - Modal state tracks which tool is currently active
+  - Tag generation state is separate and includes loading, suggestedTags, selectedTags, error
+  - Pattern for adding new AI tool: 1) Add to AIToolType, 2) Add to tools array, 3) Add tool-specific state if needed, 4) Add API method, 5) Add backend endpoint
 ---
