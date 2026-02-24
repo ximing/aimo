@@ -62,6 +62,11 @@ export const memosSchema = new Schema([
     true
   ), // nullable list of attachment IDs (URLs generated at runtime)
   new Field(
+    'tags',
+    new List(new Field('item', new Utf8(), true)),
+    true
+  ), // nullable list of tag strings
+  new Field(
     'embedding',
     new FixedSizeList(getEmbeddingDimensions(), new Field('item', new Float32(), true)),
     false
@@ -93,6 +98,7 @@ export interface MemoRecord {
   content: string;
   type?: string; // optional memo type: 'text' | 'audio' | 'video' (defaults to 'text' if not set)
   attachments?: string[]; // attachment IDs array (URLs generated at runtime)
+  tags?: string[]; // optional array of tag strings
   embedding: number[];
   createdAt: number; // timestamp in milliseconds
   updatedAt: number; // timestamp in milliseconds

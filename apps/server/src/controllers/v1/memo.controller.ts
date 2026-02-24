@@ -231,6 +231,42 @@ export class MemoV1Controller {
     }
   }
 
+  @Put('/:memoId/tags')
+  async updateMemoTags(
+    @Param('memoId') memoId: string,
+    @Body() body: { tags: string[] },
+    @CurrentUser() user: UserInfoDto
+  ) {
+    try {
+      if (!user?.uid) {
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
+      }
+
+      if (!body.tags || !Array.isArray(body.tags)) {
+        return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'Tags must be an array');
+      }
+
+      // Validate that all tags are strings
+      const validTags = body.tags.filter((tag): tag is string => typeof tag === 'string' && tag.trim().length > 0);
+
+      const memo = await this.memoService.updateTags(memoId, user.uid, validTags);
+      if (!memo) {
+        return ResponseUtility.error(ErrorCode.NOT_FOUND);
+      }
+
+      return ResponseUtility.success({
+        message: 'Tags updated successfully',
+        memo,
+      });
+    } catch (error: any) {
+      console.error('Update memo tags error:', error);
+      if (error.message === 'Memo not found') {
+        return ResponseUtility.error(ErrorCode.NOT_FOUND);
+      }
+      return ResponseUtility.error(ErrorCode.DB_ERROR);
+    }
+  }
+
   @Delete('/:memoId')
   async deleteMemo(@Param('memoId') memoId: string, @CurrentUser() user: UserInfoDto) {
     try {

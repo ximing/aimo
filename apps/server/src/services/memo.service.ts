@@ -475,6 +475,73 @@ export class MemoService {
   }
 
   /**
+   * Update memo tags (batch update)
+   * Replaces all existing tags with the new tags array
+   */
+  async updateTags(
+    memoId: string,
+    uid: string,
+    tags: string[]
+  ): Promise<MemoWithAttachmentsDto | null> {
+    try {
+      // Find existing memo
+      const memosTable = await this.lanceDatabase.openTable('memos');
+      const results = await memosTable
+        .query()
+        .where(`memoId = '${memoId}' AND uid = '${uid}'`)
+        .limit(1)
+        .toArray();
+
+      if (results.length === 0) {
+        throw new Error('Memo not found');
+      }
+
+      const existingMemo: any = results[0];
+
+      // Update the tags
+      const now = Date.now();
+      await memosTable.update({
+        where: `memoId = '${memoId}' AND uid = '${uid}'`,
+        values: {
+          tags: tags || [],
+          updatedAt: now,
+        },
+      });
+
+      // Get attachment DTOs
+      const attachmentIds = this.convertArrowAttachments(existingMemo.attachments);
+      const attachmentDtos =
+        attachmentIds.length > 0
+          ? await this.attachmentService.getAttachmentsByIds(attachmentIds, uid)
+          : [];
+
+      // Build updated memo object
+      const updatedMemo: MemoListItemDto = {
+        memoId,
+        uid,
+        content: existingMemo.content,
+        type: (existingMemo.type as 'text' | 'audio' | 'video') || 'text',
+        categoryId: existingMemo.categoryId,
+        attachments: attachmentDtos,
+        tags: tags || [],
+        isPublic: existingMemo.isPublic ?? false,
+        createdAt: existingMemo.createdAt,
+        updatedAt: now,
+      };
+
+      // Enrich with relations
+      const enrichedItems = await this.enrichMemosWithRelations(uid, [updatedMemo]);
+
+      return {
+        ...enrichedItems[0],
+      } as MemoWithAttachmentsDto;
+    } catch (error) {
+      console.error('Error updating memo tags:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Delete a memo
    */
   async deleteMemo(memoId: string, uid: string): Promise<boolean> {

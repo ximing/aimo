@@ -23,6 +23,7 @@ import {
 } from './006-add-ai-conversations.js';
 import { addPropertiesToAttachmentsMigration } from './007-add-attachment-properties.js';
 import { addIsPublicToMemosMigration } from './008-add-is-public.js';
+import { addTagsToMemosMigration } from './009-add-tags-field.js';
 
 import type { Migration } from '../types.js';
 
@@ -67,6 +68,9 @@ export const ALL_MIGRATIONS: Migration[] = [
 
   // Version 8: Add isPublic field to memos table
   addIsPublicToMemosMigration,
+
+  // Version 9: Add tags field to memos table
+  addTagsToMemosMigration,
 
   // Add future migrations here
   // Example:
