@@ -2,7 +2,9 @@ import { useState, useRef, useEffect } from 'react';
 import { view, useService } from '@rabjs/react';
 import { MemoService } from '../services/memo.service';
 import { CategoryService } from '../services/category.service';
+import { TagService } from '../services/tag.service';
 import { AttachmentUploader, type AttachmentItem } from './attachment-uploader';
+import { TagInput } from './tag-input';
 import { attachmentApi } from '../api/attachment';
 import * as memoApi from '../api/memo';
 import { Paperclip, X, Check, ChevronDown, Plus, Globe, Lock } from 'lucide-react';
@@ -37,6 +39,7 @@ export const MemoEditorForm = view(
     const [isEditorActive, setIsEditorActive] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false); // 标记是否正在提交中，用于防止推荐接口时序问题
     const [isPublic, setIsPublic] = useState<boolean>(initialMemo?.isPublic ?? false);
+    const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
     // 当 defaultCategoryId 变化时，同步更新 selectedCategoryId（创建模式下）
     useEffect(() => {
@@ -53,6 +56,7 @@ export const MemoEditorForm = view(
 
     const memoService = useService(MemoService);
     const categoryService = useService(CategoryService);
+    const tagService = useService(TagService);
 
     // 初始化编辑模式的数据
     useEffect(() => {
@@ -77,12 +81,22 @@ export const MemoEditorForm = view(
         if (initialMemo.categoryId) {
           setSelectedCategoryId(initialMemo.categoryId);
         }
+
+        // 初始化标签
+        if (initialMemo.tags && initialMemo.tags.length > 0) {
+          setSelectedTags(initialMemo.tags.map((t) => t.name));
+        }
       }
     }, [mode, initialMemo]);
 
     // 获取类别列表
     useEffect(() => {
       categoryService.fetchCategories();
+    }, []);
+
+    // 获取标签列表（用于标签输入建议）
+    useEffect(() => {
+      tagService.fetchTags();
     }, []);
 
     // 点击外部关闭类别下拉框
@@ -161,7 +175,8 @@ export const MemoEditorForm = view(
             selectedCategoryId || undefined,
             attachmentIds.length > 0 ? attachmentIds : undefined,
             relationIds.length > 0 ? relationIds : undefined,
-            isPublic
+            isPublic,
+            selectedTags.length > 0 ? selectedTags : undefined
           );
         } else {
           // 更新 memo
@@ -175,7 +190,8 @@ export const MemoEditorForm = view(
             selectedCategoryId,
             attachmentIds.length > 0 ? attachmentIds : undefined,
             relationIds.length > 0 ? relationIds : undefined,
-            isPublic
+            isPublic,
+            selectedTags.length > 0 ? selectedTags : undefined
           );
         }
 
@@ -188,6 +204,7 @@ export const MemoEditorForm = view(
             setContent('');
             setAttachments([]);
             setSelectedRelations([]);
+            setSelectedTags([]);
             setRows(3);
           }
           // 调用 onSave 回调
@@ -556,6 +573,14 @@ export const MemoEditorForm = view(
               />
             </div>
           )}
+
+          {/* 标签输入区域 */}
+          <TagInput
+            tags={selectedTags}
+            onTagsChange={setSelectedTags}
+            existingTags={tagService.tags}
+            disabled={loading}
+          />
 
           {/* 隐藏的文件输入 */}
           <input

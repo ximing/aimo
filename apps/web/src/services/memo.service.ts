@@ -163,7 +163,7 @@ export class MemoService extends Service {
   }
 
   /**
-   * Create a new memo with optional category, attachments and relations
+   * Create a new memo with optional category, attachments, relations, and tags
    */
   async createMemo(
     content: string,
@@ -171,10 +171,11 @@ export class MemoService extends Service {
     categoryId?: string,
     attachments?: string[],
     relationIds?: string[],
-    isPublic?: boolean
+    isPublic?: boolean,
+    tags?: string[]
   ) {
     try {
-      const data: CreateMemoDto = { content, type, categoryId, attachments, relationIds, isPublic };
+      const data: CreateMemoDto = { content, type, categoryId, attachments, relationIds, isPublic, tags };
       const response = await memoApi.createMemo(data);
 
       if (response.code === 0 && response.data) {
@@ -222,10 +223,11 @@ export class MemoService extends Service {
     categoryId?: string | null,
     attachments?: string[],
     relationIds?: string[],
-    isPublic?: boolean
+    isPublic?: boolean,
+    tags?: string[]
   ) {
     try {
-      const data: UpdateMemoDto = { content, type, categoryId, attachments, relationIds, isPublic };
+      const data: UpdateMemoDto = { content, type, categoryId, attachments, relationIds, isPublic, tags };
       const response = await memoApi.updateMemo(memoId, data);
 
       if (response.code === 0 && response.data) {

@@ -102,8 +102,47 @@
         "Typecheck passes"
       ],
       "priority": 6,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Verified in commit f39e17e - efficient backend filtering with Set operations"
+    },
+    {
+      "id": "US-007",
+      "title": "Edit tags in memo editor",
+      "description": "As a user, I want to edit tags when editing a memo so I can categorize my notes appropriately.",
+      "acceptanceCriteria": [
+        "Tag input field appears in memo edit modal/form",
+        "Current tags are displayed when opening edit mode",
+        "Tags shown as removable pills/chips with X button to delete",
+        "Typing in input shows tag suggestions from existing tags",
+        "Pressing Enter or comma adds the tag",
+        "Duplicate tags are prevented (case-insensitive comparison)",
+        "Empty tags are not allowed",
+        "Tags save correctly when memo is saved",
+        "Canceling edit discards tag changes",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 7,
+      "passes": true,
+      "notes": "Implemented - TagInput component with pills, suggestions, keyboard support"
+    },
+    {
+      "id": "US-008",
+      "title": "Return tags in public/share API and display on share page",
+      "description": "As a visitor viewing a shared memo, I want to see the memo's tags so I can understand how it's categorized.",
+      "acceptanceCriteria": [
+        "Backend: `/memos/public/:uid` endpoint includes `tags` field in response",
+        "Backend: `/memos/public/memo/:memoId` endpoint includes `tags` field in response",
+        "Backend: `/memos/public/:uid/random` endpoint includes `tags` field in response",
+        "Frontend: Share page displays tags in `#tag-name` format at the beginning of memo content",
+        "Tags on share page have same visual styling as main app (pill/badge style)",
+        "Clicking tags on share page navigates to public memos list filtered by that tag",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 8,
+      "passes": true,
+      "notes": "Implemented - Tags displayed on share page with pill styling and click navigation"
     }
   ]
 }

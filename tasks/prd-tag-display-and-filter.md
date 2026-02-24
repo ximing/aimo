@@ -98,6 +98,39 @@ Enhance the memo browsing experience by making tags more visible and actionable.
 - [ ] Loading state shown briefly if filter computation takes time
 - [ ] Typecheck/lint passes
 
+### US-007: Edit tags in memo editor
+
+**Description:** As a user, I want to edit tags when editing a memo so I can categorize my notes appropriately.
+
+**Acceptance Criteria:**
+
+- [ ] Tag input field appears in memo edit modal/form
+- [ ] Current tags are displayed when opening edit mode
+- [ ] Tags shown as removable pills/chips with X button to delete
+- [ ] Typing in input shows tag suggestions from existing tags
+- [ ] Pressing Enter or comma adds the tag
+- [ ] Duplicate tags are prevented (case-insensitive comparison)
+- [ ] Empty tags are not allowed
+- [ ] Tags save correctly when memo is saved
+- [ ] Canceling edit discards tag changes
+- [ ] Typecheck/lint passes
+- [ ] Verify in browser using dev-browser skill
+
+### US-008: Return tags in public/share API and display on share page
+
+**Description:** As a visitor viewing a shared memo, I want to see the memo's tags so I can understand how it's categorized.
+
+**Acceptance Criteria:**
+
+- [ ] Backend: `/memos/public/:uid` endpoint includes `tags` field in response
+- [ ] Backend: `/memos/public/memo/:memoId` endpoint includes `tags` field in response
+- [ ] Backend: `/memos/public/:uid/random` endpoint includes `tags` field in response
+- [ ] Frontend: Share page displays tags in `#tag-name` format at the beginning of memo content
+- [ ] Tags on share page have same visual styling as main app (pill/badge style)
+- [ ] Clicking tags on share page navigates to public memos list filtered by that tag
+- [ ] Typecheck/lint passes
+- [ ] Verify in browser using dev-browser skill
+
 ## Functional Requirements
 
 - **FR-1:** Tags on memo cards display as clickable `#tag-name` elements at the beginning of content
@@ -113,11 +146,9 @@ Enhance the memo browsing experience by making tags more visible and actionable.
 
 ## Non-Goals
 
-- Tag creation/editing from sidebar (only filtering)
-- Tag suggestions when typing
+- Tag creation/editing from sidebar (only filtering from sidebar)
 - Tag color customization
 - Nested or hierarchical tags
-- Tag autocomplete
 - Bulk tag operations (add/remove tags from multiple memos)
 - Tag cloud visualization
 - Tag-based search (only filtering existing list)

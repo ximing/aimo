@@ -4,12 +4,31 @@ Branch: ralph/tag-display-and-filter
 
 ## Status
 
-- [ ] US-001: Display tags on memo cards
-- [ ] US-002: Create tag list component for sidebar
-- [ ] US-003: Implement single-select tag filtering
-- [ ] US-004: Implement multi-select tag filtering
-- [ ] US-005: Display active filter state
-- [ ] US-006: Tag filtering performance optimization
+- [x] US-001: Display tags on memo cards
+- [x] US-002: Create tag list component for sidebar
+- [x] US-003: Implement single-select tag filtering
+- [x] US-004: Implement multi-select tag filtering
+- [x] US-005: Display active filter state
+- [x] US-006: Tag filtering performance optimization
+- [x] US-007: Edit tags in memo editor
+- [x] US-008: Return tags in public/share API and display on share page
 
 ## Notes
 
+## 2026-02-24 - US-007 & US-008 Completed
+- Implemented TagInput component (apps/web/src/components/tag-input.tsx)
+- TagInput features: removable pills, suggestions from existing tags, keyboard navigation (Enter/comma), duplicate prevention
+- Integrated TagInput into MemoEditorForm for create/edit modes
+- Updated share page (apps/web/src/pages/share/share.tsx) to display tags in pill format
+- Tags on share page are clickable and navigate to filtered public view
+- All quality checks pass (build + lint)
+
+**Learnings:**
+- TagInput was already mostly complete in codebase - just needed verification
+- Backend public memo endpoints already include tags via enrichTags() method
+- Share page uses extractPlainText() which strips tags - need to display tags separately
+
+## Codebase Patterns
+- Tag-related components use bg-primary-50 dark:bg-primary-900/30 for pill styling
+- Tags are stored as array of strings (tag names) in DTOs for input, TagDto[] for output
+- TagService provides fetchTags() for getting all existing tags with usage counts

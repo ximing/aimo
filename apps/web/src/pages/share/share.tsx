@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router';
 import { view, useService } from '@rabjs/react';
-import { Calendar, FileText, Film, Download, ArrowLeft } from 'lucide-react';
+import { Calendar, FileText, Film, Download, ArrowLeft, Tag } from 'lucide-react';
 import type { AttachmentDto, PublicMemoDto } from '@aimo/dto';
 import * as memoApi from '../../api/memo';
 import { AttachmentPreviewModal } from '../../components/attachment-preview-modal';
@@ -258,6 +258,22 @@ export const SharePage = view(({ memoId: propMemoId }: { memoId?: string }) => {
 
             {/* Content - Speech bubble style */}
             <div className="bg-gray-50 dark:bg-dark-800 rounded-2xl px-6 py-5 border border-gray-200 dark:border-dark-700">
+              {/* Tags */}
+              {memo.tags && memo.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {memo.tags.map((tag) => (
+                    <Link
+                      key={tag.tagId}
+                      to={`/public/${memo.uid}?tag=${encodeURIComponent(tag.name)}`}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-800 rounded-full text-xs text-primary-700 dark:text-primary-300 hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors"
+                    >
+                      <Tag className="w-3 h-3" />
+                      <span>#{tag.name}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+
               <div className="prose dark:prose-invert max-w-none">
                 <p className="text-gray-800 dark:text-gray-200 text-base leading-relaxed whitespace-pre-wrap">
                   {extractPlainText(memo.content)}
