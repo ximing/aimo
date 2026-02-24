@@ -76,6 +76,7 @@ export class MemoService extends Service {
   endDate: Date | null = null;
   categoryFilter: string | null = loadCategoryFilterFromStorage();
   selectedDate: string | null = null; // YYYY-MM-DD format for date filter
+  tagFilter: string | null = null; // Single tag filter for now
 
   /**
    * Computed: Get filtered memos (for client-side filtering if needed)
@@ -119,6 +120,10 @@ export class MemoService extends Service {
 
       if (this.categoryFilter) {
         params.categoryId = this.categoryFilter;
+      }
+
+      if (this.tagFilter) {
+        params.tag = this.tagFilter;
       }
 
       const response = await memoApi.getMemos(params);
@@ -308,6 +313,14 @@ export class MemoService extends Service {
   setCategoryFilter(categoryId: string | null) {
     this.categoryFilter = categoryId;
     saveCategoryFilterToStorage(categoryId);
+    this.fetchMemos(true);
+  }
+
+  /**
+   * Set tag filter
+   */
+  setTagFilter(tagName: string | null) {
+    this.tagFilter = tagName;
     this.fetchMemos(true);
   }
 

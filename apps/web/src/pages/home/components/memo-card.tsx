@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { view, useService } from '@rabjs/react';
-import type { MemoListItemDto, MemoListItemWithScoreDto, AttachmentDto } from '@aimo/dto';
+import type { MemoListItemDto, MemoListItemWithScoreDto, AttachmentDto, TagDto } from '@aimo/dto';
 import { MemoService } from '../../../services/memo.service';
 import { AttachmentService } from '../../../services/attachment.service';
 import { CategoryService } from '../../../services/category.service';
@@ -21,6 +21,32 @@ interface MemoCardProps {
 }
 
 // Extract plain text without markdown syntax
+// Handle tag click for filtering
+const handleTagClick = (e: React.MouseEvent, tagName: string, memoService: MemoService) => {
+  e.stopPropagation();
+  memoService.setTagFilter(tagName);
+};
+
+// Render tags as hashtags
+const renderTags = (tags: TagDto[] | undefined, memoService: MemoService) => {
+  if (!tags || tags.length === 0) return null;
+
+  return (
+    <div className="flex flex-wrap gap-1.5 mb-2">
+      {tags.map((tag) => (
+        <button
+          key={tag.tagId}
+          onClick={(e) => handleTagClick(e, tag.name, memoService)}
+          className="inline-flex items-center px-2 py-0.5 text-xs font-medium text-primary-700 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/30 rounded hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors cursor-pointer"
+          title={`点击筛选 "${tag.name}" 标签`}
+        >
+          #{tag.name}
+        </button>
+      ))}
+    </div>
+  );
+};
+
 const extractPlainText = (content: string): string => {
   // Remove markdown image syntax
   const withoutImages = content.replace(/!\[.*?\]\((.*?)\)/g, '');
@@ -289,6 +315,9 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
           <div className="space-y-2">
             {/* Content Section */}
             <div className="space-y-2">
+              {/* Tags */}
+              {renderTags(memo.tags, memoService)}
+
               <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
                 {displayText}
                 {shouldTruncate && !isExpanded && (

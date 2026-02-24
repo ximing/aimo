@@ -89,6 +89,8 @@ export interface MemoSearchOptionsDto {
   sortOrder?: 'asc' | 'desc';
   search?: string;
   categoryId?: string; // Filter by category ID
+  tag?: string; // Filter by tag name (single tag)
+  tags?: string[]; // Filter by multiple tag names (AND logic)
   startDate?: Date;
   endDate?: Date;
 }

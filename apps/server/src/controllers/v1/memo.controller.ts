@@ -39,6 +39,7 @@ export class MemoV1Controller {
     @QueryParam('sortOrder') sortOrder: 'asc' | 'desc' = 'desc',
     @QueryParam('search') search?: string,
     @QueryParam('categoryId') categoryId?: string,
+    @QueryParam('tag') tag?: string,
     @QueryParam('startDate') startDate?: string,
     @QueryParam('endDate') endDate?: string
   ) {
@@ -74,6 +75,7 @@ export class MemoV1Controller {
         sortOrder,
         search,
         categoryId,
+        tag,
         startDate: startDateObject,
         endDate: endDateObject,
       });

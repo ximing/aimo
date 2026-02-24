@@ -39,6 +39,8 @@ export interface MemoSearchOptions {
   sortOrder?: 'asc' | 'desc';
   search?: string;
   categoryId?: string; // Filter by category ID
+  tag?: string; // Filter by tag name (single tag)
+  tags?: string[]; // Filter by multiple tag names (AND logic)
   startDate?: Date;
   endDate?: Date;
 }
@@ -291,11 +293,23 @@ export class MemoService {
         sortOrder = 'desc',
         search,
         categoryId,
+        tag,
+        tags,
         startDate,
         endDate,
       } = options;
 
       const memosTable = await this.lanceDatabase.openTable('memos');
+
+      // Resolve tag names to tag IDs for filtering
+      let tagIdsToFilter: string[] | undefined;
+      if (tags && tags.length > 0) {
+        // Multiple tags - resolve all
+        tagIdsToFilter = await this.tagService.resolveTagNamesToIds(tags, uid);
+      } else if (tag) {
+        // Single tag
+        tagIdsToFilter = await this.tagService.resolveTagNamesToIds([tag], uid);
+      }
 
       // Build filter conditions
       // Note: LanceDB Timestamp type cannot be compared with integer literals in SQL
@@ -333,6 +347,15 @@ export class MemoService {
 
       if (isUncategorizedFilter) {
         allResults = allResults.filter((memo: any) => memo.categoryId == undefined);
+      }
+
+      // Apply tag filter - memos must have ALL specified tags (AND logic)
+      if (tagIdsToFilter && tagIdsToFilter.length > 0) {
+        allResults = allResults.filter((memo: any) => {
+          const memoTagIds = this.convertArrowAttachments(memo.tagIds);
+          // Check if memo has ALL the specified tag IDs
+          return tagIdsToFilter!.every((tagId) => memoTagIds.includes(tagId));
+        });
       }
 
       const total = allResults.length;
