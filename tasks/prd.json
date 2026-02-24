@@ -1,166 +1,145 @@
 {
   "project": "AIMO",
-  "branchName": "ralph/homepage-landing",
-  "description": "AIMO 官网首页 redesign - 公开访问的 Landing Page，展示产品价值、提供多平台下载，并保留登录入口",
+  "branchName": "ralph/ai-tag-assistant",
+  "description": "AI Tag Assistant - Add AI-powered smart tagging feature to memo cards with tag generation, editing, and batch update capabilities",
   "userStories": [
     {
       "id": "US-001",
-      "title": "创建公开访问的首页路由",
-      "description": "As a 访客, I want 无需登录即可访问首页，了解 AIMO 并下载应用",
+      "title": "Backend API - AI generate tags",
+      "description": "As a developer, I need a backend API to call AI to analyze note content and generate tag suggestions.",
       "acceptanceCriteria": [
-        "修改路由配置，`/` 路径无需登录即可访问",
-        "保留 `/home` 路径作为登录后的主应用入口",
-        "未登录用户访问 `/home` 时自动重定向到 `/`",
-        "Typecheck passes"
+        "Create POST /api/v1/ai/generate-tags endpoint",
+        "Accept memoId and content parameters",
+        "Use OpenAI API to analyze content and generate 3-8 relevant tags",
+        "Return array of tag strings",
+        "Require user authentication (@CurrentUser)",
+        "Response time under 3 seconds",
+        "Typecheck passes",
+        "Tests pass"
       ],
       "priority": 1,
       "passes": true,
-      "notes": "Completed: 创建 LandingPage 组件，修改路由配置，/ 公开访问，/home 需登录"
-    },
-    {
-      "id": "US-010",
-      "title": "GitHub Releases 版本获取服务",
-      "description": "As a 开发者, I need 自动获取最新版本号用于展示在下载区域",
-      "acceptanceCriteria": [
-        "创建 API 服务获取 GitHub Releases 最新版本",
-        "桌面端版本从 `ximing/aimo` 获取",
-        "APK 版本从 `ximing/aimo-app` 获取",
-        "缓存版本信息避免频繁请求（1小时缓存）",
-        "请求失败时显示默认版本或隐藏版本号",
-        "Typecheck passes"
-      ],
-      "priority": 2,
-      "passes": true,
-      "notes": "Completed: GitHubReleaseService created with caching, GET /api/v1/system/app-versions endpoint"
-    },
-    {
-      "id": "US-008",
-      "title": "实现明暗主题切换",
-      "description": "As a 访客, I want 根据我的偏好或系统设置选择合适的主题",
-      "acceptanceCriteria": [
-        "默认跟随系统主题设置",
-        "提供手动切换按钮（太阳/月亮图标）",
-        "主题偏好保存在 localStorage",
-        "切换时平滑过渡，无闪烁",
-        "所有组件正确适配暗色主题",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 3,
-      "passes": true,
-      "notes": "Completed: ThemeService already existed with system preference, localStorage, and toggle. Added theme toggle button to landing page header, added smooth CSS transitions for theme changes."
+      "notes": "Implemented on 2026-02-24. Created AIService with OpenAI integration, AIController with POST /api/v1/ai/generate-tags endpoint, and DTOs. All quality checks pass."
     },
     {
       "id": "US-002",
-      "title": "实现固定导航栏",
-      "description": "As a 访客, I want 导航栏始终可见，方便快速跳转到不同区域或登录",
+      "title": "Backend API - Batch update memo tags",
+      "description": "As a developer, I need an API to batch add user-confirmed tags to a memo.",
       "acceptanceCriteria": [
-        "导航栏固定在顶部，滚动时保持可见",
-        "包含 Logo、功能、下载、GitHub 链接、登录按钮",
-        "点击导航项平滑滚动到对应区域",
-        "移动端显示汉堡菜单",
+        "Create PUT /api/v1/memos/:id/tags endpoint (or reuse existing update endpoint)",
+        "Accept tags array parameter (string array)",
+        "Update memo's tags field",
+        "Return updated memo data",
+        "Check user has permission to modify the memo",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Implemented on 2026-02-24. Added tags field to schema, DTOs, created migration v9, added updateTags method to MemoService, and created PUT /api/v1/memos/:memoId/tags endpoint. All quality checks pass."
+    },
+    {
+      "id": "US-003",
+      "title": "AI tools architecture extension support",
+      "description": "As a developer, I want the architecture to support easily adding more AI tools in the future.",
+      "acceptanceCriteria": [
+        "Frontend: AI tool config uses array/object structure for easy extension",
+        "Frontend: Modal content dynamically renders based on tool type",
+        "Backend: AI routes have clear structure (/api/v1/ai/*)",
+        "Create AIService class to centrally manage AI logic",
+        "Reserve endpoint slots for other AI tools (e.g., /ai/summarize, /ai/translate)",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": "Implemented on 2026-02-24. Created AIToolsService with extensible tool configuration, AI API layer (ai.ts), and GET /api/v1/ai/tools endpoint. Architecture supports future tools via AIToolDefinition structure with reserved slots for summarize, translate, etc."
+    },
+    {
+      "id": "US-004",
+      "title": "Add AI button to memo card",
+      "description": "As a user, I want to quickly find the AI tool entry on the memo card to use smart features.",
+      "acceptanceCriteria": [
+        "Add AI tool button to top-right corner of memo card (icon like Sparkles or Wand)",
+        "Show tooltip 'AI Tools' on hover",
+        "Clicking button opens AI tool selection modal",
+        "Button style coordinates with existing card design",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 4,
-      "passes": true,
-      "notes": "Completed: Fixed navbar with blur effect on scroll, desktop nav with smooth scroll, mobile hamburger menu with animation"
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-003",
-      "title": "设计 Hero 区域",
-      "description": "As a 访客, I want 一眼了解 AIMO 的核心价值，并被吸引继续浏览",
+      "id": "US-005",
+      "title": "Create AI tool selection modal",
+      "description": "As a user, I want to see a list of tools after clicking the AI button so I can choose the AI function I need.",
       "acceptanceCriteria": [
-        "展示产品名称 'AIMO' 和标语（如 'AI 驱动的知识管理'）",
-        "简短的副标题描述产品定位",
-        "两个主要 CTA 按钮：'免费下载'（主按钮）和 '查看功能'（次按钮）",
-        "背景使用 subtle gradient 或抽象图形，不干扰内容",
+        "Modal title is 'AI Tools'",
+        "Currently only shows one tool: 'Smart Add Tags' (with icon, name, and description)",
+        "Clicking tool enters that tool's specific interface",
+        "Modal has close button in top-right, clicking outside also closes",
+        "Modal style is consistent with system design",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 5,
-      "passes": true,
-      "notes": "Completed: Enhanced Hero with gradient orbs, grid pattern, gradient text, trust indicators, scroll indicator"
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-004",
-      "title": "实现功能特性展示区块",
-      "description": "As a 访客, I want 了解 AIMO 的核心功能，判断是否适合我的需求",
+      "id": "US-006",
+      "title": "Create tag suggestions display modal",
+      "description": "As a user, I want to see AI-generated tag suggestions after selecting 'Smart Add Tags' so I can decide which to use.",
       "acceptanceCriteria": [
-        "展示 4-6 个核心功能卡片：AI 笔记、语义搜索、知识关联、多平台同步等",
-        "每个卡片包含图标、标题、简短描述",
-        "使用网格布局，桌面端 3 列，平板 2 列，移动端 1 列",
-        "卡片有 hover 效果（轻微上浮或阴影变化）",
+        "Modal shows loading state ('AI is analyzing content...')",
+        "After loading, display generated tag list",
+        "Each tag displays as checkable chip/checkbox style",
+        "All tags are selected by default",
+        "Provide input field for user to add custom tags",
+        "Bottom shows 'Confirm Add' and 'Cancel' buttons",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 6,
-      "passes": true,
-      "notes": "Completed: 6 feature cards with enhanced hover effects (lift, shadow, icon animation, gradient border)"
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-005",
-      "title": "设计下载区域",
-      "description": "As a 访客, I want 方便地下载适合我设备的应用版本",
+      "id": "US-007",
+      "title": "Tag secondary editing functionality",
+      "description": "As a user, I want to be able to modify AI-generated tags to better fit my needs.",
       "acceptanceCriteria": [
-        "桌面端区域：Mac、Windows、Linux 下载按钮并排展示",
-        "移动端区域：Android APK 下载按钮",
-        "显示当前版本号（从 GitHub API 获取最新 release 版本）",
-        "点击下载按钮直接下载对应平台的安装包",
-        "显示系统要求（如 macOS 12+、Windows 10+ 等）",
+        "Clicking a generated tag enters edit mode",
+        "Edit mode shows input field allowing modification of tag text",
+        "Press Enter or lose focus to confirm modification",
+        "Each tag has delete button (X icon) to remove it",
+        "Input field supports adding brand new tags (press Enter to add)",
+        "Prevent adding duplicate tags (case-insensitive)",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 7,
-      "passes": true,
-      "notes": "Completed: Added getAppVersions API, enhanced download section with desktop/mobile areas, version badges, system requirements, and download links"
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-006",
-      "title": "实现应用截图展示",
-      "description": "As a 访客, I want 预览应用界面，了解实际使用体验",
+      "id": "US-008",
+      "title": "Frontend tag confirmation and submission",
+      "description": "As a user, I want to add the selected and edited tags to my note with one click.",
       "acceptanceCriteria": [
-        "展示 3-5 张应用界面截图",
-        "支持轮播或网格展示",
-        "图片懒加载优化性能",
-        "点击可放大查看（可选 lightbox）",
+        "Clicking 'Confirm Add' calls API to save tags",
+        "After successful save, close modal and show success toast",
+        "Memo card immediately displays new tags",
+        "Clicking 'Cancel' closes modal without saving changes",
+        "During save, button shows loading state to prevent duplicate submission",
+        "If API fails, show error message and preserve user selection state",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 8,
-      "passes": true,
-      "notes": "Completed: Added screenshots section with 5 mock UI representations, carousel navigation, thumbnail selector, and full-screen lightbox with keyboard navigation"
-    },
-    {
-      "id": "US-007",
-      "title": "设计使用场景区块",
-      "description": "As a 访客, I want 了解 AIMO 在实际生活和工作中的应用场景",
-      "acceptanceCriteria": [
-        "展示 2-3 个使用场景：个人知识库、学习笔记、灵感收集等",
-        "每个场景包含标题、描述、相关功能标签",
-        "使用左右交替布局（图文并排）",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 9,
-      "passes": true,
-      "notes": "Completed: Added 3 use cases with alternating layout, feature tags, and visual mock UI representations"
-    },
-    {
-      "id": "US-009",
-      "title": "实现页脚区域",
-      "description": "As a 访客, I want 在页面底部找到更多资源和链接",
-      "acceptanceCriteria": [
-        "包含 GitHub 仓库链接",
-        "包含登录入口",
-        "版权声明和许可证信息",
-        "可选：Twitter/X、Discord 等社交链接",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 10,
-      "passes": true,
-      "notes": "Completed: Enhanced footer with 4-column layout (Brand, Product, Resources, Account), social links (GitHub, Twitter/X), license info (BSL 1.1), login/register links"
+      "passes": false,
+      "notes": ""
     }
   ]
 }

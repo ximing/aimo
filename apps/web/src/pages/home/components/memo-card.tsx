@@ -5,7 +5,7 @@ import { MemoService } from '../../../services/memo.service';
 import { AttachmentService } from '../../../services/attachment.service';
 import { CategoryService } from '../../../services/category.service';
 import copyToClipboard from 'copy-to-clipboard';
-import { FileText, Film, Edit2, Trash2, Link, Download, Folder, Copy, Globe } from 'lucide-react';
+import { FileText, Film, Edit2, Trash2, Link, Download, Folder, Copy, Globe, Sparkles } from 'lucide-react';
 import { RelatedMemosModal } from './related-memos-modal';
 import { ConfirmDeleteModal } from './confirm-delete-modal';
 import { MemoEditorForm } from '../../../components/memo-editor-form';
@@ -43,6 +43,7 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState<string | null>(null);
+  const [showAIToolsModal, setShowAIToolsModal] = useState(false);
 
   const memoService = useService(MemoService);
   const attachmentService = useService(AttachmentService);
@@ -419,6 +420,18 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
+                    setShowAIToolsModal(true);
+                  }}
+                  className="p-1.5 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-dark-700 rounded hover:text-purple-600 dark:hover:text-purple-400 hover:border-purple-200 dark:hover:border-purple-900/50 transition-colors cursor-pointer"
+                  title="AI Tools"
+                  aria-label="AI Tools"
+                >
+                  <Sparkles className="w-4 h-4" />
+                </button>
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
                     setIsEditing(true);
                   }}
                   className="p-1.5 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-dark-700 rounded hover:text-primary-600 dark:hover:text-primary-400 hover:border-primary-200 dark:hover:border-primary-900/50 transition-colors cursor-pointer"
@@ -490,6 +503,33 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
 
       {/* Attachment Preview Modal */}
       <AttachmentPreviewModal isOpen={isPreviewOpen} onClose={handleClosePreview} />
+
+      {/* AI Tools Modal - Placeholder for US-005 */}
+      {showAIToolsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 dark:bg-black/40">
+          <div className="bg-white dark:bg-dark-800 rounded-lg shadow-lg p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">AI Tools</h3>
+              <button
+                onClick={() => setShowAIToolsModal(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              >
+                <span className="sr-only">Close</span>
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path
+                    fillRule="evenodd"
+                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
+            </div>
+            <p className="text-gray-600 dark:text-gray-400 text-sm">
+              AI Tools modal coming in US-005...
+            </p>
+          </div>
+        </div>
+      )}
     </>
   );
 });

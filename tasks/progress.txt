@@ -1,215 +1,42 @@
-## 2026-02-21 - US-002 (实现固定导航栏)
-- Implemented fixed navigation bar with scroll-aware background blur effect
-- Desktop navigation includes: Logo, Features link, Download link, GitHub link, Login button
-- Mobile hamburger menu with smooth expand/collapse animation
-- Smooth scroll navigation to section IDs using `scrollIntoView({ behavior: 'smooth' })`
-- Added placeholder sections (Hero, Features, Download) with IDs for navigation targets
-- Created reusable FeatureCard and DownloadCard components
-- **Files changed:**
-  - `apps/web/src/pages/landing/landing.tsx` - Complete redesign with fixed navbar
-- **Learnings for future iterations:**
-  - Use `window.scrollY > threshold` to detect scroll for navbar styling changes
-  - Mobile menu animation uses `max-height` transition with `overflow-hidden`
-  - `scrollIntoView({ behavior: 'smooth' })` provides native smooth scrolling
-  - Backdrop blur effect: `backdrop-blur-md` with semi-transparent background
-  - State for mobile menu: `isMobileMenuOpen` controls visibility
----
-
-## 2026-02-21 - US-003 (设计 Hero 区域)
-- Redesigned Hero section with compelling visual design
-- Added abstract gradient orbs as background elements (3 animated blur circles)
-- Added grid pattern overlay for subtle texture
-- Enhanced typography with gradient text effect on AIMO title
-- Added badge highlighting "AI 驱动的知识管理"
-- Improved CTA buttons with icons and hover animations
-- Added trust indicators (开源免费, 隐私优先, 多平台支持)
-- Added scroll indicator with bounce animation
-- **Files changed:**
-  - `apps/web/src/pages/landing/landing.tsx` - Enhanced Hero section
-- **Learnings for future iterations:**
-  - Gradient orbs: Use `blur-3xl` with low opacity colors for subtle background effects
-  - Grid pattern: Use CSS `linear-gradient` with `backgroundSize` for technical aesthetic
-  - Gradient text: Use `bg-clip-text text-transparent` with gradient background
-  - `animate-pulse` with animation-delay creates varied floating effects
-  - Trust indicators build credibility - always include social proof elements
----
-
-## 2026-02-21 - US-004 (实现功能特性展示区块)
-- Enhanced Features section with 6 core feature cards
-- Changed grid layout from 4 columns to 3 columns (lg:grid-cols-3) for better visual balance
-- Added 6 features: AI 笔记, 语义搜索, 知识关联, 智能补全, 多端同步, 隐私安全
-- Improved hover effects:
-  - Cards lift up with translate-y-2 on hover
-  - Colored shadow (shadow-primary-500/10) appears on hover
-  - Border color changes to primary on hover
-  - Icons scale and rotate slightly on hover
-  - Title color changes to primary on hover
-- Added gradient background to icon containers (from-primary-100 to-primary-50)
-- **Files changed:**
-  - `apps/web/src/pages/landing/landing.tsx` - Enhanced Features section with 6 cards
-- **Learnings for future iterations:**
-  - Use `group` class on parent and `group-hover:` on children for coordinated hover effects
-  - `shadow-primary-500/10` creates a subtle colored glow effect
-  - Grid layout: `grid-cols-1 md:grid-cols-2 lg:grid-cols-3` for responsive 1/2/3 column layout
-  - Gradient backgrounds on icons add visual depth without being distracting
----
-
-## 2026-02-21 - US-005 (设计下载区域)
-- Added `getAppVersions()` API function to `apps/web/src/api/system.ts` for fetching GitHub release versions
-- Enhanced download section with separate Desktop and Mobile areas
-- Desktop downloads: Mac, Windows, Linux with platform-specific icons (Apple, Windows, Linux SVGs)
-- Mobile downloads: Android APK with Android robot icon
-- Version badges displayed next to section titles (fetched from GitHub API with 1-hour server-side caching)
-- System requirements shown for each platform: macOS 12+, Windows 10+, Ubuntu 20.04+, Android 8.0+
-- Download cards link directly to GitHub releases pages
-- Enhanced DownloadCard component with:
-  - Icon container with hover color transition
-  - Download icon indicator
-  - Platform name with hover color change
-  - System requirements text
-- **Files changed:**
-  - `apps/web/src/api/system.ts` - Added getAppVersions API function
-  - `apps/web/src/pages/landing/landing.tsx` - Enhanced download section with desktop/mobile areas
-- **Learnings for future iterations:**
-  - Use `AllVersionsResponseDto` type from `@aimo/dto` for version data
-  - GitHub releases follow pattern: `https://github.com/{owner}/{repo}/releases/latest`
-  - SVG icons can be embedded directly for platform logos (Windows, Linux, Android)
-  - Version badges use `bg-primary-100 dark:bg-primary-900/30` for subtle highlight
-  - Download cards use `<a>` tags with `target="_blank"` for external links
-  - Group related downloads with clear section headers using icons (Monitor, Smartphone)
----
-
-## 2026-02-21 - US-006 (实现应用截图展示)
-- Added screenshots section with 5 mock UI representations showing key app features
-- Implemented carousel with smooth slide transitions (translate-x animations)
-- Added thumbnail navigation bar below the main carousel
-- Implemented full-screen lightbox with:
-  - Click to open enlarged view
-  - Navigation arrows (previous/next)
-  - Dot indicators at bottom
-  - Screenshot counter (e.g., "2 / 5")
-  - Click outside or X button to close
-  - Keyboard navigation support
-- Each screenshot shows a stylized mock UI window with gradient backgrounds
-- Used useEffect for body scroll locking when lightbox is open (lint requirement)
-- Added "截图" to navigation items between Features and Download
-- **Files changed:**
-  - `apps/web/src/pages/landing/landing.tsx` - Added screenshots array data, carousel state, lightbox state, Screenshots section, and Lightbox component
-- **Learnings for future iterations:**
-  - Mock UI representations can be created using CSS gradients and divs (no actual images needed)
-  - Carousel transitions use `translate-x` with `overflow-hidden` on container
-  - Lightbox should use `useEffect` to modify `document.body.style.overflow` instead of direct modification in event handlers (react-hooks/immutability rule)
-  - Always clean up body overflow in useEffect cleanup function
-  - `e.stopPropagation()` needed on lightbox content to prevent closing when clicking inside
----
-
-## 2026-02-21 - US-007 (设计使用场景区块)
-- Added Use Cases section with 3 scenarios: 个人知识库, 学习笔记, 灵感收集
-- Implemented alternating left-right layout using `lg:flex-row` and `lg:flex-row-reverse`
-- Each use case includes title, description, related feature tags, and visual mock UI
-- Feature tags styled as badges with primary color scheme
-- Added '场景' to navigation items between Screenshots and Download
-- Mock UI representations use gradient backgrounds matching each use case theme
-- Visual hierarchy established with icon containers, mock window headers, and placeholder content
-- **Files changed:**
-  - `apps/web/src/pages/landing/landing.tsx` - Added useCases data array and Use Cases section
-- **Learnings for future iterations:**
-  - Use alternating layout pattern: `{isEven ? 'lg:flex-row' : 'lg:flex-row-reverse'}`
-  - Store icon components in data array and render dynamically with `const IconComponent = useCase.icon`
-  - Feature tags work well as small rounded badges with bg-primary-50/text-primary-700
-  - Mock UI representations can match section gradients for visual cohesion
-  - `aspect-[4/3]` provides good proportions for visual representations
-  - Add new nav items to `navItems` array for smooth scroll navigation
----
-
-## 2026-02-21 - US-009 (实现页脚区域)
-- Implemented comprehensive footer section with 4-column layout
-- Added brand column with AIMO description and social links (GitHub, Twitter/X)
-- Added Product column with links to Features, Download, and Changelog
-- Added Resources column with links to GitHub repo, Issues, and Documentation
-- Added Account column with Login and Register links
-- Added bottom bar with copyright notice and Business Source License 1.1 link
-- Footer is responsive: stacks on mobile, 4-column grid on desktop
-- All external links open in new tab with proper rel attributes
-- Navigation links use smooth scroll to sections
-- **Files changed:**
-  - `apps/web/src/pages/landing/landing.tsx` - Enhanced Footer section
-- **Learnings for future iterations:**
-  - Multi-column footer layout: `grid grid-cols-1 md:grid-cols-4`
-  - Social icons: Use consistent wrapper with `p-2 rounded-lg bg-slate-100` styling
-  - Section navigation from footer: reuse `scrollToSection()` function
-  - License link points to LICENSE file in GitHub repo
-  - Keep footer background consistent with section backgrounds (white/50 or slate-800/30)
----
-
 ## Codebase Patterns
-- When modifying routes, always update related navigation components (layout.tsx, user-menu.tsx, etc.)
-- ProtectedRoute component handles auth redirects automatically
-- Auth redirects should go to `/home` for authenticated app entry, `/` for landing page
-- The landing page should be in `apps/web/src/pages/landing/`
-- Services use `@Service()` decorator from typedi for DI
-- Controllers use `@JsonController()` decorator with path prefix
-- DTOs should be added to `@aimo/dto` package and exported from index.ts
-- Use `undefined` instead of `null` per codebase convention (unicorn/no-null rule)
-- Error codes are defined in `apps/server/src/constants/error-codes.ts`
-- Use `ErrorCode.SYSTEM_ERROR` for general errors with custom message
+- Use `@Service()` decorator from typedi for dependency injection
+- Controllers use `@JsonController('/api/v1/...')` from routing-controllers
+- AI services use `ChatOpenAI` from `@langchain/openai` with temperature 0.3 for consistent results
+- DTOs should be defined in `packages/dto/src/` and exported from `index.ts`
+- Error handling: Use `ResponseUtility.error(ErrorCode.XXX)` with appropriate error codes
+- Controller registration: Add to `controllers/index.ts` array (StaticController must stay last)
+- Always run `pnpm --filter @aimo/dto build` after modifying DTOs before typechecking server
 
-## 2026-02-21 - US-001 (创建公开访问的首页路由)
-- 创建 LandingPage 组件作为公开首页 (`apps/web/src/pages/landing/`)
-- 修改路由配置: `/` 为公开访问的 landing page
-- 添加 `/home` 路径作为登录后的主应用入口（需认证）
-- 更新登录/已认证用户的重定向目标为 `/home`
-- 更新 layout 组件中的首页导航和 active 状态检查 (`isHomePage` 检查改为 `/home`)
-- **Files changed:**
-  - `apps/web/src/App.tsx` - 添加 LandingPage 路由，/home 需认证
-  - `apps/web/src/pages/landing/landing.tsx` - 新建 landing page 组件
-  - `apps/web/src/pages/landing/index.tsx` - landing page 导出
-  - `apps/web/src/pages/auth/auth.tsx` - 更新已认证重定向到 /home
-  - `apps/web/src/pages/auth/components/login-form.tsx` - 更新登录成功重定向到 /home
-  - `apps/web/src/components/layout.tsx` - 更新首页导航和 active 状态检查
-- **Learnings for future iterations:**
-  - 路由变更需要同步更新所有相关组件中的导航逻辑
-  - `ProtectedRoute` 会自动处理未认证用户访问 `/home` 的重定向
-  - Landing page 使用标准 button 元素，不需要额外的 UI 组件库
-  - 需要同时更新 login-form.tsx 和 auth.tsx 中的重定向逻辑
 ---
 
-## 2026-02-21 - US-010 (GitHub Releases 版本获取服务)
-- Created GitHubReleaseService in `apps/server/src/services/github-release.service.ts`
-- Implemented 1-hour caching using Map to store version info with timestamps
-- Desktop version fetched from `ximing/aimo` GitHub releases
-- APK version fetched from `ximing/aimo-app` GitHub releases
-- Added public GET `/api/v1/system/app-versions` endpoint (no auth required)
-- Added VersionInfoDto and AllVersionsResponseDto to `@aimo/dto` package
-- Error handling: returns `{ version: undefined, error?: string }` on failure
-- Version tag cleaned up (removes 'v' prefix from GitHub tags)
-- **Files changed:**
-  - `apps/server/src/services/github-release.service.ts` - New service for GitHub API
-  - `apps/server/src/controllers/v1/system.controller.ts` - Added app-versions endpoint
-  - `packages/dto/src/version.ts` - New DTO types
-  - `packages/dto/src/index.ts` - Export version DTOs
+## 2026-02-24 - US-002
+- Implemented Backend API - Batch update memo tags (US-002)
+- Files changed:
+  - `packages/dto/src/memo.ts` - Added tags field to all Memo DTOs
+  - `apps/server/src/models/db/memo.schema.ts` - Added tags field to Memo interface
+  - `apps/server/src/models/db/schema.ts` - Added tags field to memosSchema and MemoRecord
+  - `apps/server/src/migrations/scripts/009-add-tags-field.ts` (new) - Migration v9 to add tags column
+  - `apps/server/src/migrations/scripts/index.ts` - Registered new migration
+  - `apps/server/src/services/memo.service.ts` - Added updateTags method
+  - `apps/server/src/controllers/v1/memo.controller.ts` - Added PUT /:memoId/tags endpoint
 - **Learnings for future iterations:**
-  - GitHub API uses `tag_name` for release version, often prefixed with 'v'
-  - The codebase prefers `undefined` over `null` (enforced by unicorn/no-null lint rule)
-  - When adding DTOs, must rebuild `@aimo/dto` package before typecheck passes
-  - Use `ErrorCode` constants from error-codes.ts for consistent error handling
-  - Services use TypeDI `@Service()` decorator for dependency injection
-  - Controller methods can be public without auth by simply not using `@CurrentUser()`
+  - LanceDB supports adding list columns with default empty array using `valueSql: '[]'`
+  - Tags should be added to all memo DTO variants for consistency (MemoDto, MemoWithAttachmentsDto, MemoListItemDto)
+  - The updateTags method follows the same pattern as updateMemo but only modifies the tags field
+  - Migration error handling should check for 'already exists', 'duplicate', and 'Type conflicts between' messages
 ---
 
-## 2026-02-21 - US-008 (实现明暗主题切换)
-- ThemeService already existed with system preference detection, localStorage persistence, and toggle functionality
-- Added theme toggle button to landing page header with Sun/Moon icons
-- Added smooth CSS transitions for theme color changes in index.css
-- Theme is initialized early in main.tsx to prevent flash of wrong theme
-- Landing page now supports both light and dark modes with gradient backgrounds
-- **Files changed:**
-  - `apps/web/src/pages/landing/landing.tsx` - Added header with theme toggle button
-  - `apps/web/src/index.css` - Added smooth theme transition CSS
+## 2026-02-24 - US-001
+- Implemented Backend API - AI generate tags (US-001)
+- Files changed:
+  - `packages/dto/src/ai.ts` (new) - DTOs for AI features
+  - `packages/dto/src/index.ts` - Added AI DTOs export
+  - `apps/server/src/services/ai.service.ts` (new) - AIService with tag generation
+  - `apps/server/src/controllers/v1/ai.controller.ts` (new) - AIV1Controller with /generate-tags endpoint
+  - `apps/server/src/controllers/index.ts` - Registered AIV1Controller
 - **Learnings for future iterations:**
-  - ThemeService uses `@rabjs/react` Service class for reactive state
-  - `loadTheme()` is called early in main.tsx (before React render) to prevent flash
-  - The `dark` class is applied to `<html>` element for Tailwind dark mode
-  - `window.matchMedia('(prefers-color-scheme: dark)')` detects system preference
-  - Use `useService(ThemeService)` to access theme state in components
+  - The codebase uses LangChain's ChatOpenAI (not @ai-sdk/openai) for chat completions
+  - Temperature 0.3 works well for consistent tag generation
+  - Response parsing includes fallback regex extraction for robustness
+  - Truncate content to 2000 chars to keep API costs reasonable
 ---

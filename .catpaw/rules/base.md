@@ -462,3 +462,24 @@ if (typeof record.sources === 'object' && 'toArray' in record.sources) {
 
 - `apps/server/src/services/memo.service.ts` - `convertArrowAttachments` 方法处理 `List<Utf8>`
 - `apps/server/src/services/ai-conversation.service.ts` - `toMessageDto` 方法处理 `List<Struct>`
+
+## ID 生成规范
+
+### 核心原则
+
+**所有 ID 生成必须统一在 `apps/server/src/utils/id.ts` 文件中，禁止在其他地方单独实现 ID 生成逻辑。**
+
+<constraint>
+所有 ID 生成必须使用 `id.ts` 中定义的生成函数，包括：
+- `generateUid()` - 用户 ID
+- `generateTagId()` - 标签 ID
+- `generateTypeId(type)` - 通用类型 ID
+- 其他业务对象 ID
+</constraint>
+
+### 新增类型
+
+如果需要新增业务对象类型，必须：
+1. 在 `apps/server/src/models/constant/type.ts` 的 `OBJECT_TYPE` 中添加新类型
+2. 在 `apps/server/src/utils/id.ts` 的 `generateTypeId` 函数中添加对应的 case 分支
+3. 在本规范的 ID 格式规范表格中添加新类型
