@@ -1,10 +1,12 @@
-import { Service } from '@rabjs/react';
+import { Service, resolve } from '@rabjs/react';
 import type {
   GenerateTagsRequestDto,
   UpdateMemoTagsRequestDto,
   MemoWithAttachmentsDto,
 } from '@aimo/dto';
 import * as aiApi from '../api/ai';
+import { MemoService } from './memo.service';
+import { toast } from './toast.service';
 
 /**
  * Type of AI tool - used for dynamic modal rendering
@@ -310,6 +312,19 @@ export class AIToolsService extends Service {
       const response = await aiApi.updateMemoTags(memoId, request);
 
       if (response.code === 0 && response.data) {
+        // Update the memo in MemoService's list so UI reflects changes immediately
+        const memoService = resolve(MemoService);
+        const index = memoService.memos.findIndex((m) => m.memoId === memoId);
+        if (index !== -1) {
+          memoService.memos[index] = {
+            ...memoService.memos[index],
+            tags: response.data.memo.tags,
+          };
+        }
+
+        // Show success toast
+        toast.success('标签添加成功');
+
         return {
           success: true,
           memo: response.data.memo,
@@ -323,9 +338,11 @@ export class AIToolsService extends Service {
       }
     } catch (error: unknown) {
       console.error('Save tags error:', error);
+      const message = error instanceof Error ? error.message : '保存标签失败';
+      toast.error(message);
       return {
         success: false,
-        message: error instanceof Error ? error.message : '保存标签失败',
+        message,
       };
     } finally {
       this.isSaving = false;

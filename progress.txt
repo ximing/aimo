@@ -42,3 +42,15 @@
   - Keyboard handling: Enter to save, Escape to cancel, onBlur saves
   - Duplicate prevention is handled in service layer (updateTag, addCustomTag)
 ---
+
+## 2026-02-24T14:00:00Z - US-008
+- Implemented Frontend tag confirmation and submission
+- Files changed:
+  - apps/web/src/services/ai-tools.service.ts - Enhanced saveTags method to show toast notifications and update MemoService state
+- **Learnings for future iterations:**
+  - Use `toast.success()` and `toast.error()` from toast.service.ts for user feedback
+  - Use `resolve(MemoService)` from @rabjs/react to access other services for state updates
+  - The saveTags method updates both the memos list and shows appropriate toast notifications
+  - Loading state `isSaving` prevents duplicate submissions while API call is in progress
+  - Error handling shows toast error and preserves user selection state for retry
+---

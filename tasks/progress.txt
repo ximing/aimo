@@ -6,6 +6,9 @@
 - Error handling: Use `ResponseUtility.error(ErrorCode.XXX)` with appropriate error codes
 - Controller registration: Add to `controllers/index.ts` array (StaticController must stay last)
 - Always run `pnpm --filter @aimo/dto build` after modifying DTOs before typechecking server
+- Use `toast.success()` and `toast.error()` from `toast.service.ts` for user notifications
+- Use `resolve(ServiceClass)` from `@rabjs/react` to access other services within a service
+- When updating memo data, update both MemoService.memos array and currentMemo for immediate UI reflection
 
 ---
 
@@ -63,6 +66,18 @@
   - Temperature 0.3 works well for consistent tag generation
   - Response parsing includes fallback regex extraction for robustness
   - Truncate content to 2000 chars to keep API costs reasonable
+---
+
+## 2026-02-24 - US-008
+- Implemented Frontend tag confirmation and submission (US-008)
+- Files changed:
+  - `apps/web/src/services/ai-tools.service.ts` - Enhanced saveTags method to show toast notifications and update MemoService state
+- **Learnings for future iterations:**
+  - Use `toast.success()` and `toast.error()` for user feedback after API operations
+  - Use `resolve(MemoService)` to access and update other service state for immediate UI reflection
+  - The saveTags method now updates both the memos list and shows appropriate toast notifications
+  - Loading state `isSaving` prevents duplicate submissions while API call is in progress
+  - Error handling shows toast error and preserves user selection state for retry
 ---
 
 ## 2026-02-24 - US-005
