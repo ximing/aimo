@@ -916,6 +916,42 @@ curl -X GET "http://localhost:3000/api/v1/memos/public/user_123456?page=1&limit=
 **Success Response (200 OK):**
 
 > **Response Type:** `ApiSuccessDto<PaginatedMemoListDto>`
+>
+> **PaginatedMemoListDto 类型定义:**
+> ```typescript
+> interface AttachmentDto {
+>   attachmentId: string;  // 附件唯一标识符
+>   filename: string;      // 文件名
+>   url: string;          // 访问 URL（存储访问地址）
+>   type: string;          // MIME 类型
+>   size: number;          // 文件大小（字节）
+>   createdAt: number;     // 创建时间戳（毫秒）
+>   properties?: Record<string, unknown>; // 附件属性：audio(duration), image(width,height), video(duration)
+> }
+>
+> interface MemoListItemDto {
+>   memoId: string;           // 笔记唯一标识符
+>   uid: string;               // 用户唯一标识符
+>   content: string;            // 笔记内容
+>   type: 'text' | 'audio' | 'video'; // 笔记类型
+>   categoryId?: string;       // 分类 ID
+>   attachments?: AttachmentDto[]; // 附件列表
+>   relations?: MemoListItemDto[]; // 相关笔记
+>   isPublic?: boolean;        // 是否公开（无需登录访问）
+>   createdAt: number;        // 创建时间戳（毫秒）
+>   updatedAt: number;        // 更新时间戳（毫秒）
+> }
+>
+> interface PaginatedMemoListDto {
+>   items: MemoListItemDto[];
+>   pagination: {
+>     total: number;
+>     page: number;
+>     limit: number;
+>     totalPages: number;
+>   };
+> }
+> ```
 
 ```json
 {
@@ -979,6 +1015,32 @@ curl -X GET "http://localhost:3000/api/v1/memos/public/user_123456/random"
 **Success Response (200 OK):**
 
 > **Response Type:** `ApiSuccessDto<MemoListItemDto>`
+>
+> **MemoListItemDto 类型定义:**
+> ```typescript
+> interface AttachmentDto {
+>   attachmentId: string;  // 附件唯一标识符
+>   filename: string;      // 文件名
+>   url: string;          // 访问 URL（存储访问地址）
+>   type: string;         // MIME 类型
+>   size: number;         // 文件大小（字节）
+>   createdAt: number;     // 创建时间戳（毫秒）
+>   properties?: Record<string, unknown>; // 附件属性：audio(duration), image(width,height), video(duration)
+> }
+>
+> interface MemoListItemDto {
+>   memoId: string;           // 笔记唯一标识符
+>   uid: string;             // 用户唯一标识符
+>   content: string;          // 笔记内容
+>   type: 'text' | 'audio' | 'video'; // 笔记类型
+>   categoryId?: string;      // 分类 ID
+>   attachments?: AttachmentDto[]; // 附件列表
+>   relations?: MemoListItemDto[]; // 相关笔记
+>   isPublic?: boolean;      // 是否公开（无需登录访问）
+>   createdAt: number;        // 创建时间戳（毫秒）
+>   updatedAt: number;        // 更新时间戳（毫秒）
+> }
+> ```
 
 ```json
 {

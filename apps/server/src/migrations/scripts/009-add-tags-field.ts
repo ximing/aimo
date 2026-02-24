@@ -18,12 +18,12 @@ export const addTagsToMemosMigration: Migration = {
     try {
       const memosTable = await connection.openTable('memos');
 
-      // Add the tags column as an empty list for existing records
-      // LanceDB supports list columns with default empty arrays
+      // Add the tags column - use NULL as default value
+      // Existing records will have NULL, which code handles as empty array
       const newColumns = [
         {
           name: 'tags',
-          valueSql: '[]',
+          valueSql: 'NULL',
         },
       ];
 
