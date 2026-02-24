@@ -26,6 +26,17 @@
   - Migration error handling should check for 'already exists', 'duplicate', and 'Type conflicts between' messages
 ---
 
+## 2026-02-24 - US-004
+- Implemented Add AI button to memo card (US-004)
+- Files changed:
+  - `apps/web/src/pages/home/components/memo-card.tsx` - Added Sparkles import, showAIToolsModal state, AI button in actions, placeholder modal
+- **Learnings for future iterations:**
+  - Action buttons use `group-hover:opacity-100` to show on card hover
+  - Color scheme uses purple (text-purple-600, border-purple-200) for AI-related actions
+  - Button should have `title` attribute for tooltip and `aria-label` for accessibility
+  - Actions are placed in the footer section of the memo card with `flex items-center gap-2`
+---
+
 ## 2026-02-24 - US-001
 - Implemented Backend API - AI generate tags (US-001)
 - Files changed:
