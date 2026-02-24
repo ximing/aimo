@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { view, useService } from '@rabjs/react';
-import { ArrowUp, ChevronLeft, ChevronRight, X, Calendar } from 'lucide-react';
+import { ArrowUp, ChevronLeft, ChevronRight, X, Calendar, Filter } from 'lucide-react';
 import { MemoService } from '../../services/memo.service';
 import { MemoEditor } from './components/memo-editor';
 import { MemoList } from './components/memo-list';
@@ -287,7 +287,7 @@ export const HomePage = view(() => {
             <div className="w-full h-full flex flex-col">
             {/* Top Search Bar - Fixed, part of the content area */}
             <header className="flex-shrink-0 sticky top-0 z-40 px-4 pt-4 pb-2">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-wrap">
                 {/* Date Filter Status */}
                 {memoService.selectedDate && (
                   <div className="flex items-center gap-2">
@@ -307,6 +307,57 @@ export const HomePage = view(() => {
                     </div>
                   </div>
                 )}
+
+                {/* Tag Filter Status */}
+                {(memoService.tagFilter || memoService.tagsFilter.length > 0) && (
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                      <Filter size={14} className="text-blue-600 dark:text-blue-400" />
+                      <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                        筛选:
+                      </span>
+                      <div className="flex items-center gap-1">
+                        {/* Single tag filter */}
+                        {memoService.tagFilter && (
+                          <span className="text-sm text-blue-700 dark:text-blue-300">
+                            #{memoService.tagFilter}
+                          </span>
+                        )}
+                        {/* Multi-select tags */}
+                        {memoService.tagsFilter.map((tag, index) => (
+                          <div key={tag} className="flex items-center">
+                            <span className="text-sm text-blue-700 dark:text-blue-300">
+                              #{tag}
+                            </span>
+                            <button
+                              onClick={() => memoService.toggleTagInFilter(tag)}
+                              className="ml-0.5 p-0.5 text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-200 hover:bg-blue-100 dark:hover:bg-blue-800 rounded transition-colors"
+                              aria-label={`移除标签 ${tag}`}
+                              title={`移除标签 ${tag}`}
+                            >
+                              <X size={12} />
+                            </button>
+                            {index < memoService.tagsFilter.length - 1 && (
+                              <span className="text-blue-400 mx-1">+</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      {/* Clear all button for multi-select */}
+                      {memoService.tagsFilter.length > 0 && (
+                        <button
+                          onClick={() => memoService.clearAllTagFilters()}
+                          className="ml-1 p-0.5 text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-200 hover:bg-blue-100 dark:hover:bg-blue-800 rounded transition-colors"
+                          aria-label="清除所有标签筛选"
+                          title="清除所有标签筛选"
+                        >
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <CategoryFilter />
                 {/* Search + Sort Bar */}
                 <div className="ml-auto">

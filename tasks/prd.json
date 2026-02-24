@@ -69,8 +69,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 4,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented in commit e371c26"
     },
     {
       "id": "US-005",

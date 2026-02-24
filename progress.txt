@@ -101,3 +101,21 @@
   - URL state synced with MemoService.tagFilter for shareable filtered views
   - Tag filter and date filter can work together (AND logic between different filter types)
 ---
+
+## 2026-02-24T16:30:00Z - US-004
+- Implemented multi-select tag filtering
+- Files changed:
+  - apps/web/src/services/memo.service.ts - Added multiSelectMode, tagsFilter states and related methods
+  - apps/web/src/pages/home/components/tag-list.tsx - Added mode toggle UI, checkboxes, clear all button
+  - apps/web/src/pages/home/home.tsx - Added URL persistence for multiple tags (?tags=xxx&tags=yyy)
+  - apps/server/src/controllers/v1/memo.controller.ts - Added tags array query parameter
+- **Learnings for future iterations:**
+  - URL format for multiple tags: `?tags=tag1&tags=tag2` (standard URLSearchParams array format)
+  - Use `urlParams.getAll('tags')` to read multiple values in JavaScript
+  - Mode toggle uses List/ListChecks icons from lucide-react for visual indication
+  - Checkbox UI in multi-select mode provides clear visual feedback
+  - Switching modes automatically converts between single and multi-select states
+  - Clear all button (X icon) appears when any filters are active
+  - Selected count badge shows number of selected tags in header
+  - Tag filtering uses AND logic - memos must have ALL selected tags
+---
