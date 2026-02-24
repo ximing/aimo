@@ -1,12 +1,24 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { view, useService } from '@rabjs/react';
 import { Tag, ListChecks, List, X } from 'lucide-react';
+import type { TagDto } from '@aimo/dto';
 import { TagService } from '../../../services/tag.service';
 import { MemoService } from '../../../services/memo.service';
+import { TagContextMenu } from '../../../components/tag-context-menu';
+import { ConfirmDeleteModal } from './confirm-delete-modal';
 
 export const TagList = view(() => {
   const tagService = useService(TagService);
   const memoService = useService(MemoService);
+
+  // Context menu state
+  const [contextMenuOpen, setContextMenuOpen] = useState(false);
+  const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
+  const [selectedTag, setSelectedTag] = useState<TagDto | null>(null);
+
+  // Delete modal state
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Fetch tags on mount
   useEffect(() => {
@@ -33,6 +45,46 @@ export const TagList = view(() => {
 
   const handleClearAll = () => {
     memoService.clearAllTagFilters();
+  };
+
+  // Handle right-click on a tag
+  const handleContextMenu = (e: React.MouseEvent, tag: TagDto) => {
+    e.preventDefault();
+    setContextMenuPosition({ x: e.clientX, y: e.clientY });
+    setSelectedTag(tag);
+    setContextMenuOpen(true);
+  };
+
+  // Handle delete click from context menu
+  const handleDeleteClick = () => {
+    if (selectedTag) {
+      setDeleteModalOpen(true);
+    }
+  };
+
+  // Handle confirm delete
+  const handleConfirmDelete = async () => {
+    if (!selectedTag) return;
+
+    setDeleting(true);
+    const result = await tagService.deleteTag(selectedTag.tagId);
+    setDeleting(false);
+
+    if (result.success) {
+      // If the deleted tag was being used as a filter, clear it
+      if (memoService.tagFilter === selectedTag.name) {
+        memoService.setTagFilter(null);
+      }
+      // If in multi-select mode and the tag was in the filter, remove it
+      if (memoService.multiSelectMode && memoService.tagsFilter.includes(selectedTag.name)) {
+        memoService.toggleTagInFilter(selectedTag.name);
+      }
+      setDeleteModalOpen(false);
+      setSelectedTag(null);
+    } else {
+      // Show error (could be improved with a toast notification)
+      alert(result.message || '删除标签失败');
+    }
   };
 
   const selectedCount = memoService.multiSelectMode
@@ -126,6 +178,7 @@ export const TagList = view(() => {
             <button
               key={tag.tagId}
               onClick={() => handleTagClick(tag.name)}
+              onContextMenu={(e) => handleContextMenu(e, tag)}
               className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-left transition-colors ${
                 isSelected
                   ? 'bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800'
@@ -191,6 +244,31 @@ export const TagList = view(() => {
           );
         })}
       </div>
+
+      {/* Context Menu */}
+      <TagContextMenu
+        isOpen={contextMenuOpen}
+        position={contextMenuPosition}
+        onClose={() => setContextMenuOpen(false)}
+        onDelete={handleDeleteClick}
+      />
+
+      {/* Confirm Delete Modal */}
+      <ConfirmDeleteModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setSelectedTag(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        loading={deleting}
+        title="删除标签"
+        message={
+          selectedTag
+            ? `确定要删除标签 "#${selectedTag.name}" 吗？此操作会从所有备忘录中移除该标签，但不会删除备忘录本身。`
+            : '确定要删除此标签吗？此操作会从所有备忘录中移除该标签，但不会删除备忘录本身。'
+        }
+      />
     </div>
   );
 });

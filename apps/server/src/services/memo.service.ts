@@ -480,7 +480,9 @@ export class MemoService {
     attachments?: string[],
     categoryId?: string | null,
     relationIds?: string[],
-    isPublic?: boolean
+    isPublic?: boolean,
+    tags?: string[],
+    tagIds?: string[]
   ): Promise<MemoWithAttachmentsDto | null> {
     try {
       if (!content || content.trim().length === 0) {
@@ -570,6 +572,73 @@ export class MemoService {
         }
       }
 
+      // Update tags if provided
+      let finalTagIds = this.convertArrowAttachments(existingMemo.tagIds);
+      if (tags !== undefined || tagIds !== undefined) {
+        try {
+          // Resolve tags to tagIds
+          let resolvedTagIds: string[] = [];
+          if (tagIds && tagIds.length > 0) {
+            resolvedTagIds = tagIds;
+          } else if (tags && tags.length > 0) {
+            resolvedTagIds = await this.tagService.resolveTagNamesToIds(tags, uid);
+          }
+
+          // Calculate tag usage changes
+          const addedTagIds = resolvedTagIds.filter((id) => !finalTagIds.includes(id));
+          const removedTagIds = finalTagIds.filter((id) => !resolvedTagIds.includes(id));
+
+          // Update memo with new tag IDs
+          const tagUpdateValues: Record<string, any> = { updatedAt: now };
+          const tagUpdateValuesSql: Record<string, string> = {};
+
+          if (resolvedTagIds.length > 0) {
+            tagUpdateValues.tagIds = resolvedTagIds;
+          } else {
+            // Use SQL expression to set NULL for list type
+            tagUpdateValuesSql.tagIds = "arrow_cast(NULL, 'List(Utf8)')";
+          }
+
+          const tagUpdateOptions: {
+            where: string;
+            values: Record<string, any>;
+            valuesSql?: Record<string, string>;
+          } = {
+            where: `memoId = '${memoId}' AND uid = '${uid}'`,
+            values: tagUpdateValues,
+          };
+
+          if (Object.keys(tagUpdateValuesSql).length > 0) {
+            tagUpdateOptions.valuesSql = tagUpdateValuesSql;
+          }
+
+          await memosTable.update(tagUpdateOptions);
+
+          // Update usage counts for added tags
+          for (const tagId of addedTagIds) {
+            try {
+              await this.tagService.incrementUsageCount(tagId, uid);
+            } catch (error) {
+              console.warn(`Failed to increment usage count for tag ${tagId}:`, error);
+            }
+          }
+
+          // Update usage counts for removed tags
+          for (const tagId of removedTagIds) {
+            try {
+              await this.tagService.decrementUsageCount(tagId, uid);
+            } catch (error) {
+              console.warn(`Failed to decrement usage count for tag ${tagId}:`, error);
+            }
+          }
+
+          finalTagIds = resolvedTagIds;
+        } catch (error) {
+          console.warn('Failed to update memo tags:', error);
+          // Don't throw - allow memo update even if tags fail
+        }
+      }
+
       // Build updated memo object with attachment DTOs
       const finalAttachmentIds =
         attachments === undefined
@@ -580,9 +649,6 @@ export class MemoService {
           ? await this.attachmentService.getAttachmentsByIds(finalAttachmentIds, uid)
           : [];
 
-      // Get existing tagIds
-      const existingTagIds = this.convertArrowAttachments(existingMemo.tagIds);
-
       const updatedMemo: MemoListItemDto = {
         memoId,
         uid,
@@ -590,7 +656,7 @@ export class MemoService {
         type: existingMemo.type as 'text' | 'audio' | 'video',
         categoryId: categoryId === undefined ? existingMemo.categoryId : categoryId || undefined,
         attachments: finalAttachmentDtos,
-        tagIds: existingTagIds,
+        tagIds: finalTagIds,
         isPublic: isPublic !== undefined ? isPublic : (existingMemo.isPublic ?? false),
         createdAt: existingMemo.createdAt,
         updatedAt: now,

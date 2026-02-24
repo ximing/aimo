@@ -552,7 +552,7 @@ export const MemoEditorForm = view(
           />
 
           {/* 推荐相关 memo 下拉框 */}
-          {showSuggestions && suggestions.length > 0 && (
+          {showCategorySelector && showSuggestions && suggestions.length > 0 && (
             <div
               ref={suggestionsRef}
               className="bg-gradient-to-b from-white/95 to-gray-50/95 dark:from-dark-700/95 dark:to-dark-800/95 backdrop-blur-md border border-gray-200/50 dark:border-dark-600/50 rounded-lg p-2 space-y-1 animate-fade-in shadow-md"
@@ -588,7 +588,7 @@ export const MemoEditorForm = view(
           )}
 
           {/* 已选择的关系标签 */}
-          {selectedRelations.length > 0 && (
+          {showCategorySelector && selectedRelations.length > 0 && (
             <div className="bg-gradient-to-r from-primary-50/50 to-primary-100/30 dark:from-primary-950/20 dark:to-primary-900/10 border border-primary-200/30 dark:border-primary-900/30 rounded-lg p-2.5 space-y-2">
               <div className="text-xs font-semibold text-primary-700 dark:text-primary-300 uppercase tracking-wide">
                 关联笔记 ({selectedRelations.length})
@@ -628,13 +628,12 @@ export const MemoEditorForm = view(
           )}
 
           {/* 标签输入区域 */}
-          <TagInput
+          {showCategorySelector &&  <TagInput
             tags={selectedTags}
             onTagsChange={setSelectedTags}
             existingTags={tagService.tags}
             disabled={loading}
-          />
-
+          />}
           {/* 隐藏的文件输入 */}
           <input
             ref={fileInputRef}
@@ -842,7 +841,7 @@ export const MemoEditorForm = view(
         isOpen={aiToolsService.modal.isOpen && aiToolsService.modal.toolType === 'generate-tags'}
         onClose={() => aiToolsService.closeModal()}
         onBack={() => aiToolsService.backToToolSelector()}
-        onConfirm={mode === 'create' && !initialMemo?.memoId ? handleAITagsConfirm : undefined}
+        onConfirm={handleAITagsConfirm}
       />
     </>
   );

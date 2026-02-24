@@ -298,12 +298,33 @@ export class TagService {
     const memosToUpdate: Array<{ memoId: string; newTagIds: string[]; newTags: string[] }> = [];
 
     for (const memo of allMemos) {
-      const m = memo as unknown as { memoId: string; tagIds?: string[]; tags?: string[] };
-      if (m.tagIds && m.tagIds.includes(tagId)) {
-        const newTagIds = m.tagIds.filter((id) => id !== tagId);
+      const m = memo as unknown as { memoId: string; tagIds?: string[] | string | null; tags?: string[] | string | null };
+
+      // Normalize tagIds to an array (handle null, undefined, or string)
+      let normalizedTagIds: string[] = [];
+      if (Array.isArray(m.tagIds)) {
+        normalizedTagIds = m.tagIds;
+      } else if (typeof m.tagIds === 'string') {
+        // Handle case where tagIds might be a comma-separated string
+        normalizedTagIds = m.tagIds.split(',').map(id => id.trim()).filter(Boolean);
+      }
+
+      if (normalizedTagIds.includes(tagId)) {
+        const newTagIds = normalizedTagIds.filter((id) => id !== tagId);
+
         // Also update the legacy tags field if it exists
-        const tagToRemove = m.tags?.[m.tagIds.indexOf(tagId)];
-        const newTags = tagToRemove ? (m.tags || []).filter((t) => t !== tagToRemove) : m.tags || [];
+        // Normalize tags to an array as well
+        let normalizedTags: string[] = [];
+        if (Array.isArray(m.tags)) {
+          normalizedTags = m.tags;
+        } else if (typeof m.tags === 'string') {
+          normalizedTags = m.tags.split(',').map(t => t.trim()).filter(Boolean);
+        }
+
+        const tagToRemove = normalizedTags[normalizedTagIds.indexOf(tagId)];
+        const newTags = tagToRemove
+          ? normalizedTags.filter((t) => t !== tagToRemove)
+          : normalizedTags;
 
         memosToUpdate.push({
           memoId: m.memoId,

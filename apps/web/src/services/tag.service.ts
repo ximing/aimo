@@ -56,4 +56,28 @@ export class TagService extends Service {
   getTagByName(name: string): TagDto | undefined {
     return this.tags.find((t) => t.name.toLowerCase() === name.toLowerCase());
   }
+
+  /**
+   * Delete a tag by ID
+   * Removes the tag from the local list on success
+   */
+  async deleteTag(tagId: string): Promise<{ success: boolean; message?: string }> {
+    try {
+      const response = await tagApi.deleteTag(tagId);
+
+      if (response.code === 0) {
+        // Remove the tag from the local list
+        this.tags = this.tags.filter((t) => t.tagId !== tagId);
+        return { success: true };
+      } else {
+        return { success: false, message: 'Failed to delete tag' };
+      }
+    } catch (error: unknown) {
+      console.error('Delete tag error:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to delete tag',
+      };
+    }
+  }
 }

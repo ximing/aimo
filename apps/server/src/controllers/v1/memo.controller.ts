@@ -221,7 +221,9 @@ export class MemoV1Controller {
         memoData.attachments,
         memoData.categoryId,
         memoData.relationIds,
-        memoData.isPublic
+        memoData.isPublic,
+        memoData.tags,
+        memoData.tagIds
       );
       if (!memo) {
         return ResponseUtility.error(ErrorCode.NOT_FOUND);
