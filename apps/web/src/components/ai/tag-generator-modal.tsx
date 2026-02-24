@@ -16,10 +16,11 @@ interface TagGeneratorModalProps {
   isOpen: boolean;
   onClose: () => void;
   onBack: () => void;
+  onConfirm?: (tags: string[]) => void; // Callback for create mode - passes selected tags to parent
 }
 
 export const TagGeneratorModal = view(
-  ({ isOpen, onClose, onBack }: TagGeneratorModalProps) => {
+  ({ isOpen, onClose, onBack, onConfirm }: TagGeneratorModalProps) => {
     const aiToolsService = useService(AIToolsService);
     const [customTagInput, setCustomTagInput] = useState('');
     const [editingTag, setEditingTag] = useState<string | null>(null);
@@ -123,6 +124,16 @@ export const TagGeneratorModal = view(
 
     // Handle confirm - save tags
     const handleConfirm = async () => {
+      const selectedTags = aiToolsService.tagGeneration.selectedTags;
+
+      // If onConfirm callback is provided (create mode), use it instead of API call
+      if (onConfirm) {
+        onConfirm(selectedTags);
+        onClose();
+        return;
+      }
+
+      // Edit mode: save via API
       if (!aiToolsService.modal.memoId) return;
 
       const result = await aiToolsService.saveTags(aiToolsService.modal.memoId);
@@ -170,7 +181,7 @@ export const TagGeneratorModal = view(
 
         if (shouldGenerate) {
           setHasTriggeredGeneration(true);
-          aiToolsService.generateTags(aiToolsService.modal.memoContent);
+          aiToolsService.generateTags(aiToolsService.modal.memoContent!);
         }
       }
 

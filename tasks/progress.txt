@@ -12,6 +12,11 @@ Branch: ralph/tag-display-and-filter
 - [x] US-006: Tag filtering performance optimization
 - [x] US-007: Edit tags in memo editor
 - [x] US-008: Return tags in public/share API and display on share page
+- [x] US-009: Add AI tools dropdown button in editor
+- [ ] US-010: Create AI tag generation modal for editor
+- [ ] US-011: Implement tag deduplication logic
+- [ ] US-012: Write selected tags back to editor state
+- [ ] US-013: Extensible AI tools architecture
 
 ## Notes
 
@@ -32,3 +37,24 @@ Branch: ralph/tag-display-and-filter
 - Tag-related components use bg-primary-50 dark:bg-primary-900/30 for pill styling
 - Tags are stored as array of strings (tag names) in DTOs for input, TagDto[] for output
 - TagService provides fetchTags() for getting all existing tags with usage counts
+- AI tools dropdown uses Sparkles icon with purple (purple-600) accent color
+- Dropdown menus use absolute positioning with bottom-full for upward expansion
+- AI modals (AIToolSelectorModal, TagGeneratorModal) are rendered conditionally based on aiToolsService.modal state
+
+## 2026-02-24 - US-009 Completed
+- Implemented AI tools dropdown button in memo-editor-form.tsx
+- Added Sparkles icon button next to attachment button
+- Dropdown shows "智能生成标签" option with Tags icon
+- Click outside or Escape closes dropdown
+- Works in both create and edit modes
+- Create mode: passes tags via onConfirm callback to update local state
+- Edit mode: saves tags via API using aiToolsService.saveTags()
+- Updated TagGeneratorModal to accept optional onConfirm callback prop
+- Files changed: memo-editor-form.tsx, tag-generator-modal.tsx
+- Build and lint pass
+
+**Learnings:**
+- AIToolsService manages AI tool state with modal.isOpen and modal.toolType
+- TagGeneratorModal requires memoId for API save, but can work with onConfirm callback for create mode
+- Dropdown positioning uses `absolute left-0 bottom-full mb-1` to appear above the button
+- Use `!` non-null assertion when TypeScript can't infer that a value is non-null after a check

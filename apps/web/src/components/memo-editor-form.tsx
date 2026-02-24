@@ -3,13 +3,15 @@ import { view, useService } from '@rabjs/react';
 import { MemoService } from '../services/memo.service';
 import { CategoryService } from '../services/category.service';
 import { TagService } from '../services/tag.service';
+import { AIToolsService } from '../services/ai-tools.service';
 import { AttachmentUploader, type AttachmentItem } from './attachment-uploader';
 import { TagInput } from './tag-input';
 import { attachmentApi } from '../api/attachment';
 import * as memoApi from '../api/memo';
-import { Paperclip, X, Check, ChevronDown, Plus, Globe, Lock } from 'lucide-react';
+import { Paperclip, X, Check, ChevronDown, Plus, Globe, Lock, Sparkles, Tags } from 'lucide-react';
 import type { MemoListItemDto, MemoWithAttachmentsDto } from '@aimo/dto';
 import { CreateCategoryModal } from '../pages/home/components/create-category-modal';
+import { AIToolSelectorModal, TagGeneratorModal } from './ai';
 
 interface MemoEditorFormProps {
   mode: 'create' | 'edit';
@@ -40,6 +42,7 @@ export const MemoEditorForm = view(
     const [isSubmitting, setIsSubmitting] = useState(false); // 标记是否正在提交中，用于防止推荐接口时序问题
     const [isPublic, setIsPublic] = useState<boolean>(initialMemo?.isPublic ?? false);
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
+    const [isAIDropdownOpen, setIsAIDropdownOpen] = useState(false);
 
     // 当 defaultCategoryId 变化时，同步更新 selectedCategoryId（创建模式下）
     useEffect(() => {
@@ -52,11 +55,13 @@ export const MemoEditorForm = view(
     const fileInputRef = useRef<HTMLInputElement>(null);
     const suggestionsRef = useRef<HTMLDivElement>(null);
     const categoryDropdownRef = useRef<HTMLDivElement>(null);
+    const aiDropdownRef = useRef<HTMLDivElement>(null);
     const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
     const memoService = useService(MemoService);
     const categoryService = useService(CategoryService);
     const tagService = useService(TagService);
+    const aiToolsService = useService(AIToolsService);
 
     // 初始化编辑模式的数据
     useEffect(() => {
@@ -115,6 +120,23 @@ export const MemoEditorForm = view(
         return () => document.removeEventListener('mousedown', handleClickOutside);
       }
     }, [isCategoryDropdownOpen]);
+
+    // 点击外部关闭AI工具下拉框
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (
+          aiDropdownRef.current &&
+          !aiDropdownRef.current.contains(event.target as Node)
+        ) {
+          setIsAIDropdownOpen(false);
+        }
+      };
+
+      if (isAIDropdownOpen) {
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+      }
+    }, [isAIDropdownOpen]);
 
     // 点击编辑区外部时收起（避免选择类别时失焦）
     useEffect(() => {
@@ -342,6 +364,35 @@ export const MemoEditorForm = view(
 
     const handleAttachmentClick = () => {
       fileInputRef.current?.click();
+    };
+
+    const handleAIToolClick = () => {
+      setIsAIDropdownOpen(!isAIDropdownOpen);
+    };
+
+    const handleSelectAITool = (toolId: string) => {
+      setIsAIDropdownOpen(false);
+
+      if (toolId === 'generate-tags') {
+        if (mode === 'edit' && initialMemo?.memoId) {
+          // Edit mode: open tool selector with memoId
+          aiToolsService.openToolSelector(initialMemo.memoId, content);
+          aiToolsService.selectTool('generate-tags');
+        } else {
+          // Create mode: open tool selector without memoId, will add tags to local state
+          aiToolsService.openToolSelector('', content);
+          aiToolsService.selectTool('generate-tags');
+        }
+      }
+    };
+
+    // Handle tags received from tag generator (create mode)
+    const handleAITagsConfirm = (tags: string[]) => {
+      // Add tags to editor's selectedTags, avoiding duplicates
+      setSelectedTags((prev) => {
+        const newTags = tags.filter((tag) => !prev.some((t) => t.toLowerCase() === tag.toLowerCase()));
+        return [...prev, ...newTags];
+      });
     };
 
     const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -595,17 +646,53 @@ export const MemoEditorForm = view(
 
           {/* 操作栏：附件按钮和保存按钮 */}
           <div className="flex items-center justify-between">
-            {/* 左侧：附件按钮 */}
-            <button
-              type="button"
-              onClick={handleAttachmentClick}
-              disabled={loading || attachments.length >= 9}
-              className="p-2 text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-500 hover:bg-gray-100 dark:hover:bg-dark-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              aria-label="添加附件"
-              title={`添加附件${attachments.length > 0 ? ` (${attachments.length}/9)` : ' (0/9)'}`}
-            >
-              <Paperclip className="w-5 h-5" />
-            </button>
+            {/* 左侧：附件按钮和AI工具按钮 */}
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={handleAttachmentClick}
+                disabled={loading || attachments.length >= 9}
+                className="p-2 text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-500 hover:bg-gray-100 dark:hover:bg-dark-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="添加附件"
+                title={`添加附件${attachments.length > 0 ? ` (${attachments.length}/9)` : ' (0/9)'}`}
+              >
+                <Paperclip className="w-5 h-5" />
+              </button>
+
+              {/* AI Tools Dropdown */}
+              <div className="relative" ref={aiDropdownRef}>
+                <button
+                  type="button"
+                  onClick={handleAIToolClick}
+                  disabled={loading}
+                  className={`p-2 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                    isAIDropdownOpen
+                      ? 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-gray-100 dark:hover:bg-dark-700'
+                  }`}
+                  aria-label="AI工具"
+                  title="AI工具"
+                  aria-expanded={isAIDropdownOpen}
+                  aria-haspopup="listbox"
+                >
+                  <Sparkles className="w-5 h-5" />
+                </button>
+
+                {/* AI Tools Dropdown Menu */}
+                {isAIDropdownOpen && (
+                  <div className="absolute left-0 bottom-full mb-1 w-48 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg shadow-lg z-50 py-1">
+                    <button
+                      type="button"
+                      onClick={() => handleSelectAITool('generate-tags')}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
+                    >
+                      <Tags className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                      <span>智能生成标签</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
 
             {/* 右侧：操作按钮 */}
             <div className="flex items-center gap-2">
@@ -739,6 +826,21 @@ export const MemoEditorForm = view(
         isOpen={isCreateCategoryModalOpen}
         onClose={() => setIsCreateCategoryModalOpen(false)}
         onCategoryCreated={handleCategoryCreated}
+      />
+
+      {/* AI Tool Selector Modal */}
+      <AIToolSelectorModal
+        isOpen={aiToolsService.modal.isOpen && aiToolsService.modal.toolType === null}
+        onClose={() => aiToolsService.closeModal()}
+        onSelectTool={(toolId) => aiToolsService.selectTool(toolId as 'generate-tags')}
+      />
+
+      {/* Tag Generator Modal */}
+      <TagGeneratorModal
+        isOpen={aiToolsService.modal.isOpen && aiToolsService.modal.toolType === 'generate-tags'}
+        onClose={() => aiToolsService.closeModal()}
+        onBack={() => aiToolsService.backToToolSelector()}
+        onConfirm={mode === 'create' && !initialMemo?.memoId ? handleAITagsConfirm : undefined}
       />
     </>
   );

@@ -143,6 +143,92 @@
       "priority": 8,
       "passes": true,
       "notes": "Implemented - Tags displayed on share page with pill styling and click navigation"
+    },
+    {
+      "id": "US-009",
+      "title": "Add AI tools dropdown button in editor",
+      "description": "As a user, I want to access AI tools directly from the editor so I can enhance my memo while editing.",
+      "acceptanceCriteria": [
+        "Sparkles icon button appears next to attachment button in editor",
+        "Button visible in both create and edit modes",
+        "Clicking button opens dropdown menu with AI tool options",
+        "Dropdown currently shows '智能生成标签' option",
+        "Dropdown positioned correctly below the button",
+        "Click outside or press Escape closes dropdown",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 9,
+      "passes": true,
+      "notes": "Implemented - Sparkles button with dropdown showing '智能生成标签', works in both create and edit modes"
+    },
+    {
+      "id": "US-010",
+      "title": "Create AI tag generation modal for editor",
+      "description": "As a user, I want to see AI-generated tag suggestions in a modal so I can select which tags to add to my memo.",
+      "acceptanceCriteria": [
+        "Modal opens when selecting '智能生成标签' from dropdown",
+        "Modal shows loading state with 'AI 正在分析内容...'",
+        "Generated tags displayed as selectable pills/chips",
+        "Each tag can be toggled selected/unselected",
+        "Shows count of selected tags",
+        "Has '全选' and '取消全选' buttons",
+        "Has '添加自定义标签' input field",
+        "Modal has '取消' and '确认添加' buttons",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Implement tag deduplication logic",
+      "description": "As a user, I want AI-generated tags to be automatically deduplicated against existing tags so I don't have duplicates.",
+      "acceptanceCriteria": [
+        "Generated tags are compared with existing tags (case-insensitive)",
+        "Tags that already exist are marked/visually indicated as '已存在'",
+        "Duplicate tags cannot be selected for addition",
+        "Existing tags are shown separately in the modal (optional view)",
+        "Typecheck passes"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Write selected tags back to editor state",
+      "description": "As a user, I want selected AI-generated tags to be added to my memo's tag list when I confirm.",
+      "acceptanceCriteria": [
+        "Clicking '确认添加' adds selected tags to editor's tag state",
+        "New tags are appended to existing tags (not replacing)",
+        "Tags are added to the TagInput component in real-time",
+        "User sees the new tags appear in the editor immediately",
+        "No API call to server (tags only saved when memo is saved)",
+        "Canceling modal does not modify editor state",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-013",
+      "title": "Extensible AI tools architecture",
+      "description": "As a developer, I want the AI tools menu to be easily extensible so we can add more AI features in the future.",
+      "acceptanceCriteria": [
+        "Dropdown menu items defined in a configuration array",
+        "Each menu item has: id, label, icon, handler",
+        "Easy to add new menu items without modifying core logic",
+        "Menu supports dividers between groups",
+        "Typecheck passes"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": ""
     }
   ]
 }
