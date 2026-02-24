@@ -7,6 +7,7 @@ import { generateTypeId } from '../utils/id.js';
 import { AttachmentService } from './attachment.service.js';
 import { EmbeddingService } from './embedding.service.js';
 import { MemoRelationService } from './memo-relation.service.js';
+import { TagService } from './tag.service.js';
 
 import type { Memo, NewMemo } from '../models/db/memo.schema.js';
 import type {
@@ -17,6 +18,7 @@ import type {
   MemoListItemWithScoreDto,
   PaginatedMemoListWithScoreDto,
   AttachmentDto,
+  TagDto,
   MemoActivityStatsDto,
   MemoActivityStatsItemDto,
   OnThisDayMemoDto,
@@ -60,7 +62,8 @@ export class MemoService {
     private lanceDatabase: LanceDatabaseService,
     private embeddingService: EmbeddingService,
     private attachmentService: AttachmentService,
-    private memoRelationService: MemoRelationService
+    private memoRelationService: MemoRelationService,
+    private tagService: TagService
   ) {}
 
   /**
@@ -90,6 +93,66 @@ export class MemoService {
     return [];
   }
 
+  /**
+   * Enrich memo items with tag data
+   * Converts tagIds to TagDto objects
+   */
+  private async enrichTags(uid: string, items: MemoListItemDto[]): Promise<MemoListItemDto[]> {
+    try {
+      // Collect all unique tag IDs from all items
+      const allTagIds = new Set<string>();
+      for (const item of items) {
+        if (item.tagIds && item.tagIds.length > 0) {
+          for (const tagId of item.tagIds) {
+            allTagIds.add(tagId);
+          }
+        }
+      }
+
+      // If no tags to enrich, return items as-is
+      if (allTagIds.size === 0) {
+        // Clear tags field since there are no tagIds
+        return items.map((item) => ({
+          ...item,
+          tags: [],
+        }));
+      }
+
+      // Fetch all tags in one batch
+      const tagDtos = await this.tagService.getTagsByIds(Array.from(allTagIds), uid);
+      const tagMap = new Map<string, TagDto>();
+      for (const tag of tagDtos) {
+        tagMap.set(tag.tagId, tag);
+      }
+
+      // Enrich each item with tag objects
+      return items.map((item) => {
+        if (!item.tagIds || item.tagIds.length === 0) {
+          return {
+            ...item,
+            tags: [],
+          };
+        }
+
+        const enrichedTags = item.tagIds
+          .map((tagId) => tagMap.get(tagId))
+          .filter((tag): tag is TagDto => tag !== undefined);
+
+        return {
+          ...item,
+          tags: enrichedTags,
+        };
+      });
+    } catch (error) {
+      console.error('Error enriching tags:', error);
+      // Return items with empty tags if enrichment fails
+      return items.map((item) => ({
+        ...item,
+        tags: [],
+      }));
+    }
+  }
+
   async createMemo(
     uid: string,
     content: string,
@@ -99,7 +162,9 @@ export class MemoService {
     relationIds?: string[],
     isPublic?: boolean,
     createdAt?: number,
-    updatedAt?: number
+    updatedAt?: number,
+    tags?: string[],
+    tagIds?: string[]
   ): Promise<MemoWithAttachmentsDto> {
     try {
       if (!content || content.trim().length === 0) {
@@ -122,6 +187,22 @@ export class MemoService {
         }
       }
 
+      // Resolve tag names to tag IDs if tagIds not provided
+      let resolvedTagIds: string[] = [];
+      let resolvedTagNames: string[] = [];
+
+      if (tagIds && tagIds.length > 0) {
+        // Use provided tag IDs
+        resolvedTagIds = tagIds;
+        // Get tag names for the legacy tags field
+        const existingTags = await this.tagService.getTagsByIds(tagIds, uid);
+        resolvedTagNames = existingTags.map((t) => t.name);
+      } else if (tags && tags.length > 0) {
+        // Create or find tags by name
+        resolvedTagIds = await this.tagService.resolveTagNamesToIds(tags, uid);
+        resolvedTagNames = tags;
+      }
+
       const now = Date.now();
       const memoId = generateTypeId(OBJECT_TYPE.MEMO);
       const memo: Memo = {
@@ -131,6 +212,7 @@ export class MemoService {
         type,
         content,
         attachments,
+        tagIds: resolvedTagIds.length > 0 ? resolvedTagIds : undefined,
         embedding,
         isPublic: isPublic || false,
         createdAt: createdAt || now,
@@ -160,18 +242,35 @@ export class MemoService {
         }
       }
 
+      // Increment usage count for each tag
+      for (const tagId of resolvedTagIds) {
+        try {
+          await this.tagService.incrementUsageCount(tagId, uid);
+        } catch (error) {
+          console.warn(`Failed to increment usage count for tag ${tagId}:`, error);
+        }
+      }
+
       // Get full attachment DTOs for response
       const attachmentDtos: AttachmentDto[] =
         attachments && attachments.length > 0
           ? await this.attachmentService.getAttachmentsByIds(attachments, uid)
           : [];
 
+      // Get tag DTOs for response
+      const tagDtos: TagDto[] =
+        resolvedTagIds.length > 0
+          ? await this.tagService.getTagsByIds(resolvedTagIds, uid)
+          : [];
+
       // Return with attachment DTOs (exclude embedding to reduce payload)
-      const { embedding: _embedding, ...memoWithoutEmbedding } = memo;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { embedding: _embedding, tagIds: _tagIds, ...memoWithoutEmbedding } = memo;
       return {
         ...memoWithoutEmbedding,
         type,
         attachments: attachmentDtos,
+        tags: tagDtos,
       };
     } catch (error) {
       console.error('Error creating memo:', error);
@@ -265,15 +364,18 @@ export class MemoService {
           type: (memo.type as 'text' | 'audio' | 'video') || 'text',
           categoryId: memo.categoryId,
           attachments: attachmentDtos,
-          tags: this.convertArrowAttachments(memo.tags),
+          tagIds: this.convertArrowAttachments(memo.tagIds),
           isPublic: memo.isPublic ?? false,
           createdAt: memo.createdAt,
           updatedAt: memo.updatedAt,
         });
       }
 
+      // Enrich items with tags
+      const itemsWithTags = await this.enrichTags(uid, items);
+
       // Enrich items with relations
-      const enrichedItems = await this.enrichMemosWithRelations(uid, items);
+      const enrichedItems = await this.enrichMemosWithRelations(uid, itemsWithTags);
 
       return {
         items: enrichedItems,
@@ -322,14 +424,17 @@ export class MemoService {
         type: (memo.type as 'text' | 'audio' | 'video') || 'text',
         categoryId: memo.categoryId,
         attachments: attachmentDtos,
-        tags: this.convertArrowAttachments(memo.tags),
+        tagIds: this.convertArrowAttachments(memo.tagIds),
         isPublic: memo.isPublic ?? false,
         createdAt: memo.createdAt,
         updatedAt: memo.updatedAt,
       };
 
+      // Enrich with tags
+      const itemsWithTags = await this.enrichTags(uid, [memoWithAttachments]);
+
       // Enrich with relations using the same logic as getMemos
-      const enrichedItems = await this.enrichMemosWithRelations(uid, [memoWithAttachments]);
+      const enrichedItems = await this.enrichMemosWithRelations(uid, itemsWithTags);
 
       // Return the enriched memo (without embedding)
       return {
@@ -479,11 +584,13 @@ export class MemoService {
   /**
    * Update memo tags (batch update)
    * Replaces all existing tags with the new tags array
+   * Supports both tag names (legacy) and tagIds
    */
   async updateTags(
     memoId: string,
     uid: string,
-    tags: string[]
+    tags?: string[],
+    tagIds?: string[]
   ): Promise<MemoWithAttachmentsDto | null> {
     try {
       // Find existing memo
@@ -499,22 +606,67 @@ export class MemoService {
       }
 
       const existingMemo: any = results[0];
+      const existingTagIds = this.convertArrowAttachments(existingMemo.tagIds);
 
-      // Update the tags
+      // Resolve tags to tagIds
+      let resolvedTagIds: string[] = [];
+      let resolvedTagNames: string[] = [];
+
+      if (tagIds && tagIds.length > 0) {
+        // Use provided tag IDs
+        resolvedTagIds = tagIds;
+        const existingTags = await this.tagService.getTagsByIds(tagIds, uid);
+        resolvedTagNames = existingTags.map((t) => t.name);
+      } else if (tags && tags.length > 0) {
+        // Create or find tags by name
+        resolvedTagIds = await this.tagService.resolveTagNamesToIds(tags, uid);
+        resolvedTagNames = tags;
+      }
+
+      // Calculate tag usage changes
+      const addedTagIds = resolvedTagIds.filter((id) => !existingTagIds.includes(id));
+      const removedTagIds = existingTagIds.filter((id) => !resolvedTagIds.includes(id));
+
+      // Update the memo with new tag IDs
       const now = Date.now();
       await memosTable.update({
         where: `memoId = '${memoId}' AND uid = '${uid}'`,
         values: {
-          tags: tags || [],
+          tags: resolvedTagNames.length > 0 ? resolvedTagNames : [],
+          tagIds: resolvedTagIds.length > 0 ? resolvedTagIds : [],
           updatedAt: now,
         },
       });
+
+      // Update usage counts for added tags
+      for (const tagId of addedTagIds) {
+        try {
+          await this.tagService.incrementUsageCount(tagId, uid);
+        } catch (error) {
+          console.warn(`Failed to increment usage count for tag ${tagId}:`, error);
+        }
+      }
+
+      // Update usage counts for removed tags
+      for (const tagId of removedTagIds) {
+        try {
+          await this.tagService.decrementUsageCount(tagId, uid);
+        } catch (error) {
+          console.warn(`Failed to decrement usage count for tag ${tagId}:`, error);
+        }
+      }
 
       // Get attachment DTOs
       const attachmentIds = this.convertArrowAttachments(existingMemo.attachments);
       const attachmentDtos =
         attachmentIds.length > 0
           ? await this.attachmentService.getAttachmentsByIds(attachmentIds, uid)
+          : [];
+
+      // Get tag DTOs for response
+      const tagDtos: TagDto[] =
+        resolvedTagIds.length > 0
+          ? await this.tagService.getTagsByIds(resolvedTagIds, uid)
           : [];
 
       // Build updated memo object
@@ -525,7 +677,8 @@ export class MemoService {
         type: (existingMemo.type as 'text' | 'audio' | 'video') || 'text',
         categoryId: existingMemo.categoryId,
         attachments: attachmentDtos,
-        tags: tags || [],
+        tags: tagDtos,
+        tagIds: resolvedTagIds,
         isPublic: existingMemo.isPublic ?? false,
         createdAt: existingMemo.createdAt,
         updatedAt: now,
@@ -548,12 +701,20 @@ export class MemoService {
    */
   async deleteMemo(memoId: string, uid: string): Promise<boolean> {
     try {
-      const existingMemo = await this.getMemoById(memoId, uid);
-      if (!existingMemo) {
+      // Get the memo directly to access tagIds before deletion
+      const memosTable = await this.lanceDatabase.openTable('memos');
+      const results = await memosTable
+        .query()
+        .where(`memoId = '${memoId}' AND uid = '${uid}'`)
+        .limit(1)
+        .toArray();
+
+      if (results.length === 0) {
         throw new Error('Memo not found');
       }
 
-      const memosTable = await this.lanceDatabase.openTable('memos');
+      const existingMemo: any = results[0];
+      const existingTagIds = this.convertArrowAttachments(existingMemo.tagIds);
 
       // Delete the memo using LanceDB's delete method
       await memosTable.delete(`memoId = '${memoId}' AND uid = '${uid}'`);
@@ -565,6 +726,15 @@ export class MemoService {
       } catch (error) {
         console.warn('Failed to delete memo relations during memo deletion:', error);
         // Don't throw - allow memo deletion even if relation cleanup fails
+      }
+
+      // Decrement usage counts for tags
+      for (const tagId of existingTagIds) {
+        try {
+          await this.tagService.decrementUsageCount(tagId, uid);
+        } catch (error) {
+          console.warn(`Failed to decrement usage count for tag ${tagId}:`, error);
+        }
       }
 
       return true;
@@ -668,7 +838,7 @@ export class MemoService {
           type: (memo.type as 'text' | 'audio' | 'video') || 'text',
           categoryId: memo.categoryId,
           attachments: attachmentDtos,
-          tags: this.convertArrowAttachments(memo.tags),
+          tagIds: this.convertArrowAttachments(memo.tagIds),
           createdAt: memo.createdAt,
           updatedAt: memo.updatedAt,
           // LanceDB returns _distance (L2 distance metric)
@@ -679,8 +849,11 @@ export class MemoService {
         });
       }
 
+      // Enrich items with tags
+      const itemsWithTags = await this.enrichTags(uid, items);
+
       return {
-        items,
+        items: itemsWithTags,
         pagination: {
           total,
           page,
@@ -835,15 +1008,18 @@ export class MemoService {
           type: (memo.type as 'text' | 'audio' | 'video') || 'text',
           categoryId: memo.categoryId,
           attachments: attachmentDtos,
-          tags: this.convertArrowAttachments(memo.tags),
+          tagIds: this.convertArrowAttachments(memo.tagIds),
           createdAt: memo.createdAt,
           updatedAt: memo.updatedAt,
           relevanceScore: Math.max(0, Math.min(1, 1 - (memo._distance || 0) / 2)),
         });
       }
 
+      // Enrich items with tags
+      const itemsWithTags = await this.enrichTags(uid, items);
+
       return {
-        items,
+        items: itemsWithTags,
         pagination: {
           total,
           page,
@@ -891,14 +1067,17 @@ export class MemoService {
           type: (memo.type as 'text' | 'audio' | 'video') || 'text',
           categoryId: memo.categoryId,
           attachments: attachmentDtos,
-          tags: this.convertArrowAttachments(memo.tags),
+          tagIds: this.convertArrowAttachments(memo.tagIds),
           isPublic: memo.isPublic ?? false,
           createdAt: memo.createdAt,
           updatedAt: memo.updatedAt,
         });
       }
 
-      return items;
+      // Enrich items with tags
+      const itemsWithTags = await this.enrichTags(uid, items);
+
+      return itemsWithTags;
     } catch (error) {
       console.error('Error getting memos by IDs:', error);
       throw error;
@@ -1137,15 +1316,18 @@ export class MemoService {
           type: (memo.type as 'text' | 'audio' | 'video') || 'text',
           categoryId: memo.categoryId,
           attachments: attachmentDtos,
-          tags: this.convertArrowAttachments(memo.tags),
+          tagIds: this.convertArrowAttachments(memo.tagIds),
           isPublic: memo.isPublic ?? false,
           createdAt: memo.createdAt,
           updatedAt: memo.updatedAt,
         });
       }
 
+      // Enrich items with tags
+      const itemsWithTags = await this.enrichTags(uid, items);
+
       return {
-        items,
+        items: itemsWithTags,
         pagination: {
           total,
           page,
@@ -1200,18 +1382,23 @@ export class MemoService {
           ? await this.attachmentService.getAttachmentsByIds(attachmentIds, uid)
           : [];
 
-      return {
+      // Build memo object with tagIds
+      const memoItem: MemoListItemDto = {
         memoId: memo.memoId,
         uid: memo.uid,
         content: memo.content,
         type: (memo.type as 'text' | 'audio' | 'video') || 'text',
         categoryId: memo.categoryId,
         attachments: attachmentDtos,
-        tags: this.convertArrowAttachments(memo.tags),
+        tagIds: this.convertArrowAttachments(memo.tagIds),
         isPublic: memo.isPublic ?? false,
         createdAt: memo.createdAt,
         updatedAt: memo.updatedAt,
       };
+
+      // Enrich with tags
+      const [enrichedMemo] = await this.enrichTags(uid, [memoItem]);
+      return enrichedMemo;
     } catch (error) {
       console.error('Error getting random public memo:', error);
       throw error;
@@ -1254,13 +1441,16 @@ export class MemoService {
         type: (memo.type as 'text' | 'audio' | 'video') || 'text',
         categoryId: memo.categoryId,
         attachments: attachmentDtos,
-        tags: this.convertArrowAttachments(memo.tags),
+        tagIds: this.convertArrowAttachments(memo.tagIds),
         isPublic: memo.isPublic ?? false,
         createdAt: memo.createdAt,
         updatedAt: memo.updatedAt,
       };
 
-      return memoWithAttachments as MemoWithAttachmentsDto;
+      // Enrich with tags using the memo owner's uid
+      const [enrichedMemo] = await this.enrichTags(memo.uid, [memoWithAttachments]);
+
+      return enrichedMemo as MemoWithAttachmentsDto;
     } catch (error) {
       console.error('Error getting public memo by ID:', error);
       throw error;

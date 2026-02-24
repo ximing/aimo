@@ -30,3 +30,6 @@ export * from './version.js';
 
 // AI DTOs
 export * from './ai.js';
+
+// Tag DTOs
+export * from './tag.js';

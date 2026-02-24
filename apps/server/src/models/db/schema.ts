@@ -62,10 +62,10 @@ export const memosSchema = new Schema([
     true
   ), // nullable list of attachment IDs (URLs generated at runtime)
   new Field(
-    'tags',
+    'tagIds',
     new List(new Field('item', new Utf8(), true)),
     true
-  ), // nullable list of tag strings
+  ), // nullable list of tag IDs (new primary field)
   new Field(
     'embedding',
     new FixedSizeList(getEmbeddingDimensions(), new Field('item', new Float32(), true)),
@@ -98,7 +98,8 @@ export interface MemoRecord {
   content: string;
   type?: string; // optional memo type: 'text' | 'audio' | 'video' (defaults to 'text' if not set)
   attachments?: string[]; // attachment IDs array (URLs generated at runtime)
-  tags?: string[]; // optional array of tag strings
+  tags?: string[]; // optional array of tag strings (legacy, for backward compatibility)
+  tagIds?: string[]; // optional array of tag IDs (new primary field)
   embedding: number[];
   createdAt: number; // timestamp in milliseconds
   updatedAt: number; // timestamp in milliseconds
@@ -180,6 +181,20 @@ export const categoriesSchema = new Schema([
 ]);
 
 /**
+ * Tags table schema
+ * Stores tags per user with usage count
+ */
+export const tagsSchema = new Schema([
+  new Field('tagId', new Utf8(), false), // non-nullable unique tag id
+  new Field('uid', new Utf8(), false), // non-nullable user id
+  new Field('name', new Utf8(), false), // non-nullable tag name
+  new Field('color', new Utf8(), true), // nullable color hex code for UI display
+  new Field('usageCount', new Int32(), false), // non-nullable usage count
+  new Field('createdAt', new Timestamp(TimeUnit.MILLISECOND), false), // non-nullable creation timestamp in milliseconds
+  new Field('updatedAt', new Timestamp(TimeUnit.MILLISECOND), false), // non-nullable update timestamp in milliseconds
+]);
+
+/**
  * Attachments table schema
  * Stores file attachments with metadata
  * For images and videos, multimodalEmbedding stores the fusion vector from multimodal embedding service
@@ -217,6 +232,19 @@ export interface CategoryRecord {
   uid: string;
   name: string;
   color?: string; // optional color hex code for UI display
+  createdAt: number; // timestamp in milliseconds
+  updatedAt: number; // timestamp in milliseconds
+}
+
+/**
+ * Type definition for tag records
+ */
+export interface TagRecord {
+  tagId: string;
+  uid: string;
+  name: string;
+  color?: string; // optional color hex code for UI display
+  usageCount: number;
   createdAt: number; // timestamp in milliseconds
   updatedAt: number; // timestamp in milliseconds
 }

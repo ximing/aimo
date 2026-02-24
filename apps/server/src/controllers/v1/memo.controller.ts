@@ -161,7 +161,9 @@ export class MemoV1Controller {
         memoData.relationIds,
         memoData.isPublic,
         memoData.createdAt,
-        memoData.updatedAt
+        memoData.updatedAt,
+        memoData.tags,
+        memoData.tagIds
       );
       return ResponseUtility.success({
         message: 'Memo created successfully',
@@ -234,7 +236,7 @@ export class MemoV1Controller {
   @Put('/:memoId/tags')
   async updateMemoTags(
     @Param('memoId') memoId: string,
-    @Body() body: { tags: string[] },
+    @Body() body: { tags?: string[]; tagIds?: string[] },
     @CurrentUser() user: UserInfoDto
   ) {
     try {
@@ -242,14 +244,26 @@ export class MemoV1Controller {
         return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
       }
 
-      if (!body.tags || !Array.isArray(body.tags)) {
+      // Support both tags (names) and tagIds
+      if (body.tags && !Array.isArray(body.tags)) {
         return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'Tags must be an array');
       }
 
-      // Validate that all tags are strings
-      const validTags = body.tags.filter((tag): tag is string => typeof tag === 'string' && tag.trim().length > 0);
+      if (body.tagIds && !Array.isArray(body.tagIds)) {
+        return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'TagIds must be an array');
+      }
 
-      const memo = await this.memoService.updateTags(memoId, user.uid, validTags);
+      // Validate that all tags are strings
+      const validTags = body.tags
+        ? body.tags.filter((tag): tag is string => typeof tag === 'string' && tag.trim().length > 0)
+        : undefined;
+
+      // Validate that all tagIds are strings
+      const validTagIds = body.tagIds
+        ? body.tagIds.filter((id): id is string => typeof id === 'string' && id.trim().length > 0)
+        : undefined;
+
+      const memo = await this.memoService.updateTags(memoId, user.uid, validTags, validTagIds);
       if (!memo) {
         return ResponseUtility.error(ErrorCode.NOT_FOUND);
       }

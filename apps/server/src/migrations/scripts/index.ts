@@ -24,6 +24,10 @@ import {
 import { addPropertiesToAttachmentsMigration } from './007-add-attachment-properties.js';
 import { addIsPublicToMemosMigration } from './008-add-is-public.js';
 import { addTagsToMemosMigration } from './009-add-tags-field.js';
+import { addTagsTableMigration } from './010-add-tags-table.js';
+import { addTagIdsToMemosMigration } from './011-add-memo-tag-ids.js';
+import { migrateTagsDataMigration } from './012-migrate-tags-data.js';
+import { createTagIndexesMigration } from './013-create-tag-indexes.js';
 
 import type { Migration } from '../types.js';
 
@@ -72,10 +76,22 @@ export const ALL_MIGRATIONS: Migration[] = [
   // Version 9: Add tags field to memos table
   addTagsToMemosMigration,
 
+  // Version 10: Create tags table
+  addTagsTableMigration,
+
+  // Version 11: Add tagIds field to memos table
+  addTagIdsToMemosMigration,
+
+  // Version 12: Migrate existing tags data
+  migrateTagsDataMigration,
+
+  // Version 13: Create indexes on tags table
+  createTagIndexesMigration,
+
   // Add future migrations here
   // Example:
-  // - Version 3: Add new field to existing table
-  // - Version 4: Add new table
+  // - Version 14: Add new field to existing table
+  // - Version 15: Add new table
   // etc.
 ];
 

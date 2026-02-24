@@ -3,6 +3,7 @@
  */
 
 import type { AttachmentDto } from './attachment.js';
+import type { TagDto } from './tag.js';
 import type { UserInfoDto } from './user.js';
 
 export interface CreateMemoDto {
@@ -10,7 +11,8 @@ export interface CreateMemoDto {
   type?: 'text' | 'audio' | 'video'; // Optional memo type, defaults to 'text'
   categoryId?: string; // Optional category ID (undefined = uncategorized)
   attachments?: string[]; // Array of attachment IDs (max 9)
-  tags?: string[]; // Array of tag strings
+  tags?: string[]; // Array of tag names (strings) - used for input
+  tagIds?: string[]; // Array of tag IDs - alternative to tags
   relationIds?: string[]; // Array of target memo IDs to relate to
   isPublic?: boolean; // Whether this memo is public (visible to others without auth)
   createdAt?: number; // Optional timestamp in milliseconds (for imports)
@@ -22,7 +24,8 @@ export interface UpdateMemoDto {
   type?: 'text' | 'audio' | 'video' | null; // Optional memo type (null = no change)
   categoryId?: string | null; // Optional category ID (undefined/null = uncategorized)
   attachments?: string[]; // Array of attachment IDs (max 9)
-  tags?: string[]; // Array of tag strings
+  tags?: string[]; // Array of tag names (strings) - used for input
+  tagIds?: string[]; // Array of tag IDs - alternative to tags
   relationIds?: string[]; // Array of target memo IDs to relate to (replaces all existing relations)
   isPublic?: boolean; // Whether this memo is public (visible to others without auth)
 }
@@ -34,7 +37,8 @@ export interface MemoDto {
   type: 'text' | 'audio' | 'video'; // Memo type
   categoryId?: string; // Optional category ID
   attachments?: string[]; // Array of attachment IDs
-  tags?: string[]; // Array of tag strings
+  tags?: TagDto[]; // Array of tag objects (enriched from tagIds)
+  tagIds?: string[]; // Array of tag IDs (internal use)
   relations?: MemoDto[]; // Array of related memos (populated when fetching lists)
   isPublic?: boolean; // Whether this memo is public (visible to others without auth)
   createdAt: number; // timestamp in milliseconds
@@ -51,7 +55,8 @@ export interface MemoWithAttachmentsDto {
   type: 'text' | 'audio' | 'video'; // Memo type
   categoryId?: string; // Optional category ID
   attachments?: AttachmentDto[]; // Array of full attachment objects
-  tags?: string[]; // Array of tag strings
+  tags?: TagDto[]; // Array of tag objects (enriched from tagIds)
+  tagIds?: string[]; // Array of tag IDs (internal use)
   relations?: MemoWithAttachmentsDto[]; // Array of related memos with attachment details
   isPublic?: boolean; // Whether this memo is public (visible to others without auth)
   createdAt: number; // timestamp in milliseconds
@@ -68,7 +73,8 @@ export interface MemoListItemDto {
   type: 'text' | 'audio' | 'video'; // Memo type
   categoryId?: string; // Optional category ID
   attachments?: AttachmentDto[]; // Array of full attachment objects
-  tags?: string[]; // Array of tag strings
+  tags?: TagDto[]; // Array of tag objects (enriched from tagIds)
+  tagIds?: string[]; // Array of tag IDs (internal use)
   relations?: MemoListItemDto[]; // Array of related memos
   isPublic?: boolean; // Whether this memo is public (visible to others without auth)
   createdAt: number; // timestamp in milliseconds

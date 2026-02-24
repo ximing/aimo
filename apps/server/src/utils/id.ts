@@ -7,6 +7,10 @@ export const generateUid = () => {
   return generateTypeId(OBJECT_TYPE.USER);
 };
 
+export const generateTagId = () => {
+  return generateTypeId(OBJECT_TYPE.TAG);
+};
+
 export const generateTypeId = (type: (typeof OBJECT_TYPE)[keyof typeof OBJECT_TYPE]) => {
   switch (type) {
     case OBJECT_TYPE.MEMO: {
@@ -37,7 +41,7 @@ export const generateTypeId = (type: (typeof OBJECT_TYPE)[keyof typeof OBJECT_TY
       return `u${typeid()}`;
     }
     case OBJECT_TYPE.TIMELINE: {
-      return `t${typeid()}`;
+      return `tl${typeid()}`;
     }
     case OBJECT_TYPE.CATEGORY: {
       return `c${typeid()}`;
@@ -53,6 +57,9 @@ export const generateTypeId = (type: (typeof OBJECT_TYPE)[keyof typeof OBJECT_TY
     }
     case OBJECT_TYPE.RECOMMENDATION: {
       return `rec${typeid()}`;
+    }
+    case OBJECT_TYPE.TAG: {
+      return `t${typeid()}`;
     }
   }
   throw new Error(`Invalid type: ${type}`);

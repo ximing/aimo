@@ -7,6 +7,7 @@ import { CategoryV1Controller } from './v1/category.controller.js';
 import { ExploreController } from './v1/explore.controller.js';
 import { InsightsController } from './v1/insights.controller.js';
 import { MemoV1Controller } from './v1/memo.controller.js';
+import { TagV1Controller } from './v1/tag.controller.js';
 import { UserV1Controller } from './v1/user.controller.js';
 import { SystemController } from './v1/system.controller.js';
 import { StaticController } from './static.controller.js';
@@ -18,6 +19,7 @@ export const controllers = [
   AuthV1Controller,
   UserV1Controller,
   CategoryV1Controller,
+  TagV1Controller,
   AttachmentV1Controller,
   ASRV1Controller,
   ExploreController,
