@@ -54,3 +54,20 @@
   - Loading state `isSaving` prevents duplicate submissions while API call is in progress
   - Error handling shows toast error and preserves user selection state for retry
 ---
+
+## 2026-02-24T15:00:00Z - US-001
+- Implemented display tags on memo cards
+- Files changed:
+  - apps/web/src/pages/home/components/memo-card.tsx - Added renderTags function to display tags as hashtags with click handling
+  - apps/web/src/services/memo.service.ts - Added tagFilter state and setTagFilter method
+  - apps/server/src/controllers/v1/memo.controller.ts - Added tag query parameter to getMemos endpoint
+  - apps/server/src/services/memo.service.ts - Added tag filtering logic using tag IDs (AND logic for multiple tags)
+  - packages/dto/src/memo.ts - Added tag and tags fields to MemoSearchOptionsDto
+- **Learnings for future iterations:**
+  - Tags are stored as tagIds in LanceDB, not tag names - need to resolve names to IDs for filtering
+  - Tag filtering uses AND logic (memo must have ALL specified tags)
+  - renderTags function is placed at the beginning of the content section, before the memo text
+  - Tags have distinct visual styling with primary color (blue) background and hover effects
+  - DTO changes require rebuilding the @aimo/dto package before they're available in other packages
+  - LanceDB filtering: SQL WHERE clause for basic filters, JavaScript filter for complex logic like tag matching
+---

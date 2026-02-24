@@ -10,6 +10,7 @@ import { Layout } from '../../components/layout';
 import { CalendarHeatmap } from '../../components/calendar-heatmap';
 import { OnThisDayBanner } from './components/on-this-day-banner';
 import { DailyRecommendations } from './components/daily-recommendations';
+import { TagList } from './components/tag-list';
 
 // LocalStorage key for heatmap collapsed state
 const HEATMAP_COLLAPSED_KEY = 'aimo:heatmap:collapsed';
@@ -194,6 +195,11 @@ export const HomePage = view(() => {
               {/* Daily Recommendations - AI curated memos */}
               <div className="flex-shrink-0">
                 <DailyRecommendations />
+              </div>
+
+              {/* Tag List - Shows all tags with usage counts */}
+              <div className="flex-shrink-0">
+                <TagList />
               </div>
 
               {/* Reserved space for future features */}
