@@ -1,0 +1,145 @@
+{
+  "project": "AIMO",
+  "branchName": "ralph/ai-tag-assistant",
+  "description": "AI Tag Assistant - Add AI-powered smart tagging feature to memo cards with tag generation, editing, and batch update capabilities",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Backend API - AI generate tags",
+      "description": "As a developer, I need a backend API to call AI to analyze note content and generate tag suggestions.",
+      "acceptanceCriteria": [
+        "Create POST /api/v1/ai/generate-tags endpoint",
+        "Accept memoId and content parameters",
+        "Use OpenAI API to analyze content and generate 3-8 relevant tags",
+        "Return array of tag strings",
+        "Require user authentication (@CurrentUser)",
+        "Response time under 3 seconds",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "Implemented on 2026-02-24. Created AIService with OpenAI integration, AIController with POST /api/v1/ai/generate-tags endpoint, and DTOs. All quality checks pass."
+    },
+    {
+      "id": "US-002",
+      "title": "Backend API - Batch update memo tags",
+      "description": "As a developer, I need an API to batch add user-confirmed tags to a memo.",
+      "acceptanceCriteria": [
+        "Create PUT /api/v1/memos/:id/tags endpoint (or reuse existing update endpoint)",
+        "Accept tags array parameter (string array)",
+        "Update memo's tags field",
+        "Return updated memo data",
+        "Check user has permission to modify the memo",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Implemented on 2026-02-24. Added tags field to schema, DTOs, created migration v9, added updateTags method to MemoService, and created PUT /api/v1/memos/:memoId/tags endpoint. All quality checks pass."
+    },
+    {
+      "id": "US-003",
+      "title": "AI tools architecture extension support",
+      "description": "As a developer, I want the architecture to support easily adding more AI tools in the future.",
+      "acceptanceCriteria": [
+        "Frontend: AI tool config uses array/object structure for easy extension",
+        "Frontend: Modal content dynamically renders based on tool type",
+        "Backend: AI routes have clear structure (/api/v1/ai/*)",
+        "Create AIService class to centrally manage AI logic",
+        "Reserve endpoint slots for other AI tools (e.g., /ai/summarize, /ai/translate)",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Add AI button to memo card",
+      "description": "As a user, I want to quickly find the AI tool entry on the memo card to use smart features.",
+      "acceptanceCriteria": [
+        "Add AI tool button to top-right corner of memo card (icon like Sparkles or Wand)",
+        "Show tooltip 'AI Tools' on hover",
+        "Clicking button opens AI tool selection modal",
+        "Button style coordinates with existing card design",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Create AI tool selection modal",
+      "description": "As a user, I want to see a list of tools after clicking the AI button so I can choose the AI function I need.",
+      "acceptanceCriteria": [
+        "Modal title is 'AI Tools'",
+        "Currently only shows one tool: 'Smart Add Tags' (with icon, name, and description)",
+        "Clicking tool enters that tool's specific interface",
+        "Modal has close button in top-right, clicking outside also closes",
+        "Modal style is consistent with system design",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Create tag suggestions display modal",
+      "description": "As a user, I want to see AI-generated tag suggestions after selecting 'Smart Add Tags' so I can decide which to use.",
+      "acceptanceCriteria": [
+        "Modal shows loading state ('AI is analyzing content...')",
+        "After loading, display generated tag list",
+        "Each tag displays as checkable chip/checkbox style",
+        "All tags are selected by default",
+        "Provide input field for user to add custom tags",
+        "Bottom shows 'Confirm Add' and 'Cancel' buttons",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Tag secondary editing functionality",
+      "description": "As a user, I want to be able to modify AI-generated tags to better fit my needs.",
+      "acceptanceCriteria": [
+        "Clicking a generated tag enters edit mode",
+        "Edit mode shows input field allowing modification of tag text",
+        "Press Enter or lose focus to confirm modification",
+        "Each tag has delete button (X icon) to remove it",
+        "Input field supports adding brand new tags (press Enter to add)",
+        "Prevent adding duplicate tags (case-insensitive)",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Frontend tag confirmation and submission",
+      "description": "As a user, I want to add the selected and edited tags to my note with one click.",
+      "acceptanceCriteria": [
+        "Clicking 'Confirm Add' calls API to save tags",
+        "After successful save, close modal and show success toast",
+        "Memo card immediately displays new tags",
+        "Clicking 'Cancel' closes modal without saving changes",
+        "During save, button shows loading state to prevent duplicate submission",
+        "If API fails, show error message and preserve user selection state",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}

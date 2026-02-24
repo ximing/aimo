@@ -1,0 +1,42 @@
+## Codebase Patterns
+- Use `@Service()` decorator from typedi for dependency injection
+- Controllers use `@JsonController('/api/v1/...')` from routing-controllers
+- AI services use `ChatOpenAI` from `@langchain/openai` with temperature 0.3 for consistent results
+- DTOs should be defined in `packages/dto/src/` and exported from `index.ts`
+- Error handling: Use `ResponseUtility.error(ErrorCode.XXX)` with appropriate error codes
+- Controller registration: Add to `controllers/index.ts` array (StaticController must stay last)
+- Always run `pnpm --filter @aimo/dto build` after modifying DTOs before typechecking server
+
+---
+
+## 2026-02-24 - US-002
+- Implemented Backend API - Batch update memo tags (US-002)
+- Files changed:
+  - `packages/dto/src/memo.ts` - Added tags field to all Memo DTOs
+  - `apps/server/src/models/db/memo.schema.ts` - Added tags field to Memo interface
+  - `apps/server/src/models/db/schema.ts` - Added tags field to memosSchema and MemoRecord
+  - `apps/server/src/migrations/scripts/009-add-tags-field.ts` (new) - Migration v9 to add tags column
+  - `apps/server/src/migrations/scripts/index.ts` - Registered new migration
+  - `apps/server/src/services/memo.service.ts` - Added updateTags method
+  - `apps/server/src/controllers/v1/memo.controller.ts` - Added PUT /:memoId/tags endpoint
+- **Learnings for future iterations:**
+  - LanceDB supports adding list columns with default empty array using `valueSql: '[]'`
+  - Tags should be added to all memo DTO variants for consistency (MemoDto, MemoWithAttachmentsDto, MemoListItemDto)
+  - The updateTags method follows the same pattern as updateMemo but only modifies the tags field
+  - Migration error handling should check for 'already exists', 'duplicate', and 'Type conflicts between' messages
+---
+
+## 2026-02-24 - US-001
+- Implemented Backend API - AI generate tags (US-001)
+- Files changed:
+  - `packages/dto/src/ai.ts` (new) - DTOs for AI features
+  - `packages/dto/src/index.ts` - Added AI DTOs export
+  - `apps/server/src/services/ai.service.ts` (new) - AIService with tag generation
+  - `apps/server/src/controllers/v1/ai.controller.ts` (new) - AIV1Controller with /generate-tags endpoint
+  - `apps/server/src/controllers/index.ts` - Registered AIV1Controller
+- **Learnings for future iterations:**
+  - The codebase uses LangChain's ChatOpenAI (not @ai-sdk/openai) for chat completions
+  - Temperature 0.3 works well for consistent tag generation
+  - Response parsing includes fallback regex extraction for robustness
+  - Truncate content to 2000 chars to keep API costs reasonable
+---

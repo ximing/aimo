@@ -1,0 +1,11 @@
+## Codebase Patterns
+- Backend uses TypeDI for dependency injection - all services decorated with @Service()
+- Controllers use routing-controllers decorators and auto-register via glob import
+- LanceDB is used for vector database with auto-generated embeddings via EmbeddingService
+- OpenAI integration exists via EmbeddingService - similar pattern should be used for AI tag generation
+- All API endpoints use @CurrentUser() decorator for protected routes
+- DTOs are in packages/dto/ and shared between frontend and backend
+- Frontend uses @rabjs/react for reactive state management
+- API calls are abstracted in apps/web/src/services/ and apps/web/src/api/
+
+---
