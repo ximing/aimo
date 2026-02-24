@@ -24,6 +24,7 @@ export const TagGeneratorModal = view(
     const [customTagInput, setCustomTagInput] = useState('');
     const [editingTag, setEditingTag] = useState<string | null>(null);
     const [editValue, setEditValue] = useState('');
+    const [hasTriggeredGeneration, setHasTriggeredGeneration] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
     const editInputRef = useRef<HTMLInputElement>(null);
 
@@ -159,6 +160,33 @@ export const TagGeneratorModal = view(
       }
     }, [editingTag]);
 
+    // Auto-generate tags when modal opens
+    useEffect(() => {
+      if (isOpen && !hasTriggeredGeneration) {
+        const shouldGenerate =
+          aiToolsService.modal.memoContent &&
+          aiToolsService.tagGeneration.suggestedTags.length === 0 &&
+          !aiToolsService.tagGeneration.isLoading;
+
+        if (shouldGenerate) {
+          setHasTriggeredGeneration(true);
+          aiToolsService.generateTags(aiToolsService.modal.memoContent);
+        }
+      }
+
+      // Reset flag when modal closes
+      if (!isOpen) {
+        setHasTriggeredGeneration(false);
+      }
+    }, [
+      isOpen,
+      hasTriggeredGeneration,
+      aiToolsService.modal.memoContent,
+      aiToolsService.tagGeneration.suggestedTags.length,
+      aiToolsService.tagGeneration.isLoading,
+      aiToolsService,
+    ]);
+
     // Check if any tags are selected
     const hasSelectedTags = aiToolsService.tagGeneration.selectedTags.length > 0;
 
@@ -221,26 +249,27 @@ export const TagGeneratorModal = view(
               </div>
             )}
 
-            {/* Initial State - No tags generated yet */}
+            {/* Empty State - No tags generated yet or failed */}
             {!aiToolsService.tagGeneration.isLoading &&
               aiToolsService.tagGeneration.suggestedTags.length === 0 && (
                 <div className="text-center py-8">
-                  <div className="w-16 h-16 mx-auto rounded-full bg-purple-100 dark:bg-purple-950/50 flex items-center justify-center mb-4">
-                    <Sparkles className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+                  <div className="w-16 h-16 mx-auto rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
+                    <Sparkles className="w-8 h-8 text-gray-400 dark:text-gray-500" />
                   </div>
                   <h4 className="text-base font-medium text-gray-900 dark:text-white mb-2">
-                    AI 标签生成器
+                    暂无标签建议
                   </h4>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-xs mx-auto">
-                    AI 将分析笔记内容并生成相关标签建议，帮助您更好地组织和查找笔记
+                    {aiToolsService.tagGeneration.error
+                      ? aiToolsService.tagGeneration.error
+                      : '无法从当前内容生成标签建议，请尝试添加更多内容'}
                   </p>
-
                   <button
                     onClick={handleGenerateTags}
                     className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors"
                   >
                     <Sparkles className="w-4 h-4" />
-                    生成标签建议
+                    重新生成
                   </button>
                 </div>
               )}
