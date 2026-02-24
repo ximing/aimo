@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { view, useService } from '@rabjs/react';
+import { useSearchParams } from 'react-router';
 import { ArrowUp, ChevronLeft, ChevronRight, X, Calendar, Filter } from 'lucide-react';
 import { MemoService } from '../../services/memo.service';
 import { MemoEditor } from './components/memo-editor';
@@ -48,6 +49,7 @@ function saveCollapsedState(collapsed: boolean): void {
 
 export const HomePage = view(() => {
   const memoService = useService(MemoService);
+  const [, setSearchParams] = useSearchParams();
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [isCompact, setIsCompact] = useState(getIsCompactLayout);
   const [isCollapsed, setIsCollapsed] = useState(() =>
@@ -103,47 +105,63 @@ export const HomePage = view(() => {
 
   // Update URL when selected date changes
   useEffect(() => {
-    const url = new URL(window.location.href);
-
-    if (memoService.selectedDate) {
-      url.searchParams.set('date', memoService.selectedDate);
-    } else {
-      url.searchParams.delete('date');
-    }
-
-    window.history.replaceState({}, '', url.toString());
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (memoService.selectedDate) {
+          next.set('date', memoService.selectedDate);
+        } else {
+          next.delete('date');
+        }
+        return next;
+      },
+      { replace: true }
+    );
   }, [memoService.selectedDate]);
 
   // Update URL when tag filter changes (single-select)
   useEffect(() => {
-    const url = new URL(window.location.href);
-
     if (memoService.tagFilter) {
-      url.searchParams.set('tag', memoService.tagFilter);
-      // Remove multi-select params if switching to single
-      url.searchParams.delete('tags');
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.set('tag', memoService.tagFilter!);
+          // Remove multi-select params if switching to single
+          next.delete('tags');
+          return next;
+        },
+        { replace: true }
+      );
     } else if (!memoService.multiSelectMode) {
-      url.searchParams.delete('tag');
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.delete('tag');
+          return next;
+        },
+        { replace: true }
+      );
     }
-
-    window.history.replaceState({}, '', url.toString());
   }, [memoService.tagFilter]);
 
   // Update URL when multi-select tags change
   useEffect(() => {
-    const url = new URL(window.location.href);
-
     if (memoService.multiSelectMode && memoService.tagsFilter.length > 0) {
-      url.searchParams.delete('tag');
-      url.searchParams.delete('tags');
+      const newParams = new URLSearchParams();
       memoService.tagsFilter.forEach((tag) => {
-        url.searchParams.append('tags', tag);
+        newParams.append('tags', tag);
       });
+      setSearchParams(newParams, { replace: true });
     } else if (memoService.multiSelectMode && memoService.tagsFilter.length === 0) {
-      url.searchParams.delete('tags');
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.delete('tags');
+          return next;
+        },
+        { replace: true }
+      );
     }
-
-    window.history.replaceState({}, '', url.toString());
   }, [memoService.tagsFilter, memoService.multiSelectMode]);
 
   // Handle browser back/forward buttons
@@ -313,15 +331,25 @@ export const HomePage = view(() => {
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                       <Filter size={14} className="text-blue-600 dark:text-blue-400" />
-                      <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                      <span className="text-sm text-blue-600 dark:text-blue-400 font-medium">
                         筛选:
                       </span>
                       <div className="flex items-center gap-1">
                         {/* Single tag filter */}
                         {memoService.tagFilter && (
-                          <span className="text-sm text-blue-700 dark:text-blue-300">
-                            #{memoService.tagFilter}
-                          </span>
+                          <div className="flex items-center">
+                            <span className="text-sm text-blue-700 dark:text-blue-300">
+                              #{memoService.tagFilter}
+                            </span>
+                            <button
+                              onClick={() => memoService.setTagFilter(null)}
+                              className="ml-0.5 p-0.5 text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-200 hover:bg-blue-100 dark:hover:bg-blue-800 rounded transition-colors"
+                              aria-label="清除标签筛选"
+                              title="清除标签筛选"
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
                         )}
                         {/* Multi-select tags */}
                         {memoService.tagsFilter.map((tag, index) => (

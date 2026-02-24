@@ -51,7 +51,9 @@ export const Layout = view(({ children }: LayoutProps) => {
   };
 
   const handleMemoClick = () => {
-    navigate('/home', { replace: true });
+    // Preserve query parameters when navigating
+    const search = location.search;
+    navigate(`/home${search}`, { replace: true });
   };
 
   const userName = authService.user?.nickname || authService.user?.email?.split('@')[0] || 'User';
@@ -108,7 +110,10 @@ export const Layout = view(({ children }: LayoutProps) => {
 
           {/* AI Explore Navigation */}
           <button
-            onClick={() => navigate('/ai-explore')}
+            onClick={() => {
+              const search = location.search;
+              navigate(`/ai-explore${search}`);
+            }}
             className={`w-12 h-12 rounded-lg flex items-center justify-center transition-colors ${
               isAIExplorePage
                 ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
@@ -122,7 +127,10 @@ export const Layout = view(({ children }: LayoutProps) => {
 
           {/* Gallery Navigation */}
           <button
-            onClick={() => navigate('/gallery')}
+            onClick={() => {
+              const search = location.search;
+              navigate(`/gallery${search}`);
+            }}
             className={`w-12 h-12 rounded-lg flex items-center justify-center transition-colors ${
               isGalleryPage
                 ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
@@ -142,7 +150,10 @@ export const Layout = view(({ children }: LayoutProps) => {
         <div className="flex flex-col items-center gap-3 flex-shrink-0">
           {/* Settings Button */}
           <button
-            onClick={() => navigate('/settings')}
+            onClick={() => {
+              const search = location.search;
+              navigate(`/settings${search}`);
+            }}
             className={`w-12 h-12 rounded-lg flex items-center justify-center transition-colors ${
               isSettingsPage
                 ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
