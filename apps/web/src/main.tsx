@@ -11,6 +11,7 @@ import { ExploreService } from './services/explore.service';
 import { MemoService } from './services/memo.service.ts';
 import { ThemeService } from './services/theme.service';
 import { ToastService } from './services/toast.service';
+import { AIToolsService } from './services/ai-tools.service';
 /**
  * Register services globally
  * These are accessible throughout the entire application
@@ -23,6 +24,7 @@ register(ExploreService);
 register(MemoService);
 register(ThemeService);
 register(ToastService);
+register(AIToolsService);
 // Initialize theme before rendering
 resolve(ThemeService).loadTheme();
 

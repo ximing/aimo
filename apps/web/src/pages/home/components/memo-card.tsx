@@ -10,9 +10,11 @@ import { RelatedMemosModal } from './related-memos-modal';
 import { ConfirmDeleteModal } from './confirm-delete-modal';
 import { MemoEditorForm } from '../../../components/memo-editor-form';
 import { AttachmentPreviewModal } from '../../../components/attachment-preview-modal';
+import { AIToolSelectorModal, TagGeneratorModal } from '../../../components/ai';
 import { downloadFileFromUrl } from '../../../utils/download';
 import { toast } from '../../../services/toast.service';
 import { AudioItem } from './audio-item';
+import { AIToolsService } from '../../../services/ai-tools.service';
 
 interface MemoCardProps {
   memo: MemoListItemDto | MemoListItemWithScoreDto;
@@ -43,11 +45,11 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState<string | null>(null);
-  const [showAIToolsModal, setShowAIToolsModal] = useState(false);
 
   const memoService = useService(MemoService);
   const attachmentService = useService(AttachmentService);
   const categoryService = useService(CategoryService);
+  const aiToolsService = useService(AIToolsService);
 
   const handleClosePreview = useCallback(() => {
     setIsPreviewOpen(false);
@@ -420,7 +422,7 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    setShowAIToolsModal(true);
+                    aiToolsService.openToolSelector(memo.memoId, memo.content);
                   }}
                   className="p-1.5 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-dark-700 rounded hover:text-purple-600 dark:hover:text-purple-400 hover:border-purple-200 dark:hover:border-purple-900/50 transition-colors cursor-pointer"
                   title="AI Tools"
@@ -504,32 +506,19 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
       {/* Attachment Preview Modal */}
       <AttachmentPreviewModal isOpen={isPreviewOpen} onClose={handleClosePreview} />
 
-      {/* AI Tools Modal - Placeholder for US-005 */}
-      {showAIToolsModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 dark:bg-black/40">
-          <div className="bg-white dark:bg-dark-800 rounded-lg shadow-lg p-6 w-full max-w-md">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">AI Tools</h3>
-              <button
-                onClick={() => setShowAIToolsModal(false)}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-              >
-                <span className="sr-only">Close</span>
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    fillRule="evenodd"
-                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </button>
-            </div>
-            <p className="text-gray-600 dark:text-gray-400 text-sm">
-              AI Tools modal coming in US-005...
-            </p>
-          </div>
-        </div>
-      )}
+      {/* AI Tool Selector Modal */}
+      <AIToolSelectorModal
+        isOpen={aiToolsService.modal.isOpen && aiToolsService.modal.toolType === null}
+        onClose={() => aiToolsService.closeModal()}
+        onSelectTool={(toolId) => aiToolsService.selectTool(toolId as 'generate-tags')}
+      />
+
+      {/* Tag Generator Modal */}
+      <TagGeneratorModal
+        isOpen={aiToolsService.modal.isOpen && aiToolsService.modal.toolType === 'generate-tags'}
+        onClose={() => aiToolsService.closeModal()}
+        onBack={() => aiToolsService.backToToolSelector()}
+      />
     </>
   );
 });
