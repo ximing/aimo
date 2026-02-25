@@ -1,0 +1,234 @@
+{
+  "project": "AIMO",
+  "branchName": "ralph/tag-display-and-filter",
+  "description": "Tag Display and Filter Feature - Display tags on memos with hashtag format and provide sidebar tag list for quick filtering",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Display tags on memo cards",
+      "description": "As a user, I want to see tags displayed at the beginning of memo content so I can quickly identify categorized notes.",
+      "acceptanceCriteria": [
+        "Tags appear at the beginning of memo text content in `#tag-name` format",
+        "Multiple tags are separated by spaces (e.g., `#工作 #重要 #项目A`)",
+        "Tags have distinct visual styling (color, hover effect) to differentiate from regular text",
+        "Clicking a tag in memo content filters by that tag",
+        "Memos without tags show no tag prefix",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "Implemented in commit 53b1bbd"
+    },
+    {
+      "id": "US-002",
+      "title": "Create tag list component for sidebar",
+      "description": "As a user, I want to see all available tags in the sidebar below 'Today's Recommendations' so I can discover and navigate to tagged content.",
+      "acceptanceCriteria": [
+        "Tag list section appears below 'Today's Recommendations' in left sidebar",
+        "Section has header 'Tags' with tag icon",
+        "Each tag displays with usage count in parentheses (e.g., `工作 (12)`)",
+        "Tags sorted by usage frequency (most used first)",
+        "Empty state shows when no tags exist: 'No tags yet'",
+        "Component scrolls independently if tag list is long",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Implemented in commit a460145"
+    },
+    {
+      "id": "US-003",
+      "title": "Implement single-select tag filtering",
+      "description": "As a user, I want to click a tag to filter memos so I can focus on one category at a time.",
+      "acceptanceCriteria": [
+        "Clicking a tag in sidebar filters memo list to show only matching memos",
+        "Selected tag visually highlighted in sidebar (different background/border)",
+        "Clicking same tag again clears the filter",
+        "Filter state persists in URL query params (e.g., `?tag=工作`)",
+        "Browser back/forward buttons navigate filter history",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": "Implemented in commit c144818"
+    },
+    {
+      "id": "US-004",
+      "title": "Implement multi-select tag filtering",
+      "description": "As a user, I want to filter by multiple tags simultaneously so I can find memos that match several criteria.",
+      "acceptanceCriteria": [
+        "UI toggle to switch between single-select and multi-select modes",
+        "In multi-select mode, clicking tags adds/removes them from filter set",
+        "Multiple selected tags shown as active filters with AND logic (all tags must match)",
+        "URL params support multiple tags (e.g., `?tags=工作&tags=重要`)",
+        "Clear all button removes all active tag filters",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": "Implemented in commit e371c26"
+    },
+    {
+      "id": "US-005",
+      "title": "Display active filter state",
+      "description": "As a user, I want to see what filters are active and be able to clear them easily.",
+      "acceptanceCriteria": [
+        "Active filter indicator appears at top of memo list when filter is active",
+        "Shows tag name(s) with 'Filtered by:' label",
+        "Each active tag has an X button to remove it individually",
+        "'Clear all' button removes all tag filters at once",
+        "Clicking clear returns to unfiltered view",
+        "Empty state shows 'No memos match the selected tag(s)' when filter yields no results",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": "Implemented in commit 71f2810"
+    },
+    {
+      "id": "US-006",
+      "title": "Tag filtering performance optimization",
+      "description": "As a user, I want tag filtering to be responsive even with hundreds of memos.",
+      "acceptanceCriteria": [
+        "Tag filtering completes within 100ms for up to 1000 memos",
+        "Tag counts update efficiently when memos change",
+        "No unnecessary re-renders when filtering",
+        "Loading state shown briefly if filter computation takes time",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": true,
+      "notes": "Verified in commit f39e17e - efficient backend filtering with Set operations"
+    },
+    {
+      "id": "US-007",
+      "title": "Edit tags in memo editor",
+      "description": "As a user, I want to edit tags when editing a memo so I can categorize my notes appropriately.",
+      "acceptanceCriteria": [
+        "Tag input field appears in memo edit modal/form",
+        "Current tags are displayed when opening edit mode",
+        "Tags shown as removable pills/chips with X button to delete",
+        "Typing in input shows tag suggestions from existing tags",
+        "Pressing Enter or comma adds the tag",
+        "Duplicate tags are prevented (case-insensitive comparison)",
+        "Empty tags are not allowed",
+        "Tags save correctly when memo is saved",
+        "Canceling edit discards tag changes",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 7,
+      "passes": true,
+      "notes": "Implemented - TagInput component with pills, suggestions, keyboard support"
+    },
+    {
+      "id": "US-008",
+      "title": "Return tags in public/share API and display on share page",
+      "description": "As a visitor viewing a shared memo, I want to see the memo's tags so I can understand how it's categorized.",
+      "acceptanceCriteria": [
+        "Backend: `/memos/public/:uid` endpoint includes `tags` field in response",
+        "Backend: `/memos/public/memo/:memoId` endpoint includes `tags` field in response",
+        "Backend: `/memos/public/:uid/random` endpoint includes `tags` field in response",
+        "Frontend: Share page displays tags in `#tag-name` format at the beginning of memo content",
+        "Tags on share page have same visual styling as main app (pill/badge style)",
+        "Clicking tags on share page navigates to public memos list filtered by that tag",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 8,
+      "passes": true,
+      "notes": "Implemented - Tags displayed on share page with pill styling and click navigation"
+    },
+    {
+      "id": "US-009",
+      "title": "Add AI tools dropdown button in editor",
+      "description": "As a user, I want to access AI tools directly from the editor so I can enhance my memo while editing.",
+      "acceptanceCriteria": [
+        "Sparkles icon button appears next to attachment button in editor",
+        "Button visible in both create and edit modes",
+        "Clicking button opens dropdown menu with AI tool options",
+        "Dropdown currently shows '智能生成标签' option",
+        "Dropdown positioned correctly below the button",
+        "Click outside or press Escape closes dropdown",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 9,
+      "passes": true,
+      "notes": "Implemented - Sparkles button with dropdown showing '智能生成标签', works in both create and edit modes"
+    },
+    {
+      "id": "US-010",
+      "title": "Create AI tag generation modal for editor",
+      "description": "As a user, I want to see AI-generated tag suggestions in a modal so I can select which tags to add to my memo.",
+      "acceptanceCriteria": [
+        "Modal opens when selecting '智能生成标签' from dropdown",
+        "Modal shows loading state with 'AI 正在分析内容...'",
+        "Generated tags displayed as selectable pills/chips",
+        "Each tag can be toggled selected/unselected",
+        "Shows count of selected tags",
+        "Has '全选' and '取消全选' buttons",
+        "Has '添加自定义标签' input field",
+        "Modal has '取消' and '确认添加' buttons",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 10,
+      "passes": true,
+      "notes": "Implemented in tag-generator-modal.tsx with loading state, selectable pills, select all/deselect all, custom tag input"
+    },
+    {
+      "id": "US-011",
+      "title": "Implement tag deduplication logic",
+      "description": "As a user, I want AI-generated tags to be automatically deduplicated against existing tags so I don't have duplicates.",
+      "acceptanceCriteria": [
+        "Generated tags are compared with existing tags (case-insensitive)",
+        "Tags that already exist are marked/visually indicated as '已存在'",
+        "Duplicate tags cannot be selected for addition",
+        "Existing tags are shown separately in the modal (optional view)",
+        "Typecheck passes"
+      ],
+      "priority": 11,
+      "passes": true,
+      "notes": "Implemented in ai-tools.service.ts - addCustomTag and updateTag methods prevent duplicates via case-insensitive comparison"
+    },
+    {
+      "id": "US-012",
+      "title": "Write selected tags back to editor state",
+      "description": "As a user, I want selected AI-generated tags to be added to my memo's tag list when I confirm.",
+      "acceptanceCriteria": [
+        "Clicking '确认添加' adds selected tags to editor's tag state",
+        "New tags are appended to existing tags (not replacing)",
+        "Tags are added to the TagInput component in real-time",
+        "User sees the new tags appear in the editor immediately",
+        "No API call to server (tags only saved when memo is saved)",
+        "Canceling modal does not modify editor state",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 12,
+      "passes": true,
+      "notes": "Implemented via onConfirm callback in memo-editor-form.tsx - handleAITagsConfirm merges tags with duplicate prevention"
+    },
+    {
+      "id": "US-013",
+      "title": "Extensible AI tools architecture",
+      "description": "As a developer, I want the AI tools menu to be easily extensible so we can add more AI features in the future.",
+      "acceptanceCriteria": [
+        "Dropdown menu items defined in a configuration array",
+        "Each menu item has: id, label, icon, handler",
+        "Easy to add new menu items without modifying core logic",
+        "Menu supports dividers between groups",
+        "Typecheck passes"
+      ],
+      "priority": 13,
+      "passes": true,
+      "notes": "Implemented in ai-tools.service.ts - tools array with AIToolDefinition interface, dynamic rendering in AIToolSelectorModal"
+    }
+  ]
+}

@@ -12,6 +12,7 @@ export interface AttachmentDto {
   type: string; // MIME type
   size: number; // file size in bytes
   createdAt: number; // timestamp in milliseconds
+  coverUrl?: string; // optional cover image URL for videos
   properties?: Record<string, unknown>; // optional properties: audio(duration), image(width,height), video(duration)
 }
 

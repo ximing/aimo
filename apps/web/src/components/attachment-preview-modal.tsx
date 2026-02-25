@@ -175,6 +175,7 @@ const AttachmentPreviewModalContent = view(({ isOpen, onClose }: AttachmentPrevi
           <video
             ref={videoRef}
             src={attachment.url}
+            poster={attachment.coverUrl}
             controls
             className="max-w-[90%] max-h-[90%] object-contain"
             autoPlay

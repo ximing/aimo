@@ -63,7 +63,7 @@ export const GalleryImageCard = view(({ attachment, onClick, onDelete }: Gallery
         {/* Image/Video Thumbnail */}
         {(isImage || isVideo) && (
           <img
-            src={attachment.url}
+            src={isVideo ? (attachment.coverUrl || attachment.url) : attachment.url}
             alt={attachment.filename}
             className="w-full h-full object-contain rounded-lg"
             loading="lazy"

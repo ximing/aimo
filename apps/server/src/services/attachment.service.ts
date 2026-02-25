@@ -144,6 +144,9 @@ export class AttachmentService {
       }
     }
 
+    // Extract coverUrl from properties for videos
+    const coverUrl = properties.coverUrl as string | undefined;
+
     return {
       attachmentId: record.attachmentId,
       filename: record.filename,
@@ -151,6 +154,7 @@ export class AttachmentService {
       type: record.type,
       size: record.size,
       createdAt: record.createdAt,
+      coverUrl,
       properties: Object.keys(properties).length > 0 ? properties : undefined,
     };
   }

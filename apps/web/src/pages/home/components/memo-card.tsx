@@ -229,14 +229,19 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
                 ) : isVideo ? (
                   <>
                     <img
-                      src={attachment.url}
+                      src={attachment.coverUrl || ''}
                       alt={attachment.filename}
                       className="w-full h-full object-cover"
                       loading="lazy"
+                      onError={(e) => {
+                        // Hide the img element if coverUrl is invalid or empty
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
                     />
-                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                      <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
-                        <Film className="w-5 h-5 text-gray-900 fill-current" />
+                    {/* Show film icon as fallback when no valid cover */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center shadow-lg">
+                        <Film className="w-5 h-5 text-gray-600 dark:text-gray-300 fill-current" />
                       </div>
                     </div>
                   </>

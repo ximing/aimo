@@ -1,14 +1,6 @@
-import axios from 'axios';
+import request from '../utils/request';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
-const API_BASE = `${API_BASE_URL}/api/v1/ocr`;
-
-interface ApiResponse<T> {
-  code: number;
-  data: T;
-  message?: string;
-  msg?: string;
-}
+const API_BASE = '/api/v1/ocr';
 
 export interface OcrParseResponse {
   texts: string[];
@@ -44,22 +36,17 @@ export const ocrApi = {
   async parseByUrls(urls: string | string[]): Promise<string[]> {
     const urlList = Array.isArray(urls) ? urls : [urls];
 
-    const response = await axios.post<ApiResponse<OcrParseResponse>>(
-      `${API_BASE}/parse`,
-      { files: urlList },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+    const response = await request.post<
+      { files: string[] },
+      { code: number; data: OcrParseResponse; msg?: string; message?: string }
+    >(`${API_BASE}/parse`, { files: urlList });
 
-    if (response.data.code === 0) {
-      return response.data.data.texts;
+    if (response.code === 0) {
+      return response.data.texts;
     }
 
     // 透传后端错误消息，优先使用 msg 字段
-    const errorMsg = response.data.msg || response.data.message || 'OCR parsing failed';
+    const errorMsg = response.msg || response.message || 'OCR parsing failed';
     throw new Error(errorMsg);
   },
 
@@ -74,22 +61,17 @@ export const ocrApi = {
     // 将所有文件转换为 Base64
     const base64Files = await Promise.all(fileList.map(fileToBase64));
 
-    const response = await axios.post<ApiResponse<OcrParseResponse>>(
-      `${API_BASE}/parse`,
-      { files: base64Files },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+    const response = await request.post<
+      { files: string[] },
+      { code: number; data: OcrParseResponse; msg?: string; message?: string }
+    >(`${API_BASE}/parse`, { files: base64Files });
 
-    if (response.data.code === 0) {
-      return response.data.data.texts;
+    if (response.code === 0) {
+      return response.data.texts;
     }
 
     // 透传后端错误消息，优先使用 msg 字段
-    const errorMsg = response.data.msg || response.data.message || 'OCR parsing failed';
+    const errorMsg = response.msg || response.message || 'OCR parsing failed';
     throw new Error(errorMsg);
   },
 
@@ -97,12 +79,15 @@ export const ocrApi = {
    * 获取 OCR 服务状态
    */
   async getStatus(): Promise<OcrStatusResponse> {
-    const response = await axios.get<ApiResponse<OcrStatusResponse>>(`${API_BASE}/status`);
+    const response = await request.get<
+      unknown,
+      { code: number; data: OcrStatusResponse; message?: string }
+    >(`${API_BASE}/status`);
 
-    if (response.data.code === 0) {
-      return response.data.data;
+    if (response.code === 0) {
+      return response.data;
     }
 
-    throw new Error(response.data.message || 'Get OCR status failed');
+    throw new Error(response.message || 'Get OCR status failed');
   },
 };
