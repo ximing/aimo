@@ -4,7 +4,6 @@ import { parentPort } from 'node:worker_threads';
 
 import archiver from 'archiver';
 
-
 interface CompressionTask {
   lancedbPath: string;
   destPath: string;

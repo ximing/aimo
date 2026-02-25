@@ -149,7 +149,12 @@ Respond with a JSON array of 3-8 tag strings.`;
     if (tags.length === 0) {
       const lines = content
         .split(/[\n,]+/)
-        .map((line) => line.replace(/^[\s\-•*]+/, '').trim().toLowerCase())
+        .map((line) =>
+          line
+            .replace(/^[\s\-•*]+/, '')
+            .trim()
+            .toLowerCase()
+        )
         .filter((line) => line.length > 0 && line.length < 50);
 
       for (const line of lines) {

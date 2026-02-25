@@ -167,10 +167,8 @@ interface EditorAIToolsProps {
 ### Deduplication Logic
 
 ```typescript
-const existingTagSet = new Set(existingTags.map(t => t.toLowerCase()));
-const uniqueGeneratedTags = generatedTags.filter(
-  tag => !existingTagSet.has(tag.toLowerCase())
-);
+const existingTagSet = new Set(existingTags.map((t) => t.toLowerCase()));
+const uniqueGeneratedTags = generatedTags.filter((tag) => !existingTagSet.has(tag.toLowerCase()));
 ```
 
 ## Success Metrics

@@ -38,9 +38,7 @@ export const TagInput = ({
     }
     // Show most used tags when input is empty (but only when dropdown is open)
     return existingTags
-      .filter(
-        (tag) => !tags.some((t) => t.toLowerCase() === tag.name.toLowerCase())
-      )
+      .filter((tag) => !tags.some((t) => t.toLowerCase() === tag.name.toLowerCase()))
       .slice(0, 5);
   }, [inputValue, existingTags, tags]);
 
@@ -49,9 +47,7 @@ export const TagInput = ({
     if (!normalizedName) return;
 
     // Check for duplicates (case-insensitive)
-    const isDuplicate = tags.some(
-      (t) => t.toLowerCase() === normalizedName.toLowerCase()
-    );
+    const isDuplicate = tags.some((t) => t.toLowerCase() === normalizedName.toLowerCase());
     if (isDuplicate) {
       setInputValue('');
       return;
@@ -81,9 +77,7 @@ export const TagInput = ({
     if (showSuggestions && suggestions.length > 0) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
-        setHighlightedIndex((prev) =>
-          prev < suggestions.length - 1 ? prev + 1 : prev
-        );
+        setHighlightedIndex((prev) => (prev < suggestions.length - 1 ? prev + 1 : prev));
         return;
       }
       if (e.key === 'ArrowUp') {
@@ -215,9 +209,7 @@ export const TagInput = ({
                 {tag.name}
               </span>
               {tag.usageCount !== undefined && tag.usageCount > 0 && (
-                <span className="text-xs text-gray-400 dark:text-gray-500">
-                  {tag.usageCount}
-                </span>
+                <span className="text-xs text-gray-400 dark:text-gray-500">{tag.usageCount}</span>
               )}
             </button>
           ))}
@@ -227,9 +219,7 @@ export const TagInput = ({
       {/* Helper text */}
       <div className="mt-1 flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
         <span>按 Enter 或逗号添加标签</span>
-        {tags.length > 0 && (
-          <span className="text-gray-300 dark:text-gray-600">|</span>
-        )}
+        {tags.length > 0 && <span className="text-gray-300 dark:text-gray-600">|</span>}
         {tags.length > 0 && <span>{tags.length} 个标签</span>}
       </div>
     </div>

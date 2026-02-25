@@ -123,7 +123,9 @@ export const AudioItem = ({ attachment, isDownloading }: AudioItemProps) => {
       {/* Top arrow */}
       <div
         className={`absolute -top-1.5 left-3 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[6px] ${
-          isPlaying ? 'border-b-primary-200 dark:border-b-primary-800' : 'border-b-gray-200 dark:border-b-dark-600'
+          isPlaying
+            ? 'border-b-primary-200 dark:border-b-primary-800'
+            : 'border-b-gray-200 dark:border-b-dark-600'
         }`}
       />
 
@@ -137,7 +139,9 @@ export const AudioItem = ({ attachment, isDownloading }: AudioItemProps) => {
       )}
 
       {/* Duration */}
-      <span className={`text-xs truncate ${isPlaying ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 dark:text-gray-400'}`}>
+      <span
+        className={`text-xs truncate ${isPlaying ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 dark:text-gray-400'}`}
+      >
         {duration ? formatDuration(duration) : formatFileSize(attachment.size)}
       </span>
 

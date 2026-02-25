@@ -20,18 +20,18 @@ Base URL: `/api/v1/asr`
 
 **Headers:**
 
-| Header | Required | Description |
-| ------ | -------- | ----------- |
-| Authorization | Yes | JWT Token |
-| Content-Type | Yes | application/json |
+| Header        | Required | Description      |
+| ------------- | -------- | ---------------- |
+| Authorization | Yes      | JWT Token        |
+| Content-Type  | Yes      | application/json |
 
 **Body Parameters (JSON):**
 
-| Parameter | Type | Required | Description |
-| --------- | ---- | -------- | ----------- |
-| fileUrls | string[] | Yes | 音频/视频文件 URL 列表 |
-| languageHints | string[] | No | 语言提示，例如 `["zh", "en"]` |
-| callbackUrl | string | No | 异步回调 URL |
+| Parameter     | Type     | Required | Description                   |
+| ------------- | -------- | -------- | ----------------------------- |
+| fileUrls      | string[] | Yes      | 音频/视频文件 URL 列表        |
+| languageHints | string[] | No       | 语言提示，例如 `["zh", "en"]` |
+| callbackUrl   | string   | No       | 异步回调 URL                  |
 
 **Example Request:**
 
@@ -53,6 +53,7 @@ curl -X POST http://localhost:3000/api/v1/asr/transcribe \
 > **Response Type:** `ApiSuccessDto<ASRTaskResponseDto>`
 >
 > **ASRTaskResponseDto 类型定义:**
+>
 > ```typescript
 > interface ASRTaskResponseDto {
 >   taskId: string; // 任务 ID
@@ -77,9 +78,9 @@ curl -X POST http://localhost:3000/api/v1/asr/transcribe \
 
 | Status | Description |
 | ------ | ----------- |
-| 400    | 参数错误     |
+| 400    | 参数错误    |
 | 401    | 未授权      |
-| 500    | 系统错误     |
+| 500    | 系统错误    |
 
 ---
 
@@ -93,15 +94,15 @@ curl -X POST http://localhost:3000/api/v1/asr/transcribe \
 
 **Headers:**
 
-| Header | Required | Description |
-| ------ | -------- | ----------- |
-| Authorization | Yes | JWT Token |
+| Header        | Required | Description |
+| ------------- | -------- | ----------- |
+| Authorization | Yes      | JWT Token   |
 
 **Path Parameters:**
 
-| Parameter | Type | Required | Description |
-| --------- | ---- | -------- | ----------- |
-| taskId | string | Yes | 任务 ID |
+| Parameter | Type   | Required | Description |
+| --------- | ------ | -------- | ----------- |
+| taskId    | string | Yes      | 任务 ID     |
 
 **Example Request:**
 
@@ -117,6 +118,7 @@ curl -X GET http://localhost:3000/api/v1/asr/task/task_123456 \
 > **Response Type:** `ApiSuccessDto<ASRTaskStatusDto>`
 >
 > **ASRTaskStatusDto 类型定义:**
+>
 > ```typescript
 > interface ASRTaskStatusDto {
 >   taskId: string; // 任务 ID
@@ -144,9 +146,9 @@ curl -X GET http://localhost:3000/api/v1/asr/task/task_123456 \
 
 | Status | Description |
 | ------ | ----------- |
-| 400    | 参数错误     |
+| 400    | 参数错误    |
 | 401    | 未授权      |
-| 500    | 系统错误     |
+| 500    | 系统错误    |
 
 ---
 
@@ -160,15 +162,15 @@ curl -X GET http://localhost:3000/api/v1/asr/task/task_123456 \
 
 **Headers:**
 
-| Header | Required | Description |
-| ------ | -------- | ----------- |
-| Authorization | Yes | JWT Token |
+| Header        | Required | Description |
+| ------------- | -------- | ----------- |
+| Authorization | Yes      | JWT Token   |
 
 **Path Parameters:**
 
-| Parameter | Type | Required | Description |
-| --------- | ---- | -------- | ----------- |
-| taskId | string | Yes | 任务 ID |
+| Parameter | Type   | Required | Description |
+| --------- | ------ | -------- | ----------- |
+| taskId    | string | Yes      | 任务 ID     |
 
 **Example Request:**
 
@@ -184,6 +186,7 @@ curl -X GET http://localhost:3000/api/v1/asr/wait/task_123456 \
 > **Response Type:** `ApiSuccessDto<ASRResultDto>`
 >
 > **ASRResultDto 类型定义:**
+>
 > ```typescript
 > interface ASRResultDto {
 >   results: ASRTranscriptionResultDto[]; // 转写结果列表
@@ -274,9 +277,9 @@ curl -X GET http://localhost:3000/api/v1/asr/wait/task_123456 \
 
 | Status | Description |
 | ------ | ----------- |
-| 400    | 参数错误     |
+| 400    | 参数错误    |
 | 401    | 未授权      |
-| 500    | 系统错误     |
+| 500    | 系统错误    |
 
 ---
 
@@ -290,15 +293,15 @@ curl -X GET http://localhost:3000/api/v1/asr/wait/task_123456 \
 
 **Headers:**
 
-| Header | Required | Description |
-| ------ | -------- | ----------- |
-| Authorization | Yes | JWT Token |
+| Header        | Required | Description |
+| ------------- | -------- | ----------- |
+| Authorization | Yes      | JWT Token   |
 
 **Path Parameters:**
 
-| Parameter | Type | Required | Description |
-| --------- | ---- | -------- | ----------- |
-| taskId | string | Yes | 任务 ID |
+| Parameter | Type   | Required | Description |
+| --------- | ------ | -------- | ----------- |
+| taskId    | string | Yes      | 任务 ID     |
 
 **Example Request:**
 
@@ -331,9 +334,9 @@ curl -X GET http://localhost:3000/api/v1/asr/result/task_123456 \
 
 | Status | Description |
 | ------ | ----------- |
-| 400    | 参数错误     |
+| 400    | 参数错误    |
 | 401    | 未授权      |
-| 500    | 系统错误     |
+| 500    | 系统错误    |
 
 ---
 
@@ -347,18 +350,18 @@ curl -X GET http://localhost:3000/api/v1/asr/result/task_123456 \
 
 **Headers:**
 
-| Header | Required | Description |
-| ------ | -------- | ----------- |
-| Authorization | Yes | JWT Token |
-| Content-Type | Yes | application/json |
+| Header        | Required | Description      |
+| ------------- | -------- | ---------------- |
+| Authorization | Yes      | JWT Token        |
+| Content-Type  | Yes      | application/json |
 
 **Body Parameters (JSON):**
 
-| Parameter | Type | Required | Description |
-| --------- | ---- | -------- | ----------- |
-| fileUrls | string[] | Yes | 音频/视频文件 URL 列表 |
-| languageHints | string[] | No | 语言提示，例如 `["zh", "en"]` |
-| callbackUrl | string | No | 异步回调 URL |
+| Parameter     | Type     | Required | Description                   |
+| ------------- | -------- | -------- | ----------------------------- |
+| fileUrls      | string[] | Yes      | 音频/视频文件 URL 列表        |
+| languageHints | string[] | No       | 语言提示，例如 `["zh", "en"]` |
+| callbackUrl   | string   | No       | 异步回调 URL                  |
 
 **Example Request:**
 
@@ -396,9 +399,9 @@ curl -X POST http://localhost:3000/api/v1/asr/transcribe-and-wait \
 
 | Status | Description |
 | ------ | ----------- |
-| 400    | 参数错误     |
+| 400    | 参数错误    |
 | 401    | 未授权      |
-| 500    | 系统错误     |
+| 500    | 系统错误    |
 
 ---
 
@@ -420,7 +423,7 @@ Cookie: aimo_token=<jwt_token>
 
 ## Error Codes Reference
 
-| Code | Meaning |
-| ---- | ------- |
+| Code | Meaning                 |
+| ---- | ----------------------- |
 | 1    | SYSTEM_ERROR - 系统错误 |
 | 2    | PARAMS_ERROR - 参数错误 |

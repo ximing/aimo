@@ -1,12 +1,7 @@
-import winston from "winston";
+import winston from 'winston';
 
-import {
-  LoggerOptions,
-  ResolvedConfig,
-  resolveConfig,
-  LogMetadata,
-} from "./config";
-import { createTransports } from "./transports";
+import { LoggerOptions, ResolvedConfig, resolveConfig, LogMetadata } from './config';
+import { createTransports } from './transports';
 
 /**
  * Log 类 - Node.js 日志记录器
@@ -117,8 +112,8 @@ export class Log {
       }
 
       for (const transport of this.logger.transports) {
-        if ("close" in transport && typeof transport.close === "function") {
-          transport.on("finish", () => {
+        if ('close' in transport && typeof transport.close === 'function') {
+          transport.on('finish', () => {
             completed++;
             if (completed === totalTransports) {
               resolve();
@@ -144,13 +139,13 @@ export class Log {
     try {
       // 移除所有错误监听器，防止未捕获的错误
       for (const transport of this.logger.transports) {
-        transport.removeAllListeners("error");
+        transport.removeAllListeners('error');
       }
 
       this.logger.close();
     } catch (error) {
       // 忽略关闭时的错误
-      console.error("Error closing logger:", error);
+      console.error('Error closing logger:', error);
     }
   }
 }

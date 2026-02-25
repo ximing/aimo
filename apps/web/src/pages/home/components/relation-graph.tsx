@@ -37,7 +37,9 @@ const extractTitle = (content: string, maxLength = 30): string => {
     .replace(/\n/g, ' ')
     .trim();
 
-  return plainText.length > maxLength ? plainText.substring(0, maxLength) + '...' : plainText || '无标题';
+  return plainText.length > maxLength
+    ? plainText.substring(0, maxLength) + '...'
+    : plainText || '无标题';
 };
 
 export const RelationGraph = ({
@@ -189,7 +191,9 @@ export const RelationGraph = ({
       .attr('stroke', (d) => (d.type === 'forward' ? '#3b82f6' : '#22c55e'))
       .attr('stroke-width', 2)
       .attr('stroke-dasharray', (d) => (d.type === 'forward' ? '0' : '5,5'))
-      .attr('marker-end', (d) => (d.type === 'forward' ? 'url(#arrow-forward)' : 'url(#arrow-backlink)'));
+      .attr('marker-end', (d) =>
+        d.type === 'forward' ? 'url(#arrow-forward)' : 'url(#arrow-backlink)'
+      );
 
     // Create drag behavior
     const dragBehavior = d3
@@ -216,7 +220,11 @@ export const RelationGraph = ({
       .data(nodes)
       .join('g')
       .attr('cursor', (d) => (d.type === 'center' ? 'default' : 'pointer'))
-      .call(dragBehavior as unknown as (selection: d3.Selection<SVGGElement, GraphNode, SVGGElement, unknown>) => void)
+      .call(
+        dragBehavior as unknown as (
+          selection: d3.Selection<SVGGElement, GraphNode, SVGGElement, unknown>
+        ) => void
+      )
       .on('click', handleNodeClick);
 
     // Add circles to nodes

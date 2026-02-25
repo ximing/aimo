@@ -63,6 +63,20 @@ export interface ASRConfig {
   baseURL: string; // DashScope API 基础 URL
 }
 
+export interface OcrConfig {
+  enabled: boolean; // 是否启用 OCR
+  defaultProvider: OcrProviderType; // 默认 OCR 供应商
+  providers: {
+    zhipu: {
+      apiKey: string; // 智谱 API Key
+      baseURL: string; // 智谱 API 基础 URL
+    };
+  };
+}
+
+// OCR 供应商类型
+export type OcrProviderType = 'zhipu';
+
 export interface Config {
   port: number;
   cors: {
@@ -98,6 +112,7 @@ export interface Config {
   };
   multimodal: MultimodalEmbeddingConfig;
   asr: ASRConfig;
+  ocr: OcrConfig;
   locale: {
     language: string; // e.g., 'zh-cn', 'en-us'
     timezone: string; // e.g., 'Asia/Shanghai', 'UTC'
@@ -220,6 +235,16 @@ export const config: Config = {
     model: process.env.FUN_ASR_MODEL || 'fun-asr',
     apiKey: process.env.FUN_ASR_API_KEY || process.env.DASHSCOPE_API_KEY || '',
     baseURL: process.env.FUN_ASR_BASE_URL || 'https://dashscope.aliyuncs.com/api/v1',
+  },
+  ocr: {
+    enabled: process.env.OCR_ENABLED !== 'false',
+    defaultProvider: (process.env.OCR_DEFAULT_PROVIDER || 'zhipu') as OcrProviderType,
+    providers: {
+      zhipu: {
+        apiKey: process.env.ZHIPU_API_KEY || '',
+        baseURL: process.env.ZHIPU_OCR_BASE_URL || 'https://open.bigmodel.cn/api',
+      },
+    },
   },
   locale: {
     language: process.env.LOCALE_LANGUAGE || 'zh-cn',

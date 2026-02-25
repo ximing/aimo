@@ -157,7 +157,9 @@ export function DailyRecommendations() {
             <FileText size={20} className="text-gray-400 dark:text-gray-500" />
           </div>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">创建更多 memo 来获取推荐</p>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">至少 3 条 memo 即可开启智能推荐</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">
+            至少 3 条 memo 即可开启智能推荐
+          </p>
           <button
             onClick={handleCreateMemo}
             className="text-xs px-3 py-1.5 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-colors"

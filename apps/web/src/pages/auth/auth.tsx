@@ -26,16 +26,8 @@ export const AuthPage = view(() => {
         <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-xl dark:shadow-2xl p-8 animate-fade-in">
           {/* Logo */}
           <div className="text-center mb-6">
-            <img
-              src={logoLight}
-              alt="Aimo Logo"
-              className="h-12 w-12 mx-auto dark:hidden"
-            />
-            <img
-              src={logoDark}
-              alt="Aimo Logo"
-              className="h-12 w-12 mx-auto hidden dark:block"
-            />
+            <img src={logoLight} alt="Aimo Logo" className="h-12 w-12 mx-auto dark:hidden" />
+            <img src={logoDark} alt="Aimo Logo" className="h-12 w-12 mx-auto hidden dark:block" />
           </div>
 
           {/* Header */}

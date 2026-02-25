@@ -25,7 +25,6 @@ import type {
   OnThisDayResponseDto,
 } from '@aimo/dto';
 
-
 const UNCATEGORIZED_CATEGORY_ID = '__uncategorized__';
 
 /**
@@ -39,7 +38,6 @@ export interface MemoSearchOptions {
   sortOrder?: 'asc' | 'desc';
   search?: string;
   categoryId?: string; // Filter by category ID
-  tag?: string; // Filter by tag name (single tag)
   tags?: string[]; // Filter by multiple tag names (AND logic)
   startDate?: Date;
   endDate?: Date;
@@ -223,7 +221,7 @@ export class MemoService {
 
       // Prepare record for LanceDB with only attachment IDs
       // Convert embedding to array if it's an Arrow object
-      const embeddingArray = Array.isArray(embedding) ? embedding : [...embedding || []];
+      const embeddingArray = Array.isArray(embedding) ? embedding : [...(embedding || [])];
 
       const memoRecord = {
         ...memo,
@@ -261,9 +259,7 @@ export class MemoService {
 
       // Get tag DTOs for response
       const tagDtos: TagDto[] =
-        resolvedTagIds.length > 0
-          ? await this.tagService.getTagsByIds(resolvedTagIds, uid)
-          : [];
+        resolvedTagIds.length > 0 ? await this.tagService.getTagsByIds(resolvedTagIds, uid) : [];
 
       // Return with attachment DTOs (exclude embedding to reduce payload)
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -293,7 +289,6 @@ export class MemoService {
         sortOrder = 'desc',
         search,
         categoryId,
-        tag,
         tags,
         startDate,
         endDate,
@@ -304,11 +299,7 @@ export class MemoService {
       // Resolve tag names to tag IDs for filtering
       let tagIdsToFilter: string[] | undefined;
       if (tags && tags.length > 0) {
-        // Multiple tags - resolve all
         tagIdsToFilter = await this.tagService.resolveTagNamesToIds(tags, uid);
-      } else if (tag) {
-        // Single tag
-        tagIdsToFilter = await this.tagService.resolveTagNamesToIds([tag], uid);
       }
 
       // Build filter conditions
@@ -521,7 +512,7 @@ export class MemoService {
       // Update the memo
       const now = Date.now();
       // Convert embedding to array if it's an Arrow object
-      const embeddingArray = Array.isArray(embedding) ? embedding : [...embedding || []];
+      const embeddingArray = Array.isArray(embedding) ? embedding : [...(embedding || [])];
 
       const updateValues: Record<string, any> = {
         content,
@@ -546,10 +537,12 @@ export class MemoService {
       }
 
       // Add attachments to update if provided (only store attachment IDs)
-      if (attachments !== undefined && // Only add attachments if there are any, otherwise omit to keep existing
-        attachments.length > 0) {
-          updateValues.attachments = attachments;
-        }
+      if (
+        attachments !== undefined && // Only add attachments if there are any, otherwise omit to keep existing
+        attachments.length > 0
+      ) {
+        updateValues.attachments = attachments;
+      }
 
       // Add isPublic to update if provided
       if (isPublic !== undefined) {
@@ -732,11 +725,15 @@ export class MemoService {
         updateValues.tagIds = resolvedTagIds;
       } else {
         // Use SQL expression to set NULL for list type
-        updateValuesSql.tagIds = 'arrow_cast(NULL, \'List(Utf8)\')';
+        updateValuesSql.tagIds = "arrow_cast(NULL, 'List(Utf8)')";
       }
 
       // Build update options
-      const updateOptions: { where: string; values: Record<string, any>; valuesSql?: Record<string, string> } = {
+      const updateOptions: {
+        where: string;
+        values: Record<string, any>;
+        valuesSql?: Record<string, string>;
+      } = {
         where: `memoId = '${memoId}' AND uid = '${uid}'`,
         values: updateValues,
       };
@@ -775,9 +772,7 @@ export class MemoService {
 
       // Get tag DTOs for response
       const tagDtos: TagDto[] =
-        resolvedTagIds.length > 0
-          ? await this.tagService.getTagsByIds(resolvedTagIds, uid)
-          : [];
+        resolvedTagIds.length > 0 ? await this.tagService.getTagsByIds(resolvedTagIds, uid) : [];
 
       // Build updated memo object
       const updatedMemo: MemoListItemDto = {
@@ -871,15 +866,7 @@ export class MemoService {
    */
   async vectorSearch(options: MemoVectorSearchOptions): Promise<PaginatedMemoListWithScoreDto> {
     try {
-      const {
-        uid,
-        query,
-        page = 1,
-        limit = 20,
-        categoryId,
-        startDate,
-        endDate,
-      } = options;
+      const { uid, query, page = 1, limit = 20, categoryId, startDate, endDate } = options;
 
       if (!query || query.trim().length === 0) {
         throw new Error('Search query cannot be empty');

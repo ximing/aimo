@@ -23,9 +23,18 @@ export interface UpdateInfo {
 }
 
 // Store wrapped callbacks to allow proper removal
-const messageCallbackMap = new Map<MessageCallback, (event: IpcRendererEvent, message: string) => void>();
-const fileDropCallbackMap = new Map<FileDropCallback, (event: IpcRendererEvent, filePaths: string[]) => void>();
-const updateStatusCallbackMap = new Map<UpdateStatusCallback, (event: IpcRendererEvent, status: UpdateStatus) => void>();
+const messageCallbackMap = new Map<
+  MessageCallback,
+  (event: IpcRendererEvent, message: string) => void
+>();
+const fileDropCallbackMap = new Map<
+  FileDropCallback,
+  (event: IpcRendererEvent, filePaths: string[]) => void
+>();
+const updateStatusCallbackMap = new Map<
+  UpdateStatusCallback,
+  (event: IpcRendererEvent, status: UpdateStatus) => void
+>();
 
 // Log platform info for debugging
 console.log('Preload script loaded, platform:', process.platform);

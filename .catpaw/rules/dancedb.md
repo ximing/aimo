@@ -13,9 +13,7 @@ description: 涉及到 dancedb 表结构调整，字段类型定义，arrow 数�
 
 ```ts
 // addColumns
-const newColumns = [
-  { name: 'tagIds', valueSql: "arrow_cast(NULL, 'List(Utf8)')" },
-];
+const newColumns = [{ name: 'tagIds', valueSql: "arrow_cast(NULL, 'List(Utf8)')" }];
 
 // update valuesSql
 const updateValuesSql = {

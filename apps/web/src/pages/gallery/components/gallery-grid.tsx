@@ -51,14 +51,10 @@ export const GalleryGrid = view(({ onSelectAttachment }: GalleryGridProps) => {
     [attachmentService, onSelectAttachment]
   );
 
-   
-  const handleDeleteAttachment = useCallback(
-    () => {
-      // The deletion is already handled in the service
-      // This callback is just for any additional UI updates
-    },
-    []
-  );
+  const handleDeleteAttachment = useCallback(() => {
+    // The deletion is already handled in the service
+    // This callback is just for any additional UI updates
+  }, []);
 
   const filteredItems = attachmentService.filteredItems;
 

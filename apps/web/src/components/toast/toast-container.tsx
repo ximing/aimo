@@ -2,7 +2,10 @@ import { view, useService } from '@rabjs/react';
 import { AlertTriangle, CheckCircle2, Info, X, XCircle } from 'lucide-react';
 import { ToastService, type ToastType } from '../../services/toast.service';
 
-const toastTypeConfig: Record<ToastType, { icon: typeof Info; iconClass: string; accentClass: string }> = {
+const toastTypeConfig: Record<
+  ToastType,
+  { icon: typeof Info; iconClass: string; accentClass: string }
+> = {
   success: {
     icon: CheckCircle2,
     iconClass: 'text-primary-600 dark:text-primary-400',

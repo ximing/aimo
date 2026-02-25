@@ -15,9 +15,11 @@
 ## User Stories
 
 ### US-001: 后端 API - 获取历史的今天 memos
+
 **Description:** 作为开发者，我需要提供一个 API 端点来获取往年今日创建的 memos。
 
 **Acceptance Criteria:**
+
 - [ ] 创建 GET `/api/v1/memos/on-this-day` 端点
 - [ ] 根据当前日期（MM-DD）筛选往年同一日期的 memos
 - [ ] 按年份倒序排列（最近的年份在前）
@@ -26,9 +28,11 @@
 - [ ] Typecheck passes
 
 ### US-002: 前端组件 - 历史的今天横幅
+
 **Description:** 作为用户，我想在热力图下方看到"历史的今天"横幅，浏览往年今日的 memos。
 
 **Acceptance Criteria:**
+
 - [ ] 在热力图下方创建横向滚动横幅组件
 - [ ] 显示标题"历史的今天 🕰️"
 - [ ] 每个 memo 卡片显示：内容预览（最多2行）、年份标签
@@ -39,9 +43,11 @@
 - [ ] Verify in browser using dev-browser skill
 
 ### US-003: 点击交互 - 查看 memo 详情
+
 **Description:** 作为用户，我想点击卡片查看完整的 memo 内容。
 
 **Acceptance Criteria:**
+
 - [ ] 点击卡片打开 memo 详情弹窗/页面
 - [ ] 复用现有的 memo 详情展示组件
 - [ ] 显示完整的 memo 内容、创建时间、年份
@@ -50,9 +56,11 @@
 - [ ] Verify in browser using dev-browser skill
 
 ### US-004: 响应式适配
+
 **Description:** 作为用户，我期望在不同设备上都能正常浏览"历史的今天"。
 
 **Acceptance Criteria:**
+
 - [ ] 移动端：卡片宽度适配屏幕，保持横向滚动
 - [ ] 桌面端：显示 3-4 个卡片，超出部分可滚动
 - [ ] 平板：中间尺寸适配

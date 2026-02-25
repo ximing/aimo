@@ -8,10 +8,10 @@
  * 用于登录后返回用户基本信息
  */
 export interface UserInfoDto {
-  uid: string;        // 用户唯一标识符
-  email?: string;     // 用户邮箱
-  nickname?: string;  // 用户昵称
-  avatar?: string;    // 用户头像 URL
+  uid: string; // 用户唯一标识符
+  email?: string; // 用户邮箱
+  nickname?: string; // 用户昵称
+  avatar?: string; // 用户头像 URL
 }
 
 /**
@@ -19,8 +19,8 @@ export interface UserInfoDto {
  * 用于更新用户信息的请求体
  */
 export interface UpdateUserDto {
-  nickname?: string;   // 用户昵称
-  avatar?: string;     // 用户头像 URL
+  nickname?: string; // 用户昵称
+  avatar?: string; // 用户头像 URL
 }
 
 /**
@@ -28,11 +28,11 @@ export interface UpdateUserDto {
  * 包含用户的完整信息，用于获取用户详情
  */
 export interface UserProfileDto extends UserInfoDto {
-  avatar?: string;      // 用户头像 URL
-  phone?: string;      // 手机号码
-  status: number;       // 用户状态 (0: 正常, 1: 禁用)
-  createdAt: number;    // 创建时间戳 (毫秒)
-  updatedAt: number;    // 更新时间戳 (毫秒)
+  avatar?: string; // 用户头像 URL
+  phone?: string; // 手机号码
+  status: number; // 用户状态 (0: 正常, 1: 禁用)
+  createdAt: number; // 创建时间戳 (毫秒)
+  updatedAt: number; // 更新时间戳 (毫秒)
 }
 
 /**
@@ -40,6 +40,6 @@ export interface UserProfileDto extends UserInfoDto {
  * 用于修改用户密码的请求体
  */
 export interface ChangePasswordDto {
-  oldPassword: string;  // 当前密码
+  oldPassword: string; // 当前密码
   newPassword: string; // 新密码
 }

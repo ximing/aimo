@@ -52,12 +52,12 @@ A modern AI-powered note-taking and knowledge management tool that combines sema
 
 ## 📸 Screenshots
 
-| Smart Note Editor | Semantic Search | Knowledge Graph |
-|:---:|:---:|:---:|
+|                Smart Note Editor                |                 Semantic Search                 |                Knowledge Graph                 |
+| :---------------------------------------------: | :---------------------------------------------: | :--------------------------------------------: |
 | ![Editor](./apps/web/src/assets/landing/00.png) | ![Search](./apps/web/src/assets/landing/01.png) | ![Graph](./apps/web/src/assets/landing/02.png) |
 
-| Multimedia Support | AI Explore | Theme Switching |
-|:---:|:---:|:---:|
+|                 Multimedia Support                  |                     AI Explore                      |                Theme Switching                 |
+| :-------------------------------------------------: | :-------------------------------------------------: | :--------------------------------------------: |
 | ![Multimedia](./apps/web/src/assets/landing/03.png) | ![AI Explore](./apps/web/src/assets/landing/04.png) | ![Theme](./apps/web/src/assets/landing/05.png) |
 
 ## 🚀 Quick Start
@@ -116,13 +116,13 @@ docker run -d \
 
 ## 📥 Download Clients
 
-| Platform | Download Link | System Requirements |
-|:---:|:---:|:---:|
-| macOS | [Download](https://github.com/ximing/aimo/releases/latest) | macOS 12+ |
-| Windows | [Download](https://github.com/ximing/aimo/releases/latest) | Windows 10+ |
-| Linux | [Download](https://github.com/ximing/aimo/releases/latest) | Ubuntu 20.04+ |
-| Android | [Download](https://github.com/ximing/aimo-app/releases/latest) | Android 8.0+ |
-| iOS | Pending release | - |
+| Platform |                         Download Link                          | System Requirements |
+| :------: | :------------------------------------------------------------: | :-----------------: |
+|  macOS   |   [Download](https://github.com/ximing/aimo/releases/latest)   |      macOS 12+      |
+| Windows  |   [Download](https://github.com/ximing/aimo/releases/latest)   |     Windows 10+     |
+|  Linux   |   [Download](https://github.com/ximing/aimo/releases/latest)   |    Ubuntu 20.04+    |
+| Android  | [Download](https://github.com/ximing/aimo-app/releases/latest) |    Android 8.0+     |
+|   iOS    |                        Pending release                         |          -          |
 
 ## ⚙️ Environment Variables
 

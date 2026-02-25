@@ -1,15 +1,6 @@
 import { useCallback, useState, useRef, useEffect } from 'react';
 import { view, useService } from '@rabjs/react';
-import {
-  X,
-  ArrowLeft,
-  Tags,
-  Loader2,
-  Check,
-  Plus,
-  Sparkles,
-  Pencil,
-} from 'lucide-react';
+import { X, ArrowLeft, Tags, Loader2, Check, Plus, Sparkles, Pencil } from 'lucide-react';
 import { AIToolsService } from '../../services/ai-tools.service';
 
 interface TagGeneratorModalProps {
@@ -155,10 +146,7 @@ export const TagGeneratorModal = view(
         }, 100);
         return () => clearTimeout(timeout);
       }
-    }, [
-      aiToolsService.tagGeneration.suggestedTags.length,
-      aiToolsService.tagGeneration.isLoading,
-    ]);
+    }, [aiToolsService.tagGeneration.suggestedTags.length, aiToolsService.tagGeneration.isLoading]);
 
     // Auto-focus edit input when entering edit mode
     useEffect(() => {

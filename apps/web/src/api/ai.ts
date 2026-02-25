@@ -34,9 +34,7 @@ export const updateMemoTags = (memoId: string, data: UpdateMemoTagsRequestDto) =
  * Returns configuration for all available AI tools
  */
 export const getAvailableAITools = () => {
-  return request.get<unknown, { code: number; data: AIToolsListResponseDto }>(
-    '/api/v1/ai/tools'
-  );
+  return request.get<unknown, { code: number; data: AIToolsListResponseDto }>('/api/v1/ai/tools');
 };
 
 /**

@@ -6,22 +6,24 @@ A version-based schema management system that automatically initializes and upgr
 
 ## Key Concepts
 
-| Concept | Meaning |
-|---------|---------|
-| **Version** | Schema iteration number (1, 2, 3, ...) |
-| **Migration** | A TypeScript file that applies schema changes |
-| **Metadata Table** | `table_migrations` - tracks current version of each table |
-| **Pending Migrations** | Migrations that haven't been applied yet |
+| Concept                | Meaning                                                   |
+| ---------------------- | --------------------------------------------------------- |
+| **Version**            | Schema iteration number (1, 2, 3, ...)                    |
+| **Migration**          | A TypeScript file that applies schema changes             |
+| **Metadata Table**     | `table_migrations` - tracks current version of each table |
+| **Pending Migrations** | Migrations that haven't been applied yet                  |
 
 ## How It Works
 
 ### On First Run
+
 1. ✅ Creates `table_migrations` metadata table
 2. ✅ Creates all business tables (v1)
 3. ✅ Creates all indexes (v2)
 4. ✅ Records versions in metadata table
 
 ### On Subsequent Runs
+
 1. ✅ Reads metadata table
 2. ✅ Compares current vs target versions
 3. ✅ Applies only pending migrations
@@ -30,6 +32,7 @@ A version-based schema management system that automatically initializes and upgr
 ## Creating a New Migration
 
 ### Step 1: Create Migration File
+
 ```bash
 # Create a new file in apps/server/src/migrations/scripts/
 # Name it with next version number: 003-add-tags.ts
@@ -46,14 +49,14 @@ export const addTagsMigration: Migration = {
   version: 3,
   tableName: 'memos',
   description: 'Add tags field to memos table',
-  
+
   up: async (connection: Connection) => {
     // Your migration logic here
     console.log('Adding tags field to memos...');
-    
+
     // Get the table
     const table = await connection.openTable('memos');
-    
+
     // Implement your changes
     // (see MIGRATION_EXAMPLE.md for detailed patterns)
   },
@@ -61,6 +64,7 @@ export const addTagsMigration: Migration = {
 ```
 
 ### Step 2: Update Schema
+
 ```typescript
 // apps/server/src/models/db/schema.ts
 
@@ -78,6 +82,7 @@ export interface MemoRecord {
 ```
 
 ### Step 3: Export Migration
+
 ```typescript
 // apps/server/src/migrations/scripts/index.ts
 
@@ -90,6 +95,7 @@ export const ALL_MIGRATIONS: Migration[] = [
 ```
 
 ### Step 4: Test
+
 ```bash
 # Start the application - migration runs automatically
 pnpm dev
@@ -102,74 +108,79 @@ pnpm dev
 ## Common Patterns
 
 ### Pattern 1: Add a New Field
+
 ```typescript
 up: async (connection: Connection) => {
   const table = await connection.openTable('memos');
   const allRecords = await table.query().toArray();
-  
+
   // Add new field with default value
-  const updated = allRecords.map(record => ({
+  const updated = allRecords.map((record) => ({
     ...record,
     newField: 'default_value',
   }));
-  
+
   // Delete and re-add (LanceDB limitation)
   for (const record of allRecords) {
     await table.delete(`memoId = '${record.memoId}'`);
   }
   await table.add(updated);
-}
+};
 ```
 
 ### Pattern 2: Create New Table
+
 ```typescript
 up: async (connection: Connection) => {
   const newSchema = new Schema([
     new Field('id', new Utf8(), false),
     // ... other fields ...
   ]);
-  
+
   await connection.createEmptyTable('new_table_name', newSchema);
-}
+};
 ```
 
 ### Pattern 3: Create Indexes
+
 ```typescript
 up: async (connection: Connection) => {
   const table = await connection.openTable('table_name');
-  
+
   try {
     await table.createIndex('columnName', { config: lancedb.Index.btree() });
   } catch (error) {
     // Index might already exist - that's ok
     console.debug('Index already exists');
   }
-}
+};
 ```
 
 ### Pattern 4: Data Transformation
+
 ```typescript
 up: async (connection: Connection) => {
   const table = await connection.openTable('memos');
   const allRecords = await table.query().toArray();
-  
+
   // Transform data
-  const transformed = allRecords.map(record => ({
+  const transformed = allRecords.map((record) => ({
     ...record,
     content: record.content.toUpperCase(), // Example: uppercase all content
   }));
-  
+
   // Delete and re-add
   for (const record of allRecords) {
     await table.delete(`memoId = '${record.memoId}'`);
   }
   await table.add(transformed);
-}
+};
 ```
 
 ## Debugging
 
 ### Enable Verbose Logging
+
 ```typescript
 // In MigrationManager instantiation
 const manager = new MigrationManager({ verbose: true });
@@ -182,6 +193,7 @@ const manager = new MigrationManager({ verbose: true });
 ```
 
 ### Check Current State
+
 ```typescript
 const manager = new MigrationManager();
 const status = await manager.getStatus(connection);
@@ -191,10 +203,11 @@ const status = await manager.getStatus(connection);
 ```
 
 ### Validate Schema
+
 ```typescript
 const validation = await manager.validate(connection);
-console.log(validation.valid);    // true/false
-console.log(validation.errors);   // List of mismatches
+console.log(validation.valid); // true/false
+console.log(validation.errors); // List of mismatches
 ```
 
 ## Directory Structure
@@ -220,20 +233,24 @@ migrations/
 ## Important Notes
 
 ⚠️ **No Rollback**
+
 - Migrations only go forward
 - Cannot downgrade schema versions
 - Make backups before major changes
 
 ⚠️ **LanceDB Limitations**
+
 - No ALTER TABLE support
 - Use delete/re-add pattern for schema changes
 - Can be slow on large tables
 
 ⚠️ **Version Uniqueness**
+
 - Each migration version must be unique per table
 - v1, v2, v3... must be applied in order
 
 ⚠️ **Production Safety**
+
 - Test migrations on development database first
 - Use dry-run mode if available
 - Verify data integrity after migration
@@ -284,6 +301,7 @@ A: Current design is for single-process. For multi-process, would need locking m
 ## Support
 
 For more details:
+
 - Schema definitions: `apps/server/src/models/db/schema.ts`
 - LanceDB docs: https://lancedb.com/docs
 - Migration examples: `MIGRATION_EXAMPLE.md`

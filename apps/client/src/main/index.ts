@@ -434,42 +434,47 @@ function createApplicationMenu(): void {
   }
 
   // Edit menu
-  template.push({
-    label: '编辑',
-    submenu: editMenuItems,
-  }, {
-    label: '视图',
-    submenu: viewMenuItems,
-  }, {
-    label: '窗口',
-    role: 'window',
-    submenu: windowMenuItems,
-  }, {
-    label: '帮助',
-    role: 'help',
-    submenu: [
-      {
-        label: `检查更新 (v${app.getVersion()})`,
-        click: async () => {
-          const updateInfo = await checkForUpdates();
-          if (!updateInfo) {
-            dialog.showMessageBox({
-              type: 'info',
-              title: '检查更新',
-              message: '当前已是最新版本',
-            });
-          }
+  template.push(
+    {
+      label: '编辑',
+      submenu: editMenuItems,
+    },
+    {
+      label: '视图',
+      submenu: viewMenuItems,
+    },
+    {
+      label: '窗口',
+      role: 'window',
+      submenu: windowMenuItems,
+    },
+    {
+      label: '帮助',
+      role: 'help',
+      submenu: [
+        {
+          label: `检查更新 (v${app.getVersion()})`,
+          click: async () => {
+            const updateInfo = await checkForUpdates();
+            if (!updateInfo) {
+              dialog.showMessageBox({
+                type: 'info',
+                title: '检查更新',
+                message: '当前已是最新版本',
+              });
+            }
+          },
         },
-      },
-      { type: 'separator' },
-      {
-        label: '访问 GitHub',
-        click: () => {
-          shell.openExternal('https://github.com/ximing/aimo');
+        { type: 'separator' },
+        {
+          label: '访问 GitHub',
+          click: () => {
+            shell.openExternal('https://github.com/ximing/aimo');
+          },
         },
-      },
-    ],
-  });
+      ],
+    }
+  );
 
   // Windows/Linux: Add File menu with Quit option
   if (!isMac) {
@@ -601,19 +606,21 @@ autoUpdater.on('update-downloaded', (info: UpdateInfo) => {
   }
 
   // Ask user if they want to restart now
-  dialog.showMessageBox({
-    type: 'info',
-    title: '更新已就绪',
-    message: `版本 ${info.version} 已下载完成`,
-    detail: '是否立即重启应用以安装更新？',
-    buttons: ['立即重启', '稍后重启'],
-    defaultId: 0,
-    cancelId: 1,
-  }).then((result) => {
-    if (result.response === 0) {
-      installUpdate();
-    }
-  });
+  dialog
+    .showMessageBox({
+      type: 'info',
+      title: '更新已就绪',
+      message: `版本 ${info.version} 已下载完成`,
+      detail: '是否立即重启应用以安装更新？',
+      buttons: ['立即重启', '稍后重启'],
+      defaultId: 0,
+      cancelId: 1,
+    })
+    .then((result) => {
+      if (result.response === 0) {
+        installUpdate();
+      }
+    });
 });
 
 autoUpdater.on('error', (error) => {

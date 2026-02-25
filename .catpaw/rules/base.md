@@ -131,17 +131,17 @@ aimo/
 **文件**: `apps/server/src/utils/logger.ts`
 
 ```typescript
-import { Log } from "@aimo/logger";
+import { Log } from '@aimo/logger';
 
-const logDir = process.env.AIMO_LOG_DIR || path.join(process.cwd(), "logs");
+const logDir = process.env.AIMO_LOG_DIR || path.join(process.cwd(), 'logs');
 
 export const logger = new Log({
-  projectName: "aimo-server",
-  level: (process.env.AIMO_LOG_LEVEL as "trace" | "debug" | "info" | "warn" | "error") || "info",
+  projectName: 'aimo-server',
+  level: (process.env.AIMO_LOG_LEVEL as 'trace' | 'debug' | 'info' | 'warn' | 'error') || 'info',
   logDir,
   enableTerminal: true,
-  maxSize: "20m",
-  maxFiles: "7d",
+  maxSize: '20m',
+  maxFiles: '7d',
 });
 
 // 导出便捷方法
@@ -150,34 +150,34 @@ export const { trace, debug, info, warn, error, flush, close } = logger;
 
 ### 日志级别
 
-| 级别 | 使用场景 |
-|------|----------|
+| 级别  | 使用场景                           |
+| ----- | ---------------------------------- |
 | trace | 详细的调试信息，如函数调用、变量值 |
 | debug | 开发调试信息，如请求参数、响应数据 |
-| info | 正常业务日志，如服务启动、请求处理 |
-| warn | 警告信息，如配置缺失、限流触发 |
-| error | 错误信息，如异常捕获、请求失败 |
+| info  | 正常业务日志，如服务启动、请求处理 |
+| warn  | 警告信息，如配置缺失、限流触发     |
+| error | 错误信息，如异常捕获、请求失败     |
 
 ### 环境变量配置
 
-| 变量 | 说明 | 默认值 |
-|------|------|--------|
-| AIMO_LOG_DIR | 日志文件目录 | `./logs` |
-| AIMO_LOG_LEVEL | 日志级别 | `info` |
+| 变量           | 说明         | 默认值   |
+| -------------- | ------------ | -------- |
+| AIMO_LOG_DIR   | 日志文件目录 | `./logs` |
+| AIMO_LOG_LEVEL | 日志级别     | `info`   |
 
 ### 使用示例
 
 ```typescript
-import { logger, info, warn, error } from "@/utils/logger";
+import { logger, info, warn, error } from '@/utils/logger';
 
 // 方式1: 使用 logger 实例
-logger.info("服务启动成功", { port: 3000 });
-logger.error("请求处理失败", { error: err.message });
+logger.info('服务启动成功', { port: 3000 });
+logger.error('请求处理失败', { error: err.message });
 
 // 方式2: 使用便捷方法
-info("用户登录", { userId: "xxx" });
-warn("缓存命中率低", { hitRate: 0.3 });
-error("数据库连接失败", err);
+info('用户登录', { userId: 'xxx' });
+warn('缓存命中率低', { hitRate: 0.3 });
+error('数据库连接失败', err);
 ```
 
 ### 最佳实践
@@ -206,6 +206,7 @@ error("数据库连接失败", err);
 **位置**: `apps/server/src/migrations/`
 
 **核心文件**:
+
 - `index.ts` - MigrationManager（主协调器）
 - `executor.ts` - MigrationExecutor（执行引擎）
 - `types.ts` - 类型定义
@@ -217,12 +218,14 @@ error("数据库连接失败", err);
 ### 迁移脚本编写规范
 
 **文件命名**:
+
 ```
 scripts/NNN-description.ts
 # 例如: 001-init.ts, 002-create-indexes.ts, 003-add-tags.ts
 ```
 
 **必须实现的接口**:
+
 ```typescript
 export const myMigration: Migration = {
   version: number;              // 版本号 (1, 2, 3, ...)
@@ -265,15 +268,15 @@ export const addNewFieldMigration: Migration = {
   up: async (connection: Connection) => {
     try {
       const table = await connection.openTable('memos');
-      
+
       // 使用 addColumns 添加新列，可设置默认值
       const newColumns = [
         {
           name: 'newField',
-          valueSql: "'default_value'",  // 或使用 'NULL' 表示 nullable
+          valueSql: "'default_value'", // 或使用 'NULL' 表示 nullable
         },
       ];
-      
+
       await table.addColumns(newColumns);
     } catch (error: any) {
       // 检查是否已存在（幂等处理）
@@ -287,8 +290,8 @@ export const addNewFieldMigration: Migration = {
 };
 ```
 
-
 **场景 2: 创建新表**
+
 ```typescript
 export const createNewTableMigration: Migration = {
   version: 4,
@@ -305,6 +308,7 @@ export const createNewTableMigration: Migration = {
 ```
 
 **场景 3: 创建索引**
+
 ```typescript
 export const createIndexMigration: Migration = {
   version: 5,
@@ -345,17 +349,20 @@ export const createIndexMigration: Migration = {
 ### 注意事项
 
 ⚠️ **LanceDB 限制**:
+
 - ⚡ **推荐**: 使用 `addColumns()` 方法添加新字段，高效且安全
 - `addColumns()` 的 `valueSql` 会推断列类型，新增可空字符串列不要使用 `NULL`，应使用 `CAST(NULL AS STRING)` 或显式字符串默认值，避免类型冲突
 - 不支持修改字段类型（需要删除表重建）
 - 不支持复合索引，只能创建单列索引
 
 ⚠️ **版本管理**:
+
 - 不允许修改已发布的迁移脚本
 - 新需求必须创建新版本
 - 版本号全局递增，不能跳过
 
 ⚠️ **生产环保**:
+
 - 大量数据迁移提前备份
 - 关键迁移先在测试环境验证
 - 监控迁移执行日志
@@ -377,6 +384,7 @@ export const createIndexMigration: Migration = {
 ### 新增类型
 
 如果需要新增业务对象类型，必须：
+
 1. 在 `apps/server/src/models/constant/type.ts` 的 `OBJECT_TYPE` 中添加新类型
 2. 在 `apps/server/src/utils/id.ts` 的 `generateTypeId` 函数中添加对应的 case 分支
 3. 在本规范的 ID 格式规范表格中添加新类型

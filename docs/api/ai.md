@@ -20,15 +20,15 @@ AI 功能相关的 API 端点，提供智能标签生成等功能。
 
 **Headers:**
 
-| Header | Required | Description |
-| ------ | -------- | ----------- |
-| Authorization | Yes | JWT Token |
+| Header        | Required | Description |
+| ------------- | -------- | ----------- |
+| Authorization | Yes      | JWT Token   |
 
 **Body Parameters (JSON):**
 
 | Parameter | Type   | Required | Description |
 | --------- | ------ | -------- | ----------- |
-| content   | string | Yes      | 笔记内容     |
+| content   | string | Yes      | 笔记内容    |
 
 **Example Request:**
 
@@ -48,6 +48,7 @@ curl -X POST http://localhost:3000/api/v1/ai/generate-tags \
 > **Response Type:** `ApiSuccessDto<{ tags: string[] }>`
 >
 > **Response 说明:**
+>
 > - 返回 3-8 个与内容相关的标签建议
 > - 标签基于 AI 对内容的语义分析生成
 
@@ -63,11 +64,11 @@ curl -X POST http://localhost:3000/api/v1/ai/generate-tags \
 
 **Error Responses:**
 
-| Status | Description |
-| ------ | ----------- |
-| 401    | 未授权      |
-| 2      | PARAMS为空 |
-| 500    | 系统_ERROR - 内容不能错误    |
+| Status | Description                |
+| ------ | -------------------------- |
+| 401    | 未授权                     |
+| 2      | PARAMS为空                 |
+| 500    | 系统\_ERROR - 内容不能错误 |
 
 ---
 
@@ -81,9 +82,9 @@ curl -X POST http://localhost:3000/api/v1/ai/generate-tags \
 
 **Headers:**
 
-| Header | Required | Description |
-| ------ | -------- | ----------- |
-| Authorization | Yes | JWT Token |
+| Header        | Required | Description |
+| ------------- | -------- | ----------- |
+| Authorization | Yes      | JWT Token   |
 
 **Example Request:**
 
@@ -99,12 +100,13 @@ curl -X GET http://localhost:3000/api/v1/ai/tools \
 > **Response Type:** `ApiSuccessDto<{ tools: AIToolConfigDto[] }>`
 >
 > **AIToolConfigDto 类型定义:**
+>
 > ```typescript
 > interface AIToolConfigDto {
->   id: string;          // 工具唯一标识符
->   name: string;        // 工具名称
+>   id: string; // 工具唯一标识符
+>   name: string; // 工具名称
 >   description: string; // 工具描述
->   icon: string;        // 图标名称
+>   icon: string; // 图标名称
 > }
 > ```
 
@@ -135,8 +137,8 @@ curl -X GET http://localhost:3000/api/v1/ai/tools \
 
 ## Error Codes Reference
 
-| Code | Meaning |
-| ---- | ------- |
+| Code | Meaning                 |
+| ---- | ----------------------- |
 | 2    | PARAMS_ERROR - 参数错误 |
-| 4    | UNAUTHORIZED - 未授权 |
+| 4    | UNAUTHORIZED - 未授权   |
 | 500  | SYSTEM_ERROR - 系统错误 |

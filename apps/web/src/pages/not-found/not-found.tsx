@@ -37,14 +37,10 @@ export default function NotFound() {
         </div>
 
         <h1 className="text-6xl font-bold text-gray-900 dark:text-gray-50 mb-4">404</h1>
-        
-        <p className="text-xl text-gray-600 dark:text-gray-400 mb-2">
-          页面未找到
-        </p>
-        
-        <p className="text-gray-500 dark:text-gray-500 mb-8">
-          您访问的页面不存在或已被移除
-        </p>
+
+        <p className="text-xl text-gray-600 dark:text-gray-400 mb-2">页面未找到</p>
+
+        <p className="text-gray-500 dark:text-gray-500 mb-8">您访问的页面不存在或已被移除</p>
 
         <div className="flex flex-col items-center gap-4">
           <button
@@ -58,7 +54,9 @@ export default function NotFound() {
           </button>
 
           <p className="text-sm text-gray-500 dark:text-gray-500">
-            将在 <span className="font-medium text-primary-600 dark:text-primary-500">{countdown}</span> 秒后自动跳转...
+            将在{' '}
+            <span className="font-medium text-primary-600 dark:text-primary-500">{countdown}</span>{' '}
+            秒后自动跳转...
           </p>
         </div>
       </div>

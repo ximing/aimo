@@ -153,9 +153,7 @@ export const CreateCategoryModal = ({
                     />
                     <div className="flex items-center justify-between mt-2">
                       {error ? (
-                        <span className="text-xs text-red-600 dark:text-red-400">
-                          {error}
-                        </span>
+                        <span className="text-xs text-red-600 dark:text-red-400">{error}</span>
                       ) : (
                         <span />
                       )}

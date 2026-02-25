@@ -20,9 +20,9 @@ Base URL: `/api/v1/tags`
 
 **Headers:**
 
-| Header | Required | Description |
-| ------ | -------- | ----------- |
-| Authorization | Yes | JWT Token |
+| Header        | Required | Description |
+| ------------- | -------- | ----------- |
+| Authorization | Yes      | JWT Token   |
 
 **Example Request:**
 
@@ -38,13 +38,14 @@ curl -X GET http://localhost:3000/api/v1/tags \
 > **Response Type:** `ApiSuccessDto<{ tags: TagDto[] }>`
 >
 > **TagDto 类型定义:**
+>
 > ```typescript
 > interface TagDto {
->   tagId: string;    // 标签唯一标识符
->   uid: string;     // 用户唯一标识符
->   name: string;    // 标签名称
->   createdAt: number;   // 创建时间戳（毫秒）
->   updatedAt: number;   // 更新时间戳（毫秒）
+>   tagId: string; // 标签唯一标识符
+>   uid: string; // 用户唯一标识符
+>   name: string; // 标签名称
+>   createdAt: number; // 创建时间戳（毫秒）
+>   updatedAt: number; // 更新时间戳（毫秒）
 > }
 > ```
 
@@ -92,15 +93,15 @@ curl -X GET http://localhost:3000/api/v1/tags \
 
 **Headers:**
 
-| Header | Required | Description |
-| ------ | -------- | ----------- |
-| Authorization | Yes | JWT Token |
+| Header        | Required | Description |
+| ------------- | -------- | ----------- |
+| Authorization | Yes      | JWT Token   |
 
 **Path Parameters:**
 
 | Parameter | Type   | Description |
 | --------- | ------ | ----------- |
-| tagId    | string | 标签 ID     |
+| tagId     | string | 标签 ID     |
 
 **Example Request:**
 
@@ -116,13 +117,14 @@ curl -X GET http://localhost:3000/api/v1/tags/tag_123456 \
 > **Response Type:** `ApiSuccessDto<{ tag: TagDto }>`
 >
 > **TagDto 类型定义:**
+>
 > ```typescript
 > interface TagDto {
->   tagId: string;    // 标签唯一标识符
->   uid: string;     // 用户唯一标识符
->   name: string;    // 标签名称
->   createdAt: number;   // 创建时间戳（毫秒）
->   updatedAt: number;   // 更新时间戳（毫秒）
+>   tagId: string; // 标签唯一标识符
+>   uid: string; // 用户唯一标识符
+>   name: string; // 标签名称
+>   createdAt: number; // 创建时间戳（毫秒）
+>   updatedAt: number; // 更新时间戳（毫秒）
 > }
 > ```
 
@@ -162,15 +164,15 @@ curl -X GET http://localhost:3000/api/v1/tags/tag_123456 \
 
 **Headers:**
 
-| Header | Required | Description |
-| ------ | -------- | ----------- |
-| Authorization | Yes | JWT Token |
+| Header        | Required | Description |
+| ------------- | -------- | ----------- |
+| Authorization | Yes      | JWT Token   |
 
 **Body Parameters (JSON):**
 
 | Parameter | Type   | Required | Description |
 | --------- | ------ | -------- | ----------- |
-| name      | string | Yes      | 标签名称     |
+| name      | string | Yes      | 标签名称    |
 
 **Example Request:**
 
@@ -190,13 +192,14 @@ curl -X POST http://localhost:3000/api/v1/tags \
 > **Response Type:** `ApiSuccessDto<{ tag: TagDto }>`
 >
 > **TagDto 类型定义:**
+>
 > ```typescript
 > interface TagDto {
->   tagId: string;    // 标签唯一标识符
->   uid: string;     // 用户唯一标识符
->   name: string;    // 标签名称
->   createdAt: number;   // 创建时间戳（毫秒）
->   updatedAt: number;   // 更新时间戳（毫秒）
+>   tagId: string; // 标签唯一标识符
+>   uid: string; // 用户唯一标识符
+>   name: string; // 标签名称
+>   createdAt: number; // 创建时间戳（毫秒）
+>   updatedAt: number; // 更新时间戳（毫秒）
 > }
 > ```
 
@@ -219,11 +222,11 @@ curl -X POST http://localhost:3000/api/v1/tags \
 
 **Error Responses:**
 
-| Status | Description |
-| ------ | ----------- |
-| 401    | 未授权      |
+| Status | Description                     |
+| ------ | ------------------------------- |
+| 401    | 未授权                          |
 | 2      | PARAMS_ERROR - 标签名称不能为空 |
-| 500    | 数据库错误  |
+| 500    | 数据库错误                      |
 
 ---
 
@@ -237,9 +240,9 @@ curl -X POST http://localhost:3000/api/v1/tags \
 
 **Headers:**
 
-| Header | Required | Description |
-| ------ | -------- | ----------- |
-| Authorization | Yes | JWT Token |
+| Header        | Required | Description |
+| ------------- | -------- | ----------- |
+| Authorization | Yes      | JWT Token   |
 
 **Path Parameters:**
 
@@ -251,7 +254,7 @@ curl -X POST http://localhost:3000/api/v1/tags \
 
 | Parameter | Type   | Required | Description |
 | --------- | ------ | -------- | ----------- |
-| name      | string | No       | 标签名称     |
+| name      | string | No       | 标签名称    |
 
 **Example Request:**
 
@@ -271,13 +274,14 @@ curl -X PUT http://localhost:3000/api/v1/tags/tag_123456 \
 > **Response Type:** `ApiSuccessDto<{ tag: TagDto }>`
 >
 > **TagDto 类型定义:**
+>
 > ```typescript
 > interface TagDto {
->   tagId: string;    // 标签唯一标识符
->   uid: string;     // 用户唯一标识符
->   name: string;    // 标签名称
->   createdAt: number;   // 创建时间戳（毫秒）
->   updatedAt: number;   // 更新时间戳（毫秒）
+>   tagId: string; // 标签唯一标识符
+>   uid: string; // 用户唯一标识符
+>   name: string; // 标签名称
+>   createdAt: number; // 创建时间戳（毫秒）
+>   updatedAt: number; // 更新时间戳（毫秒）
 > }
 > ```
 
@@ -300,12 +304,12 @@ curl -X PUT http://localhost:3000/api/v1/tags/tag_123456 \
 
 **Error Responses:**
 
-| Status | Description |
-| ------ | ----------- |
-| 401    | 未授权      |
+| Status | Description                     |
+| ------ | ------------------------------- |
+| 401    | 未授权                          |
 | 2      | PARAMS_ERROR - 标签名称不能为空 |
-| 404    | 标签不存在  |
-| 500    | 数据库错误  |
+| 404    | 标签不存在                      |
+| 500    | 数据库错误                      |
 
 ---
 
@@ -319,9 +323,9 @@ curl -X PUT http://localhost:3000/api/v1/tags/tag_123456 \
 
 **Headers:**
 
-| Header | Required | Description |
-| ------ | -------- | ----------- |
-| Authorization | Yes | JWT Token |
+| Header        | Required | Description |
+| ------------- | -------- | ----------- |
+| Authorization | Yes      | JWT Token   |
 
 **Path Parameters:**
 
@@ -362,9 +366,9 @@ curl -X DELETE http://localhost:3000/api/v1/tags/tag_123456 \
 
 ## Error Codes Reference
 
-| Code | Meaning |
-| ---- | ------- |
+| Code | Meaning                 |
+| ---- | ----------------------- |
 | 2    | PARAMS_ERROR - 参数错误 |
-| 4    | UNAUTHORIZED - 未授权 |
-| 5    | NOT_FOUND - 资源不存在 |
-| 2000 | DB_ERROR - 数据库错误 |
+| 4    | UNAUTHORIZED - 未授权   |
+| 5    | NOT_FOUND - 资源不存在  |
+| 2000 | DB_ERROR - 数据库错误   |

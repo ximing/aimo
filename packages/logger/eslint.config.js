@@ -8,12 +8,6 @@ export default [
 
   // 忽略构建产物
   {
-    ignores: [
-      "lib/**",
-      "dist/**",
-      "build/**",
-      "coverage/**",
-      "node_modules/**",
-    ],
+    ignores: ['lib/**', 'dist/**', 'build/**', 'coverage/**', 'node_modules/**'],
   },
 ];

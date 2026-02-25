@@ -13,13 +13,10 @@ export function getEnvValue(key: string): string | undefined {
  * @param defaultValue 默认值
  * @returns 布尔值
  */
-export function getEnvBool(
-  key: string,
-  defaultValue: boolean = false
-): boolean {
+export function getEnvBool(key: string, defaultValue: boolean = false): boolean {
   const value = process.env[key];
   if (value === undefined) {
     return defaultValue;
   }
-  return value === "true" || value === "1" || value === "yes";
+  return value === 'true' || value === '1' || value === 'yes';
 }

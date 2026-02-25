@@ -103,7 +103,9 @@ export const ALL_MIGRATIONS: Migration[] = [
  * Get all migrations for a specific table
  */
 export function getMigrationsForTable(tableName: string): Migration[] {
-  return ALL_MIGRATIONS.filter((m) => m.tableName === tableName).sort((a, b) => a.version - b.version);
+  return ALL_MIGRATIONS.filter((m) => m.tableName === tableName).sort(
+    (a, b) => a.version - b.version
+  );
 }
 
 /**

@@ -21,10 +21,7 @@ export class InsightsController {
    * Returns daily memo counts for the specified number of days (default: 90)
    */
   @Get('/activity')
-  async getActivityStats(
-    @QueryParam('days') days: number = 90,
-    @CurrentUser() user: UserInfoDto
-  ) {
+  async getActivityStats(@QueryParam('days') days: number = 90, @CurrentUser() user: UserInfoDto) {
     try {
       if (!user?.uid) {
         return ResponseUtility.error(ErrorCode.UNAUTHORIZED);

@@ -26,7 +26,10 @@ async function createIndexIfNotExists(
 ): Promise<void> {
   try {
     // Create the appropriate index type using LanceDB API
-    const indexConfig = indexType === 'BITMAP' ? { config: lancedb.Index.bitmap() } : { config: lancedb.Index.btree() };
+    const indexConfig =
+      indexType === 'BITMAP'
+        ? { config: lancedb.Index.bitmap() }
+        : { config: lancedb.Index.btree() };
 
     await table.createIndex(columnName, indexConfig);
     console.log(`Created ${indexType} index on ${tableName}.${columnName}`);

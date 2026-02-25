@@ -31,9 +31,7 @@ export default defineConfig(({ mode }) => {
       // Output to different locations based on target (Electron vs server)
       // For Electron: output to apps/client/dist directly (not dist/web)
       // This way /logo.png will be found at dist/logo.png
-      outDir: isElectron
-        ? path.resolve(__dirname, '../client/dist')
-        : '../server/public',
+      outDir: isElectron ? path.resolve(__dirname, '../client/dist') : '../server/public',
       emptyOutDir: true,
 
       // Optimize chunk size

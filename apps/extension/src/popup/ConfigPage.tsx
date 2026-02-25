@@ -20,7 +20,9 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState<FormErrors>(initialErrorMessage ? { general: initialErrorMessage } : {});
+  const [errors, setErrors] = useState<FormErrors>(
+    initialErrorMessage ? { general: initialErrorMessage } : {}
+  );
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   // Detect dark mode preference
@@ -165,8 +167,7 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
       minHeight: '400px',
       backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
       color: isDarkMode ? '#f3f4f6' : '#1f2937',
-      fontFamily:
-        '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     },
     header: {
       display: 'flex',
@@ -284,9 +285,7 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
       </div>
 
       <form onSubmit={handleSubmit} style={styles.form}>
-        {errors.general && (
-          <div style={styles.generalError}>{errors.general}</div>
-        )}
+        {errors.general && <div style={styles.generalError}>{errors.general}</div>}
 
         <div style={styles.fieldGroup}>
           <label htmlFor="url" style={styles.label}>
@@ -368,9 +367,7 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
             }}
             disabled={isLoading}
           />
-          {errors.password && (
-            <span style={styles.errorText}>{errors.password}</span>
-          )}
+          {errors.password && <span style={styles.errorText}>{errors.password}</span>}
         </div>
 
         <button
@@ -390,9 +387,7 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
         </button>
       </form>
 
-      <div style={styles.footer}>
-        首次使用？请先配置您的 AIMO 服务器地址
-      </div>
+      <div style={styles.footer}>首次使用？请先配置您的 AIMO 服务器地址</div>
     </div>
   );
 }

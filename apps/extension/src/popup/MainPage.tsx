@@ -55,8 +55,7 @@ export function MainPage({ config, onOpenSettings, onAuthError }: MainPageProps)
       minHeight: '400px',
       backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
       color: isDarkMode ? '#f3f4f6' : '#1f2937',
-      fontFamily:
-        '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     },
     header: {
       display: 'flex',
@@ -113,16 +112,10 @@ export function MainPage({ config, onOpenSettings, onAuthError }: MainPageProps)
           <div style={styles.logo}>A</div>
           <div>
             <h1 style={styles.title}>AIMO 知识库</h1>
-            <div style={styles.userInfo}>
-              {config.username || '已登录'}
-            </div>
+            <div style={styles.userInfo}>{config.username || '已登录'}</div>
           </div>
         </div>
-        <button
-          onClick={onOpenSettings}
-          style={styles.settingsButton}
-          title="设置"
-        >
+        <button onClick={onOpenSettings} style={styles.settingsButton} title="设置">
           <SettingsIcon />
         </button>
       </div>

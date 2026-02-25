@@ -59,15 +59,12 @@ function App() {
           padding: '40px',
           width: '320px',
           textAlign: 'center',
-          fontFamily:
-            '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
         }}
       >
         <div style={{ fontSize: '14px', color: '#6b7280' }}>加载中...</div>
         {error && (
-          <div style={{ marginTop: '12px', fontSize: '12px', color: '#ef4444' }}>
-            {error}
-          </div>
+          <div style={{ marginTop: '12px', fontSize: '12px', color: '#ef4444' }}>{error}</div>
         )}
       </div>
     );
@@ -76,10 +73,7 @@ function App() {
   // Config/login view
   if (viewState === 'config') {
     return (
-      <ConfigPage
-        onConfigSaved={handleConfigSaved}
-        initialErrorMessage={configErrorMessage}
-      />
+      <ConfigPage onConfigSaved={handleConfigSaved} initialErrorMessage={configErrorMessage} />
     );
   }
 
@@ -104,13 +98,10 @@ function App() {
         padding: '40px',
         width: '320px',
         textAlign: 'center',
-        fontFamily:
-          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
       }}
     >
-      <div style={{ fontSize: '14px', color: '#ef4444' }}>
-        发生错误，请刷新重试
-      </div>
+      <div style={{ fontSize: '14px', color: '#ef4444' }}>发生错误，请刷新重试</div>
     </div>
   );
 }

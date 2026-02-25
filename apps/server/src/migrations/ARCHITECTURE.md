@@ -7,9 +7,11 @@ The database migration system is a comprehensive schema management solution that
 ## Core Components
 
 ### 1. MigrationManager (index.ts)
+
 The orchestrator for the entire migration process.
 
 **Responsibilities:**
+
 - Reads metadata table on startup
 - Determines which tables need migrations
 - Compares current vs target versions
@@ -17,40 +19,49 @@ The orchestrator for the entire migration process.
 - Validates final state
 
 **Key Methods:**
+
 - `initialize(connection)` - Entry point for migration
 - `getStatus(connection)` - Returns current version state
 - `validate(connection)` - Checks if all tables are up-to-date
 
 ### 2. MigrationExecutor (executor.ts)
+
 Executes individual migration scripts and manages metadata.
 
 **Responsibilities:**
+
 - Executes migration `up()` functions
 - Updates metadata table after each migration
 - Handles version tracking
 - Provides idempotent queries
 
 **Key Methods:**
+
 - `executeMigration()` - Run single migration
 - `executeMigrations()` - Run multiple migrations in sequence
 - `getCurrentVersion()` - Query current version from metadata
 - `ensureMetadataTableExists()` - Create metadata table if needed
 
-### 3. Migration Scripts (scripts/*)
+### 3. Migration Scripts (scripts/\*)
+
 Individual migration files numbered sequentially.
 
 **Current Migrations:**
+
 - `001-init.ts` - Creates all business tables
 - `002-create-indexes.ts` - Creates scalar indexes for query optimization
 
 **Future Migrations:**
+
 - `003-*.ts` - Add new fields/tables as needed
 - `004-*.ts` - Further schema changes
 
 ### 4. Metadata Table (table_migrations)
+
 Stores version information for each table.
 
 **Schema:**
+
 ```
 tableName: string          // Unique table identifier
 currentVersion: number      // Current schema version number
@@ -58,6 +69,7 @@ lastMigratedAt: number     // Timestamp of last migration
 ```
 
 **Purpose:**
+
 - Tracks which version each table is at
 - Enables incremental migrations
 - Prevents re-running completed migrations
@@ -110,33 +122,30 @@ LanceDbService.init()
 ### For Each Table
 
 1. **Check Current State**
+
    ```typescript
-   currentVersion = await MigrationExecutor.getCurrentVersion(
-     metadataTable, 
-     'memos'
-   ) // Returns: 1 (or 0 if not migrated)
+   currentVersion = await MigrationExecutor.getCurrentVersion(metadataTable, 'memos'); // Returns: 1 (or 0 if not migrated)
    ```
 
 2. **Determine Target Version**
+
    ```typescript
-   targetVersion = getLatestVersion('memos') // Returns: 2
+   targetVersion = getLatestVersion('memos'); // Returns: 2
    ```
 
 3. **Get Pending Migrations**
+
    ```typescript
-   pending = getMigrationsFromVersion('memos', currentVersion)
+   pending = getMigrationsFromVersion('memos', currentVersion);
    // Returns migrations where version > currentVersion
    // Example: [v2_indexes_migration]
    ```
 
 4. **Execute Each Migration**
+
    ```typescript
    for (const migration of pending) {
-     await MigrationExecutor.executeMigration(
-       connection,
-       migration,
-       metadataTable
-     )
+     await MigrationExecutor.executeMigration(connection, migration, metadataTable);
    }
    ```
 
@@ -174,11 +183,13 @@ table_migrations table:
 ## Migration Execution Strategy
 
 ### Serial Execution (Current)
+
 - Migrations execute one at a time
 - Simplifies error handling
 - Easier to debug and monitor
 
 ### Version Ordering
+
 ```
 All v1 migrations for all tables (if needed)
   ↓
@@ -200,17 +211,20 @@ All v3 migrations for all tables
 ## Error Handling
 
 ### Migration Failures
+
 - Stop execution immediately
 - Don't update metadata
 - Throw descriptive error
 - Application startup fails (forces fix)
 
 ### Partial Migrations
+
 - If v1 succeeds but v2 fails
 - Metadata only updates if migration succeeds
 - Next run will retry from v2
 
 ### Recovery
+
 1. Fix migration code
 2. Restart application
 3. Migration system retries from failure point
@@ -218,11 +232,13 @@ All v3 migrations for all tables
 ## Index Management
 
 ### Previous Approach
+
 - Indexes created immediately after table creation
 - Hardcoded in LanceDbService
 - No version tracking
 
 ### Current Approach
+
 - Indexes as migration v2 (002-create-indexes.ts)
 - Tracked in metadata table
 - Can add/modify indexes in future migrations
@@ -242,29 +258,37 @@ All v3 migrations for all tables
 | table_migrations | tableName |
 
 **By Type:**
+
 - BTREE: Most common, for exact match and range queries
 - BITMAP: Low-cardinality fields (status, modalityType)
 
 ## Design Principles
 
 ### 1. Version Isolation
+
 Each table maintains its own version line independently.
 
 ### 2. Idempotency
+
 Running migrations multiple times should be safe:
+
 - Already-created tables are skipped
 - Already-created indexes check existence
 
 ### 3. Forward-Only
+
 No rollback support. Schema changes are permanent.
 
 ### 4. Atomic per Migration
+
 Each migration succeeds or fails completely. No partial states.
 
 ### 5. Metadata-Driven
+
 Version truth lives in metadata table, not hardcoded.
 
 ### 6. Self-Contained
+
 Each migration file is complete and runnable.
 
 ## File Structure
@@ -286,14 +310,15 @@ migrations/
 ## Integration Points
 
 ### LanceDbService (lancedb.ts)
+
 ```typescript
 async init() {
   // 1. Connect to database
   this.db = await lancedb.connect(path, options)
-  
+
   // 2. Run migrations (replaces old ensureTablesExist)
   await this.runMigrations()
-  
+
   // 3. Done! Indexes created by migration system
 }
 
@@ -306,6 +331,7 @@ private async runMigrations() {
 ```
 
 ### Application Startup
+
 1. Server starts
 2. LanceDbService instantiated via TypeDI
 3. `init()` called automatically

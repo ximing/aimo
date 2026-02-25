@@ -75,11 +75,13 @@ export const Layout = view(({ children }: LayoutProps) => {
           style={{ WebkitAppRegion: 'drag' }}
         />
       )}
-      
+
       {/* Left Sidebar - Fixed 70px */}
       <aside className="w-[70px] flex-shrink-0 border-r border-gray-100 dark:border-dark-800 flex flex-col items-center py-4 gap-4">
         {/* Logo Area - Top with padding for macOS Electron */}
-        <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden ${needsTopPadding ? 'mt-4' : ''}`}>
+        <div
+          className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden ${needsTopPadding ? 'mt-4' : ''}`}
+        >
           <img
             src={logoUrl}
             alt="Aimo Logo"

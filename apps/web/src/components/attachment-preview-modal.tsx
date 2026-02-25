@@ -187,11 +187,7 @@ const AttachmentPreviewModalContent = view(({ isOpen, onClose }: AttachmentPrevi
             <div className="w-24 h-24 rounded-full bg-primary-500/20 flex items-center justify-center">
               <Music className="w-12 h-12 text-primary-500" />
             </div>
-            <audio
-              src={attachment.url}
-              controls
-              className="max-w-[80%] w-full"
-            />
+            <audio src={attachment.url} controls className="max-w-[80%] w-full" />
           </div>
         )}
       </div>

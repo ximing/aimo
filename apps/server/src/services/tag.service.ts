@@ -96,9 +96,7 @@ export class TagService {
     }
 
     // Return in the original order of tagIds
-    return tagIds
-      .map((id) => tagMap.get(id))
-      .filter((tag): tag is TagDto => tag !== undefined);
+    return tagIds.map((id) => tagMap.get(id)).filter((tag): tag is TagDto => tag !== undefined);
   }
 
   /**
@@ -298,7 +296,11 @@ export class TagService {
     const memosToUpdate: Array<{ memoId: string; newTagIds: string[]; newTags: string[] }> = [];
 
     for (const memo of allMemos) {
-      const m = memo as unknown as { memoId: string; tagIds?: string[] | string | null; tags?: string[] | string | null };
+      const m = memo as unknown as {
+        memoId: string;
+        tagIds?: string[] | string | null;
+        tags?: string[] | string | null;
+      };
 
       // Normalize tagIds to an array (handle null, undefined, or string)
       let normalizedTagIds: string[] = [];
@@ -306,7 +308,10 @@ export class TagService {
         normalizedTagIds = m.tagIds;
       } else if (typeof m.tagIds === 'string') {
         // Handle case where tagIds might be a comma-separated string
-        normalizedTagIds = m.tagIds.split(',').map(id => id.trim()).filter(Boolean);
+        normalizedTagIds = m.tagIds
+          .split(',')
+          .map((id) => id.trim())
+          .filter(Boolean);
       }
 
       if (normalizedTagIds.includes(tagId)) {
@@ -318,7 +323,10 @@ export class TagService {
         if (Array.isArray(m.tags)) {
           normalizedTags = m.tags;
         } else if (typeof m.tags === 'string') {
-          normalizedTags = m.tags.split(',').map(t => t.trim()).filter(Boolean);
+          normalizedTags = m.tags
+            .split(',')
+            .map((t) => t.trim())
+            .filter(Boolean);
         }
 
         const tagToRemove = normalizedTags[normalizedTagIds.indexOf(tagId)];
@@ -345,16 +353,20 @@ export class TagService {
       if (newTagIds.length > 0) {
         updateValues.tagIds = newTagIds;
       } else {
-        updateValuesSql.tagIds = 'arrow_cast(NULL, \'List(Utf8)\')';
+        updateValuesSql.tagIds = "arrow_cast(NULL, 'List(Utf8)')";
       }
 
       if (newTags && newTags.length > 0) {
         updateValues.tags = newTags;
       } else if (newTags && newTags.length === 0) {
-        updateValuesSql.tags = 'arrow_cast(NULL, \'List(Utf8)\')';
+        updateValuesSql.tags = "arrow_cast(NULL, 'List(Utf8)')";
       }
 
-      const updateOptions: { where: string; values: Record<string, any>; valuesSql?: Record<string, string> } = {
+      const updateOptions: {
+        where: string;
+        values: Record<string, any>;
+        valuesSql?: Record<string, string>;
+      } = {
         where: `memoId = '${memoId}' AND uid = '${uid}'`,
         values: updateValues,
       };

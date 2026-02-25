@@ -22,17 +22,17 @@ Base URL: `/api/v1/attachments`
 
 **Headers:**
 
-| Header | Required | Description |
-| ------ | -------- | ----------- |
-| Authorization | Yes | JWT Token |
-| Content-Type | Yes | multipart/form-data |
+| Header        | Required | Description         |
+| ------------- | -------- | ------------------- |
+| Authorization | Yes      | JWT Token           |
+| Content-Type  | Yes      | multipart/form-data |
 
 **Form Parameters:**
 
-| Parameter | Type   | Required | Description            |
-| --------- | ------ | -------- | ---------------------- |
-| file      | file   | Yes      | 要上传的文件           |
-| createdAt | number | No       | 创建时间戳（毫秒）     |
+| Parameter | Type   | Required | Description        |
+| --------- | ------ | -------- | ------------------ |
+| file      | file   | Yes      | 要上传的文件       |
+| createdAt | number | No       | 创建时间戳（毫秒） |
 
 **Example Request:**
 
@@ -50,14 +50,15 @@ curl -X POST http://localhost:3000/api/v1/attachments/upload \
 > **Response Type:** `ApiSuccessDto<UploadAttachmentResponseDto>`
 >
 > **UploadAttachmentResponseDto 类型定义:**
+>
 > ```typescript
 > interface AttachmentDto {
->   attachmentId: string;  // 附件唯一标识符
->   filename: string;      // 文件名
->   url: string;          // 访问 URL（存储访问地址）
->   type: string;         // MIME 类型
->   size: number;         // 文件大小（字节）
->   createdAt: number;    // 创建时间戳（毫秒）
+>   attachmentId: string; // 附件唯一标识符
+>   filename: string; // 文件名
+>   url: string; // 访问 URL（存储访问地址）
+>   type: string; // MIME 类型
+>   size: number; // 文件大小（字节）
+>   createdAt: number; // 创建时间戳（毫秒）
 >   properties?: Record<string, unknown>; // 附件属性：audio(duration), image(width,height), video(duration)
 > }
 >
@@ -88,13 +89,13 @@ curl -X POST http://localhost:3000/api/v1/attachments/upload \
 
 **Error Responses:**
 
-| Status | Description                 |
-| ------ | -------------------------- |
-| 400    | 参数错误或未上传文件        |
-| 401    | 未授权                     |
-| 413    | 文件太大                   |
-| 415    | 不支持的文件类型            |
-| 500    | 存储错误                   |
+| Status | Description          |
+| ------ | -------------------- |
+| 400    | 参数错误或未上传文件 |
+| 401    | 未授权               |
+| 413    | 文件太大             |
+| 415    | 不支持的文件类型     |
+| 500    | 存储错误             |
 
 ---
 
@@ -108,16 +109,16 @@ curl -X POST http://localhost:3000/api/v1/attachments/upload \
 
 **Headers:**
 
-| Header | Required | Description |
-| ------ | -------- | ----------- |
-| Authorization | Yes | JWT Token |
+| Header        | Required | Description |
+| ------------- | -------- | ----------- |
+| Authorization | Yes      | JWT Token   |
 
 **Query Parameters:**
 
 | Parameter | Type   | Default | Description |
 | --------- | ------ | ------- | ----------- |
-| page      | number | 1       | 页码       |
-| limit     | number | 20      | 每页数量   |
+| page      | number | 1       | 页码        |
+| limit     | number | 20      | 每页数量    |
 
 **Example Request:**
 
@@ -133,14 +134,15 @@ curl -X GET "http://localhost:3000/api/v1/attachments?page=1&limit=20" \
 > **Response Type:** `ApiSuccessDto<AttachmentListResponseDto>`
 >
 > **AttachmentListResponseDto 类型定义:**
+>
 > ```typescript
 > interface AttachmentDto {
->   attachmentId: string;  // 附件唯一标识符
->   filename: string;      // 文件名
->   url: string;          // 访问 URL（存储访问地址）
->   type: string;         // MIME 类型
->   size: number;         // 文件大小（字节）
->   createdAt: number;    // 创建时间戳（毫秒）
+>   attachmentId: string; // 附件唯一标识符
+>   filename: string; // 文件名
+>   url: string; // 访问 URL（存储访问地址）
+>   type: string; // MIME 类型
+>   size: number; // 文件大小（字节）
+>   createdAt: number; // 创建时间戳（毫秒）
 >   properties?: Record<string, unknown>; // 附件属性
 > }
 >
@@ -205,9 +207,9 @@ curl -X GET "http://localhost:3000/api/v1/attachments?page=1&limit=20" \
 
 **Headers:**
 
-| Header | Required | Description |
-| ------ | -------- | ----------- |
-| Authorization | Yes | JWT Token |
+| Header        | Required | Description |
+| ------------- | -------- | ----------- |
+| Authorization | Yes      | JWT Token   |
 
 **Path Parameters:**
 
@@ -229,14 +231,15 @@ curl -X GET http://localhost:3000/api/v1/attachments/attachment_123456 \
 > **Response Type:** `ApiSuccessDto<AttachmentDto>`
 >
 > **AttachmentDto 类型定义:**
+>
 > ```typescript
 > interface AttachmentDto {
->   attachmentId: string;  // 附件唯一标识符
->   filename: string;      // 文件名
->   url: string;          // 访问 URL（存储访问地址）
->   type: string;         // MIME 类型
->   size: number;         // 文件大小（字节）
->   createdAt: number;    // 创建时间戳（毫秒）
+>   attachmentId: string; // 附件唯一标识符
+>   filename: string; // 文件名
+>   url: string; // 访问 URL（存储访问地址）
+>   type: string; // MIME 类型
+>   size: number; // 文件大小（字节）
+>   createdAt: number; // 创建时间戳（毫秒）
 >   properties?: Record<string, unknown>; // 附件属性
 > }
 > ```
@@ -276,9 +279,9 @@ curl -X GET http://localhost:3000/api/v1/attachments/attachment_123456 \
 
 **Headers:**
 
-| Header | Required | Description |
-| ------ | -------- | ----------- |
-| Authorization | Yes | JWT Token |
+| Header        | Required | Description |
+| ------------- | -------- | ----------- |
+| Authorization | Yes      | JWT Token   |
 
 **Path Parameters:**
 
@@ -329,9 +332,9 @@ curl -X DELETE http://localhost:3000/api/v1/attachments/attachment_123456 \
 
 **Headers:**
 
-| Header | Required | Description |
-| ------ | -------- | ----------- |
-| Authorization | Yes | JWT Token |
+| Header        | Required | Description |
+| ------------- | -------- | ----------- |
+| Authorization | Yes      | JWT Token   |
 
 **Path Parameters:**
 
@@ -352,6 +355,7 @@ curl -X GET http://localhost:3000user_123456/2024-01-01/attachment_123456.pdf \
 **Success Response (200 OK):**
 
 响应头包含文件信息：
+
 ```
 Content-Type: application/pdf
 Content-Length: 102400
@@ -378,6 +382,7 @@ Cache-Control: private, max-age=3600
 更新附件的属性信息。属性会与现有属性合并（新值覆盖旧值）。
 
 支持的属性类型：
+
 - **图片 (image/\*)**: `width` (宽度), `height` (高度)
 - **音频 (audio/\*)**: `duration` (时长，单位：秒)
 - **视频 (video/\*)**: `duration` (时长，单位：秒)
@@ -386,10 +391,10 @@ Cache-Control: private, max-age=3600
 
 **Headers:**
 
-| Header | Required | Description |
-| ------ | -------- | ----------- |
-| Authorization | Yes | JWT Token |
-| Content-Type | Yes | application/json |
+| Header        | Required | Description      |
+| ------------- | -------- | ---------------- |
+| Authorization | Yes      | JWT Token        |
+| Content-Type  | Yes      | application/json |
 
 **Path Parameters:**
 
@@ -399,9 +404,9 @@ Cache-Control: private, max-age=3600
 
 **Request Body:**
 
-| Parameter  | Type   | Required | Description                   |
-| ---------- | ------ | -------- | ----------------------------- |
-| properties | object | Yes      | 要更新的属性对象               |
+| Parameter  | Type   | Required | Description      |
+| ---------- | ------ | -------- | ---------------- |
+| properties | object | Yes      | 要更新的属性对象 |
 
 **Example Request:**
 
@@ -419,14 +424,15 @@ curl -X PATCH http://localhost:3000/api/v1/attachments/attachment_123456/propert
 > **Response Type:** `ApiSuccessDto<UpdateAttachmentPropertiesResponseDto>`
 >
 > **UpdateAttachmentPropertiesResponseDto 类型定义:**
+>
 > ```typescript
 > interface AttachmentDto {
->   attachmentId: string;  // 附件唯一标识符
->   filename: string;      // 文件名
->   url: string;          // 访问 URL（存储访问地址）
->   type: string;         // MIME 类型
->   size: number;         // 文件大小（字节）
->   createdAt: number;    // 创建时间戳（毫秒）
+>   attachmentId: string; // 附件唯一标识符
+>   filename: string; // 文件名
+>   url: string; // 访问 URL（存储访问地址）
+>   type: string; // MIME 类型
+>   size: number; // 文件大小（字节）
+>   createdAt: number; // 创建时间戳（毫秒）
 >   properties?: Record<string, unknown>; // 附件属性
 > }
 >
@@ -460,12 +466,12 @@ curl -X PATCH http://localhost:3000/api/v1/attachments/attachment_123456/propert
 
 **Error Responses:**
 
-| Status | Description |
-| ------ | ----------- |
+| Status | Description               |
+| ------ | ------------------------- |
 | 400    | 参数错误或缺少 properties |
-| 401    | 未授权      |
-| 404    | 附件不存在  |
-| 500    | 数据库错误  |
+| 401    | 未授权                    |
+| 404    | 附件不存在                |
+| 500    | 数据库错误                |
 
 ---
 
@@ -494,14 +500,14 @@ Cookie: aimo_token=<jwt_token>
 
 ## Error Codes Reference
 
-| Code | HTTP Status | Meaning                      |
-| ---- | ---------- | ---------------------------- |
-| 4001 | 400        | PARAMS_ERROR - 参数错误       |
-| 4004 | 404        | ATTACHMENT_NOT_FOUND - 附件不存在 |
-| 4010 | 401        | UNAUTHORIZED - 未授权         |
-| 4130 | 413        | FILE_TOO_LARGE - 文件太大     |
-| 4150 | 415        | UNSUPPORTED_FILE_TYPE - 不支持的文件类型 |
-| 5001 | 500        | DB_ERROR - 数据库错误         |
-| 5002 | 500        | STORAGE_ERROR - 存储错误      |
-| 5003 | 500        | FILE_UPLOAD_ERROR - 文件上传错误 |
-| 5004 | 500        | SYSTEM_ERROR - 系统错误       |
+| Code | HTTP Status | Meaning                                  |
+| ---- | ----------- | ---------------------------------------- |
+| 4001 | 400         | PARAMS_ERROR - 参数错误                  |
+| 4004 | 404         | ATTACHMENT_NOT_FOUND - 附件不存在        |
+| 4010 | 401         | UNAUTHORIZED - 未授权                    |
+| 4130 | 413         | FILE_TOO_LARGE - 文件太大                |
+| 4150 | 415         | UNSUPPORTED_FILE_TYPE - 不支持的文件类型 |
+| 5001 | 500         | DB_ERROR - 数据库错误                    |
+| 5002 | 500         | STORAGE_ERROR - 存储错误                 |
+| 5003 | 500         | FILE_UPLOAD_ERROR - 文件上传错误         |
+| 5004 | 500         | SYSTEM_ERROR - 系统错误                  |

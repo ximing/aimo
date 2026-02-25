@@ -251,7 +251,12 @@ export class S3UnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
       const fullKey = this.getFullKey(key);
 
       // Determine if bucket is public based on metadata, fallback to adapter config
-      const isPublic = metadata?.isPublicBucket === 'true' ? true : (metadata?.isPublicBucket === 'false' ? false : this.isPublic);
+      const isPublic =
+        metadata?.isPublicBucket === 'true'
+          ? true
+          : metadata?.isPublicBucket === 'false'
+            ? false
+            : this.isPublic;
 
       // If bucket is public, return direct URL
       if (isPublic) {

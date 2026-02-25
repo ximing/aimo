@@ -5,7 +5,18 @@ import { MemoService } from '../../../services/memo.service';
 import { AttachmentService } from '../../../services/attachment.service';
 import { CategoryService } from '../../../services/category.service';
 import copyToClipboard from 'copy-to-clipboard';
-import { FileText, Film, Edit2, Trash2, Link, Download, Folder, Copy, Globe, Sparkles } from 'lucide-react';
+import {
+  FileText,
+  Film,
+  Edit2,
+  Trash2,
+  Link,
+  Download,
+  Folder,
+  Copy,
+  Globe,
+  Sparkles,
+} from 'lucide-react';
 import { RelatedMemosModal } from './related-memos-modal';
 import { ConfirmDeleteModal } from './confirm-delete-modal';
 import { MemoEditorForm } from '../../../components/memo-editor-form';

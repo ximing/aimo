@@ -79,7 +79,11 @@ export abstract class BaseUnifiedStorageAdapter implements UnifiedStorageAdapter
   abstract listFiles(prefix?: string): Promise<string[]>;
   abstract fileExists(key: string): Promise<boolean>;
   abstract getFileMetadata(key: string): Promise<{ size: number; lastModified: Date } | null>;
-  abstract generateAccessUrl(key: string, metadata: StorageMetadata, expiresIn?: number): Promise<string>;
+  abstract generateAccessUrl(
+    key: string,
+    metadata: StorageMetadata,
+    expiresIn?: number
+  ): Promise<string>;
 
   /**
    * Build a full storage path from base path and key
@@ -106,7 +110,13 @@ export abstract class BaseUnifiedStorageAdapter implements UnifiedStorageAdapter
     const mimeType = mime.lookup(filename) as string;
 
     // Security: return octet-stream for potentially dangerous content types
-    if (!mimeType || mimeType === 'text/html' || mimeType === 'text/plain' || mimeType === 'application/javascript' || mimeType === 'text/javascript') {
+    if (
+      !mimeType ||
+      mimeType === 'text/html' ||
+      mimeType === 'text/plain' ||
+      mimeType === 'application/javascript' ||
+      mimeType === 'text/javascript'
+    ) {
       return 'application/octet-stream';
     }
 

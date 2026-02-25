@@ -145,11 +145,7 @@ export const AccountSettings = view(() => {
           <div className="relative">
             <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-100 dark:bg-dark-700 flex items-center justify-center">
               {avatarPreview ? (
-                <img
-                  src={avatarPreview}
-                  alt="用户头像"
-                  className="w-full h-full object-cover"
-                />
+                <img src={avatarPreview} alt="用户头像" className="w-full h-full object-cover" />
               ) : (
                 <UserIcon className="w-12 h-12 text-gray-400 dark:text-gray-500" />
               )}
@@ -171,9 +167,7 @@ export const AccountSettings = view(() => {
           </div>
           <div>
             <h3 className="text-sm font-medium text-gray-900 dark:text-gray-50">头像</h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              点击头像更换图片
-            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">点击头像更换图片</p>
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
               支持 JPG、PNG、GIF、WebP，最大 5MB
             </p>
@@ -190,7 +184,9 @@ export const AccountSettings = view(() => {
         <form onSubmit={handleUpdateUserInfo} className="space-y-4">
           <div className="flex items-center gap-3">
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">UID</span>
-            <span className="text-sm text-gray-500 dark:text-gray-400 font-mono">{user?.uid || '-'}</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400 font-mono">
+              {user?.uid || '-'}
+            </span>
           </div>
 
           <div>

@@ -26,12 +26,17 @@ export const createTag = (data: CreateTagDto) => {
  * Update a tag
  */
 export const updateTag = (tagId: string, data: UpdateTagDto) => {
-  return request.put<unknown, { code: number; data: { tag: TagDto } }>(`/api/v1/tags/${tagId}`, data);
+  return request.put<unknown, { code: number; data: { tag: TagDto } }>(
+    `/api/v1/tags/${tagId}`,
+    data
+  );
 };
 
 /**
  * Delete a tag
  */
 export const deleteTag = (tagId: string) => {
-  return request.delete<unknown, { code: number; data: { message: string } }>(`/api/v1/tags/${tagId}`);
+  return request.delete<unknown, { code: number; data: { message: string } }>(
+    `/api/v1/tags/${tagId}`
+  );
 };

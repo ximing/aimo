@@ -1,6 +1,6 @@
-import { getEnvValue as getEnvironmentValue, getEnvBool as getEnvironmentBool } from "../utils/env";
+import { getEnvValue as getEnvironmentValue, getEnvBool as getEnvironmentBool } from '../utils/env';
 
-describe("Environment Utilities", () => {
+describe('Environment Utilities', () => {
   const originalEnvironment = process.env;
 
   beforeEach(() => {
@@ -13,50 +13,50 @@ describe("Environment Utilities", () => {
     process.env = originalEnvironment;
   });
 
-  describe("getEnvValue", () => {
-    it("should return env value if exists", () => {
-      process.env.TEST_VAR = "test-value";
-      expect(getEnvironmentValue("TEST_VAR")).toBe("test-value");
+  describe('getEnvValue', () => {
+    it('should return env value if exists', () => {
+      process.env.TEST_VAR = 'test-value';
+      expect(getEnvironmentValue('TEST_VAR')).toBe('test-value');
     });
 
-    it("should return undefined if env value does not exist", () => {
-      expect(getEnvironmentValue("NON_EXISTENT_VAR")).toBeUndefined();
+    it('should return undefined if env value does not exist', () => {
+      expect(getEnvironmentValue('NON_EXISTENT_VAR')).toBeUndefined();
     });
 
-    it("should return empty string if env value is empty", () => {
-      process.env.TEST_VAR = "";
-      expect(getEnvironmentValue("TEST_VAR")).toBe("");
+    it('should return empty string if env value is empty', () => {
+      process.env.TEST_VAR = '';
+      expect(getEnvironmentValue('TEST_VAR')).toBe('');
     });
   });
 
-  describe("getEnvBool", () => {
+  describe('getEnvBool', () => {
     it('should return true for "true" value', () => {
-      process.env.TEST_BOOL = "true";
-      expect(getEnvironmentBool("TEST_BOOL")).toBe(true);
+      process.env.TEST_BOOL = 'true';
+      expect(getEnvironmentBool('TEST_BOOL')).toBe(true);
     });
 
     it('should return true for "1" value', () => {
-      process.env.TEST_BOOL = "1";
-      expect(getEnvironmentBool("TEST_BOOL")).toBe(true);
+      process.env.TEST_BOOL = '1';
+      expect(getEnvironmentBool('TEST_BOOL')).toBe(true);
     });
 
     it('should return true for "yes" value', () => {
-      process.env.TEST_BOOL = "yes";
-      expect(getEnvironmentBool("TEST_BOOL")).toBe(true);
+      process.env.TEST_BOOL = 'yes';
+      expect(getEnvironmentBool('TEST_BOOL')).toBe(true);
     });
 
-    it("should return false for other values", () => {
-      process.env.TEST_BOOL = "false";
-      expect(getEnvironmentBool("TEST_BOOL")).toBe(false);
+    it('should return false for other values', () => {
+      process.env.TEST_BOOL = 'false';
+      expect(getEnvironmentBool('TEST_BOOL')).toBe(false);
     });
 
-    it("should return default value if env value does not exist", () => {
-      expect(getEnvironmentBool("NON_EXISTENT_VAR", true)).toBe(true);
-      expect(getEnvironmentBool("NON_EXISTENT_VAR", false)).toBe(false);
+    it('should return default value if env value does not exist', () => {
+      expect(getEnvironmentBool('NON_EXISTENT_VAR', true)).toBe(true);
+      expect(getEnvironmentBool('NON_EXISTENT_VAR', false)).toBe(false);
     });
 
-    it("should return default false if not specified", () => {
-      expect(getEnvironmentBool("NON_EXISTENT_VAR")).toBe(false);
+    it('should return default false if not specified', () => {
+      expect(getEnvironmentBool('NON_EXISTENT_VAR')).toBe(false);
     });
   });
 });

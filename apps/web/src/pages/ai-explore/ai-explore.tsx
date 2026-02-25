@@ -224,7 +224,6 @@ export const AIExplorePage = view(() => {
     });
   };
 
-
   // Empty state suggestions
   const emptySuggestions = [
     '总结一下我最近记录的重点内容',
@@ -249,9 +248,7 @@ export const AIExplorePage = view(() => {
                 <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center">
                   <Sparkles className="w-4 h-4 text-white" />
                 </div>
-                <h1 className="text-base font-semibold text-gray-900 dark:text-gray-50">
-                  AI 探索
-                </h1>
+                <h1 className="text-base font-semibold text-gray-900 dark:text-gray-50">AI 探索</h1>
               </div>
               <button
                 onClick={handleNewConversation}
@@ -586,9 +583,7 @@ export const AIExplorePage = view(() => {
                           ? '已达到对话轮数上限，请新建话题'
                           : '输入你的问题，按 Enter 发送，Shift+Enter 换行...'
                       }
-                      disabled={
-                        exploreService.loading || exploreService.isConversationLimitReached
-                      }
+                      disabled={exploreService.loading || exploreService.isConversationLimitReached}
                       rows={Math.min(5, Math.max(1, inputValue.split('\n').length))}
                       className="flex-1 px-3 py-2 bg-transparent border-0 resize-none focus:outline-none focus:ring-0 text-gray-900 dark:text-gray-50 placeholder:text-gray-400 dark:placeholder:text-gray-600 disabled:opacity-50"
                       style={{ minHeight: '24px', maxHeight: '120px' }}
@@ -727,9 +722,7 @@ export const AIExplorePage = view(() => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="w-full max-w-md bg-white dark:bg-dark-800 rounded-xl shadow-lg border border-gray-200 dark:border-dark-700 p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-50">
-                重命名对话
-              </h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-50">重命名对话</h3>
               <button
                 onClick={() => {
                   setIsRenameModalOpen(false);
@@ -761,9 +754,7 @@ export const AIExplorePage = view(() => {
             />
 
             {exploreService.error && (
-              <p className="mt-2 text-sm text-red-600 dark:text-red-400">
-                {exploreService.error}
-              </p>
+              <p className="mt-2 text-sm text-red-600 dark:text-red-400">{exploreService.error}</p>
             )}
 
             <div className="flex justify-end gap-3 mt-6">
@@ -798,9 +789,7 @@ export const AIExplorePage = view(() => {
               <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
                 <Trash2 className="w-5 h-5 text-red-600 dark:text-red-400" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-50">
-                删除对话
-              </h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-50">删除对话</h3>
             </div>
 
             <p className="text-gray-600 dark:text-gray-400 mb-6">
@@ -808,9 +797,7 @@ export const AIExplorePage = view(() => {
             </p>
 
             {exploreService.error && (
-              <p className="mb-4 text-sm text-red-600 dark:text-red-400">
-                {exploreService.error}
-              </p>
+              <p className="mb-4 text-sm text-red-600 dark:text-red-400">{exploreService.error}</p>
             )}
 
             <div className="flex justify-end gap-3">

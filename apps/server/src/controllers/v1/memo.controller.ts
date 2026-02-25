@@ -39,7 +39,6 @@ export class MemoV1Controller {
     @QueryParam('sortOrder') sortOrder: 'asc' | 'desc' = 'desc',
     @QueryParam('search') search?: string,
     @QueryParam('categoryId') categoryId?: string,
-    @QueryParam('tag') tag?: string,
     @QueryParam('tags') tags?: string[],
     @QueryParam('startDate') startDate?: string,
     @QueryParam('endDate') endDate?: string
@@ -76,7 +75,6 @@ export class MemoV1Controller {
         sortOrder,
         search,
         categoryId,
-        tag,
         tags,
         startDate: startDateObject,
         endDate: endDateObject,
@@ -389,13 +387,7 @@ export class MemoV1Controller {
         return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'User ID is required');
       }
 
-      const result = await this.memoService.getPublicMemos(
-        uid,
-        page,
-        limit,
-        sortBy,
-        sortOrder
-      );
+      const result = await this.memoService.getPublicMemos(uid, page, limit, sortBy, sortOrder);
 
       return ResponseUtility.success(result);
     } catch (error) {

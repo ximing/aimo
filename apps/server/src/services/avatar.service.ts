@@ -30,9 +30,7 @@ export class AvatarService {
 
   constructor() {
     // 使用 ATTACHMENT_ 配置创建存储适配器
-    this.storageAdapter = UnifiedStorageAdapterFactory.createAttachmentAdapter(
-      config.attachment
-    );
+    this.storageAdapter = UnifiedStorageAdapterFactory.createAttachmentAdapter(config.attachment);
   }
 
   /**
@@ -64,7 +62,10 @@ export class AvatarService {
    * @param expiresIn - 过期时间（秒），默认7天
    * @returns 带过期时间的访问URL
    */
-  async generateAvatarAccessUrl(avatarPath: string, expiresIn: number = 7 * 24 * 60 * 60): Promise<string> {
+  async generateAvatarAccessUrl(
+    avatarPath: string,
+    expiresIn: number = 7 * 24 * 60 * 60
+  ): Promise<string> {
     if (!avatarPath) return '';
 
     // 如果已经是完整URL，直接返回
@@ -89,7 +90,9 @@ export class AvatarService {
    * @param avatarPath - 头像存储路径
    * @returns 包含 buffer、etag、contentType 的对象
    */
-  async downloadAvatar(avatarPath: string): Promise<{ buffer: Buffer; etag: string; contentType: string }> {
+  async downloadAvatar(
+    avatarPath: string
+  ): Promise<{ buffer: Buffer; etag: string; contentType: string }> {
     if (!avatarPath) {
       throw new Error('Avatar path is empty');
     }
@@ -100,7 +103,8 @@ export class AvatarService {
       try {
         const url = new URL(avatarPath);
         key = url.pathname;
-        const prefix = config.attachment.s3?.prefix || config.attachment.oss?.prefix || 'attachments';
+        const prefix =
+          config.attachment.s3?.prefix || config.attachment.oss?.prefix || 'attachments';
         if (key.startsWith(`/${prefix}/`)) {
           key = key.slice(prefix.length + 2);
         }
@@ -159,7 +163,8 @@ export class AvatarService {
           const url = new URL(avatarPath);
           key = url.pathname;
           // 去除前缀（如 /attachments/ 或配置的 prefix）
-          const prefix = config.attachment.s3?.prefix || config.attachment.oss?.prefix || 'attachments';
+          const prefix =
+            config.attachment.s3?.prefix || config.attachment.oss?.prefix || 'attachments';
           if (key.startsWith(`/${prefix}/`)) {
             key = key.slice(prefix.length + 2);
           }
@@ -200,14 +205,14 @@ export class AvatarService {
           key === 'bucket'
             ? 'bucket'
             : key === 'prefix'
-            ? 'prefix'
-            : key === 'region'
-            ? 'region'
-            : key === 'endpoint'
-            ? 'endpoint'
-            : key === 'isPublicBucket'
-            ? 'isPublic'
-            : 'prefix'
+              ? 'prefix'
+              : key === 'region'
+                ? 'region'
+                : key === 'endpoint'
+                  ? 'endpoint'
+                  : key === 'isPublicBucket'
+                    ? 'isPublic'
+                    : 'prefix'
         ] as string | undefined;
       }
       case 'oss': {
@@ -215,14 +220,14 @@ export class AvatarService {
           key === 'bucket'
             ? 'bucket'
             : key === 'prefix'
-            ? 'prefix'
-            : key === 'region'
-            ? 'region'
-            : key === 'endpoint'
-            ? 'endpoint'
-            : key === 'isPublicBucket'
-            ? 'isPublic'
-            : 'prefix'
+              ? 'prefix'
+              : key === 'region'
+                ? 'region'
+                : key === 'endpoint'
+                  ? 'endpoint'
+                  : key === 'isPublicBucket'
+                    ? 'isPublic'
+                    : 'prefix'
         ] as string | undefined;
       }
       default: {

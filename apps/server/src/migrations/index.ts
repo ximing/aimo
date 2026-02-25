@@ -74,13 +74,17 @@ export class MigrationManager {
     } catch (error) {
       console.error('Migration manager initialization failed:', error);
       throw error;
-    }    
+    }
   }
 
   /**
    * Migrate a single table to its latest version
    */
-  private async migrateTable(connection: Connection, metadataTable: any, tableName: string): Promise<void> {
+  private async migrateTable(
+    connection: Connection,
+    metadataTable: any,
+    tableName: string
+  ): Promise<void> {
     try {
       if (this.options.verbose) {
         console.log(`\nProcessing table: ${tableName}`);
@@ -115,12 +119,16 @@ export class MigrationManager {
       }
 
       if (this.options.verbose) {
-        console.log(`  Pending migrations: v${pendingMigrations.map((m) => m.version).join(' -> v')}`);
+        console.log(
+          `  Pending migrations: v${pendingMigrations.map((m) => m.version).join(' -> v')}`
+        );
       }
 
       // Execute pending migrations
       if (this.options.dryRun) {
-        console.log(`  [DRY RUN] Would execute ${pendingMigrations.length} migrations for ${tableName}`);
+        console.log(
+          `  [DRY RUN] Would execute ${pendingMigrations.length} migrations for ${tableName}`
+        );
         for (const migration of pendingMigrations) {
           console.log(`    - ${migration.description || 'Migration'} (v${migration.version})`);
         }
@@ -186,6 +194,11 @@ export class MigrationManager {
 // Export for backward compatibility
 
 export type { Migration, MigrationExecutionResult } from './types.js';
-export { getAllTableNames, getLatestVersion, getMigrationsFromVersion, getMigrationsForTable } from './scripts/index.js';
+export {
+  getAllTableNames,
+  getLatestVersion,
+  getMigrationsFromVersion,
+  getMigrationsForTable,
+} from './scripts/index.js';
 
-export {MigrationExecutor} from './executor.js';
+export { MigrationExecutor } from './executor.js';

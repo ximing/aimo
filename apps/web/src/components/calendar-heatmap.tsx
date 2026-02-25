@@ -160,18 +160,15 @@ export const CalendarHeatmap = ({
     [onDateSelect]
   );
 
-  const handleMouseEnter = useCallback(
-    (e: React.MouseEvent, date: string, count: number) => {
-      const rect = (e.target as HTMLElement).getBoundingClientRect();
-      setHoveredCell({
-        date,
-        count,
-        x: rect.left + rect.width / 2,
-        y: rect.top,
-      });
-    },
-    []
-  );
+  const handleMouseEnter = useCallback((e: React.MouseEvent, date: string, count: number) => {
+    const rect = (e.target as HTMLElement).getBoundingClientRect();
+    setHoveredCell({
+      date,
+      count,
+      x: rect.left + rect.width / 2,
+      y: rect.top,
+    });
+  }, []);
 
   const handleMouseLeave = useCallback(() => {
     setHoveredCell(null);

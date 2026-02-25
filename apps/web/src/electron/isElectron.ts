@@ -5,7 +5,8 @@
  */
 export function isElectron(): boolean {
   // First check userAgent (fast, synchronous)
-  const hasElectronInUA = typeof navigator !== 'undefined' && navigator.userAgent.includes('Electron');
+  const hasElectronInUA =
+    typeof navigator !== 'undefined' && navigator.userAgent.includes('Electron');
   // Also check for electronAPI (more reliable, exposed by preload script)
   const hasElectronAPI = typeof window !== 'undefined' && !!window.electronAPI;
 
@@ -20,12 +21,12 @@ export function isElectron(): boolean {
 export function getPlatform(): string {
   if (!isElectron()) {
     return 'browser';
-  }  
+  }
   const platform = window.electronAPI?.platform;
   if (typeof platform === 'string' && platform.length > 0) {
     return platform;
   }
-  
+
   return 'unknown';
 }
 

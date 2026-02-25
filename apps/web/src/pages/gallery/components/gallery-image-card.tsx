@@ -105,7 +105,9 @@ export const GalleryImageCard = view(({ attachment, onClick, onDelete }: Gallery
             </div>
           </div>
           <div>
-            <p className="text-white text-xs font-medium truncate font-serif">{attachment.filename}</p>
+            <p className="text-white text-xs font-medium truncate font-serif">
+              {attachment.filename}
+            </p>
             <p className="text-slate-300 text-xs mt-2">
               {(attachment.size / 1024 / 1024).toFixed(2)} MB
             </p>

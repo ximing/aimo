@@ -97,9 +97,7 @@ export class GitHubReleaseService {
   /**
    * Fetch latest version from GitHub API
    */
-  private async fetchLatestVersionFromGitHub(
-    repoKey: 'desktop' | 'apk'
-  ): Promise<string> {
+  private async fetchLatestVersionFromGitHub(repoKey: 'desktop' | 'apk'): Promise<string> {
     const repo = this.repos[repoKey];
     const url = `https://api.github.com/repos/${repo}/releases/latest`;
 

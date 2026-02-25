@@ -101,9 +101,7 @@ export class LocalUnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
     }
   }
 
-  async getFileMetadata(
-    key: string
-  ): Promise<{
+  async getFileMetadata(key: string): Promise<{
     size: number;
     lastModified: Date;
   } | null> {
@@ -127,7 +125,11 @@ export class LocalUnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
    * @param metadata - Storage metadata (ignored for local storage)
    * @param _expiresIn - Expiry time in seconds (ignored for local storage)
    */
-  async generateAccessUrl(key: string, _metadata?: StorageMetadata, _expiresIn?: number): Promise<string> {
+  async generateAccessUrl(
+    key: string,
+    _metadata?: StorageMetadata,
+    _expiresIn?: number
+  ): Promise<string> {
     // For local storage, return the key as-is (relative path)
     // The caller will use this with an HTTP endpoint
     return key;

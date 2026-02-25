@@ -91,6 +91,9 @@ html.dark {
 
 /* Smooth theme transitions for elements with transition-colors */
 .transition-colors,
-[class*="transition-colors"] {
-  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+[class*='transition-colors'] {
+  transition:
+    background-color 0.3s ease,
+    border-color 0.3s ease,
+    color 0.3s ease;
 }

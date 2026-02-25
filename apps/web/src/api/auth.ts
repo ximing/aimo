@@ -1,4 +1,10 @@
-import type { RegisterDto, LoginDto, LoginResponseDto, UserInfoDto, ApiResponseDto } from '@aimo/dto';
+import type {
+  RegisterDto,
+  LoginDto,
+  LoginResponseDto,
+  UserInfoDto,
+  ApiResponseDto,
+} from '@aimo/dto';
 import request from '../utils/request';
 
 /**
@@ -15,8 +21,5 @@ export const register = (data: RegisterDto) => {
  * Login with email and password
  */
 export const login = (data: LoginDto) => {
-  return request.post<LoginDto, ApiResponseDto<LoginResponseDto>>(
-    '/api/v1/auth/login',
-    data
-  );
+  return request.post<LoginDto, ApiResponseDto<LoginResponseDto>>('/api/v1/auth/login', data);
 };

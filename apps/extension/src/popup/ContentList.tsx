@@ -70,9 +70,7 @@ export function ContentList({ isDarkMode, onAuthError }: ContentListProps) {
     try {
       const updatedItem = await updatePendingItem(id, { content: newContent });
       if (updatedItem) {
-        const updatedItems = pendingItems.map((item) =>
-          item.id === id ? updatedItem : item
-        );
+        const updatedItems = pendingItems.map((item) => (item.id === id ? updatedItem : item));
         setPendingItems(updatedItems);
       }
     } catch (error) {
@@ -107,18 +105,13 @@ export function ContentList({ isDarkMode, onAuthError }: ContentListProps) {
 
     try {
       // Download and upload the image with progress callback
-      const attachmentId = await downloadAndUploadImage(
-        item.content,
-        (progress) => {
-          // Update progress in storage and local state
-          updatePendingItem(id, { uploadProgress: progress });
-          setPendingItems((prev) =>
-            prev.map((i) =>
-              i.id === id ? { ...i, uploadProgress: progress } : i
-            )
-          );
-        }
-      );
+      const attachmentId = await downloadAndUploadImage(item.content, (progress) => {
+        // Update progress in storage and local state
+        updatePendingItem(id, { uploadProgress: progress });
+        setPendingItems((prev) =>
+          prev.map((i) => (i.id === id ? { ...i, uploadProgress: progress } : i))
+        );
+      });
 
       // Update status to uploaded with attachment ID
       await updatePendingItem(id, {
@@ -130,9 +123,7 @@ export function ContentList({ isDarkMode, onAuthError }: ContentListProps) {
       // Update local state
       setPendingItems((prev) =>
         prev.map((i) =>
-          i.id === id
-            ? { ...i, uploadStatus: 'uploaded', uploadProgress: 100, attachmentId }
-            : i
+          i.id === id ? { ...i, uploadStatus: 'uploaded', uploadProgress: 100, attachmentId } : i
         )
       );
     } catch (error) {
@@ -161,9 +152,7 @@ export function ContentList({ isDarkMode, onAuthError }: ContentListProps) {
       // Update local state
       setPendingItems((prev) =>
         prev.map((i) =>
-          i.id === id
-            ? { ...i, uploadStatus: 'error', uploadError: errorMessage }
-            : i
+          i.id === id ? { ...i, uploadStatus: 'error', uploadError: errorMessage } : i
         )
       );
     } finally {
@@ -235,16 +224,11 @@ export function ContentList({ isDarkMode, onAuthError }: ContentListProps) {
               throw new Error('图片上传失败，请先重试上传');
             } else {
               // Need to upload first
-              const newAttachmentId = await downloadAndUploadImage(
-                item.content,
-                (progress) => {
-                  setPendingItems((prev) =>
-                    prev.map((i) =>
-                      i.id === item.id ? { ...i, uploadProgress: progress } : i
-                    )
-                  );
-                }
-              );
+              const newAttachmentId = await downloadAndUploadImage(item.content, (progress) => {
+                setPendingItems((prev) =>
+                  prev.map((i) => (i.id === item.id ? { ...i, uploadProgress: progress } : i))
+                );
+              });
               attachmentIds = [newAttachmentId];
 
               // Update the item with the attachment ID
@@ -620,14 +604,10 @@ export function ContentList({ isDarkMode, onAuthError }: ContentListProps) {
               onClick={handleRetrySave}
               style={styles.retryButton}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = isDarkMode
-                  ? '#b91c1c'
-                  : '#fecaca';
+                e.currentTarget.style.backgroundColor = isDarkMode ? '#b91c1c' : '#fecaca';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = isDarkMode
-                  ? '#991b1b'
-                  : '#fee2e2';
+                e.currentTarget.style.backgroundColor = isDarkMode ? '#991b1b' : '#fee2e2';
               }}
             >
               重试

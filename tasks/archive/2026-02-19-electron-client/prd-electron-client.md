@@ -15,9 +15,11 @@
 ## User Stories
 
 ### US-001: 初始化 Electron 项目结构
+
 **Description:** 作为开发者，我需要创建 Electron 项目的基础结构，以便开始开发桌面客户端。
 
 **Acceptance Criteria:**
+
 - [ ] 在 `apps/client` 创建 Electron 项目，使用 Vite + Electron 模板
 - [ ] 配置主进程（main）和渲染进程（renderer）的构建流程
 - [ ] 配置 TypeScript 支持
@@ -26,9 +28,11 @@
 - [ ] Typecheck/lint passes
 
 ### US-002: 复用 Web 项目作为渲染层
+
 **Description:** 作为开发者，我希望 Electron 加载现有的 Web 项目，避免代码重复。
 
 **Acceptance Criteria:**
+
 - [ ] Electron 主进程开发模式下加载 `apps/web` 的 Vite dev server
 - [ ] Electron 主进程生产模式下加载打包后的 Web 静态文件
 - [ ] 配置 `apps/web` 的构建输出目录供 Electron 使用
@@ -36,9 +40,11 @@
 - [ ] Typecheck/lint passes
 
 ### US-003: 实现运行环境检测
+
 **Description:** 作为用户，我希望 Web 应用能识别是否在 Electron 中运行，以便调用不同的功能。
 
 **Acceptance Criteria:**
+
 - [ ] 创建 `isElectron()` 工具函数检测运行环境
 - [ ] 在渲染进程中暴露 `window.electronAPI` 供前端调用
 - [ ] Web 端代码可以通过类型安全的方式访问 Electron API
@@ -47,9 +53,11 @@
 - [ ] 在 Electron 和浏览器中分别验证环境检测正确
 
 ### US-004: 实现系统托盘功能
+
 **Description:** 作为用户，我希望关闭窗口后应用仍在后台运行，可以从系统托盘快速打开。
 
 **Acceptance Criteria:**
+
 - [ ] 点击关闭按钮时窗口隐藏到系统托盘（而非退出应用）
 - [ ] 系统托盘显示 AIMO 图标
 - [ ] 托盘菜单包含：显示主窗口、退出应用
@@ -59,9 +67,11 @@
 - [ ] 手动验证托盘功能在各平台正常工作
 
 ### US-005: 实现系统级快捷键
+
 **Description:** 作为用户，我希望使用全局快捷键快速打开/隐藏 AIMO 窗口，提高效率。
 
 **Acceptance Criteria:**
+
 - [ ] 注册全局快捷键（如 `Cmd/Ctrl+Shift+A`）显示/隐藏主窗口
 - [ ] 快捷键在应用后台运行时依然有效
 - [ ] 快捷键可配置（至少在代码层面）
@@ -70,9 +80,11 @@
 - [ ] 手动验证快捷键在各平台正常工作
 
 ### US-006: 实现原生应用菜单
+
 **Description:** 作为用户，我希望使用原生菜单栏执行常用操作。
 
 **Acceptance Criteria:**
+
 - [ ] macOS 上显示原生菜单栏（应用菜单、编辑菜单、视图菜单、窗口菜单）
 - [ ] Windows/Linux 上显示相应菜单栏
 - [ ] 菜单包含标准功能：复制/粘贴/剪切、全选、撤销/重做
@@ -82,9 +94,11 @@
 - [ ] 手动验证菜单在各平台正常显示和工作
 
 ### US-007: 实现本地文件拖拽支持
+
 **Description:** 作为用户，我希望直接从桌面拖拽文件到 AIMO 窗口中添加附件。
 
 **Acceptance Criteria:**
+
 - [ ] 支持从系统文件管理器拖拽文件到 Electron 窗口
 - [ ] 拖拽时显示视觉反馈（如高亮拖放区域）
 - [ ] 拖拽文件后触发上传/添加附件流程
@@ -94,9 +108,11 @@
 - [ ] 手动验证文件拖拽功能正常工作
 
 ### US-008: 实现窗口状态管理
+
 **Description:** 作为用户，我希望应用记住窗口位置和大小，下次打开时保持一致。
 
 **Acceptance Criteria:**
+
 - [ ] 窗口关闭前保存位置、大小、最大化状态到本地配置
 - [ ] 应用启动时恢复上次窗口状态
 - [ ] 使用 electron-store 或类似库管理配置
@@ -105,9 +121,11 @@
 - [ ] 手动验证窗口状态正确保存和恢复
 
 ### US-009: 实现自动更新机制
+
 **Description:** 作为用户，我希望应用自动检查更新并提示安装。
 
 **Acceptance Criteria:**
+
 - [ ] 集成 electron-updater 实现自动更新
 - [ ] 应用启动时检查更新
 - [ ] 发现更新时显示提示通知
@@ -117,9 +135,11 @@
 - [ ] 手动验证更新检查流程（可使用测试版本）
 
 ### US-010: 配置跨平台打包
+
 **Description:** 作为开发者，我需要打包应用供 macOS、Windows 和 Linux 用户使用。
 
 **Acceptance Criteria:**
+
 - [ ] 配置 electron-builder 进行应用打包
 - [ ] 支持打包 macOS 版本（.dmg, .zip）
 - [ ] 支持打包 Windows 版本（.exe, .msi）
@@ -193,11 +213,13 @@
 ## Technical Considerations
 
 ### 依赖管理
+
 - Electron 版本：使用最新稳定版（v30+）
 - 构建工具：Vite + vite-plugin-electron
 - 打包工具：electron-builder
 
 ### IPC 通信规范
+
 ```typescript
 // 预加载脚本暴露的 API 结构
 interface ElectronAPI {
@@ -219,11 +241,13 @@ interface ElectronAPI {
 ```
 
 ### Web 端适配
+
 - 在 `apps/web` 创建 `src/electron/` 目录存放 Electron 适配代码
 - 使用条件导入：`const electronAPI = isElectron() ? (await import('./electron/api')).default : null`
 - 保持 Web 核心代码零侵入，通过适配层桥接
 
 ### 构建流程
+
 ```
 pnpm dev:client    # 同时启动 web dev server 和 electron
 pnpm build:client  # 先 build:web，再打包 electron

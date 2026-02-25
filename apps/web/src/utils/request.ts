@@ -66,7 +66,8 @@ request.interceptors.response.use(
           localStorage.removeItem('aimo_user');
 
           // Only redirect if not already on auth page (check both pathname and hash for compatibility)
-          const isAuthPage = window.location.pathname.includes('/auth') || window.location.hash.includes('/auth');
+          const isAuthPage =
+            window.location.pathname.includes('/auth') || window.location.hash.includes('/auth');
           if (!isAuthPage) {
             navigate('/auth', { replace: true });
           }

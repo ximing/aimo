@@ -1,8 +1,4 @@
-import type {
-  ExploreQueryDto,
-  ExploreResponseDto,
-  ExploreRelationsResponseDto,
-} from '@aimo/dto';
+import type { ExploreQueryDto, ExploreResponseDto, ExploreRelationsResponseDto } from '@aimo/dto';
 import request from '../utils/request';
 
 /**

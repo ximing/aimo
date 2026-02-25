@@ -1,15 +1,12 @@
 import * as lancedb from '@lancedb/lancedb';
 import { Service } from 'typedi';
 
-
 import { config } from '../config/config.js';
 import { MigrationManager } from '../migrations/index.js';
-
 
 import type { Connection, Table } from '@lancedb/lancedb';
 
 // Re-export for backward compatibility
-
 
 @Service()
 export class LanceDbService {

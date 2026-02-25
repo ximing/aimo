@@ -498,7 +498,10 @@ function extractImageUrl(element: HTMLElement): string | null {
         return `${window.location.origin}${match[1]}`;
       } else {
         // Relative path
-        const basePath = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+        const basePath = window.location.href.substring(
+          0,
+          window.location.href.lastIndexOf('/') + 1
+        );
         return `${basePath}${match[1]}`;
       }
     }
@@ -628,21 +631,19 @@ document.addEventListener(
 window.addEventListener('scroll', handleScroll, { passive: true });
 
 // Listen for system theme changes
-window
-  .matchMedia('(prefers-color-scheme: dark)')
-  .addEventListener('change', () => {
-    if (toolbarContainer && currentSelection) {
-      // Recreate toolbar with new theme
-      hideToolbar();
-      setTimeout(() => {
-        showToolbar();
-        const rect = getSelectionRect();
-        if (rect) {
-          positionToolbar(rect);
-        }
-      }, 100);
-    }
-  });
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+  if (toolbarContainer && currentSelection) {
+    // Recreate toolbar with new theme
+    hideToolbar();
+    setTimeout(() => {
+      showToolbar();
+      const rect = getSelectionRect();
+      if (rect) {
+        positionToolbar(rect);
+      }
+    }, 100);
+  }
+});
 
 // Listen for messages from popup/background
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {

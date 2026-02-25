@@ -88,7 +88,9 @@ export class CategoryService {
       const results = await table.query().where(`uid = '${uid}'`).toArray();
 
       // Sort by name alphabetically (case-insensitive)
-      results.sort((a: any, b: any) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+      results.sort((a: any, b: any) =>
+        a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+      );
 
       return results.map((record) => this.toCategoryDto(record as CategoryRecord));
     } catch (error) {
@@ -177,9 +179,9 @@ export class CategoryService {
         color:
           data.color === null
             ? undefined
-            : (data.color === undefined
+            : data.color === undefined
               ? category.color
-              : data.color.trim()),
+              : data.color.trim(),
         createdAt: category.createdAt,
         updatedAt: Date.now(),
       };

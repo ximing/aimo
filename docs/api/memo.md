@@ -20,24 +20,23 @@ Base URL: `/api/v1/memos`
 
 **Headers:**
 
-| Header | Required | Description |
-| ------ | -------- | ----------- |
-| Authorization | Yes | JWT Token |
+| Header        | Required | Description |
+| ------------- | -------- | ----------- |
+| Authorization | Yes      | JWT Token   |
 
 **Query Parameters:**
 
-| Parameter  | Type   | Default   | Description                                      |
-| ---------- | ------ | --------- | ------------------------------------------------ |
-| page       | number | 1         | 页码                                             |
-| limit      | number | 10        | 每页记录数                                       |
-| sortBy     | string | createdAt | 排序字段：`createdAt` 或 `updatedAt`             |
-| sortOrder  | string | desc      | 排序顺序：`asc` 或 `desc`                        |
-| search     | string | -         | 搜索关键词（内容）                               |
-| categoryId | string | -         | 按分类过滤，使用 `__uncategorized__` 查询未分类 |
-| tag        | string | -         | 按标签名称过滤                                   |
-| tags       | string | -         | 按多个标签名称过滤（逗号分隔）                  |
-| startDate  | number | -         | 开始时间戳（毫秒）                               |
-| endDate    | number | -         | 结束时间戳（毫秒）                               |
+| Parameter  | Type     | Default   | Description                                     |
+| ---------- | -------- | --------- | ----------------------------------------------- |
+| page       | number   | 1         | 页码                                            |
+| limit      | number   | 10        | 每页记录数                                      |
+| sortBy     | string   | createdAt | 排序字段：`createdAt` 或 `updatedAt`            |
+| sortOrder  | string   | desc      | 排序顺序：`asc` 或 `desc`                       |
+| search     | string   | -         | 搜索关键词（内容）                              |
+| categoryId | string   | -         | 按分类过滤，使用 `__uncategorized__` 查询未分类 |
+| tags       | string[] | -         | 按多个标签名称过滤（逗号分隔）                  |
+| startDate  | number   | -         | 开始时间戳（毫秒）                              |
+| endDate    | number   | -         | 结束时间戳（毫秒）                              |
 
 **过滤未分类:**
 
@@ -65,37 +64,38 @@ curl -X GET "http://localhost:3000/api/v1/memos?page=1&limit=20&sortBy=updatedAt
 > **Response Type:** `ApiSuccessDto<PaginatedMemoListDto>`
 >
 > **PaginatedMemoListDto 类型定义:**
+>
 > ```typescript
 > interface TagDto {
->   tagId: string;    // 标签唯一标识符
->   uid: string;     // 用户唯一标识符
->   name: string;    // 标签名称
->   createdAt: number;   // 创建时间戳（毫秒）
->   updatedAt: number;   // 更新时间戳（毫秒）
+>   tagId: string; // 标签唯一标识符
+>   uid: string; // 用户唯一标识符
+>   name: string; // 标签名称
+>   createdAt: number; // 创建时间戳（毫秒）
+>   updatedAt: number; // 更新时间戳（毫秒）
 > }
 >
 > interface AttachmentDto {
->   attachmentId: string;  // 附件唯一标识符
->   filename: string;      // 文件名
->   url: string;          // 访问 URL（存储访问地址）
->   type: string;         // MIME 类型
->   size: number;         // 文件大小（字节）
->   createdAt: number;     // 创建时间戳（毫秒）
+>   attachmentId: string; // 附件唯一标识符
+>   filename: string; // 文件名
+>   url: string; // 访问 URL（存储访问地址）
+>   type: string; // MIME 类型
+>   size: number; // 文件大小（字节）
+>   createdAt: number; // 创建时间戳（毫秒）
 >   properties?: Record<string, unknown>; // 附件属性：audio(duration), image(width,height), video(duration)
 > }
 >
 > interface MemoListItemDto {
->   memoId: string;           // 笔记唯一标识符
->   uid: string;             // 用户唯一标识符
->   content: string;          // 笔记内容
+>   memoId: string; // 笔记唯一标识符
+>   uid: string; // 用户唯一标识符
+>   content: string; // 笔记内容
 >   type: 'text' | 'audio' | 'video'; // 笔记类型
->   categoryId?: string;      // 分类 ID
->   tags?: TagDto[];           // 标签列表
+>   categoryId?: string; // 分类 ID
+>   tags?: TagDto[]; // 标签列表
 >   attachments?: AttachmentDto[]; // 附件列表
 >   relations?: MemoListItemDto[]; // 相关笔记
->   isPublic?: boolean;      // 是否公开（无需登录访问）
->   createdAt: number;        // 创建时间戳（毫秒）
->   updatedAt: number;        // 更新时间戳（毫秒）
+>   isPublic?: boolean; // 是否公开（无需登录访问）
+>   createdAt: number; // 创建时间戳（毫秒）
+>   updatedAt: number; // 更新时间戳（毫秒）
 > }
 >
 > interface PaginatedMemoListDto {
@@ -156,9 +156,9 @@ curl -X GET "http://localhost:3000/api/v1/memos?page=1&limit=20&sortBy=updatedAt
 
 **Headers:**
 
-| Header | Required | Description |
-| ------ | -------- | ----------- |
-| Authorization | Yes | JWT Token |
+| Header        | Required | Description |
+| ------------- | -------- | ----------- |
+| Authorization | Yes      | JWT Token   |
 
 **Path Parameters:**
 
@@ -180,29 +180,30 @@ curl -X GET http://localhost:3000/api/v1/memos/memo_123456 \
 > **Response Type:** `ApiSuccessDto<MemoWithAttachmentsDto>`
 >
 > **MemoWithAttachmentsDto 类型定义:**
+>
 > ```typescript
 > interface AttachmentDto {
->   attachmentId: string;  // 附件唯一标识符
->   filename: string;      // 文件名
->   url: string;          // 访问 URL（存储访问地址）
->   type: string;         // MIME 类型
->   size: number;         // 文件大小（字节）
->   createdAt: number;     // 创建时间戳（毫秒）
+>   attachmentId: string; // 附件唯一标识符
+>   filename: string; // 文件名
+>   url: string; // 访问 URL（存储访问地址）
+>   type: string; // MIME 类型
+>   size: number; // 文件大小（字节）
+>   createdAt: number; // 创建时间戳（毫秒）
 >   properties?: Record<string, unknown>; // 附件属性：audio(duration), image(width,height), video(duration)
 > }
 >
 > interface MemoWithAttachmentsDto {
->   memoId: string;                    // 笔记唯一标识符
->   uid: string;                      // 用户唯一标识符
->   content: string;                  // 笔记内容
+>   memoId: string; // 笔记唯一标识符
+>   uid: string; // 用户唯一标识符
+>   content: string; // 笔记内容
 >   type: 'text' | 'audio' | 'video'; // 笔记类型
->   categoryId?: string;               // 分类 ID
->   attachments?: AttachmentDto[];     // 附件列表（含 URL）
->   embedding: number[];               // 向量嵌入
+>   categoryId?: string; // 分类 ID
+>   attachments?: AttachmentDto[]; // 附件列表（含 URL）
+>   embedding: number[]; // 向量嵌入
 >   relations?: MemoWithAttachmentsDto[]; // 相关笔记（含附件详情）
->   isPublic?: boolean;             // 是否公开（无需登录访问）
->   createdAt: number;                 // 创建时间戳（毫秒）
->   updatedAt: number;                 // 更新时间戳（毫秒）
+>   isPublic?: boolean; // 是否公开（无需登录访问）
+>   createdAt: number; // 创建时间戳（毫秒）
+>   updatedAt: number; // 更新时间戳（毫秒）
 > }
 > ```
 
@@ -266,24 +267,24 @@ curl -X GET http://localhost:3000/api/v1/memos/memo_123456 \
 
 **Headers:**
 
-| Header | Required | Description |
-| ------ | -------- | ----------- |
-| Authorization | Yes | JWT Token |
+| Header        | Required | Description |
+| ------------- | -------- | ----------- |
+| Authorization | Yes      | JWT Token   |
 
 **Body Parameters (JSON):**
 
-| Parameter   | Type   | Required | Description            |
-| ----------- | ------ | -------- | ---------------------- |
-| content     | string | Yes      | 笔记内容               |
-| type        | string | No       | 笔记类型 (默认: text)  |
-| attachments | array  | No       | 附件 ID 列表           |
-| categoryId  | string | No       | 分类 ID                |
-| tags        | array  | No       | 标签名称列表（新建标签） |
-| tagIds      | array  | No       | 标签 ID 列表（已有标签） |
-| relationIds | array  | No       | 相关笔记 ID 列表       |
-| isPublic    | boolean | No      | 是否公开（默认 false） |
-| createdAt   | number | No       | 创建时间戳（毫秒）     |
-| updatedAt   | number | No       | 更新时间戳（毫秒）     |
+| Parameter   | Type    | Required | Description              |
+| ----------- | ------- | -------- | ------------------------ |
+| content     | string  | Yes      | 笔记内容                 |
+| type        | string  | No       | 笔记类型 (默认: text)    |
+| attachments | array   | No       | 附件 ID 列表             |
+| categoryId  | string  | No       | 分类 ID                  |
+| tags        | array   | No       | 标签名称列表（新建标签） |
+| tagIds      | array   | No       | 标签 ID 列表（已有标签） |
+| relationIds | array   | No       | 相关笔记 ID 列表         |
+| isPublic    | boolean | No       | 是否公开（默认 false）   |
+| createdAt   | number  | No       | 创建时间戳（毫秒）       |
+| updatedAt   | number  | No       | 更新时间戳（毫秒）       |
 
 **Example Request:**
 
@@ -307,40 +308,40 @@ curl -X POST http://localhost:3000/api/v1/memos \
 
 > **Response Type:** `ApiSuccessDto<{ message: string; memo: MemoWithAttachmentsDto }>`
 >
->
 > **MemoWithAttachmentsDto 类型定义:**
+>
 > ```typescript
 > interface TagDto {
->   tagId: string;    // 标签唯一标识符
->   uid: string;     // 用户唯一标识符
->   name: string;    // 标签名称
->   createdAt: number;   // 创建时间戳（毫秒）
->   updatedAt: number;   // 更新时间戳（毫秒）
+>   tagId: string; // 标签唯一标识符
+>   uid: string; // 用户唯一标识符
+>   name: string; // 标签名称
+>   createdAt: number; // 创建时间戳（毫秒）
+>   updatedAt: number; // 更新时间戳（毫秒）
 > }
 >
 > interface AttachmentDto {
->   attachmentId: string;  // 附件唯一标识符
->   filename: string;      // 文件名
->   url: string;          // 访问 URL（存储访问地址）
->   type: string;         // MIME 类型
->   size: number;         // 文件大小（字节）
->   createdAt: number;     // 创建时间戳（毫秒）
+>   attachmentId: string; // 附件唯一标识符
+>   filename: string; // 文件名
+>   url: string; // 访问 URL（存储访问地址）
+>   type: string; // MIME 类型
+>   size: number; // 文件大小（字节）
+>   createdAt: number; // 创建时间戳（毫秒）
 >   properties?: Record<string, unknown>; // 附件属性：audio(duration), image(width,height), video(duration)
 > }
 >
 > interface MemoWithAttachmentsDto {
->   memoId: string;                    // 笔记唯一标识符
->   uid: string;                      // 用户唯一标识符
->   content: string;                  // 笔记内容
+>   memoId: string; // 笔记唯一标识符
+>   uid: string; // 用户唯一标识符
+>   content: string; // 笔记内容
 >   type: 'text' | 'audio' | 'video'; // 笔记类型
->   categoryId?: string;               // 分类 ID
->   tags?: TagDto[];                    // 标签列表
->   attachments?: AttachmentDto[];     // 附件列表（含 URL）
->   embedding: number[];               // 向量嵌入
+>   categoryId?: string; // 分类 ID
+>   tags?: TagDto[]; // 标签列表
+>   attachments?: AttachmentDto[]; // 附件列表（含 URL）
+>   embedding: number[]; // 向量嵌入
 >   relations?: MemoWithAttachmentsDto[]; // 相关笔记（含附件详情）
->   isPublic?: boolean;             // 是否公开（无需登录访问）
->   createdAt: number;                 // 创建时间戳（毫秒）
->   updatedAt: number;                 // 更新时间戳（毫秒）
+>   isPublic?: boolean; // 是否公开（无需登录访问）
+>   createdAt: number; // 创建时间戳（毫秒）
+>   updatedAt: number; // 更新时间戳（毫秒）
 > }
 > ```
 
@@ -407,9 +408,9 @@ curl -X POST http://localhost:3000/api/v1/memos \
 
 **Headers:**
 
-| Header | Required | Description |
-| ------ | -------- | ----------- |
-| Authorization | Yes | JWT Token |
+| Header        | Required | Description |
+| ------------- | -------- | ----------- |
+| Authorization | Yes      | JWT Token   |
 
 **Path Parameters:**
 
@@ -419,14 +420,14 @@ curl -X POST http://localhost:3000/api/v1/memos \
 
 **Body Parameters (JSON):**
 
-| Parameter   | Type   | Required | Description                                      |
-| ----------- | ------ | -------- | ----------------------------------------------- |
-| content     | string | Yes      | 笔记内容                                         |
-| type        | string | No       | 笔记类型，不传保持不变，传 `null` 重置为默认类型 |
-| attachments | array  | No       | 附件 ID 列表（传入时覆盖现有附件）               |
-| categoryId  | string | No       | 分类 ID，不传保持不变，传 `null` 取消分类        |
-| relationIds | array  | No       | 相关笔记 ID 列表（传入时覆盖现有关系）           |
-| isPublic    | boolean | No       | 是否公开，不传保持不变                             |
+| Parameter   | Type    | Required | Description                                      |
+| ----------- | ------- | -------- | ------------------------------------------------ |
+| content     | string  | Yes      | 笔记内容                                         |
+| type        | string  | No       | 笔记类型，不传保持不变，传 `null` 重置为默认类型 |
+| attachments | array   | No       | 附件 ID 列表（传入时覆盖现有附件）               |
+| categoryId  | string  | No       | 分类 ID，不传保持不变，传 `null` 取消分类        |
+| relationIds | array   | No       | 相关笔记 ID 列表（传入时覆盖现有关系）           |
+| isPublic    | boolean | No       | 是否公开，不传保持不变                           |
 
 **Example Request:**
 
@@ -448,40 +449,40 @@ curl -X PUT http://localhost:3000/api/v1/memos/memo_123456 \
 
 > **Response Type:** `ApiSuccessDto<{ message: string; memo: MemoWithAttachmentsDto }>`
 >
->
 > **MemoWithAttachmentsDto 类型定义:**
+>
 > ```typescript
 > interface TagDto {
->   tagId: string;    // 标签唯一标识符
->   uid: string;     // 用户唯一标识符
->   name: string;    // 标签名称
->   createdAt: number;   // 创建时间戳（毫秒）
->   updatedAt: number;   // 更新时间戳（毫秒）
+>   tagId: string; // 标签唯一标识符
+>   uid: string; // 用户唯一标识符
+>   name: string; // 标签名称
+>   createdAt: number; // 创建时间戳（毫秒）
+>   updatedAt: number; // 更新时间戳（毫秒）
 > }
 >
 > interface AttachmentDto {
->   attachmentId: string;  // 附件唯一标识符
->   filename: string;      // 文件名
->   url: string;          // 访问 URL（存储访问地址）
->   type: string;         // MIME 类型
->   size: number;         // 文件大小（字节）
->   createdAt: number;     // 创建时间戳（毫秒）
+>   attachmentId: string; // 附件唯一标识符
+>   filename: string; // 文件名
+>   url: string; // 访问 URL（存储访问地址）
+>   type: string; // MIME 类型
+>   size: number; // 文件大小（字节）
+>   createdAt: number; // 创建时间戳（毫秒）
 >   properties?: Record<string, unknown>; // 附件属性：audio(duration), image(width,height), video(duration)
 > }
 >
 > interface MemoWithAttachmentsDto {
->   memoId: string;                    // 笔记唯一标识符
->   uid: string;                      // 用户唯一标识符
->   content: string;                  // 笔记内容
+>   memoId: string; // 笔记唯一标识符
+>   uid: string; // 用户唯一标识符
+>   content: string; // 笔记内容
 >   type: 'text' | 'audio' | 'video'; // 笔记类型
->   categoryId?: string;               // 分类 ID
->   tags?: TagDto[];                    // 标签列表
->   attachments?: AttachmentDto[];     // 附件列表（含 URL）
->   embedding: number[];               // 向量嵌入
+>   categoryId?: string; // 分类 ID
+>   tags?: TagDto[]; // 标签列表
+>   attachments?: AttachmentDto[]; // 附件列表（含 URL）
+>   embedding: number[]; // 向量嵌入
 >   relations?: MemoWithAttachmentsDto[]; // 相关笔记（含附件详情）
->   isPublic?: boolean;             // 是否公开（无需登录访问）
->   createdAt: number;                 // 创建时间戳（毫秒）
->   updatedAt: number;                 // 更新时间戳（毫秒）
+>   isPublic?: boolean; // 是否公开（无需登录访问）
+>   createdAt: number; // 创建时间戳（毫秒）
+>   updatedAt: number; // 更新时间戳（毫秒）
 > }
 > ```
 
@@ -528,9 +529,9 @@ curl -X PUT http://localhost:3000/api/v1/memos/memo_123456 \
 
 **Headers:**
 
-| Header | Required | Description |
-| ------ | -------- | ----------- |
-| Authorization | Yes | JWT Token |
+| Header        | Required | Description |
+| ------------- | -------- | ----------- |
+| Authorization | Yes      | JWT Token   |
 
 **Path Parameters:**
 
@@ -540,10 +541,10 @@ curl -X PUT http://localhost:3000/api/v1/memos/memo_123456 \
 
 **Body Parameters (JSON):**
 
-| Parameter | Type   | Required | Description |
-| --------- | ------ | -------- | ----------- |
-| tags      | array  | No       | 标签名称列表（新建标签） |
-| tagIds    | array  | No       | 标签 ID 列表（已有标签） |
+| Parameter | Type  | Required | Description              |
+| --------- | ----- | -------- | ------------------------ |
+| tags      | array | No       | 标签名称列表（新建标签） |
+| tagIds    | array | No       | 标签 ID 列表（已有标签） |
 
 **Example Request:**
 
@@ -609,9 +610,9 @@ curl -X PUT http://localhost:3000/api/v1/memos/memo_123456/tags \
 
 **Headers:**
 
-| Header | Required | Description |
-| ------ | -------- | ----------- |
-| Authorization | Yes | JWT Token |
+| Header        | Required | Description |
+| ------------- | -------- | ----------- |
+| Authorization | Yes      | JWT Token   |
 
 **Path Parameters:**
 
@@ -662,20 +663,20 @@ curl -X DELETE http://localhost:3000/api/v1/memos/memo_123456 \
 
 **Headers:**
 
-| Header | Required | Description |
-| ------ | -------- | ----------- |
-| Authorization | Yes | JWT Token |
+| Header        | Required | Description |
+| ------------- | -------- | ----------- |
+| Authorization | Yes      | JWT Token   |
 
 **Body Parameters (JSON):**
 
-| Parameter  | Type   | Required | Description                                      |
-| ---------- | ------ | -------- | ------------------------------------------------ |
-| query      | string | Yes      | 搜索查询文本                                     |
-| page       | number | No       | 页码，默认为 1                                   |
-| limit      | number | No       | 每页记录数，默认为 20                            |
+| Parameter  | Type   | Required | Description                                     |
+| ---------- | ------ | -------- | ----------------------------------------------- |
+| query      | string | Yes      | 搜索查询文本                                    |
+| page       | number | No       | 页码，默认为 1                                  |
+| limit      | number | No       | 每页记录数，默认为 20                           |
 | categoryId | string | No       | 按分类过滤，使用 `__uncategorized__` 查询未分类 |
-| startDate  | number | No       | 开始时间戳（毫秒）                               |
-| endDate    | number | No       | 结束时间戳（毫秒）                               |
+| startDate  | number | No       | 开始时间戳（毫秒）                              |
+| endDate    | number | No       | 结束时间戳（毫秒）                              |
 
 **过滤说明:**
 
@@ -718,29 +719,30 @@ curl -X POST http://localhost:3000/api/v1/memos/search/vector \
 > **Response Type:** `ApiSuccessDto<PaginatedMemoListWithScoreDto>`
 >
 > **PaginatedMemoListWithScoreDto 类型定义:**
+>
 > ```typescript
 > interface AttachmentDto {
->   attachmentId: string;  // 附件唯一标识符
->   filename: string;      // 文件名
->   url: string;          // 访问 URL（存储访问地址）
->   type: string;         // MIME 类型
->   size: number;         // 文件大小（字节）
->   createdAt: number;     // 创建时间戳（毫秒）
+>   attachmentId: string; // 附件唯一标识符
+>   filename: string; // 文件名
+>   url: string; // 访问 URL（存储访问地址）
+>   type: string; // MIME 类型
+>   size: number; // 文件大小（字节）
+>   createdAt: number; // 创建时间戳（毫秒）
 >   properties?: Record<string, unknown>; // 附件属性：audio(duration), image(width,height), video(duration)
 > }
 >
 > interface MemoListItemWithScoreDto {
->   memoId: string;           // 笔记唯一标识符
->   uid: string;             // 用户唯一标识符
->   content: string;          // 笔记内容
+>   memoId: string; // 笔记唯一标识符
+>   uid: string; // 用户唯一标识符
+>   content: string; // 笔记内容
 >   type: 'text' | 'audio' | 'video'; // 笔记类型
->   categoryId?: string;      // 分类 ID
+>   categoryId?: string; // 分类 ID
 >   attachments?: AttachmentDto[]; // 附件列表
 >   relations?: MemoListItemWithScoreDto[]; // 相关笔记
->   isPublic?: boolean;      // 是否公开（无需登录访问）
->   createdAt: number;        // 创建时间戳（毫秒）
->   updatedAt: number;        // 更新时间戳（毫秒）
->   relevanceScore?: number;   // 相似度分数 (0-1)，越高越相关
+>   isPublic?: boolean; // 是否公开（无需登录访问）
+>   createdAt: number; // 创建时间戳（毫秒）
+>   updatedAt: number; // 更新时间戳（毫秒）
+>   relevanceScore?: number; // 相似度分数 (0-1)，越高越相关
 > }
 >
 > interface PaginatedMemoListWithScoreDto {
@@ -802,9 +804,9 @@ curl -X POST http://localhost:3000/api/v1/memos/search/vector \
 
 **Headers:**
 
-| Header | Required | Description |
-| ------ | -------- | ----------- |
-| Authorization | Yes | JWT Token |
+| Header        | Required | Description |
+| ------------- | -------- | ----------- |
+| Authorization | Yes      | JWT Token   |
 
 **Path Parameters:**
 
@@ -833,19 +835,20 @@ curl -X GET "http://localhost:3000/api/v1/memos/memo_123456/related?page=1&limit
 > **Response Type:** `ApiSuccessDto<PaginatedMemoListWithScoreDto>`
 >
 > **PaginatedMemoListWithScoreDto 类型定义:**
+>
 > ```typescript
 > interface MemoListItemWithScoreDto {
->   memoId: string;           // 笔记唯一标识符
->   uid: string;             // 用户唯一标识符
->   content: string;          // 笔记内容
+>   memoId: string; // 笔记唯一标识符
+>   uid: string; // 用户唯一标识符
+>   content: string; // 笔记内容
 >   type: 'text' | 'audio' | 'video'; // 笔记类型
->   categoryId?: string;      // 分类 ID
+>   categoryId?: string; // 分类 ID
 >   attachments?: AttachmentDto[]; // 附件列表
 >   relations?: MemoListItemWithScoreDto[]; // 相关笔记
->   isPublic?: boolean;      // 是否公开（无需登录访问）
->   createdAt: number;        // 创建时间戳（毫秒）
->   updatedAt: number;        // 更新时间戳（毫秒）
->   relevanceScore?: number;   // 相似度分数 (0-1)，越高越相关
+>   isPublic?: boolean; // 是否公开（无需登录访问）
+>   createdAt: number; // 创建时间戳（毫秒）
+>   updatedAt: number; // 更新时间戳（毫秒）
+>   relevanceScore?: number; // 相似度分数 (0-1)，越高越相关
 > }
 >
 > interface PaginatedMemoListWithScoreDto {
@@ -906,9 +909,9 @@ curl -X GET "http://localhost:3000/api/v1/memos/memo_123456/related?page=1&limit
 
 **Headers:**
 
-| Header | Required | Description |
-| ------ | -------- | ----------- |
-| Authorization | Yes | JWT Token |
+| Header        | Required | Description |
+| ------------- | -------- | ----------- |
+| Authorization | Yes      | JWT Token   |
 
 **Path Parameters:**
 
@@ -920,8 +923,8 @@ curl -X GET "http://localhost:3000/api/v1/memos/memo_123456/related?page=1&limit
 
 | Parameter | Type   | Default | Description |
 | --------- | ------ | ------- | ----------- |
-| page      | number | 1       | 页码       |
-| limit     | number | 20      | 每页数量   |
+| page      | number | 1       | 页码        |
+| limit     | number | 20      | 每页数量    |
 
 **Example Request:**
 
@@ -937,18 +940,19 @@ curl -X GET "http://localhost:3000/api/v1/memos/memo_123456/backlinks?page=1&lim
 > **Response Type:** `ApiSuccessDto<{ items: MemoListItemDto[]; pagination: PaginationDto }>`
 >
 > **MemoListItemDto 类型定义:**
+>
 > ```typescript
 > interface MemoListItemDto {
->   memoId: string;           // 笔记唯一标识符
->   uid: string;             // 用户唯一标识符
->   content: string;          // 笔记内容
+>   memoId: string; // 笔记唯一标识符
+>   uid: string; // 用户唯一标识符
+>   content: string; // 笔记内容
 >   type: 'text' | 'audio' | 'video'; // 笔记类型
->   categoryId?: string;      // 分类 ID
+>   categoryId?: string; // 分类 ID
 >   attachments?: AttachmentDto[]; // 附件列表
 >   relations?: MemoListItemDto[]; // 相关笔记
->   isPublic?: boolean;      // 是否公开（无需登录访问）
->   createdAt: number;        // 创建时间戳（毫秒）
->   updatedAt: number;        // 更新时间戳（毫秒）
+>   isPublic?: boolean; // 是否公开（无需登录访问）
+>   createdAt: number; // 创建时间戳（毫秒）
+>   updatedAt: number; // 更新时间戳（毫秒）
 > }
 >
 > interface PaginationDto {
@@ -1032,28 +1036,29 @@ curl -X GET "http://localhost:3000/api/v1/memos/public/user_123456?page=1&limit=
 > **Response Type:** `ApiSuccessDto<PaginatedMemoListDto>`
 >
 > **PaginatedMemoListDto 类型定义:**
+>
 > ```typescript
 > interface AttachmentDto {
->   attachmentId: string;  // 附件唯一标识符
->   filename: string;      // 文件名
->   url: string;          // 访问 URL（存储访问地址）
->   type: string;          // MIME 类型
->   size: number;          // 文件大小（字节）
->   createdAt: number;     // 创建时间戳（毫秒）
+>   attachmentId: string; // 附件唯一标识符
+>   filename: string; // 文件名
+>   url: string; // 访问 URL（存储访问地址）
+>   type: string; // MIME 类型
+>   size: number; // 文件大小（字节）
+>   createdAt: number; // 创建时间戳（毫秒）
 >   properties?: Record<string, unknown>; // 附件属性：audio(duration), image(width,height), video(duration)
 > }
 >
 > interface MemoListItemDto {
->   memoId: string;           // 笔记唯一标识符
->   uid: string;               // 用户唯一标识符
->   content: string;            // 笔记内容
+>   memoId: string; // 笔记唯一标识符
+>   uid: string; // 用户唯一标识符
+>   content: string; // 笔记内容
 >   type: 'text' | 'audio' | 'video'; // 笔记类型
->   categoryId?: string;       // 分类 ID
+>   categoryId?: string; // 分类 ID
 >   attachments?: AttachmentDto[]; // 附件列表
 >   relations?: MemoListItemDto[]; // 相关笔记
->   isPublic?: boolean;        // 是否公开（无需登录访问）
->   createdAt: number;        // 创建时间戳（毫秒）
->   updatedAt: number;        // 更新时间戳（毫秒）
+>   isPublic?: boolean; // 是否公开（无需登录访问）
+>   createdAt: number; // 创建时间戳（毫秒）
+>   updatedAt: number; // 更新时间戳（毫秒）
 > }
 >
 > interface PaginatedMemoListDto {
@@ -1131,36 +1136,37 @@ curl -X GET "http://localhost:3000/api/v1/memos/public/user_123456/random"
 > **Response Type:** `ApiSuccessDto<MemoListItemDto>`
 >
 > **MemoListItemDto 类型定义:**
+>
 > ```typescript
 > interface TagDto {
->   tagId: string;    // 标签唯一标识符
->   uid: string;     // 用户唯一标识符
->   name: string;    // 标签名称
->   createdAt: number;   // 创建时间戳（毫秒）
->   updatedAt: number;   // 更新时间戳（毫秒）
+>   tagId: string; // 标签唯一标识符
+>   uid: string; // 用户唯一标识符
+>   name: string; // 标签名称
+>   createdAt: number; // 创建时间戳（毫秒）
+>   updatedAt: number; // 更新时间戳（毫秒）
 > }
 >
 > interface AttachmentDto {
->   attachmentId: string;  // 附件唯一标识符
->   filename: string;      // 文件名
->   url: string;          // 访问 URL（存储访问地址）
->   type: string;         // MIME 类型
->   size: number;         // 文件大小（字节）
->   createdAt: number;     // 创建时间戳（毫秒）
+>   attachmentId: string; // 附件唯一标识符
+>   filename: string; // 文件名
+>   url: string; // 访问 URL（存储访问地址）
+>   type: string; // MIME 类型
+>   size: number; // 文件大小（字节）
+>   createdAt: number; // 创建时间戳（毫秒）
 >   properties?: Record<string, unknown>; // 附件属性：audio(duration), image(width,height), video(duration)
 > }
 >
 > interface MemoListItemDto {
->   memoId: string;           // 笔记唯一标识符
->   uid: string;             // 用户唯一标识符
->   content: string;          // 笔记内容
+>   memoId: string; // 笔记唯一标识符
+>   uid: string; // 用户唯一标识符
+>   content: string; // 笔记内容
 >   type: 'text' | 'audio' | 'video'; // 笔记类型
->   categoryId?: string;      // 分类 ID
+>   categoryId?: string; // 分类 ID
 >   attachments?: AttachmentDto[]; // 附件列表
 >   relations?: MemoListItemDto[]; // 相关笔记
->   isPublic?: boolean;      // 是否公开（无需登录访问）
->   createdAt: number;        // 创建时间戳（毫秒）
->   updatedAt: number;        // 更新时间戳（毫秒）
+>   isPublic?: boolean; // 是否公开（无需登录访问）
+>   createdAt: number; // 创建时间戳（毫秒）
+>   updatedAt: number; // 更新时间戳（毫秒）
 > }
 > ```
 
@@ -1184,11 +1190,11 @@ curl -X GET "http://localhost:3000/api/v1/memos/public/user_123456/random"
 
 **Error Responses:**
 
-| Status | Description |
-| ------ | ----------- |
-| 400    | 参数错误    |
+| Status | Description    |
+| ------ | -------------- |
+| 400    | 参数错误       |
 | 404    | 未找到公开笔记 |
-| 500    | 数据库错误  |
+| 500    | 数据库错误     |
 
 ---
 
@@ -1197,6 +1203,7 @@ curl -X GET "http://localhost:3000/api/v1/memos/public/user_123456/random"
 除公开接口外，其余端点都需要有效的 JWT token。
 
 公开接口（无需认证）：
+
 - `/api/v1/memos/public/:uid`
 - `/api/v1/memos/public/:uid/random`
 
@@ -1217,8 +1224,8 @@ Cookie: aimo_token=<jwt_token>
 ## Error Codes Reference
 
 | Code | HTTP Status | Meaning                 |
-| ---- | ---------- | ----------------------- |
-| 4001 | 400        | PARAMS_ERROR - 参数错误 |
-| 4004 | 404        | NOT_FOUND - 资源不存在  |
-| 4010 | 401        | UNAUTHORIZED - 未授权   |
-| 5001 | 500        | DB_ERROR - 数据库错误   |
+| ---- | ----------- | ----------------------- |
+| 4001 | 400         | PARAMS_ERROR - 参数错误 |
+| 4004 | 404         | NOT_FOUND - 资源不存在  |
+| 4010 | 401         | UNAUTHORIZED - 未授权   |
+| 5001 | 500         | DB_ERROR - 数据库错误   |

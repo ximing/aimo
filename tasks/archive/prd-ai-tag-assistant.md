@@ -16,9 +16,11 @@
 ## User Stories
 
 ### US-001: 在 memo 卡片添加 AI 按钮
+
 **Description:** 作为用户，我希望在 memo 卡片上快速找到 AI 工具入口，以便使用智能功能。
 
 **Acceptance Criteria:**
+
 - [ ] 在 memo 卡片右上角添加 AI 工具按钮（图标形式，如 Sparkles 或 Wand）
 - [ ] 按钮hover 时显示 tooltip "AI 工具"
 - [ ] 按钮点击后打开 AI 工具选择弹窗
@@ -27,9 +29,11 @@
 - [ ] Verify in browser using dev-browser skill
 
 ### US-002: 创建 AI 工具选择弹窗
+
 **Description:** 作为用户，我希望在点击 AI 按钮后看到一个工具列表，以便选择需要的 AI 功能。
 
 **Acceptance Criteria:**
+
 - [ ] 弹窗标题为 "AI 工具"
 - [ ] 当前只显示一个工具："智能添加标签"（图标 + 名称 + 简短描述）
 - [ ] 点击工具后进入该工具的具体界面
@@ -39,9 +43,11 @@
 - [ ] Verify in browser using dev-browser skill
 
 ### US-003: 后端 API - AI 生成标签
+
 **Description:** 作为开发者，我需要一个后端接口来调用 AI 分析笔记内容并生成标签建议。
 
 **Acceptance Criteria:**
+
 - [ ] 创建 POST /api/v1/ai/generate-tags 接口
 - [ ] 接收参数：memoId 和 memoContent
 - [ ] 使用 OpenAI API 分析内容并生成 3-8 个相关标签
@@ -52,9 +58,11 @@
 - [ ] 单元测试覆盖主要逻辑
 
 ### US-004: 创建标签建议展示弹窗
+
 **Description:** 作为用户，我希望在选择"智能添加标签"后看到 AI 生成的标签建议，以便决定使用哪些。
 
 **Acceptance Criteria:**
+
 - [ ] 弹窗显示加载状态（"AI 正在分析内容..."）
 - [ ] 加载完成后显示生成的标签列表
 - [ ] 每个标签显示为可勾选的 chip/checkbox 样式
@@ -65,9 +73,11 @@
 - [ ] Verify in browser using dev-browser skill
 
 ### US-005: 标签二次编辑功能
+
 **Description:** 作为用户，我希望能够修改 AI 生成的标签，以便让标签更符合我的需求。
 
 **Acceptance Criteria:**
+
 - [ ] 点击已生成的标签可进入编辑模式
 - [ ] 编辑时显示输入框，允许修改标签文本
 - [ ] 按 Enter 或失去焦点确认修改
@@ -78,9 +88,11 @@
 - [ ] Verify in browser using dev-browser skill
 
 ### US-006: 后端 API - 批量更新 memo 标签
+
 **Description:** 作为开发者，我需要一个接口来将用户确认的标签批量添加到 memo 上。
 
 **Acceptance Criteria:**
+
 - [ ] 创建 PUT /api/v1/memos/:id/tags 接口（或复用现有更新接口）
 - [ ] 接收参数：tags 数组（字符串数组）
 - [ ] 更新 memo 的标签字段
@@ -90,9 +102,11 @@
 - [ ] 单元测试覆盖权限校验和更新逻辑
 
 ### US-007: 前端标签确认与提交
+
 **Description:** 作为用户，我希望在选择和编辑完标签后，一键将它们添加到我的笔记上。
 
 **Acceptance Criteria:**
+
 - [ ] 点击"确认添加"后调用 API 保存标签
 - [ ] 保存成功后关闭弹窗，显示成功提示（toast）
 - [ ] memo 卡片上立即显示新增的标签
@@ -103,12 +117,14 @@
 - [ ] Verify in browser using dev-browser skill
 
 ### US-008: AI 工具架构扩展支持
+
 **Description:** 作为开发者，我希望架构能支持未来轻松添加更多 AI 工具，以便扩展功能。
 
 **Acceptance Criteria:**
+
 - [ ] 前端：AI 工具配置使用数组/对象结构，便于添加新工具
 - [ ] 前端：弹窗内容根据工具类型动态渲染
-- [ ] 后端：AI 相关接口有清晰的路由结构（/api/v1/ai/*）
+- [ ] 后端：AI 相关接口有清晰的路由结构（/api/v1/ai/\*）
 - [ ] 创建 AIService 类集中管理 AI 相关逻辑
 - [ ] 预留其他 AI 工具的接口位置（如 /ai/summarize, /ai/translate）
 - [ ] Typecheck/lint passes
@@ -143,6 +159,7 @@
 ## Design Considerations
 
 ### UI/UX
+
 - AI 按钮使用 Sparkles 或 Wand 图标，hover 时显示微光动效吸引注意
 - 工具选择弹窗采用简洁的列表设计，每项显示图标、名称和描述
 - 标签建议弹窗使用卡片式布局，标签以 chip 形式展示
@@ -150,24 +167,28 @@
 - 添加自定义标签的输入框使用 placeholder: "输入新标签，按回车添加"
 
 ### 组件复用
+
 - 复用现有的 memo 卡片组件，在其上添加 AI 按钮
 - 复用现有的 Dialog/Modal 组件用于弹窗
 - 复用现有的 Tag/Badge 组件展示标签
 - 复用现有的 Button 和 Loading 组件
 
 ### 状态管理
+
 - 使用 @rabjs/react 管理 AI 弹窗的打开状态
 - 临时标签编辑状态在组件本地 state 管理
 
 ## Technical Considerations
 
 ### 后端架构
+
 - 在 `apps/server/src/controllers/v1/` 创建 `ai.controller.ts`
 - 在 `apps/server/src/services/` 创建 `ai.service.ts` 集中处理 AI 调用
 - AI 路由以 `/api/v1/ai` 为前缀
 - 使用现有的 OpenAI 配置和 EmbeddingService 模式
 
 ### API 设计
+
 ```typescript
 // POST /api/v1/ai/generate-tags
 interface GenerateTagsRequest {
@@ -186,16 +207,19 @@ interface UpdateMemoTagsRequest {
 ```
 
 ### AI Prompt 设计
+
 - 系统提示词："你是一个笔记标签助手。请分析用户笔记内容，生成 3-8 个简洁、相关的标签。标签应该概括内容主题，便于分类检索。只返回标签数组，不要其他解释。"
 - 用户提示词：笔记内容
 - 返回格式：JSON 数组 ["tag1", "tag2", "tag3"]
 
 ### 错误处理
+
 - AI 调用失败时返回友好错误提示
 - 生成超时（>5秒）时显示"生成超时，请重试"
 - 用户网络异常时保留编辑状态，允许重试
 
 ### 性能考虑
+
 - AI 生成是实时调用，需要显示加载状态
 - 标签保存后前端乐观更新，提升感知速度
 

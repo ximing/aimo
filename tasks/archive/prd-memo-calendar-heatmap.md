@@ -14,9 +14,11 @@
 ## User Stories
 
 ### US-001: 创建热力图组件
+
 **Description:** 作为开发者，我需要创建一个可复用的日历热力图组件，用于展示 memo 活跃度数据。
 
 **Acceptance Criteria:**
+
 - [ ] 实现类似 GitHub 的方块网格热力图（7行 x ~13周）
 - [ ] 支持 4 个颜色等级：无数据、低、中、高活跃
 - [ ] 显示月份标签在顶部
@@ -26,9 +28,11 @@
 - [ ] Typecheck/lint passes
 
 ### US-002: 左侧热力图列布局
+
 **Description:** 作为用户，我希望在 memo 列表左侧看到热力图，且可以收起它以获得更多空间。
 
 **Acceptance Criteria:**
+
 - [ ] 在现有 memo 列表左侧新增固定宽度列（默认展开，宽度约 200px）
 - [ ] 列顶部放置热力图组件
 - [ ] 下方区域留白（为后续功能预留）
@@ -38,9 +42,11 @@
 - [ ] Verify in browser using dev-browser skill
 
 ### US-003: 热力图数据接口
+
 **Description:** 作为开发者，我需要后端 API 提供 memo 活跃度统计数据。
 
 **Acceptance Criteria:**
+
 - [ ] 创建 GET `/api/v1/memos/stats/activity` 接口
 - [ ] 返回最近 90 天的每日 memo 数量统计
 - [ ] 数据格式：`{ date: '2025-11-20', count: 5, hasUpdate: boolean }`
@@ -50,9 +56,11 @@
 - [ ] Typecheck/lint passes
 
 ### US-004: 点击日期筛选 memo
+
 **Description:** 作为用户，我想点击热力图的某一天，只查看那天的 memo。
 
 **Acceptance Criteria:**
+
 - [ ] 点击热力图日期，memo 列表筛选为该日期
 - [ ] URL 参数更新为 `?date=2025-11-20`
 - [ ] 筛选状态在 UI 中清晰显示（如："2025年11月20日的 Memo"）
@@ -62,9 +70,11 @@
 - [ ] Verify in browser using dev-browser skill
 
 ### US-005: 记住收起状态
+
 **Description:** 作为用户，我希望系统记住我是否收起了热力图列，下次打开还是这个状态。
 
 **Acceptance Criteria:**
+
 - [ ] 收起状态保存到 localStorage
 - [ ] key: `aimo:heatmap:collapsed`
 - [ ] 页面加载时读取该设置
@@ -115,26 +125,28 @@
 ### BUG-001: 热力图日期筛选时间戳转换错误 (2026-02-18)
 
 **Problem:**
+
 - MemoList 在 2月17日 有数据
 - 热力图上没显示 2月17日
 - 点击 2月17日 后，接口请求了但返回了空数据
 - 问题原因：时区转换导致时间戳范围不正确
 
 **Root Cause:**
+
 1. 前端 `setSelectedDate()` 使用 `new Date(year, month - 1, day)` 创建**本地时区**的日期
 2. 然后调用 `getTime()` 返回时间戳，但这个时间戳被后端当作 UTC 时间处理
 3. 导致时间范围错位，特别是在非 UTC±0 时区
 
 **Solution:**
+
 - 前端修改 `setSelectedDate()` 使用 `Date.UTC()` 创建 UTC 时间
 - 后端修改 `getActivityStats()` 使用 `getUTCFullYear()` 等 UTC 方法格式化日期
 - 确保前后端使用一致的 UTC 时间戳
 
 **Changes Made:**
+
 1. `/apps/web/src/services/memo.service.ts`: `setSelectedDate()` 方法
    - 从 `new Date(year, month - 1, day, ...)` 改为 `new Date(Date.UTC(year, month - 1, day, ...))`
-   
 2. `/apps/server/src/services/memo.service.ts`: `getActivityStats()` 方法
    - 新增 `formatDateKeyUTC()` 函数使用 `getUTCFullYear()` 等 UTC 方法
    - 确保日期统计使用 UTC 时区
-

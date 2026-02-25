@@ -8,7 +8,6 @@ import { generateTypeId } from '../utils/id.js';
 
 import { MemoService } from './memo.service.js';
 
-
 import type { DailyRecommendationRecord } from '../models/db/schema.js';
 import type { MemoListItemDto } from '@aimo/dto';
 
@@ -98,11 +97,7 @@ export class RecommendationService {
   /**
    * Save recommendations to cache
    */
-  private async cacheRecommendations(
-    uid: string,
-    date: string,
-    memoIds: string[]
-  ): Promise<void> {
+  private async cacheRecommendations(uid: string, date: string, memoIds: string[]): Promise<void> {
     try {
       const table = await this.lanceDatabase.openTable('daily_recommendations');
       const recommendationId = generateTypeId(OBJECT_TYPE.RECOMMENDATION);
@@ -176,7 +171,9 @@ export class RecommendationService {
         this.memoService.getMemoByOffset(uid, offset)
       );
       const sampledMemosResults = await Promise.all(sampledMemosPromises);
-      const sampledMemos = sampledMemosResults.filter((m): m is NonNullable<typeof m> => m !== null);
+      const sampledMemos = sampledMemosResults.filter(
+        (m): m is NonNullable<typeof m> => m !== null
+      );
 
       // If we got less than 3 memos, return all we have
       if (sampledMemos.length <= 3) {

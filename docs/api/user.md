@@ -20,9 +20,9 @@ Base URL: `/api/v1/user`
 
 **Headers:**
 
-| Header | Required | Description |
-| ------ | -------- | ----------- |
-| Authorization | Yes | JWT Token |
+| Header        | Required | Description |
+| ------------- | -------- | ----------- |
+| Authorization | Yes      | JWT Token   |
 
 **Example Request:**
 
@@ -38,12 +38,13 @@ curl -X GET http://localhost:3000/api/v1/user/info \
 > **Response Type:** `ApiSuccessDto<UserInfoDto>`
 >
 > **UserInfoDto 类型定义:**
+>
 > ```typescript
 > interface UserInfoDto {
->   uid: string;        // 用户唯一标识符
->   email?: string;     // 用户邮箱
->   nickname?: string;  // 用户昵称
->   avatar?: string;    // 用户头像 URL
+>   uid: string; // 用户唯一标识符
+>   email?: string; // 用户邮箱
+>   nickname?: string; // 用户昵称
+>   avatar?: string; // 用户头像 URL
 > }
 > ```
 
@@ -62,11 +63,11 @@ curl -X GET http://localhost:3000/api/v1/user/info \
 
 **Error Responses:**
 
-| Code | Meaning |
-| ---- | ------- |
-| 4    | UNAUTHORIZED - 未授权 |
+| Code | Meaning                     |
+| ---- | --------------------------- |
+| 4    | UNAUTHORIZED - 未授权       |
 | 1000 | USER_NOT_FOUND - 用户不存在 |
-| 2000 | DB_ERROR - 数据库错误 |
+| 2000 | DB_ERROR - 数据库错误       |
 
 ---
 
@@ -80,25 +81,26 @@ curl -X GET http://localhost:3000/api/v1/user/info \
 
 **Headers:**
 
-| Header | Required | Description |
-| ------ | -------- | ----------- |
-| Authorization | Yes | JWT Token |
+| Header        | Required | Description |
+| ------------- | -------- | ----------- |
+| Authorization | Yes      | JWT Token   |
 
 **Body Parameters (JSON):**
 
 > **Request Type:** `UpdateUserDto`
 >
 > **UpdateUserDto 类型定义:**
+>
 > ```typescript
 > interface UpdateUserDto {
->   nickname?: string;   // 用户昵称
->   avatar?: string;     // 用户头像 URL
+>   nickname?: string; // 用户昵称
+>   avatar?: string; // 用户头像 URL
 > }
 > ```
 
-| Parameter | Type   | Required | Description |
-| --------- | ------ | -------- | ----------- |
-| nickname  | string | No       | 用户昵称    |
+| Parameter | Type   | Required | Description  |
+| --------- | ------ | -------- | ------------ |
+| nickname  | string | No       | 用户昵称     |
 | avatar    | string | No       | 用户头像 URL |
 
 **Example Request:**
@@ -119,12 +121,13 @@ curl -X PUT http://localhost:3000/api/v1/user/info \
 > **Response Type:** `ApiSuccessDto<{ message: string; user: UserInfoDto }>`
 >
 > **UserInfoDto 类型定义:**
+>
 > ```typescript
 > interface UserInfoDto {
->   uid: string;        // 用户唯一标识符
->   email?: string;     // 用户邮箱
->   nickname?: string;  // 用户昵称
->   avatar?: string;    // 用户头像 URL
+>   uid: string; // 用户唯一标识符
+>   email?: string; // 用户邮箱
+>   nickname?: string; // 用户昵称
+>   avatar?: string; // 用户头像 URL
 > }
 > ```
 
@@ -146,11 +149,11 @@ curl -X PUT http://localhost:3000/api/v1/user/info \
 
 **Error Responses:**
 
-| Code | Meaning |
-| ---- | ------- |
-| 4    | UNAUTHORIZED - 未授权 |
+| Code | Meaning                     |
+| ---- | --------------------------- |
+| 4    | UNAUTHORIZED - 未授权       |
 | 1000 | USER_NOT_FOUND - 用户不存在 |
-| 2000 | DB_ERROR - 数据库错误 |
+| 2000 | DB_ERROR - 数据库错误       |
 
 ---
 
@@ -164,15 +167,15 @@ curl -X PUT http://localhost:3000/api/v1/user/info \
 
 **Headers:**
 
-| Header | Required | Description |
-| ------ | -------- | ----------- |
-| Authorization | Yes | JWT Token |
+| Header        | Required | Description |
+| ------------- | -------- | ----------- |
+| Authorization | Yes      | JWT Token   |
 
 **Body Parameters (form-data):**
 
-| Parameter | Type | Required | Description |
-| --------- | ---- | -------- | ----------- |
-| avatar | file | Yes | 图片文件（`image/*`，默认最大 50MB） |
+| Parameter | Type | Required | Description                          |
+| --------- | ---- | -------- | ------------------------------------ |
+| avatar    | file | Yes      | 图片文件（`image/*`，默认最大 50MB） |
 
 **Example Request:**
 
@@ -201,14 +204,14 @@ curl -X POST http://localhost:3000/api/v1/user/avatar \
 
 **Error Responses:**
 
-| Code | Meaning |
-| ---- | ------- |
-| 2    | PARAMS_ERROR - No file uploaded |
-| 4    | UNAUTHORIZED - 未授权 |
-| 4000 | FILE_TOO_LARGE - 文件过大 |
+| Code | Meaning                                |
+| ---- | -------------------------------------- |
+| 2    | PARAMS_ERROR - No file uploaded        |
+| 4    | UNAUTHORIZED - 未授权                  |
+| 4000 | FILE_TOO_LARGE - 文件过大              |
 | 4001 | UNSUPPORTED_FILE_TYPE - 仅支持图片文件 |
-| 4003 | STORAGE_ERROR - 存储错误 |
-| 4004 | FILE_UPLOAD_ERROR - 文件上传失败 |
+| 4003 | STORAGE_ERROR - 存储错误               |
+| 4004 | FILE_UPLOAD_ERROR - 文件上传失败       |
 
 ---
 
@@ -222,26 +225,27 @@ curl -X POST http://localhost:3000/api/v1/user/avatar \
 
 **Headers:**
 
-| Header | Required | Description |
-| ------ | -------- | ----------- |
-| Authorization | Yes | JWT Token |
+| Header        | Required | Description |
+| ------------- | -------- | ----------- |
+| Authorization | Yes      | JWT Token   |
 
 **Body Parameters (JSON):**
 
 > **Request Type:** `ChangePasswordDto`
 >
 > **ChangePasswordDto 类型定义:**
+>
 > ```typescript
 > interface ChangePasswordDto {
->   oldPassword: string;  // 当前密码
+>   oldPassword: string; // 当前密码
 >   newPassword: string; // 新密码（至少6位）
 > }
 > ```
 
-| Parameter | Type   | Required | Description |
-| --------- | ------ | -------- | ----------- |
-| oldPassword | string | Yes | 当前密码 |
-| newPassword | string | Yes | 新密码（至少6位） |
+| Parameter   | Type   | Required | Description       |
+| ----------- | ------ | -------- | ----------------- |
+| oldPassword | string | Yes      | 当前密码          |
+| newPassword | string | Yes      | 新密码（至少6位） |
 
 **Example Request:**
 
@@ -273,12 +277,12 @@ curl -X POST http://localhost:3000/api/v1/user/password \
 
 **Error Responses:**
 
-| Code | Meaning |
-| ---- | ------- |
+| Code | Meaning                                          |
+| ---- | ------------------------------------------------ |
 | 2    | PARAMS_ERROR - 请填写完整信息或新密码长度至少6位 |
-| 4    | UNAUTHORIZED - 未授权 |
-| 1002 | PASSWORD_ERROR - 当前密码错误 |
-| 2000 | DB_ERROR - 数据库错误 |
+| 4    | UNAUTHORIZED - 未授权                            |
+| 1002 | PASSWORD_ERROR - 当前密码错误                    |
+| 2000 | DB_ERROR - 数据库错误                            |
 
 ---
 
@@ -300,14 +304,14 @@ Cookie: aimo_token=<jwt_token>
 
 ## Error Codes Reference
 
-| Code | Meaning |
-| ---- | ------- |
-| 2    | PARAMS_ERROR - 参数错误 |
-| 4    | UNAUTHORIZED - 未授权 |
-| 1000 | USER_NOT_FOUND - 用户不存在 |
-| 1002 | PASSWORD_ERROR - 密码错误 |
-| 2000 | DB_ERROR - 数据库错误 |
-| 4000 | FILE_TOO_LARGE - 文件过大 |
+| Code | Meaning                                  |
+| ---- | ---------------------------------------- |
+| 2    | PARAMS_ERROR - 参数错误                  |
+| 4    | UNAUTHORIZED - 未授权                    |
+| 1000 | USER_NOT_FOUND - 用户不存在              |
+| 1002 | PASSWORD_ERROR - 密码错误                |
+| 2000 | DB_ERROR - 数据库错误                    |
+| 4000 | FILE_TOO_LARGE - 文件过大                |
 | 4001 | UNSUPPORTED_FILE_TYPE - 不支持的文件类型 |
-| 4003 | STORAGE_ERROR - 存储错误 |
-| 4004 | FILE_UPLOAD_ERROR - 文件上传失败 |
+| 4003 | STORAGE_ERROR - 存储错误                 |
+| 4004 | FILE_UPLOAD_ERROR - 文件上传失败         |

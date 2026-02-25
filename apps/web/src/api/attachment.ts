@@ -1,5 +1,9 @@
 import axios from 'axios';
-import type { AttachmentDto, UploadAttachmentResponseDto, UpdateAttachmentPropertiesResponseDto } from '@aimo/dto';
+import type {
+  AttachmentDto,
+  UploadAttachmentResponseDto,
+  UpdateAttachmentPropertiesResponseDto,
+} from '@aimo/dto';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 const API_BASE = `${API_BASE_URL}/api/v1/attachments`;

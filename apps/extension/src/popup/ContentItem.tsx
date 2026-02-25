@@ -369,9 +369,7 @@ export function ContentItem({
               重试
             </button>
           </div>
-          {item.uploadError && (
-            <div style={styles.errorMessage}>{item.uploadError}</div>
-          )}
+          {item.uploadError && <div style={styles.errorMessage}>{item.uploadError}</div>}
         </div>
       );
     }
@@ -422,18 +420,10 @@ export function ContentItem({
         <div style={styles.itemHeader}>
           <div style={styles.itemIcon}>🖼️</div>
           <div style={styles.itemContent}>
-            <div style={styles.imageUrl}>
-              {truncateText(item.content, 50)}
-            </div>
-            <div style={styles.itemSource}>
-              {truncateText(item.sourceTitle, 25)}
-            </div>
+            <div style={styles.imageUrl}>{truncateText(item.content, 50)}</div>
+            <div style={styles.itemSource}>{truncateText(item.sourceTitle, 25)}</div>
           </div>
-          <button
-            style={styles.deleteButton}
-            onClick={() => onDelete(item.id)}
-            title="删除"
-          >
+          <button style={styles.deleteButton} onClick={() => onDelete(item.id)} title="删除">
             <DeleteIcon />
           </button>
         </div>
@@ -480,22 +470,12 @@ export function ContentItem({
       <div style={styles.itemHeader}>
         <div style={styles.itemIcon}>📝</div>
         <div style={styles.itemContent}>
-          <div
-            style={styles.itemText}
-            onClick={() => setIsExpanded(true)}
-            title="点击编辑"
-          >
+          <div style={styles.itemText} onClick={() => setIsExpanded(true)} title="点击编辑">
             {truncateText(item.content, 80)}
           </div>
-          <div style={styles.itemSource}>
-            {truncateText(item.sourceTitle, 25)}
-          </div>
+          <div style={styles.itemSource}>{truncateText(item.sourceTitle, 25)}</div>
         </div>
-        <button
-          style={styles.deleteButton}
-          onClick={() => onDelete(item.id)}
-          title="删除"
-        >
+        <button style={styles.deleteButton} onClick={() => onDelete(item.id)} title="删除">
           <DeleteIcon />
         </button>
       </div>

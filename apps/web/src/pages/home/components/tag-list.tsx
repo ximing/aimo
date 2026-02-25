@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { view, useService } from '@rabjs/react';
-import { Tag, ListChecks, List, X } from 'lucide-react';
+import { Tag, X } from 'lucide-react';
 import type { TagDto } from '@aimo/dto';
 import { TagService } from '../../../services/tag.service';
 import { MemoService } from '../../../services/memo.service';
@@ -26,21 +26,8 @@ export const TagList = view(() => {
   }, []);
 
   const handleTagClick = (tagName: string) => {
-    if (memoService.multiSelectMode) {
-      // Multi-select mode: toggle tag in filter
-      memoService.toggleTagInFilter(tagName);
-    } else {
-      // Single-select mode: toggle filter
-      if (memoService.tagFilter === tagName) {
-        memoService.setTagFilter(null);
-      } else {
-        memoService.setTagFilter(tagName);
-      }
-    }
-  };
-
-  const handleToggleMode = () => {
-    memoService.toggleMultiSelectMode(!memoService.multiSelectMode);
+    // Toggle tag in filter
+    memoService.toggleTagInFilter(tagName);
   };
 
   const handleClearAll = () => {
@@ -72,11 +59,7 @@ export const TagList = view(() => {
 
     if (result.success) {
       // If the deleted tag was being used as a filter, clear it
-      if (memoService.tagFilter === selectedTag.name) {
-        memoService.setTagFilter(null);
-      }
-      // If in multi-select mode and the tag was in the filter, remove it
-      if (memoService.multiSelectMode && memoService.tagsFilter.includes(selectedTag.name)) {
+      if (memoService.tagFilter.includes(selectedTag.name)) {
         memoService.toggleTagInFilter(selectedTag.name);
       }
       setDeleteModalOpen(false);
@@ -87,9 +70,7 @@ export const TagList = view(() => {
     }
   };
 
-  const selectedCount = memoService.multiSelectMode
-    ? memoService.tagsFilter.length
-    : memoService.tagFilter ? 1 : 0;
+  const selectedCount = memoService.tagFilter.length;
 
   // Loading state
   if (tagService.loading) {
@@ -133,22 +114,6 @@ export const TagList = view(() => {
           )}
         </div>
         <div className="flex items-center gap-1">
-          {/* Mode toggle button */}
-          <button
-            onClick={handleToggleMode}
-            className={`p-1.5 rounded transition-colors ${
-              memoService.multiSelectMode
-                ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
-                : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-800'
-            }`}
-            title={memoService.multiSelectMode ? '切换到单选模式' : '切换到多选模式'}
-          >
-            {memoService.multiSelectMode ? (
-              <ListChecks className="w-4 h-4" />
-            ) : (
-              <List className="w-4 h-4" />
-            )}
-          </button>
           {/* Clear all button (only show when filters active) */}
           {selectedCount > 0 && (
             <button
@@ -162,13 +127,7 @@ export const TagList = view(() => {
         </div>
       </div>
 
-      {/* Mode indicator */}
-      {memoService.multiSelectMode && (
-        <p className="text-xs text-gray-500 dark:text-gray-500 mb-2">
-          多选模式：点击标签添加/移除
-        </p>
-      )}
-
+      {/* Tags list */}
       <div className="max-h-[300px] overflow-y-auto pr-1 space-y-1">
         {tagService.tags.map((tag) => {
           const isSelected = memoService.isTagSelected(tag.name);
@@ -184,43 +143,9 @@ export const TagList = view(() => {
                   ? 'bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800'
                   : 'hover:bg-gray-100 dark:hover:bg-dark-800 border border-transparent'
               }`}
-              title={
-                memoService.multiSelectMode
-                  ? isSelected
-                    ? '点击移除'
-                    : '点击添加'
-                  : isSelected
-                    ? '点击取消筛选'
-                    : `点击筛选 "${tag.name}"`
-              }
+              title={isSelected ? '点击移除' : '点击添加'}
             >
               <div className="flex items-center gap-2">
-                {/* Checkbox in multi-select mode */}
-                {memoService.multiSelectMode && (
-                  <div
-                    className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
-                      isSelected
-                        ? 'bg-primary-500 border-primary-500'
-                        : 'border-gray-300 dark:border-gray-600'
-                    }`}
-                  >
-                    {isSelected && (
-                      <svg
-                        className="w-3 h-3 text-white"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={3}
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                    )}
-                  </div>
-                )}
                 <span
                   className={`text-sm truncate ${
                     isSelected

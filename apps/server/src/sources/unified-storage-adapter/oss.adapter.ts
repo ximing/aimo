@@ -204,7 +204,12 @@ export class OSSUnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
       const fullKey = this.getFullKey(key);
 
       // Determine if bucket is public based on metadata, fallback to adapter config
-      const isPublic = metadata?.isPublicBucket === 'true' ? true : (metadata?.isPublicBucket === 'false' ? false : this.isPublic);
+      const isPublic =
+        metadata?.isPublicBucket === 'true'
+          ? true
+          : metadata?.isPublicBucket === 'false'
+            ? false
+            : this.isPublic;
 
       // If bucket is public, return direct URL
       if (isPublic) {
@@ -245,7 +250,9 @@ export class OSSUnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
       // Use custom endpoint if provided
       const domain = endpoint.replace(/^https?:\/\//, '').replace(/\/$/, '');
       // If domain already has bucket name, use as-is; otherwise prepend bucket
-      return domain.startsWith(bucket + '.') ? `https://${domain}/${key}` : `https://${bucket}.${domain}/${key}`;
+      return domain.startsWith(bucket + '.')
+        ? `https://${domain}/${key}`
+        : `https://${bucket}.${domain}/${key}`;
     } else {
       // Use default Aliyun OSS URL format
       // https://bucket.oss-region.aliyuncs.com/key

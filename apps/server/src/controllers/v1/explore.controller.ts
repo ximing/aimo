@@ -83,11 +83,7 @@ export class ExploreController {
         return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'Query is required');
       }
 
-      const results = await this.exploreService.quickSearch(
-        body.query,
-        user.uid,
-        body.limit || 5
-      );
+      const results = await this.exploreService.quickSearch(body.query, user.uid, body.limit || 5);
 
       return ResponseUtility.success({
         items: results,
@@ -175,7 +171,10 @@ export class ExploreController {
         return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'Conversation ID is required');
       }
 
-      const conversation = await this.aiConversationService.getConversation(conversationId, user.uid);
+      const conversation = await this.aiConversationService.getConversation(
+        conversationId,
+        user.uid
+      );
 
       if (!conversation) {
         return ResponseUtility.error(ErrorCode.NOT_FOUND, 'Conversation not found');
@@ -193,10 +192,7 @@ export class ExploreController {
    * Create a new conversation
    */
   @Post('/conversations')
-  async createConversation(
-    @Body() data: CreateConversationDto,
-    @CurrentUser() user: UserInfoDto
-  ) {
+  async createConversation(@Body() data: CreateConversationDto, @CurrentUser() user: UserInfoDto) {
     try {
       if (!user?.uid) {
         return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
@@ -307,7 +303,10 @@ export class ExploreController {
       }
 
       if (!data.role || (data.role !== 'user' && data.role !== 'assistant')) {
-        return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'Valid role is required (user or assistant)');
+        return ResponseUtility.error(
+          ErrorCode.PARAMS_ERROR,
+          'Valid role is required (user or assistant)'
+        );
       }
 
       if (!data.content || data.content.trim().length === 0) {

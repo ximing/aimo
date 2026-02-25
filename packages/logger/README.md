@@ -24,17 +24,17 @@ pnpm add @osgfe/logger
 ## 快速开始
 
 ```typescript
-import { Log } from "@osgfe/logger";
+import { Log } from '@osgfe/logger';
 
 // 创建日志实例（最简配置）
 const logger = new Log({
-  projectName: "my-app",
+  projectName: 'my-app',
 });
 
 // 记录日志
-logger.info("应用启动成功");
-logger.warn("资源使用率较高", { cpu: 85, memory: 90 });
-logger.error("数据库连接失败", new Error("Connection timeout"));
+logger.info('应用启动成功');
+logger.warn('资源使用率较高', { cpu: 85, memory: 90 });
+logger.error('数据库连接失败', new Error('Connection timeout'));
 ```
 
 ## 基础用法
@@ -42,30 +42,30 @@ logger.error("数据库连接失败", new Error("Connection timeout"));
 ### 日志级别
 
 ```typescript
-logger.trace("跟踪信息"); // 最详细的调试信息
-logger.debug("调试信息"); // 开发调试信息
-logger.info("普通信息"); // 常规运行信息
-logger.warn("警告信息"); // 潜在问题警告
-logger.error("错误信息"); // 错误和异常
+logger.trace('跟踪信息'); // 最详细的调试信息
+logger.debug('调试信息'); // 开发调试信息
+logger.info('普通信息'); // 常规运行信息
+logger.warn('警告信息'); // 潜在问题警告
+logger.error('错误信息'); // 错误和异常
 ```
 
 ### 带元数据的日志
 
 ```typescript
 // 对象元数据
-logger.info("用户登录", { userId: 123, ip: "192.168.1.1" });
+logger.info('用户登录', { userId: 123, ip: '192.168.1.1' });
 
 // Error 对象（自动包含堆栈信息）
-logger.error("处理失败", new Error("Invalid input"));
+logger.error('处理失败', new Error('Invalid input'));
 
 // 混合使用
 logger.warn(
-  "操作超时",
+  '操作超时',
   {
-    operation: "fetchData",
+    operation: 'fetchData',
     timeout: 5000,
   },
-  "请检查网络连接"
+  '请检查网络连接'
 );
 ```
 
@@ -86,12 +86,12 @@ logger.warn(
 
 ```typescript
 const logger = new Log({
-  projectName: "my-service",
-  level: "debug", // 设置日志级别
-  logDir: "/var/log/my-app", // 自定义日志目录
+  projectName: 'my-service',
+  level: 'debug', // 设置日志级别
+  logDir: '/var/log/my-app', // 自定义日志目录
   console: true, // 开启终端输出
-  maxSize: "20m", // 文件最大 20MB
-  maxFiles: "30d", // 保留 30 天
+  maxSize: '20m', // 文件最大 20MB
+  maxFiles: '30d', // 保留 30 天
 });
 ```
 
@@ -115,7 +115,7 @@ export OSG_LOGGER_CONSOLE=false
 ```typescript
 // 环境变量会自动应用
 const logger = new Log({
-  projectName: "my-app",
+  projectName: 'my-app',
   // level 会使用环境变量 OSG_LOGGER_LEVEL 的值
 });
 ```
@@ -127,39 +127,39 @@ const logger = new Log({
 ```typescript
 // 主应用日志
 const appLogger = new Log({
-  projectName: "app-core",
-  level: "info",
+  projectName: 'app-core',
+  level: 'info',
 });
 
 // 后台任务日志
 const taskLogger = new Log({
-  projectName: "scheduled-tasks",
-  level: "debug",
+  projectName: 'scheduled-tasks',
+  level: 'debug',
 });
 
 // API 请求日志
 const apiLogger = new Log({
-  projectName: "api-server",
-  level: "info",
+  projectName: 'api-server',
+  level: 'info',
 });
 
-appLogger.info("应用启动");
-taskLogger.debug("任务队列初始化");
-apiLogger.info("API 服务就绪");
+appLogger.info('应用启动');
+taskLogger.debug('任务队列初始化');
+apiLogger.info('API 服务就绪');
 ```
 
 ### 生产环境优化
 
 ```typescript
-const isProd = process.env.NODE_ENV === "production";
+const isProd = process.env.NODE_ENV === 'production';
 
 const logger = new Log({
-  projectName: "my-service",
-  level: isProd ? "info" : "debug", // 生产环境降低日志级别
+  projectName: 'my-service',
+  level: isProd ? 'info' : 'debug', // 生产环境降低日志级别
   console: !isProd, // 生产环境关闭终端输出
-  logDir: isProd ? "/var/log/my-service" : undefined, // 开发环境使用默认目录
-  maxSize: "50m", // 增大单文件大小
-  maxFiles: "90d", // 延长保留时间
+  logDir: isProd ? '/var/log/my-service' : undefined, // 开发环境使用默认目录
+  maxSize: '50m', // 增大单文件大小
+  maxFiles: '90d', // 延长保留时间
 });
 ```
 
@@ -168,11 +168,11 @@ const logger = new Log({
 在应用退出前确保所有日志写入完成：
 
 ```typescript
-const logger = new Log({ projectName: "my-app" });
+const logger = new Log({ projectName: 'my-app' });
 
 // 监听退出信号
-process.on("SIGTERM", async () => {
-  logger.info("收到退出信号，准备关闭");
+process.on('SIGTERM', async () => {
+  logger.info('收到退出信号，准备关闭');
 
   // 等待所有日志写入完成
   await logger.flush();
@@ -189,7 +189,7 @@ process.on("SIGTERM", async () => {
 如需使用 Winston 的高级功能：
 
 ```typescript
-const logger = new Log({ projectName: "my-app" });
+const logger = new Log({ projectName: 'my-app' });
 
 // 获取 Winston Logger 实例
 const winstonLogger = logger.getWinstonLogger();

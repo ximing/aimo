@@ -14,9 +14,11 @@
 ## User Stories
 
 ### US-001: 新增获取反向关联的 API 接口
+
 **Description:** 作为开发者，我需要一个 API 来查询哪些笔记关联了当前笔记，以便前端展示完整的双向关系。
 
 **Acceptance Criteria:**
+
 - [ ] 新增 `GET /api/v1/memos/:id/backlinks` 接口，返回引用当前笔记的笔记列表
 - [ ] 接口返回字段：id, content, creator, createdAt, updatedAt
 - [ ] 支持分页参数：page, limit（默认 limit=20）
@@ -25,9 +27,11 @@
 - [ ] Typecheck/lint passes
 
 ### US-002: 重构相关笔记弹窗为三栏标签页布局
+
 **Description:** 作为用户，我希望在一个弹窗中看到语义相关、主动关联、被关联三种笔记，方便全面了解知识关系。
 
 **Acceptance Criteria:**
+
 - [ ] 弹窗使用标签页(Tabs)布局，包含三个选项：
   - "语义相关"（现有功能，基于向量相似度）
   - "关联了"（当前笔记主动关联的其他笔记，来自现有 `relations` 字段）
@@ -41,9 +45,11 @@
 - [ ] Verify in browser using dev-browser skill
 
 ### US-003: 新增关联图谱视图
+
 **Description:** 作为用户，我希望以图谱形式可视化查看笔记间的关联关系，直观理解知识网络。
 
 **Acceptance Criteria:**
+
 - [ ] 在"相关笔记"弹窗中新增第四个标签页"关联图谱"
 - [ ] 使用力导向图(force-directed graph)展示：
   - 当前笔记作为中心节点（高亮显示）
@@ -120,12 +126,12 @@
 
 ### 标签页说明
 
-| 标签页 | 数据来源 | 显示内容 |
-|-------|---------|---------|
-| 语义相关 | 现有相似度搜索 API | 基于向量相似度的相关笔记 |
-| 关联了 | memo.relations | 当前笔记主动关联的其他笔记 |
-| 被关联 | 新增 backlinks API | 引用当前笔记的其他笔记 |
-| 关联图谱 | relations + backlinks | 力导向图可视化展示 |
+| 标签页   | 数据来源              | 显示内容                   |
+| -------- | --------------------- | -------------------------- |
+| 语义相关 | 现有相似度搜索 API    | 基于向量相似度的相关笔记   |
+| 关联了   | memo.relations        | 当前笔记主动关联的其他笔记 |
+| 被关联   | 新增 backlinks API    | 引用当前笔记的其他笔记     |
+| 关联图谱 | relations + backlinks | 力导向图可视化展示         |
 
 ### 组件复用
 
@@ -139,6 +145,7 @@
 ### 后端查询实现
 
 反向关联查询实现方式：
+
 - 如果 memo 表有 `linkedMemoIds` JSON 数组字段：使用 `WHERE linkedMemoIds LIKE '%"memoId"%'` 或数据库特定的 JSON 查询
 - 如果是关联表（如 `memo_relations`）：查询 `WHERE targetMemoId = :id`
 - 注意性能：如果数据量大，考虑添加反向索引表优化

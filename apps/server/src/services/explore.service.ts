@@ -21,7 +21,8 @@ import type {
   RelationGraphNodeDto,
   RelationGraphEdgeDto,
   ExploreRelationsResponseDto,
- MemoListItemWithScoreDto } from '@aimo/dto';
+  MemoListItemWithScoreDto,
+} from '@aimo/dto';
 
 /**
  * Node names for the agent workflow

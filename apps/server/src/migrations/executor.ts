@@ -23,7 +23,9 @@ export const MigrationExecutor = {
     const { tableName, version } = migration;
 
     try {
-      console.log(`Executing migration: ${tableName} v${version} - ${migration.description || 'No description'}`);
+      console.log(
+        `Executing migration: ${tableName} v${version} - ${migration.description || 'No description'}`
+      );
 
       // Execute the migration
       await migration.up(connection);
@@ -39,14 +41,14 @@ export const MigrationExecutor = {
       // Check if record exists by querying
       const existingRecords = (await metadataTable
         .query()
-        .where(`tableName = '${tableName.replaceAll('\'', "''")}'`)
+        .where(`tableName = '${tableName.replaceAll("'", "''")}'`)
         .limit(1)
         .toArray()) as TableMigrationRecord[];
 
       if (existingRecords.length > 0) {
         // For LanceDB, we need to delete old record and insert new one
         // or use merge. Since merge might have complex behavior, we delete and re-add
-        await metadataTable.delete(`tableName = '${tableName.replaceAll('\'', "''")}'`);
+        await metadataTable.delete(`tableName = '${tableName.replaceAll("'", "''")}'`);
       }
 
       // Insert/upsert the record
@@ -112,15 +114,12 @@ export const MigrationExecutor = {
    * Get the current version of a table from metadata
    * Returns 0 if table has no migration record
    */
-  async getCurrentVersion(
-    metadataTable: Table,
-    tableName: string
-  ): Promise<number> {
+  async getCurrentVersion(metadataTable: Table, tableName: string): Promise<number> {
     try {
       // Search for the table in metadata using query
       const results = (await metadataTable
         .query()
-        .where(`tableName = '${tableName.replaceAll('\'', "''")}'`)
+        .where(`tableName = '${tableName.replaceAll("'", "''")}'`)
         .limit(1)
         .toArray()) as TableMigrationRecord[];
 

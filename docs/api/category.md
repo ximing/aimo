@@ -20,9 +20,9 @@ Base URL: `/api/v1/categories`
 
 **Headers:**
 
-| Header | Required | Description |
-| ------ | -------- | ----------- |
-| Authorization | Yes | JWT Token |
+| Header        | Required | Description |
+| ------------- | -------- | ----------- |
+| Authorization | Yes      | JWT Token   |
 
 **Example Request:**
 
@@ -38,14 +38,15 @@ curl -X GET http://localhost:3000/api/v1/categories \
 > **Response Type:** `ApiSuccessDto<{ categories: CategoryDto[] }>`
 >
 > **CategoryDto 类型定义:**
+>
 > ```typescript
 > interface CategoryDto {
->   categoryId: string;   // 分类唯一标识符
->   uid: string;          // 用户唯一标识符
->   name: string;         // 分类名称
->   color?: string;       // 分类颜色（十六进制）
->   createdAt: number;    // 创建时间戳（毫秒）
->   updatedAt: number;    // 更新时间戳（毫秒）
+>   categoryId: string; // 分类唯一标识符
+>   uid: string; // 用户唯一标识符
+>   name: string; // 分类名称
+>   color?: string; // 分类颜色（十六进制）
+>   createdAt: number; // 创建时间戳（毫秒）
+>   updatedAt: number; // 更新时间戳（毫秒）
 > }
 > ```
 
@@ -95,15 +96,15 @@ curl -X GET http://localhost:3000/api/v1/categories \
 
 **Headers:**
 
-| Header | Required | Description |
-| ------ | -------- | ----------- |
-| Authorization | Yes | JWT Token |
+| Header        | Required | Description |
+| ------------- | -------- | ----------- |
+| Authorization | Yes      | JWT Token   |
 
 **Path Parameters:**
 
-| Parameter   | Type   | Description |
-| ----------- | ------ | ----------- |
-| categoryId  | string | 分类 ID     |
+| Parameter  | Type   | Description |
+| ---------- | ------ | ----------- |
+| categoryId | string | 分类 ID     |
 
 **Example Request:**
 
@@ -119,14 +120,15 @@ curl -X GET http://localhost:3000/api/v1/categories/category_123456 \
 > **Response Type:** `ApiSuccessDto<{ category: CategoryDto }>`
 >
 > **CategoryDto 类型定义:**
+>
 > ```typescript
 > interface CategoryDto {
->   categoryId: string;   // 分类唯一标识符
->   uid: string;          // 用户唯一标识符
->   name: string;         // 分类名称
->   color?: string;       // 分类颜色（十六进制）
->   createdAt: number;    // 创建时间戳（毫秒）
->   updatedAt: number;    // 更新时间戳（毫秒）
+>   categoryId: string; // 分类唯一标识符
+>   uid: string; // 用户唯一标识符
+>   name: string; // 分类名称
+>   color?: string; // 分类颜色（十六进制）
+>   createdAt: number; // 创建时间戳（毫秒）
+>   updatedAt: number; // 更新时间戳（毫秒）
 > }
 > ```
 
@@ -167,16 +169,16 @@ curl -X GET http://localhost:3000/api/v1/categories/category_123456 \
 
 **Headers:**
 
-| Header | Required | Description |
-| ------ | -------- | ----------- |
-| Authorization | Yes | JWT Token |
+| Header        | Required | Description |
+| ------------- | -------- | ----------- |
+| Authorization | Yes      | JWT Token   |
 
 **Body Parameters (JSON):**
 
 | Parameter | Type   | Required | Description |
 | --------- | ------ | -------- | ----------- |
-| name      | string | Yes      | 分类名称     |
-| color     | string | No       | 分类颜色     |
+| name      | string | Yes      | 分类名称    |
+| color     | string | No       | 分类颜色    |
 
 **Example Request:**
 
@@ -197,14 +199,15 @@ curl -X POST http://localhost:3000/api/v1/categories \
 > **Response Type:** `ApiSuccessDto<{ category: CategoryDto }>`
 >
 > **CategoryDto 类型定义:**
+>
 > ```typescript
 > interface CategoryDto {
->   categoryId: string;   // 分类唯一标识符
->   uid: string;          // 用户唯一标识符
->   name: string;         // 分类名称
->   color?: string;       // 分类颜色（十六进制）
->   createdAt: number;    // 创建时间戳（毫秒）
->   updatedAt: number;    // 更新时间戳（毫秒）
+>   categoryId: string; // 分类唯一标识符
+>   uid: string; // 用户唯一标识符
+>   name: string; // 分类名称
+>   color?: string; // 分类颜色（十六进制）
+>   createdAt: number; // 创建时间戳（毫秒）
+>   updatedAt: number; // 更新时间戳（毫秒）
 > }
 > ```
 
@@ -227,12 +230,12 @@ curl -X POST http://localhost:3000/api/v1/categories \
 
 **Error Responses:**
 
-| Status | Description            |
-| ------ | --------------------- |
-| 400    | 分类名称为空           |
-| 401    | 未授权                 |
-| 409    | 分类已存在             |
-| 500    | 数据库错误             |
+| Status | Description  |
+| ------ | ------------ |
+| 400    | 分类名称为空 |
+| 401    | 未授权       |
+| 409    | 分类已存在   |
+| 500    | 数据库错误   |
 
 ---
 
@@ -246,21 +249,21 @@ curl -X POST http://localhost:3000/api/v1/categories \
 
 **Headers:**
 
-| Header | Required | Description |
-| ------ | -------- | ----------- |
-| Authorization | Yes | JWT Token |
+| Header        | Required | Description |
+| ------------- | -------- | ----------- |
+| Authorization | Yes      | JWT Token   |
 
 **Path Parameters:**
 
-| Parameter   | Type   | Description |
-| ----------- | ------ | ----------- |
-| categoryId  | string | 分类 ID     |
+| Parameter  | Type   | Description |
+| ---------- | ------ | ----------- |
+| categoryId | string | 分类 ID     |
 
 **Body Parameters (JSON):**
 
-| Parameter | Type   | Required | Description |
-| --------- | ------ | -------- | ----------- |
-| name      | string | No       | 分类名称     |
+| Parameter | Type   | Required | Description                |
+| --------- | ------ | -------- | -------------------------- |
+| name      | string | No       | 分类名称                   |
 | color     | string | No       | 分类颜色（传 `null` 清空） |
 
 **Example Request:**
@@ -282,14 +285,15 @@ curl -X PUT http://localhost:3000/api/v1/categories/category_123456 \
 > **Response Type:** `ApiSuccessDto<{ category: CategoryDto }>`
 >
 > **CategoryDto 类型定义:**
+>
 > ```typescript
 > interface CategoryDto {
->   categoryId: string;   // 分类唯一标识符
->   uid: string;          // 用户唯一标识符
->   name: string;         // 分类名称
->   color?: string;       // 分类颜色（十六进制）
->   createdAt: number;    // 创建时间戳（毫秒）
->   updatedAt: number;    // 更新时间戳（毫秒）
+>   categoryId: string; // 分类唯一标识符
+>   uid: string; // 用户唯一标识符
+>   name: string; // 分类名称
+>   color?: string; // 分类颜色（十六进制）
+>   createdAt: number; // 创建时间戳（毫秒）
+>   updatedAt: number; // 更新时间戳（毫秒）
 > }
 > ```
 
@@ -312,12 +316,12 @@ curl -X PUT http://localhost:3000/api/v1/categories/category_123456 \
 
 **Error Responses:**
 
-| Status | Description            |
-| ------ | --------------------- |
-| 401    | 未授权                 |
-| 404    | 分类不存在             |
-| 409    | 分类名称已存在         |
-| 500    | 数据库错误             |
+| Status | Description    |
+| ------ | -------------- |
+| 401    | 未授权         |
+| 404    | 分类不存在     |
+| 409    | 分类名称已存在 |
+| 500    | 数据库错误     |
 
 ---
 
@@ -331,15 +335,15 @@ curl -X PUT http://localhost:3000/api/v1/categories/category_123456 \
 
 **Headers:**
 
-| Header | Required | Description |
-| ------ | -------- | ----------- |
-| Authorization | Yes | JWT Token |
+| Header        | Required | Description |
+| ------------- | -------- | ----------- |
+| Authorization | Yes      | JWT Token   |
 
 **Path Parameters:**
 
-| Parameter   | Type   | Description |
-| ----------- | ------ | ----------- |
-| categoryId  | string | 分类 ID     |
+| Parameter  | Type   | Description |
+| ---------- | ------ | ----------- |
+| categoryId | string | 分类 ID     |
 
 **Example Request:**
 
@@ -392,10 +396,10 @@ Cookie: aimo_token=<jwt_token>
 
 ## Error Codes Reference
 
-| Code | HTTP Status | Meaning                      |
-| ---- | ---------- | ---------------------------- |
-| 4001 | 400        | PARAMS_ERROR - 参数错误      |
-| 4004 | 404        | NOT_FOUND - 资源不存在      |
-| 4010 | 401        | UNAUTHORIZED - 未授权        |
-| 4090 | 409        | CATEGORY_ALREADY_EXISTS - 分类已存在 |
-| 5001 | 500        | DB_ERROR - 数据库错误        |
+| Code | HTTP Status | Meaning                              |
+| ---- | ----------- | ------------------------------------ |
+| 4001 | 400         | PARAMS_ERROR - 参数错误              |
+| 4004 | 404         | NOT_FOUND - 资源不存在               |
+| 4010 | 401         | UNAUTHORIZED - 未授权                |
+| 4090 | 409         | CATEGORY_ALREADY_EXISTS - 分类已存在 |
+| 5001 | 500         | DB_ERROR - 数据库错误                |

@@ -18,7 +18,7 @@ This directory contains the database schema migration system for LanceDB. It pro
    - Provides version tracking queries
 
 3. **Migration Scripts** (`scripts/`)
-   - Individual migration files numbered sequentially (001-init.ts, 002-*, etc.)
+   - Individual migration files numbered sequentially (001-init.ts, 002-\*, etc.)
    - Each script implements the `Migration` interface
    - Organized by version, not by table
 
@@ -30,6 +30,7 @@ This directory contains the database schema migration system for LanceDB. It pro
 ## How It Works
 
 ### First Run (Fresh Database)
+
 1. `LanceDbService.init()` connects to database
 2. `MigrationManager.initialize()` is called
 3. `MigrationExecutor.ensureMetadataTableExists()` creates `table_migrations` table
@@ -38,6 +39,7 @@ This directory contains the database schema migration system for LanceDB. It pro
 6. Scalar indexes are created
 
 ### Subsequent Runs (Database Exists)
+
 1. Connect to database
 2. Read current versions from `table_migrations` table
 3. Compare with target versions from migration scripts
@@ -45,6 +47,7 @@ This directory contains the database schema migration system for LanceDB. It pro
 5. Update metadata with new versions
 
 ### Migration Execution Flow
+
 ```
 For each table:
   1. Read current version from metadata (or 0 if not found)
@@ -58,6 +61,7 @@ For each table:
 ## Adding New Migrations
 
 ### Step 1: Create Migration File
+
 Create a new file in `scripts/` with the next version number:
 
 ```typescript
@@ -80,6 +84,7 @@ export const memoTagsMigration: Migration = {
 ```
 
 ### Step 2: Export Migration
+
 Update `scripts/index.ts` to include the new migration:
 
 ```typescript
@@ -95,14 +100,16 @@ export const ALL_MIGRATIONS: Migration[] = [
   usersTableMigration,
   memosTableMigration,
   // ... other v1 migrations
-  
+
   // Version 2
   memoTagsMigration,
 ];
 ```
 
 ### Step 3: Update Helper Functions
+
 The helper functions in `scripts/index.ts` will automatically:
+
 - Include the new migration in `getMigrationsForTable()`
 - Update `getLatestVersion()` to reflect the new version
 - List the new table in `getAllTableNames()` if applicable
@@ -110,27 +117,30 @@ The helper functions in `scripts/index.ts` will automatically:
 ## Type Definitions
 
 ### Migration Interface
+
 ```typescript
 interface Migration {
-  version: number;              // Version number (must be unique per table)
-  tableName: string;             // Table this migration applies to
-  description?: string;          // Description of changes
+  version: number; // Version number (must be unique per table)
+  tableName: string; // Table this migration applies to
+  description?: string; // Description of changes
   up: (connection: Connection) => Promise<void>; // Migration logic
 }
 ```
 
 ### MigrationRecord
+
 ```typescript
 interface TableMigrationRecord {
-  tableName: string;             // Unique table name
-  currentVersion: number;        // Current schema version
-  lastMigratedAt: number;        // Timestamp in milliseconds
+  tableName: string; // Unique table name
+  currentVersion: number; // Current schema version
+  lastMigratedAt: number; // Timestamp in milliseconds
 }
 ```
 
 ## Important Notes
 
 ### LanceDB Limitations
+
 - LanceDB doesn't support traditional ALTER TABLE operations
 - To modify schema, you typically need to:
   1. Create a new table with updated schema
@@ -139,12 +149,14 @@ interface TableMigrationRecord {
   4. Rename new table to original name
 
 ### Migration Principles
+
 - **One-way**: Migrations only go forward (no rollback support)
 - **Idempotent**: Running the same migration twice should be safe
 - **Atomic per table**: Each table migration is treated as atomic
 - **Sequential**: Migrations execute in version order
 
 ### Version Numbering
+
 - Versions must be positive integers (1, 2, 3, ...)
 - Each migration version is unique per table
 - Versions are independent across tables (each table has its own version line)
@@ -152,6 +164,7 @@ interface TableMigrationRecord {
 ## Usage Examples
 
 ### Automatic Initialization
+
 Migrations run automatically during application startup:
 
 ```typescript
@@ -161,6 +174,7 @@ await lanceDbService.init(); // Runs migrations automatically
 ```
 
 ### Check Migration Status
+
 ```typescript
 const manager = new MigrationManager({ verbose: true });
 const status = await manager.getStatus(connection);
@@ -170,17 +184,19 @@ const status = await manager.getStatus(connection);
 ```
 
 ### Validate Migrations
+
 ```typescript
 const validation = await manager.validate(connection);
-console.log(validation.valid);    // boolean
-console.log(validation.errors);   // string[]
+console.log(validation.valid); // boolean
+console.log(validation.errors); // string[]
 ```
 
 ### Dry Run Mode
+
 ```typescript
-const manager = new MigrationManager({ 
-  verbose: true, 
-  dryRun: true // Don't actually execute
+const manager = new MigrationManager({
+  verbose: true,
+  dryRun: true, // Don't actually execute
 });
 await manager.initialize(connection);
 ```

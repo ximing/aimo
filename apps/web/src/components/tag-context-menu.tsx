@@ -8,12 +8,7 @@ interface TagContextMenuProps {
   onDelete: () => void;
 }
 
-export const TagContextMenu = ({
-  isOpen,
-  position,
-  onClose,
-  onDelete,
-}: TagContextMenuProps) => {
+export const TagContextMenu = ({ isOpen, position, onClose, onDelete }: TagContextMenuProps) => {
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Handle click outside to close menu

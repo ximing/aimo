@@ -116,7 +116,11 @@ export const multimodalEmbeddingCacheTableMigration: Migration = {
   tableName: 'multimodal_embedding_cache',
   description: 'Initialize multimodal_embedding_cache table for caching multimodal embeddings',
   up: async (connection: Connection) => {
-    await createTableIfNotExists(connection, 'multimodal_embedding_cache', multimodalEmbeddingCacheSchema);
+    await createTableIfNotExists(
+      connection,
+      'multimodal_embedding_cache',
+      multimodalEmbeddingCacheSchema
+    );
   },
 };
 

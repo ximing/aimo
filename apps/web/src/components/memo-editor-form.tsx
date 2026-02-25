@@ -124,10 +124,7 @@ export const MemoEditorForm = view(
     // 点击外部关闭AI工具下拉框
     useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
-        if (
-          aiDropdownRef.current &&
-          !aiDropdownRef.current.contains(event.target as Node)
-        ) {
+        if (aiDropdownRef.current && !aiDropdownRef.current.contains(event.target as Node)) {
           setIsAIDropdownOpen(false);
         }
       };
@@ -392,7 +389,9 @@ export const MemoEditorForm = view(
     const handleAITagsConfirm = (tags: string[]) => {
       // Add tags to editor's selectedTags, avoiding duplicates
       setSelectedTags((prev) => {
-        const newTags = tags.filter((tag) => !prev.some((t) => t.toLowerCase() === tag.toLowerCase()));
+        const newTags = tags.filter(
+          (tag) => !prev.some((t) => t.toLowerCase() === tag.toLowerCase())
+        );
         return [...prev, ...newTags];
       });
     };
@@ -519,330 +518,337 @@ export const MemoEditorForm = view(
 
     return (
       <>
-      <form
-        ref={formRef}
-        onSubmit={handleSubmit}
-        onFocusCapture={handleFormFocus}
-        noValidate
-        className="space-y-2"
-      >
-        {error && (
-          <div
-            className="px-3 py-2 bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-800/30 text-red-700 dark:text-red-400 rounded text-xs animate-slide-up"
-            role="alert"
-          >
-            {error}
-          </div>
-        )}
-
-        {/* Textarea container with integrated submit button */}
-        <div className="bg-white dark:bg-dark-800 rounded-lg p-3 flex flex-col gap-3 transition-colors">
-          <textarea
-            ref={textareaRef}
-            value={content}
-            onChange={handleContentChange}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
-            onKeyDown={handleKeyDown}
-            placeholder={mode === 'create' ? '记录你的想法... (⌘+Enter)' : '编辑你的笔记...'}
-            className="w-full px-0 py-0 bg-transparent text-gray-900 dark:text-gray-50 rounded-lg focus:outline-none resize-none placeholder-gray-400 dark:placeholder-gray-600 text-sm leading-relaxed"
-            rows={rows}
-            disabled={loading}
-            aria-label="Memo content"
-          />
-
-          {/* 推荐相关 memo 下拉框 */}
-          {showCategorySelector && showSuggestions && suggestions.length > 0 && (
+        <form
+          ref={formRef}
+          onSubmit={handleSubmit}
+          onFocusCapture={handleFormFocus}
+          noValidate
+          className="space-y-2"
+        >
+          {error && (
             <div
-              ref={suggestionsRef}
-              className="bg-gradient-to-b from-white/95 to-gray-50/95 dark:from-dark-700/95 dark:to-dark-800/95 backdrop-blur-md border border-gray-200/50 dark:border-dark-600/50 rounded-lg p-2 space-y-1 animate-fade-in shadow-md"
+              className="px-3 py-2 bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-800/30 text-red-700 dark:text-red-400 rounded text-xs animate-slide-up"
+              role="alert"
             >
-              <div className="px-2 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
-                推荐相关笔记
-              </div>
-              {searchingRelations ? (
-                <div className="px-2 py-2 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary-500"></div>
-                  搜索中...
-                </div>
-              ) : (
-                <div className="space-y-1 max-h-40 overflow-y-auto">
-                  {suggestions.slice(0, 5).map((suggestion) => (
-                    <button
-                      key={suggestion.memoId}
-                      type="button"
-                      onClick={() => handleAddRelation(suggestion)}
-                      className="w-full text-left px-2 py-2 rounded text-xs bg-white dark:bg-dark-800 hover:bg-primary-50 dark:hover:bg-primary-950/20 border border-transparent hover:border-primary-300/50 dark:hover:border-primary-900/50 transition-all duration-150 cursor-pointer group"
-                    >
-                      <p className="text-gray-700 dark:text-gray-300 group-hover:text-primary-600 dark:group-hover:text-primary-400 line-clamp-2">
-                        {suggestion.content.substring(0, 100)}...
-                      </p>
-                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                        {new Date(suggestion.createdAt).toLocaleDateString('zh-CN')}
-                      </p>
-                    </button>
-                  ))}
-                </div>
-              )}
+              {error}
             </div>
           )}
 
-          {/* 已选择的关系标签 */}
-          {showCategorySelector && selectedRelations.length > 0 && (
-            <div className="bg-gradient-to-r from-primary-50/50 to-primary-100/30 dark:from-primary-950/20 dark:to-primary-900/10 border border-primary-200/30 dark:border-primary-900/30 rounded-lg p-2.5 space-y-2">
-              <div className="text-xs font-semibold text-primary-700 dark:text-primary-300 uppercase tracking-wide">
-                关联笔记 ({selectedRelations.length})
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {selectedRelations.map((relation) => (
-                  <div
-                    key={relation.memoId}
-                    className="inline-flex items-center gap-1.5 px-2 py-1 bg-white dark:bg-dark-800 border border-primary-300/50 dark:border-primary-700/50 rounded-full text-xs text-primary-700 dark:text-primary-300 hover:bg-primary-50 dark:hover:bg-dark-700 transition-colors group"
-                  >
-                    <span className="truncate max-w-[150px]">{relation.content.substring(0, 50)}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveRelation(relation.memoId)}
-                      className="text-primary-400 hover:text-primary-600 dark:text-primary-600 dark:hover:text-primary-400 transition-colors cursor-pointer"
-                      aria-label="Remove relation"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Textarea container with integrated submit button */}
+          <div className="bg-white dark:bg-dark-800 rounded-lg p-3 flex flex-col gap-3 transition-colors">
+            <textarea
+              ref={textareaRef}
+              value={content}
+              onChange={handleContentChange}
+              onFocus={handleFocus}
+              onBlur={handleBlur}
+              onKeyDown={handleKeyDown}
+              placeholder={mode === 'create' ? '记录你的想法... (⌘+Enter)' : '编辑你的笔记...'}
+              className="w-full px-0 py-0 bg-transparent text-gray-900 dark:text-gray-50 rounded-lg focus:outline-none resize-none placeholder-gray-400 dark:placeholder-gray-600 text-sm leading-relaxed"
+              rows={rows}
+              disabled={loading}
+              aria-label="Memo content"
+            />
 
-          {/* 附件预览区域 */}
-          {attachments.length > 0 && (
-            <div className="pt-1">
-              <AttachmentUploader
-                attachments={attachments}
-                onAttachmentsChange={setAttachments}
-                onRemove={handleRemoveAttachment}
-                uploadingFiles={uploadingFiles}
-                disabled={loading}
-              />
-            </div>
-          )}
-
-          {/* 标签输入区域 */}
-          {showCategorySelector &&  <TagInput
-            tags={selectedTags}
-            onTagsChange={setSelectedTags}
-            existingTags={tagService.tags}
-            disabled={loading}
-          />}
-          {/* 隐藏的文件输入 */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept="image/*,video/*,audio/mp4,audio/mpeg,.m4a,.doc,.docx,.xls,.xlsx,.txt,.md"
-            onChange={handleFileSelect}
-            className="hidden"
-            disabled={loading}
-          />
-
-          {/* 操作栏：附件按钮和保存按钮 */}
-          <div className="flex items-center justify-between">
-            {/* 左侧：附件按钮和AI工具按钮 */}
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={handleAttachmentClick}
-                disabled={loading || attachments.length >= 9}
-                className="p-2 text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-500 hover:bg-gray-100 dark:hover:bg-dark-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                aria-label="添加附件"
-                title={`添加附件${attachments.length > 0 ? ` (${attachments.length}/9)` : ' (0/9)'}`}
+            {/* 推荐相关 memo 下拉框 */}
+            {showCategorySelector && showSuggestions && suggestions.length > 0 && (
+              <div
+                ref={suggestionsRef}
+                className="bg-gradient-to-b from-white/95 to-gray-50/95 dark:from-dark-700/95 dark:to-dark-800/95 backdrop-blur-md border border-gray-200/50 dark:border-dark-600/50 rounded-lg p-2 space-y-1 animate-fade-in shadow-md"
               >
-                <Paperclip className="w-5 h-5" />
-              </button>
-
-              {/* AI Tools Dropdown */}
-              <div className="relative" ref={aiDropdownRef}>
-                <button
-                  type="button"
-                  onClick={handleAIToolClick}
-                  disabled={loading}
-                  className={`p-2 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                    isAIDropdownOpen
-                      ? 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-gray-100 dark:hover:bg-dark-700'
-                  }`}
-                  aria-label="AI工具"
-                  title="AI工具"
-                  aria-expanded={isAIDropdownOpen}
-                  aria-haspopup="listbox"
-                >
-                  <Sparkles className="w-5 h-5" />
-                </button>
-
-                {/* AI Tools Dropdown Menu */}
-                {isAIDropdownOpen && (
-                  <div className="absolute left-0 bottom-full mb-1 w-48 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg shadow-lg z-50 py-1">
-                    <button
-                      type="button"
-                      onClick={() => handleSelectAITool('generate-tags')}
-                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
-                    >
-                      <Tags className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                      <span>智能生成标签</span>
-                    </button>
+                <div className="px-2 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+                  推荐相关笔记
+                </div>
+                {searchingRelations ? (
+                  <div className="px-2 py-2 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary-500"></div>
+                    搜索中...
+                  </div>
+                ) : (
+                  <div className="space-y-1 max-h-40 overflow-y-auto">
+                    {suggestions.slice(0, 5).map((suggestion) => (
+                      <button
+                        key={suggestion.memoId}
+                        type="button"
+                        onClick={() => handleAddRelation(suggestion)}
+                        className="w-full text-left px-2 py-2 rounded text-xs bg-white dark:bg-dark-800 hover:bg-primary-50 dark:hover:bg-primary-950/20 border border-transparent hover:border-primary-300/50 dark:hover:border-primary-900/50 transition-all duration-150 cursor-pointer group"
+                      >
+                        <p className="text-gray-700 dark:text-gray-300 group-hover:text-primary-600 dark:group-hover:text-primary-400 line-clamp-2">
+                          {suggestion.content.substring(0, 100)}...
+                        </p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                          {new Date(suggestion.createdAt).toLocaleDateString('zh-CN')}
+                        </p>
+                      </button>
+                    ))}
                   </div>
                 )}
               </div>
-            </div>
+            )}
 
-            {/* 右侧：操作按钮 */}
-            <div className="flex items-center gap-2">
-              {mode === 'edit' && onCancel && (
+            {/* 已选择的关系标签 */}
+            {showCategorySelector && selectedRelations.length > 0 && (
+              <div className="bg-gradient-to-r from-primary-50/50 to-primary-100/30 dark:from-primary-950/20 dark:to-primary-900/10 border border-primary-200/30 dark:border-primary-900/30 rounded-lg p-2.5 space-y-2">
+                <div className="text-xs font-semibold text-primary-700 dark:text-primary-300 uppercase tracking-wide">
+                  关联笔记 ({selectedRelations.length})
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {selectedRelations.map((relation) => (
+                    <div
+                      key={relation.memoId}
+                      className="inline-flex items-center gap-1.5 px-2 py-1 bg-white dark:bg-dark-800 border border-primary-300/50 dark:border-primary-700/50 rounded-full text-xs text-primary-700 dark:text-primary-300 hover:bg-primary-50 dark:hover:bg-dark-700 transition-colors group"
+                    >
+                      <span className="truncate max-w-[150px]">
+                        {relation.content.substring(0, 50)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveRelation(relation.memoId)}
+                        className="text-primary-400 hover:text-primary-600 dark:text-primary-600 dark:hover:text-primary-400 transition-colors cursor-pointer"
+                        aria-label="Remove relation"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 附件预览区域 */}
+            {attachments.length > 0 && (
+              <div className="pt-1">
+                <AttachmentUploader
+                  attachments={attachments}
+                  onAttachmentsChange={setAttachments}
+                  onRemove={handleRemoveAttachment}
+                  uploadingFiles={uploadingFiles}
+                  disabled={loading}
+                />
+              </div>
+            )}
+
+            {/* 标签输入区域 */}
+            {showCategorySelector && (
+              <TagInput
+                tags={selectedTags}
+                onTagsChange={setSelectedTags}
+                existingTags={tagService.tags}
+                disabled={loading}
+              />
+            )}
+            {/* 隐藏的文件输入 */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/*,video/*,audio/mp4,audio/mpeg,.m4a,.doc,.docx,.xls,.xlsx,.txt,.md"
+              onChange={handleFileSelect}
+              className="hidden"
+              disabled={loading}
+            />
+
+            {/* 操作栏：附件按钮和保存按钮 */}
+            <div className="flex items-center justify-between">
+              {/* 左侧：附件按钮和AI工具按钮 */}
+              <div className="flex items-center gap-1">
                 <button
                   type="button"
-                  onClick={handleCancelEdit}
-                  disabled={loading}
-                  className="px-3 py-1.5 border border-gray-200 dark:border-dark-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors disabled:opacity-50 cursor-pointer"
-                  aria-label="Cancel editing"
+                  onClick={handleAttachmentClick}
+                  disabled={loading || attachments.length >= 9}
+                  className="p-2 text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-500 hover:bg-gray-100 dark:hover:bg-dark-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="添加附件"
+                  title={`添加附件${attachments.length > 0 ? ` (${attachments.length}/9)` : ' (0/9)'}`}
                 >
-                  取消
+                  <Paperclip className="w-5 h-5" />
                 </button>
-              )}
-              {showCategorySelector && (
-                <div className="relative" ref={categoryDropdownRef}>
+
+                {/* AI Tools Dropdown */}
+                <div className="relative" ref={aiDropdownRef}>
                   <button
                     type="button"
-                    onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
+                    onClick={handleAIToolClick}
                     disabled={loading}
-                    className={`flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                      selectedCategoryId
-                        ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
-                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-700'
-                    } disabled:opacity-50 disabled:cursor-not-allowed`}
-                    aria-expanded={isCategoryDropdownOpen}
+                    className={`p-2 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                      isAIDropdownOpen
+                        ? 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-gray-100 dark:hover:bg-dark-700'
+                    }`}
+                    aria-label="AI工具"
+                    title="AI工具"
+                    aria-expanded={isAIDropdownOpen}
                     aria-haspopup="listbox"
                   >
-                    <span className="max-w-[100px] truncate">{selectedCategoryName}</span>
-                    <ChevronDown
-                      size={14}
-                      className={`transition-transform duration-200 ${isCategoryDropdownOpen ? 'rotate-180' : ''}`}
-                    />
+                    <Sparkles className="w-5 h-5" />
                   </button>
 
-                  {/* Category Dropdown Menu */}
-                  {isCategoryDropdownOpen && (
-                    <div className="absolute right-0 bottom-full mb-1 w-48 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg shadow-lg z-50 py-1">
-                      {/* No Category Option */}
+                  {/* AI Tools Dropdown Menu */}
+                  {isAIDropdownOpen && (
+                    <div className="absolute left-0 bottom-full mb-1 w-48 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg shadow-lg z-50 py-1">
                       <button
                         type="button"
-                        onClick={() => handleSelectCategory(null)}
-                        className={`w-full flex items-center justify-between px-4 py-2 text-sm transition-colors ${
-                          !selectedCategoryId
-                            ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700'
-                        }`}
+                        onClick={() => handleSelectAITool('generate-tags')}
+                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
                       >
-                        <span>无类别</span>
-                        {!selectedCategoryId && <Check size={14} />}
-                      </button>
-
-                      {/* Divider */}
-                      {categoryService.categories.length > 0 && (
-                        <div className="my-1 border-t border-gray-200 dark:border-dark-700" />
-                      )}
-
-                      {/* Category List */}
-                      <div className="max-h-40 overflow-y-auto">
-                        {categoryService.categories.map((category) => (
-                          <button
-                            key={category.categoryId}
-                            type="button"
-                            onClick={() => handleSelectCategory(category.categoryId)}
-                            className={`w-full flex items-center justify-between px-4 py-2 text-sm transition-colors ${
-                              selectedCategoryId === category.categoryId
-                                ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700'
-                            }`}
-                          >
-                            <span className="truncate">{category.name}</span>
-                            {selectedCategoryId === category.categoryId && <Check size={14} />}
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* Empty State */}
-                      {categoryService.categories.length === 0 && !categoryService.loading && (
-                        <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
-                          暂无类别
-                        </div>
-                      )}
-
-                      {/* Divider */}
-                      <div className="my-1 border-t border-gray-200 dark:border-dark-700" />
-
-                      {/* Create New Category Button */}
-                      <button
-                        type="button"
-                        onClick={handleOpenCreateCategoryModal}
-                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
-                      >
-                        <Plus size={14} />
-                        <span>新建类别</span>
+                        <Tags className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                        <span>智能生成标签</span>
                       </button>
                     </div>
                   )}
                 </div>
-              )}
-              {/* Public Toggle */}
-              <button
-                type="button"
-                onClick={() => setIsPublic(!isPublic)}
-                disabled={loading}
-                className={`flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                  isPublic
-                    ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-700'
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-                aria-pressed={isPublic}
-                title={isPublic ? '此笔记将对其他人公开' : '此笔记仅自己可见'}
-              >
-                {isPublic ? <Globe size={14} /> : <Lock size={14} />}
-                <span>{isPublic ? '公开' : '私有'}</span>
-              </button>
-              <button
-                type="submit"
-                disabled={loading || !content.trim()}
-                className="px-3 py-1.5 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white font-medium text-sm rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                aria-label={loading ? 'Saving' : mode === 'create' ? 'Create memo' : 'Update memo'}
-              >
-                {loading ? '保存中...' : '保存'}
-              </button>
+              </div>
+
+              {/* 右侧：操作按钮 */}
+              <div className="flex items-center gap-2">
+                {mode === 'edit' && onCancel && (
+                  <button
+                    type="button"
+                    onClick={handleCancelEdit}
+                    disabled={loading}
+                    className="px-3 py-1.5 border border-gray-200 dark:border-dark-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors disabled:opacity-50 cursor-pointer"
+                    aria-label="Cancel editing"
+                  >
+                    取消
+                  </button>
+                )}
+                {showCategorySelector && (
+                  <div className="relative" ref={categoryDropdownRef}>
+                    <button
+                      type="button"
+                      onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
+                      disabled={loading}
+                      className={`flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                        selectedCategoryId
+                          ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
+                          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-700'
+                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                      aria-expanded={isCategoryDropdownOpen}
+                      aria-haspopup="listbox"
+                    >
+                      <span className="max-w-[100px] truncate">{selectedCategoryName}</span>
+                      <ChevronDown
+                        size={14}
+                        className={`transition-transform duration-200 ${isCategoryDropdownOpen ? 'rotate-180' : ''}`}
+                      />
+                    </button>
+
+                    {/* Category Dropdown Menu */}
+                    {isCategoryDropdownOpen && (
+                      <div className="absolute right-0 bottom-full mb-1 w-48 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg shadow-lg z-50 py-1">
+                        {/* No Category Option */}
+                        <button
+                          type="button"
+                          onClick={() => handleSelectCategory(null)}
+                          className={`w-full flex items-center justify-between px-4 py-2 text-sm transition-colors ${
+                            !selectedCategoryId
+                              ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
+                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700'
+                          }`}
+                        >
+                          <span>无类别</span>
+                          {!selectedCategoryId && <Check size={14} />}
+                        </button>
+
+                        {/* Divider */}
+                        {categoryService.categories.length > 0 && (
+                          <div className="my-1 border-t border-gray-200 dark:border-dark-700" />
+                        )}
+
+                        {/* Category List */}
+                        <div className="max-h-40 overflow-y-auto">
+                          {categoryService.categories.map((category) => (
+                            <button
+                              key={category.categoryId}
+                              type="button"
+                              onClick={() => handleSelectCategory(category.categoryId)}
+                              className={`w-full flex items-center justify-between px-4 py-2 text-sm transition-colors ${
+                                selectedCategoryId === category.categoryId
+                                  ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
+                                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700'
+                              }`}
+                            >
+                              <span className="truncate">{category.name}</span>
+                              {selectedCategoryId === category.categoryId && <Check size={14} />}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Empty State */}
+                        {categoryService.categories.length === 0 && !categoryService.loading && (
+                          <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
+                            暂无类别
+                          </div>
+                        )}
+
+                        {/* Divider */}
+                        <div className="my-1 border-t border-gray-200 dark:border-dark-700" />
+
+                        {/* Create New Category Button */}
+                        <button
+                          type="button"
+                          onClick={handleOpenCreateCategoryModal}
+                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
+                        >
+                          <Plus size={14} />
+                          <span>新建类别</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {/* Public Toggle */}
+                <button
+                  type="button"
+                  onClick={() => setIsPublic(!isPublic)}
+                  disabled={loading}
+                  className={`flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    isPublic
+                      ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-700'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  aria-pressed={isPublic}
+                  title={isPublic ? '此笔记将对其他人公开' : '此笔记仅自己可见'}
+                >
+                  {isPublic ? <Globe size={14} /> : <Lock size={14} />}
+                  <span>{isPublic ? '公开' : '私有'}</span>
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading || !content.trim()}
+                  className="px-3 py-1.5 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white font-medium text-sm rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  aria-label={
+                    loading ? 'Saving' : mode === 'create' ? 'Create memo' : 'Update memo'
+                  }
+                >
+                  {loading ? '保存中...' : '保存'}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      </form>
+        </form>
 
-      {/* Create Category Modal */}
-      <CreateCategoryModal
-        isOpen={isCreateCategoryModalOpen}
-        onClose={() => setIsCreateCategoryModalOpen(false)}
-        onCategoryCreated={handleCategoryCreated}
-      />
+        {/* Create Category Modal */}
+        <CreateCategoryModal
+          isOpen={isCreateCategoryModalOpen}
+          onClose={() => setIsCreateCategoryModalOpen(false)}
+          onCategoryCreated={handleCategoryCreated}
+        />
 
-      {/* AI Tool Selector Modal */}
-      <AIToolSelectorModal
-        isOpen={aiToolsService.modal.isOpen && aiToolsService.modal.toolType === null}
-        onClose={() => aiToolsService.closeModal()}
-        onSelectTool={(toolId) => aiToolsService.selectTool(toolId as 'generate-tags')}
-      />
+        {/* AI Tool Selector Modal */}
+        <AIToolSelectorModal
+          isOpen={aiToolsService.modal.isOpen && aiToolsService.modal.toolType === null}
+          onClose={() => aiToolsService.closeModal()}
+          onSelectTool={(toolId) => aiToolsService.selectTool(toolId as 'generate-tags')}
+        />
 
-      {/* Tag Generator Modal */}
-      <TagGeneratorModal
-        isOpen={aiToolsService.modal.isOpen && aiToolsService.modal.toolType === 'generate-tags'}
-        onClose={() => aiToolsService.closeModal()}
-        onBack={() => aiToolsService.backToToolSelector()}
-        onConfirm={handleAITagsConfirm}
-      />
-    </>
-  );
-});
+        {/* Tag Generator Modal */}
+        <TagGeneratorModal
+          isOpen={aiToolsService.modal.isOpen && aiToolsService.modal.toolType === 'generate-tags'}
+          onClose={() => aiToolsService.closeModal()}
+          onBack={() => aiToolsService.backToToolSelector()}
+          onConfirm={handleAITagsConfirm}
+        />
+      </>
+    );
+  }
+);

@@ -1,7 +1,7 @@
-import os from "node:os";
-import path from "node:path";
+import os from 'node:os';
+import path from 'node:path';
 
-import { getEnvValue as getEnvironmentValue } from "./utils/env";
+import { getEnvValue as getEnvironmentValue } from './utils/env';
 
 /**
  * 日志元数据类型
@@ -34,7 +34,7 @@ export interface LoggerOptions {
    * 默认: 'info'
    * 环境变量: OSG_LOGGER_LEVEL
    */
-  level?: "trace" | "debug" | "info" | "warn" | "error";
+  level?: 'trace' | 'debug' | 'info' | 'warn' | 'error';
 
   /**
    * 日志存储根目录
@@ -68,7 +68,7 @@ export interface LoggerOptions {
  */
 export interface ResolvedConfig {
   projectName: string;
-  level: "trace" | "debug" | "info" | "warn" | "error";
+  level: 'trace' | 'debug' | 'info' | 'warn' | 'error';
   logDir: string;
   enableTerminal: boolean;
   maxSize: string;
@@ -81,21 +81,21 @@ export interface ResolvedConfig {
  * 我们的级别: trace, debug, info, warn, error
  */
 export const LEVEL_MAP: Record<string, string> = {
-  trace: "silly",
-  debug: "debug",
-  info: "info",
-  warn: "warn",
-  error: "error",
+  trace: 'silly',
+  debug: 'debug',
+  info: 'info',
+  warn: 'warn',
+  error: 'error',
 };
 
 /**
  * 默认配置值
  */
-const DEFAULT_CONFIG: Omit<ResolvedConfig, "projectName" | "logDir"> = {
-  level: "info",
+const DEFAULT_CONFIG: Omit<ResolvedConfig, 'projectName' | 'logDir'> = {
+  level: 'info',
   enableTerminal: true,
-  maxSize: "10m",
-  maxFiles: "14d",
+  maxSize: '10m',
+  maxFiles: '14d',
 };
 
 /**
@@ -104,51 +104,49 @@ const DEFAULT_CONFIG: Omit<ResolvedConfig, "projectName" | "logDir"> = {
  */
 export function resolveConfig(options: LoggerOptions): ResolvedConfig {
   if (!options.projectName) {
-    throw new Error("projectName is required in LoggerOptions");
+    throw new Error('projectName is required in LoggerOptions');
   }
 
   const projectName = options.projectName;
 
   // 日志级别解析
   const level = (options.level ||
-    (getEnvironmentValue("OSG_LOGGER_LEVEL") as
-      | "trace"
-      | "debug"
-      | "info"
-      | "warn"
-      | "error"
+    (getEnvironmentValue('OSG_LOGGER_LEVEL') as
+      | 'trace'
+      | 'debug'
+      | 'info'
+      | 'warn'
+      | 'error'
       | undefined) ||
-    DEFAULT_CONFIG.level) as "trace" | "debug" | "info" | "warn" | "error";
+    DEFAULT_CONFIG.level) as 'trace' | 'debug' | 'info' | 'warn' | 'error';
 
   // 验证日志级别
-  if (!["trace", "debug", "info", "warn", "error"].includes(level)) {
+  if (!['trace', 'debug', 'info', 'warn', 'error'].includes(level)) {
     throw new Error(`Invalid log level: ${level}`);
   }
 
   // 日志目录解析 - 统一存储在根目录，不再按 projectName 分子目录
   let logDir =
     options.logDir ||
-    getEnvironmentValue("OSG_LOGGER_DIR") ||
-    path.join(os.homedir(), ".aimo", "logs");
+    getEnvironmentValue('OSG_LOGGER_DIR') ||
+    path.join(os.homedir(), '.aimo', 'logs');
 
   // 确保路径末尾没有斜杠
-  logDir = logDir.replace(/\/$/, "");
+  logDir = logDir.replace(/\/$/, '');
 
   // 是否输出到终端
   const enableTerminal =
     options.enableTerminal === undefined
-      ? getEnvironmentValue("OSG_LOGGER_ENABLE_TERMINAL")
+      ? getEnvironmentValue('OSG_LOGGER_ENABLE_TERMINAL')
       : options.enableTerminal;
 
-  const consoleOutput =
-    enableTerminal === false || enableTerminal === "false" ? false : true;
+  const consoleOutput = enableTerminal === false || enableTerminal === 'false' ? false : true;
 
   // 日志文件大小限制
   const maxSize = options.maxSize || DEFAULT_CONFIG.maxSize;
 
   // 日志文件保留策略
-  const maxFiles =
-    options.maxFiles === undefined ? DEFAULT_CONFIG.maxFiles : options.maxFiles;
+  const maxFiles = options.maxFiles === undefined ? DEFAULT_CONFIG.maxFiles : options.maxFiles;
 
   return {
     projectName,

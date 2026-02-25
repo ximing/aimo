@@ -138,9 +138,7 @@ export class ExploreService extends Service {
         const savedConversationId = this.getSavedConversationId();
         if (savedConversationId && this.conversations.length > 0) {
           // Verify the saved conversation still exists
-          const exists = this.conversations.some(
-            (c) => c.conversationId === savedConversationId
-          );
+          const exists = this.conversations.some((c) => c.conversationId === savedConversationId);
           if (exists) {
             await this.loadConversation(savedConversationId);
           } else {
@@ -474,9 +472,7 @@ export class ExploreService extends Service {
 
       if (response.code === 0) {
         // Remove from list
-        this.conversations = this.conversations.filter(
-          (c) => c.conversationId !== conversationId
-        );
+        this.conversations = this.conversations.filter((c) => c.conversationId !== conversationId);
 
         // If current conversation was deleted, clear it
         if (this.currentConversationId === conversationId) {

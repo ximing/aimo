@@ -201,7 +201,7 @@ export const RelationshipGraph: React.FC<RelationshipGraphProps> = ({
                   y={
                     ((nodes.find((n) => n.id === edge.source)?.y || 0) +
                       (nodes.find((n) => n.id === edge.target)?.y || 0)) /
-                    2 -
+                      2 -
                     5
                   }
                   textAnchor="middle"

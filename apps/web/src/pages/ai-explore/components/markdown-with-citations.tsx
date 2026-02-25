@@ -111,11 +111,7 @@ function processCitations(
   if (Array.isArray(children)) {
     return children.map((child, idx) => {
       if (typeof child === 'string') {
-        return (
-          <span key={idx}>
-            {parseCitations(child, sources, onCitationClick)}
-          </span>
-        );
+        return <span key={idx}>{parseCitations(child, sources, onCitationClick)}</span>;
       }
       return child;
     });

@@ -10,7 +10,6 @@ import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 import type { RegisterDto, LoginDto } from '@aimo/dto';
 import type { Response } from 'express';
 
-
 @Service()
 @JsonController('/api/v1/auth')
 export class AuthV1Controller {
@@ -27,8 +26,7 @@ export class AuthV1Controller {
       const { hashedPassword, salt } = await this.userService.hashPassword(userData.password);
 
       const nickname = userData.nickname?.trim();
-      const resolvedNickname =
-        nickname && nickname !== userData.email ? nickname : undefined;
+      const resolvedNickname = nickname && nickname !== userData.email ? nickname : undefined;
 
       // Create new user
       const user = await this.userService.createUser({

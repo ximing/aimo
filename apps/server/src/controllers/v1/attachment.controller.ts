@@ -29,7 +29,6 @@ import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 import type { UserInfoDto, UpdateAttachmentPropertiesDto } from '@aimo/dto';
 import type { Request, Response } from 'express';
 
-
 /**
  * Check if a MIME type is blocked (blacklist)
  * @param mimeType - The MIME type to check
@@ -54,7 +53,6 @@ function isMimeTypeBlocked(mimeType: string, blockedTypes: string[]): boolean {
 
   return false;
 }
-
 
 // Configure multer for memory storage
 const upload = multer({
@@ -85,8 +83,8 @@ export class AttachmentV1Controller {
         upload.single('file')(request, {} as Response, async (error) => {
           if (error) {
             if (error instanceof multer.MulterError && error.code === 'LIMIT_FILE_SIZE') {
-                return resolve(ResponseUtility.error(ErrorCode.FILE_TOO_LARGE));
-              }
+              return resolve(ResponseUtility.error(ErrorCode.FILE_TOO_LARGE));
+            }
             console.error('File upload error:', error);
             return resolve(ResponseUtility.error(ErrorCode.FILE_UPLOAD_ERROR));
           }

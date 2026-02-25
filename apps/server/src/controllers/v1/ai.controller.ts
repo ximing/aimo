@@ -5,11 +5,7 @@ import { ErrorCode } from '../../constants/error-codes.js';
 import { AIService } from '../../services/ai.service.js';
 import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 
-import type {
-  GenerateTagsRequestDto,
-  UserInfoDto,
-  AIToolConfigDto,
-} from '@aimo/dto';
+import type { GenerateTagsRequestDto, UserInfoDto, AIToolConfigDto } from '@aimo/dto';
 
 /**
  * Controller for AI-powered features
@@ -26,10 +22,7 @@ export class AIV1Controller {
    * Returns 3-8 relevant tags based on content analysis
    */
   @Post('/generate-tags')
-  async generateTags(
-    @Body() body: GenerateTagsRequestDto,
-    @CurrentUser() user: UserInfoDto
-  ) {
+  async generateTags(@Body() body: GenerateTagsRequestDto, @CurrentUser() user: UserInfoDto) {
     try {
       // Check authentication
       if (!user?.uid) {

@@ -16,18 +16,22 @@
 ## User Stories
 
 ### US-001: 获取类别列表API
+
 **Description:** 作为开发者，我需要后端提供获取类别列表的API，以便前端展示类别筛选器。
 
 **Acceptance Criteria:**
+
 - [ ] GET /categories 返回所有类别列表
 - [ ] 包含字段：id, name, createdAt, updatedAt
 - [ ] 按名称字母顺序排序
 - [ ] Typecheck/lint passes
 
 ### US-002: 创建类别API
+
 **Description:** 作为开发者，我需要后端提供创建类别的API，支持用户在筛选器或创建memo时创建新类别。
 
 **Acceptance Criteria:**
+
 - [ ] POST /categories 创建新类别
 - [ ] 请求体包含：name（必填，唯一）
 - [ ] 返回创建的类别对象
@@ -35,9 +39,11 @@
 - [ ] Typecheck/lint passes
 
 ### US-003: 更新/删除类别API
+
 **Description:** 作为开发者，我需要支持类别的编辑和删除功能。
 
 **Acceptance Criteria:**
+
 - [ ] PUT /categories/:id 更新类别名称
 - [ ] DELETE /categories/:id 删除类别
 - [ ] 删除类别时，关联的memo的categoryId设为null
@@ -45,9 +51,11 @@
 - [ ] Typecheck/lint passes
 
 ### US-004: 类别筛选器组件
+
 **Description:** 作为用户，我需要在memo列表页通过类别筛选快速找到相关笔记。
 
 **Acceptance Criteria:**
+
 - [ ] 筛选器位于搜索框旁边
 - [ ] 下拉形式，单选
 - [ ] 首选项为"全部类别"，显示所有memo
@@ -57,9 +65,11 @@
 - [ ] Verify in browser using dev-browser skill
 
 ### US-005: 本地持久化筛选状态
+
 **Description:** 作为用户，我希望刷新页面后仍保持之前的类别筛选选择。
 
 **Acceptance Criteria:**
+
 - [ ] 使用localStorage存储当前选中的类别ID
 - [ ] 页面加载时自动恢复上次选择的类别
 - [ ] "全部类别"状态也被记忆
@@ -68,9 +78,11 @@
 - [ ] Verify in browser using dev-browser skill
 
 ### US-006: 筛选器创建新类别
+
 **Description:** 作为用户，当没有合适的类别时，我希望能直接在筛选器中创建新类别。
 
 **Acceptance Criteria:**
+
 - [ ] 筛选器下拉底部有"+ 新建类别"按钮
 - [ ] 点击弹出创建类别对话框
 - [ ] 输入类别名称，点击确认创建
@@ -80,9 +92,11 @@
 - [ ] Verify in browser using dev-browser skill
 
 ### US-007: 创建memo时选择类别
+
 **Description:** 作为用户，我创建笔记时希望能为其指定类别。
 
 **Acceptance Criteria:**
+
 - [ ] 创建memo对话框/表单中增加类别选择器
 - [ ] 类别选择器位于内容输入区域附近
 - [ ] 显示所有现有类别，支持单选
@@ -92,9 +106,11 @@
 - [ ] Verify in browser using dev-browser skill
 
 ### US-008: 创建memo时快捷创建类别
+
 **Description:** 作为用户，如果在创建memo时发现没有合适的类别，我希望能够直接创建。
 
 **Acceptance Criteria:**
+
 - [ ] 类别选择器中有"+ 新建类别"选项
 - [ ] 点击后弹出创建类别对话框
 - [ ] 创建成功后新类别自动被选中
@@ -103,9 +119,11 @@
 - [ ] Verify in browser using dev-browser skill
 
 ### US-009: 根据筛选状态默认选中类别
+
 **Description:** 作为用户，如果我已经筛选了某个类别，创建新memo时应该自动默认选中该类别。
 
 **Acceptance Criteria:**
+
 - [ ] 读取本地存储的当前筛选类别
 - [ ] 打开创建memo对话框时，自动选中该类别
 - [ ] 如果筛选是"全部类别"，则默认"无类别"
@@ -114,9 +132,11 @@
 - [ ] Verify in browser using dev-browser skill
 
 ### US-010: 显示memo的类别标签
+
 **Description:** 作为用户，我希望在memo列表中能看到每个笔记的类别。
 
 **Acceptance Criteria:**
+
 - [ ] memo卡片上显示类别名称（如果有）
 - [ ] 类别标签样式简洁，不喧宾夺主
 - [ ] 无类别的memo不显示标签
@@ -124,9 +144,11 @@
 - [ ] Verify in browser using dev-browser skill
 
 ### US-011: 编辑memo时修改类别
+
 **Description:** 作为用户，我希望能够修改已有memo的类别。
 
 **Acceptance Criteria:**
+
 - [ ] 编辑memo时显示当前类别
 - [ ] 可以更改类别选择
 - [ ] 可以移除类别（设为无类别）
@@ -175,6 +197,7 @@
 ## API Schema
 
 ### Category DTO
+
 ```typescript
 interface Category {
   id: string;

@@ -134,7 +134,7 @@ export class ASRService {
       );
     }
 
-    const data = (responseText ? (JSON.parse(responseText) as T) : ({} as T));
+    const data = responseText ? (JSON.parse(responseText) as T) : ({} as T);
 
     if (data.code) {
       throw new Error(`ASR API error: ${data.code} - ${data.message}`);
@@ -161,7 +161,9 @@ export class ASRService {
    */
   async submitTranscription(request: ASRTranscribeRequestDto): Promise<ASRTaskResponseDto> {
     if (!this.isConfigured()) {
-      throw new Error('ASR service is not configured. Please set FUN_ASR_API_KEY or DASHSCOPE_API_KEY.');
+      throw new Error(
+        'ASR service is not configured. Please set FUN_ASR_API_KEY or DASHSCOPE_API_KEY.'
+      );
     }
 
     const { fileUrls, languageHints } = request;
@@ -202,7 +204,11 @@ export class ASRService {
       }
     );
 
-    logger.info('ASR transcription task submitted', { taskId: data.output.task_id, requestId: data.request_id, fileCount: fileUrls.length });
+    logger.info('ASR transcription task submitted', {
+      taskId: data.output.task_id,
+      requestId: data.request_id,
+      fileCount: fileUrls.length,
+    });
 
     return {
       taskId: data.output.task_id,
@@ -217,7 +223,9 @@ export class ASRService {
    */
   async queryTaskStatus(taskId: string): Promise<ASRTaskStatusDto> {
     if (!this.isConfigured()) {
-      throw new Error('ASR service is not configured. Please set FUN_ASR_API_KEY or DASHSCOPE_API_KEY.');
+      throw new Error(
+        'ASR service is not configured. Please set FUN_ASR_API_KEY or DASHSCOPE_API_KEY.'
+      );
     }
 
     const data = await this.queryTaskDetails(taskId);
@@ -225,14 +233,14 @@ export class ASRService {
     let completedTime: number | undefined;
 
     if (data.output.task_status === 'SUCCEEDED') {
-      completedTime = data.output.end_time
-        ? new Date(data.output.end_time).getTime()
-        : Date.now();
+      completedTime = data.output.end_time ? new Date(data.output.end_time).getTime() : Date.now();
     }
 
     const message =
       data.output.task_status === 'FAILED'
-        ? data.message ?? this.getSubtaskErrorMessage(data.output.results) ?? 'Transcription failed'
+        ? (data.message ??
+          this.getSubtaskErrorMessage(data.output.results) ??
+          'Transcription failed')
         : undefined;
 
     return {
@@ -279,7 +287,9 @@ export class ASRService {
    * Get transcription results from result URL
    * @param transcriptionUrl - URL to fetch transcription result from
    */
-  private async fetchTranscriptionResult(transcriptionUrl: string): Promise<ASRTranscriptionResultDto> {
+  private async fetchTranscriptionResult(
+    transcriptionUrl: string
+  ): Promise<ASRTranscriptionResultDto> {
     const response = await fetch(transcriptionUrl);
     const responseText = await response.text();
 
@@ -306,7 +316,11 @@ export class ASRService {
     const data = await this.queryTaskDetails(taskId);
 
     if (data.output.task_status !== 'SUCCEEDED') {
-      logger.warn('ASR task not succeeded', { taskId, status: data.output.task_status, requestId: data.request_id });
+      logger.warn('ASR task not succeeded', {
+        taskId,
+        status: data.output.task_status,
+        requestId: data.request_id,
+      });
       return {
         results: [],
         status: 'FAILED',
@@ -353,7 +367,10 @@ export class ASRService {
     timeoutMs: number = 300_000
   ): Promise<ASRResultDto> {
     const startTime = Date.now();
-    logger.info('Starting ASR transcription', { fileCount: request.fileUrls.length, languageHints: request.languageHints });
+    logger.info('Starting ASR transcription', {
+      fileCount: request.fileUrls.length,
+      languageHints: request.languageHints,
+    });
 
     // Submit the transcription task
     const task = await this.submitTranscription(request);
@@ -364,9 +381,13 @@ export class ASRService {
     // Get results
     const result = await this.getTranscriptionResult(task.taskId);
     const duration = Date.now() - startTime;
-    
+
     if (result.status === 'SUCCEEDED') {
-      logger.info('ASR transcription completed', { taskId: task.taskId, resultCount: result.results.length, durationMs: duration });
+      logger.info('ASR transcription completed', {
+        taskId: task.taskId,
+        resultCount: result.results.length,
+        durationMs: duration,
+      });
     } else {
       logger.error('ASR transcription failed', { taskId: task.taskId, durationMs: duration });
     }

@@ -44,7 +44,7 @@ export const MemoList = view(() => {
 
   if (memoService.memos.length === 0) {
     // Check if filters are active
-    const hasActiveFilters = memoService.tagFilter || memoService.tagsFilter.length > 0;
+    const hasActiveFilters = memoService.tagFilter.length > 0;
 
     if (hasActiveFilters) {
       return (
@@ -62,10 +62,10 @@ export const MemoList = view(() => {
               d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
             />
           </svg>
-          <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-white">未找到匹配的备忘录</h3>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            没有符合所选标签的备忘录
-          </p>
+          <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-white">
+            未找到匹配的备忘录
+          </h3>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">没有符合所选标签的备忘录</p>
         </div>
       );
     }

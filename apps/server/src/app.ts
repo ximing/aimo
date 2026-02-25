@@ -11,7 +11,6 @@ import morgan from 'morgan';
 import { useExpressServer, Action, useContainer } from 'routing-controllers';
 import { Container } from 'typedi';
 
-
 import { config } from './config/config.js';
 import { controllers } from './controllers/index.js';
 import { initIOC } from './ioc.js';
@@ -19,7 +18,6 @@ import { authHandler } from './middlewares/auth-handler.js';
 import { errorHandler } from './middlewares/error-handler.js';
 import { SchedulerService } from './services/scheduler.service.js';
 import { LanceDbService as LanceDatabaseService } from './sources/lancedb.js';
-
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

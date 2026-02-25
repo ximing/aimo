@@ -60,7 +60,10 @@ const MODEL_DEFAULT_DIMENSIONS: Record<string, number> = {
   'multimodal-embedding-v1': 1024,
 };
 
-const MULTI_IMAGE_MODELS = new Set(['tongyi-embedding-vision-plus', 'tongyi-embedding-vision-flash']);
+const MULTI_IMAGE_MODELS = new Set([
+  'tongyi-embedding-vision-plus',
+  'tongyi-embedding-vision-flash',
+]);
 
 /**
  * Service for generating multimodal embeddings using DashScope API
@@ -222,7 +225,9 @@ export class MultimodalEmbeddingService {
     return JSON.stringify(sanitized);
   }
 
-  private buildRequestParameters(contents: MultimodalContent[]): Record<string, unknown> | undefined {
+  private buildRequestParameters(
+    contents: MultimodalContent[]
+  ): Record<string, unknown> | undefined {
     const parameters: Record<string, unknown> = {};
 
     if (typeof this.requestDimension === 'number') {
@@ -501,8 +506,7 @@ export class MultimodalEmbeddingService {
 
       // Save to cache and merge results
       for (const [relativeIndex, originalIndex] of indexesToGenerate.entries()) {
-        const embeddingResult =
-          embeddingsByIndex.get(relativeIndex) ?? embeddings[relativeIndex];
+        const embeddingResult = embeddingsByIndex.get(relativeIndex) ?? embeddings[relativeIndex];
 
         if (!embeddingResult) {
           throw new Error(`No embedding returned for index ${relativeIndex}`);

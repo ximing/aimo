@@ -1,6 +1,5 @@
 import { Service } from 'typedi';
 
-
 import { OBJECT_TYPE } from '../models/constant/type.js';
 import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
 import { generateTypeId } from '../utils/id.js';
@@ -53,10 +52,7 @@ export class AIConversationService {
   /**
    * Convert database record to conversation DTO
    */
-  private toConversationDto(
-    record: Record<string, unknown>,
-    messageCount = 0
-  ): AIConversationDto {
+  private toConversationDto(record: Record<string, unknown>, messageCount = 0): AIConversationDto {
     return {
       conversationId: String(record.conversationId),
       title: String(record.title),
@@ -126,10 +122,7 @@ export class AIConversationService {
       const table = await this.getConversationsTable();
 
       // Query conversations for this user
-      const result = await table
-        .query()
-        .where(`uid = '${uid}'`)
-        .toArray();
+      const result = await table.query().where(`uid = '${uid}'`).toArray();
 
       // Sort by updatedAt desc in JavaScript (LanceDB doesn't support orderBy directly)
       result.sort((a: any, b: any) => Number(b.updatedAt) - Number(a.updatedAt));
@@ -152,7 +145,10 @@ export class AIConversationService {
   /**
    * Get a single conversation by ID with all messages
    */
-  async getConversation(conversationId: string, uid: string): Promise<AIConversationDetailDto | null> {
+  async getConversation(
+    conversationId: string,
+    uid: string
+  ): Promise<AIConversationDetailDto | null> {
     try {
       const table = await this.getConversationsTable();
 
@@ -183,10 +179,7 @@ export class AIConversationService {
   /**
    * Create a new conversation
    */
-  async createConversation(
-    uid: string,
-    data: CreateConversationDto
-  ): Promise<AIConversationDto> {
+  async createConversation(uid: string, data: CreateConversationDto): Promise<AIConversationDto> {
     try {
       const table = await this.getConversationsTable();
 
@@ -292,10 +285,7 @@ export class AIConversationService {
     try {
       const table = await this.getMessagesTable();
 
-      const result = await table
-        .query()
-        .where(`conversationId = '${conversationId}'`)
-        .toArray();
+      const result = await table.query().where(`conversationId = '${conversationId}'`).toArray();
 
       // Sort by createdAt asc in JavaScript (LanceDB doesn't support orderBy directly)
       result.sort((a: any, b: any) => Number(a.createdAt) - Number(b.createdAt));
@@ -313,10 +303,7 @@ export class AIConversationService {
   async getMessageCount(conversationId: string): Promise<number> {
     try {
       const table = await this.getMessagesTable();
-      const result = await table
-        .query()
-        .where(`conversationId = '${conversationId}'`)
-        .toArray();
+      const result = await table.query().where(`conversationId = '${conversationId}'`).toArray();
       return result.length;
     } catch (error) {
       console.error('Get message count error:', error);
@@ -387,10 +374,7 @@ export class AIConversationService {
     try {
       const table = await this.getConversationsTable();
 
-      const result = await table
-        .query()
-        .where(`uid = '${uid}'`)
-        .toArray();
+      const result = await table.query().where(`uid = '${uid}'`).toArray();
 
       if (result.length === 0) {
         return null;

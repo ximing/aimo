@@ -116,11 +116,7 @@ export const AIToolSelectorModal = view(
 
                   {/* Arrow indicator */}
                   <div className="flex-shrink-0 self-center text-gray-300 dark:text-gray-600 group-hover:text-purple-400 dark:group-hover:text-purple-500 transition-colors">
-                    <svg
-                      className="w-5 h-5"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                       <path
                         fillRule="evenodd"
                         d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
@@ -138,9 +134,7 @@ export const AIToolSelectorModal = view(
                 <div className="w-16 h-16 mx-auto rounded-full bg-gray-100 dark:bg-dark-700 flex items-center justify-center mb-3">
                   <Tags className="w-8 h-8 text-gray-400 dark:text-gray-600" />
                 </div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  暂无可用的 AI 工具
-                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">暂无可用的 AI 工具</p>
               </div>
             )}
           </div>

@@ -21,10 +21,13 @@ export const GalleryPage = view(() => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleSelectAttachment = useCallback((attachment: AttachmentDto) => {
-    attachmentService.setSelectedAttachment(attachment);
-    setIsPreviewOpen(true);
-  }, [attachmentService]);
+  const handleSelectAttachment = useCallback(
+    (attachment: AttachmentDto) => {
+      attachmentService.setSelectedAttachment(attachment);
+      setIsPreviewOpen(true);
+    },
+    [attachmentService]
+  );
 
   const handleClosePreview = useCallback(() => {
     setIsPreviewOpen(false);

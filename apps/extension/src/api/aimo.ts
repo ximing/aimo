@@ -3,11 +3,7 @@
  * Handles authentication and data operations with AIMO backend
  */
 
-import {
-  getConfig,
-  setConfig,
-  clearConfig,
-} from '../storage/index.js';
+import { getConfig, setConfig, clearConfig } from '../storage/index.js';
 import type {
   LoginRequest,
   LoginResponse,
@@ -44,10 +40,7 @@ async function getToken(): Promise<string> {
 /**
  * Make an authenticated API request
  */
-async function apiRequest<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
+async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const baseUrl = await getBaseUrl();
   const token = await getToken();
 
@@ -89,11 +82,7 @@ async function apiRequest<T>(
 
     // Check for API error
     if (!data.success) {
-      throw new ApiError(
-        data.message || '请求失败',
-        response.status,
-        'API_ERROR'
-      );
+      throw new ApiError(data.message || '请求失败', response.status, 'API_ERROR');
     }
 
     return data.data as T;
@@ -122,10 +111,7 @@ async function apiRequest<T>(
  * @param password - User password
  * @returns Login response with token and user info
  */
-export async function login(
-  email: string,
-  password: string
-): Promise<LoginResponse> {
+export async function login(email: string, password: string): Promise<LoginResponse> {
   const baseUrl = (await getBaseUrl()).replace(/\/$/, '');
 
   const loginData: LoginRequest = { email, password };
@@ -318,11 +304,7 @@ export async function uploadAttachment(
     }
 
     if (!data.success) {
-      throw new ApiError(
-        data.message || '上传失败',
-        response.status,
-        'UPLOAD_ERROR'
-      );
+      throw new ApiError(data.message || '上传失败', response.status, 'UPLOAD_ERROR');
     }
 
     return data.data as UploadAttachmentResponse;
@@ -397,11 +379,7 @@ export async function downloadImage(imageUrl: string): Promise<Blob> {
     });
 
     if (!response.ok) {
-      throw new ApiError(
-        `无法下载图片: ${response.statusText}`,
-        response.status,
-        'DOWNLOAD_ERROR'
-      );
+      throw new ApiError(`无法下载图片: ${response.statusText}`, response.status, 'DOWNLOAD_ERROR');
     }
 
     return await response.blob();

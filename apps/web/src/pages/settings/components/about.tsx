@@ -14,7 +14,7 @@ export const About = view(() => {
   useEffect(() => {
     const fetchVersion = async () => {
       try {
-         // If running in Electron, use electronAPI to get version
+        // If running in Electron, use electronAPI to get version
         if (isElectron) {
           const electronVersion = window.electronAPI?.getVersion();
           setVersion(electronVersion || '');

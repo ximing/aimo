@@ -34,10 +34,7 @@ export const addDiaryCategoryMigration: Migration = {
       const uid = user.uid;
 
       // Check if user already has "日记" category (case-insensitive)
-      const userCategories = await categoriesTable
-        .query()
-        .where(`uid = '${uid}'`)
-        .toArray();
+      const userCategories = await categoriesTable.query().where(`uid = '${uid}'`).toArray();
 
       const hasDiaryCategory = userCategories.some(
         (cat: any) => cat.name.toLowerCase() === diaryCategoryName.toLowerCase()

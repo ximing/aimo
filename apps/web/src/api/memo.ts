@@ -90,7 +90,13 @@ export const findRelatedMemos = (memoId: string, page: number = 1, limit: number
 export const getBacklinks = (memoId: string, page: number = 1, limit: number = 20) => {
   return request.get<
     unknown,
-    { code: number; data: { items: MemoListItemDto[]; pagination: { total: number; page: number; limit: number; totalPages: number } } }
+    {
+      code: number;
+      data: {
+        items: MemoListItemDto[];
+        pagination: { total: number; page: number; limit: number; totalPages: number };
+      };
+    }
   >(`/api/v1/memos/${memoId}/backlinks`, {
     params: { page, limit },
   });

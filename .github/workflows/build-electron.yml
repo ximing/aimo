@@ -251,13 +251,13 @@ jobs:
 
       - name: Build Electron main process
         run: pnpm --filter @aimo/client run build:electron
-      
+
       - name: Download web app artifact
         uses: actions/download-artifact@v4
         with:
           name: web-dist
           path: apps/client/dist
-      
+
       - name: Build macOS arm64
         run: |
           if [ -z "$CSC_LINK" ]; then
@@ -324,7 +324,7 @@ jobs:
         with:
           name: web-dist
           path: apps/client/dist
-      
+
       - name: Build Windows
         run: pnpm --filter @aimo/client run dist:win
         env:
@@ -386,7 +386,7 @@ jobs:
         with:
           name: web-dist
           path: apps/client/dist
-      
+
       - name: Build Linux
         run: pnpm --filter @aimo/client run dist:linux
         env:

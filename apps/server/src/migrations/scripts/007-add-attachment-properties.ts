@@ -13,7 +13,8 @@ import type { Connection } from '@lancedb/lancedb';
 export const addPropertiesToAttachmentsMigration: Migration = {
   version: 7,
   tableName: 'attachments',
-  description: 'Add properties field to attachments table for storing metadata like duration, width, height',
+  description:
+    'Add properties field to attachments table for storing metadata like duration, width, height',
   up: async (connection: Connection) => {
     try {
       const attachmentsTable = await connection.openTable('attachments');

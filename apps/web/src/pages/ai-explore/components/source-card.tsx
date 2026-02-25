@@ -40,9 +40,7 @@ export const SourceCard = ({ source, index, onClick }: SourceCardProps) => {
           <span className="flex-shrink-0 mt-0.5 w-5 h-5 flex items-center justify-center rounded bg-primary-100 dark:bg-primary-900/40 text-xs font-medium text-primary-700 dark:text-primary-400">
             {index + 1}
           </span>
-          <p className="text-xs text-gray-600 dark:text-gray-300 line-clamp-3">
-            {source.content}
-          </p>
+          <p className="text-xs text-gray-600 dark:text-gray-300 line-clamp-3">{source.content}</p>
         </div>
       </div>
 
@@ -56,9 +54,7 @@ export const SourceCard = ({ source, index, onClick }: SourceCardProps) => {
             <div
               key={i}
               className={`w-1.5 h-3 rounded-sm ${
-                filled
-                  ? 'bg-primary-500'
-                  : 'bg-gray-200 dark:bg-gray-700'
+                filled ? 'bg-primary-500' : 'bg-gray-200 dark:bg-gray-700'
               }`}
             />
           ))}

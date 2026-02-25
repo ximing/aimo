@@ -74,16 +74,12 @@ export const OnThisDayBanner = view(() => {
         {/* Header */}
         <div className="flex items-center gap-2 px-4 mb-2">
           <Clock className="w-4 h-4 text-primary-500" />
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            历史的今天
-          </span>
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">历史的今天</span>
         </div>
 
         {/* Empty state */}
         <div className="flex items-center justify-center h-16 px-4">
-          <span className="text-sm text-gray-400 dark:text-gray-500">
-            暂无数据
-          </span>
+          <span className="text-sm text-gray-400 dark:text-gray-500">暂无数据</span>
         </div>
       </div>
     );
@@ -94,9 +90,7 @@ export const OnThisDayBanner = view(() => {
       {/* Header */}
       <div className="flex items-center gap-2 px-4 mb-2">
         <Clock className="w-4 h-4 text-primary-500" />
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          历史的今天
-        </span>
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">历史的今天</span>
       </div>
 
       {/* Loading state */}
@@ -136,9 +130,7 @@ export const OnThisDayBanner = view(() => {
 
           {/* View more button (if there are memos) */}
           {memos.length >= 5 && (
-            <button
-              className="flex-shrink-0 w-[80px] sm:w-[90px] md:w-[100px] flex flex-col items-center justify-center gap-1 p-3 bg-gray-50 dark:bg-dark-800/30 hover:bg-gray-100 dark:hover:bg-dark-800/50 border border-dashed border-gray-200 dark:border-dark-700 hover:border-gray-300 dark:hover:border-dark-600 rounded-lg text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-200"
-            >
+            <button className="flex-shrink-0 w-[80px] sm:w-[90px] md:w-[100px] flex flex-col items-center justify-center gap-1 p-3 bg-gray-50 dark:bg-dark-800/30 hover:bg-gray-100 dark:hover:bg-dark-800/50 border border-dashed border-gray-200 dark:border-dark-700 hover:border-gray-300 dark:hover:border-dark-600 rounded-lg text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-200">
               <ChevronRight className="w-5 h-5" />
               <span className="text-xs">查看更多</span>
             </button>

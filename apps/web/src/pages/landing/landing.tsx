@@ -5,8 +5,25 @@ import { ThemeService } from '../../services/theme.service';
 import { AuthService } from '../../services/auth.service';
 import { getAppVersions } from '../../api/system';
 import {
-  Sun, Moon, Menu, X, Github, Sparkles, Search, Link2, Brain, Network, Shield,
-  Monitor, Smartphone, Download, Apple, ChevronLeft, ChevronRight, X as XIcon, Images
+  Sun,
+  Moon,
+  Menu,
+  X,
+  Github,
+  Sparkles,
+  Search,
+  Link2,
+  Brain,
+  Network,
+  Shield,
+  Monitor,
+  Smartphone,
+  Download,
+  Apple,
+  ChevronLeft,
+  ChevronRight,
+  X as XIcon,
+  Images,
 } from 'lucide-react';
 import screenshot00 from '../../assets/landing/00.png';
 import screenshot01 from '../../assets/landing/01.png';
@@ -28,7 +45,8 @@ const useCases = [
   {
     id: 1,
     title: '个人知识库',
-    description: '将碎片化的信息整理成结构化的知识体系。无论是技术文档、读书笔记还是生活感悟，AIMO 都能帮你建立属于自己的知识网络，让知识触手可及。',
+    description:
+      '将碎片化的信息整理成结构化的知识体系。无论是技术文档、读书笔记还是生活感悟，AIMO 都能帮你建立属于自己的知识网络，让知识触手可及。',
     tags: ['知识管理', '信息整理', '长期积累'],
     gradient: 'from-blue-500 to-indigo-600',
     icon: Brain,
@@ -36,7 +54,8 @@ const useCases = [
   {
     id: 2,
     title: '学习笔记',
-    description: '在学习过程中快速记录要点，AI 自动生成摘要和关键词。通过语义关联发现知识点之间的联系，形成完整的学习地图，提升学习效率。',
+    description:
+      '在学习过程中快速记录要点，AI 自动生成摘要和关键词。通过语义关联发现知识点之间的联系，形成完整的学习地图，提升学习效率。',
     tags: ['AI 摘要', '知识关联', '复习回顾'],
     gradient: 'from-emerald-500 to-teal-600',
     icon: Sparkles,
@@ -44,7 +63,8 @@ const useCases = [
   {
     id: 3,
     title: '灵感收集',
-    description: '随时捕捉脑海中闪过的灵感，支持文字、图片多种格式。智能标签和全文搜索让你在任何时刻都能快速找到当初的创意火花。',
+    description:
+      '随时捕捉脑海中闪过的灵感，支持文字、图片多种格式。智能标签和全文搜索让你在任何时刻都能快速找到当初的创意火花。',
     tags: ['快速记录', '多媒体支持', '智能搜索'],
     gradient: 'from-orange-500 to-red-600',
     icon: Network,
@@ -231,11 +251,7 @@ export function LandingPage() {
                 title={themeService.isDark() ? '切换到亮色模式' : '切换到暗色模式'}
                 aria-label="切换主题"
               >
-                {themeService.isDark() ? (
-                  <Sun className="w-5 h-5" />
-                ) : (
-                  <Moon className="w-5 h-5" />
-                )}
+                {themeService.isDark() ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </button>
 
               {/* User Info - Logged in */}
@@ -264,11 +280,7 @@ export function LandingPage() {
                 className="md:hidden p-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all duration-200"
                 aria-label="切换菜单"
               >
-                {isMobileMenuOpen ? (
-                  <X className="w-5 h-5" />
-                ) : (
-                  <Menu className="w-5 h-5" />
-                )}
+                {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
             </div>
           </div>
@@ -300,19 +312,19 @@ export function LandingPage() {
                 <Github className="w-4 h-4" />
                 GitHub
               </a>
-            <button
-              onClick={() => {
-                if (isLoggedIn) {
-                  navigate('/home');
-                } else {
-                  navigate('/auth');
-                  setIsMobileMenuOpen(false);
-                }
-              }}
-              className="text-left text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
-            >
-              {isLoggedIn ? '去使用' : '登录'}
-            </button>
+              <button
+                onClick={() => {
+                  if (isLoggedIn) {
+                    navigate('/home');
+                  } else {
+                    navigate('/auth');
+                    setIsMobileMenuOpen(false);
+                  }
+                }}
+                className="text-left text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
+              >
+                {isLoggedIn ? '去使用' : '登录'}
+              </button>
             </nav>
           </div>
         </div>
@@ -325,7 +337,10 @@ export function LandingPage() {
           {/* Gradient Orb 1 - Top Left */}
           <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-primary-400/20 to-purple-400/20 blur-3xl dark:from-primary-500/10 dark:to-purple-500/10 animate-pulse" />
           {/* Gradient Orb 2 - Bottom Right */}
-          <div className="absolute -bottom-40 -right-40 w-[500px] h-[500px] rounded-full bg-gradient-to-tl from-blue-400/20 to-cyan-400/20 blur-3xl dark:from-blue-500/10 dark:to-cyan-500/10 animate-pulse" style={{ animationDelay: '1s' }} />
+          <div
+            className="absolute -bottom-40 -right-40 w-[500px] h-[500px] rounded-full bg-gradient-to-tl from-blue-400/20 to-cyan-400/20 blur-3xl dark:from-blue-500/10 dark:to-cyan-500/10 animate-pulse"
+            style={{ animationDelay: '1s' }}
+          />
           {/* Gradient Orb 3 - Center (subtle) */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] rounded-full bg-gradient-to-r from-primary-300/10 via-purple-300/10 to-blue-300/10 blur-3xl dark:from-primary-400/5 dark:via-purple-400/5 dark:to-blue-400/5" />
           {/* Grid Pattern Overlay */}
@@ -379,11 +394,16 @@ export function LandingPage() {
                 viewBox="0 0 24 24"
                 stroke="currentColor"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 14l-7 7m0 0l-7-7m7 7V3"
+                />
               </svg>
             </button>
             <button
-              onClick={() => isLoggedIn ? navigate('/home') : scrollToSection('features')}
+              onClick={() => (isLoggedIn ? navigate('/home') : scrollToSection('features'))}
               className="group px-8 py-4 border-2 border-slate-300 dark:border-slate-600 hover:border-primary-400 dark:hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 text-slate-700 dark:text-slate-300 hover:text-primary-700 dark:hover:text-primary-300 font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
             >
               <span>{isLoggedIn ? '去使用' : '查看功能'}</span>
@@ -393,7 +413,12 @@ export function LandingPage() {
                 viewBox="0 0 24 24"
                 stroke="currentColor"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </button>
           </div>
@@ -402,19 +427,31 @@ export function LandingPage() {
           <div className="pt-8 flex flex-col sm:flex-row items-center justify-center gap-6 text-sm text-slate-500 dark:text-slate-500">
             <div className="flex items-center gap-2">
               <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                  clipRule="evenodd"
+                />
               </svg>
               <span>开源免费</span>
             </div>
             <div className="flex items-center gap-2">
               <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                  clipRule="evenodd"
+                />
               </svg>
               <span>隐私优先</span>
             </div>
             <div className="flex items-center gap-2">
               <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                  clipRule="evenodd"
+                />
               </svg>
               <span>多平台支持</span>
             </div>
@@ -429,7 +466,12 @@ export function LandingPage() {
             aria-label="向下滚动"
           >
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 14l-7 7m0 0l-7-7m7 7V3"
+              />
             </svg>
           </button>
         </div>
@@ -439,12 +481,8 @@ export function LandingPage() {
       <section id="features" className="py-24 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">
-              核心功能
-            </h2>
-            <p className="text-slate-600 dark:text-slate-400">
-              强大的 AI 功能，助你高效管理知识
-            </p>
+            <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">核心功能</h2>
+            <p className="text-slate-600 dark:text-slate-400">强大的 AI 功能，助你高效管理知识</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <FeatureCard
@@ -492,9 +530,7 @@ export function LandingPage() {
                 界面预览
               </span>
             </div>
-            <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">
-              应用截图
-            </h2>
+            <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">应用截图</h2>
             <p className="text-slate-600 dark:text-slate-400 max-w-xl mx-auto">
               探索 AIMO 的优雅界面，体验流畅的知识管理之旅
             </p>
@@ -538,7 +574,6 @@ export function LandingPage() {
                   </div>
                 </div>
               ))}
-
             </div>
 
             {/* Navigation Arrows */}
@@ -657,9 +692,7 @@ export function LandingPage() {
                   setCurrentScreenshot(index);
                 }}
                 className={`w-2 h-2 rounded-full transition-all duration-200 ${
-                  index === currentScreenshot
-                    ? 'bg-white w-8'
-                    : 'bg-white/40 hover:bg-white/60'
+                  index === currentScreenshot ? 'bg-white w-8' : 'bg-white/40 hover:bg-white/60'
                 }`}
                 aria-label={`跳转到第 ${index + 1} 张`}
               />
@@ -678,9 +711,7 @@ export function LandingPage() {
         <div className="max-w-6xl mx-auto">
           {/* Section Header */}
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">
-              使用场景
-            </h2>
+            <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">使用场景</h2>
             <p className="text-slate-600 dark:text-slate-400 max-w-xl mx-auto">
               探索 AIMO 在实际生活和工作中的应用场景
             </p>
@@ -737,7 +768,9 @@ export function LandingPage() {
                         {/* Mock Content */}
                         <div className="flex-1 p-6 flex items-center justify-center">
                           <div className="text-center space-y-4">
-                            <div className={`w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br ${useCase.gradient} flex items-center justify-center text-white shadow-lg`}>
+                            <div
+                              className={`w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br ${useCase.gradient} flex items-center justify-center text-white shadow-lg`}
+                            >
                               <IconComponent className="w-10 h-10" />
                             </div>
                             <div className="space-y-2">
@@ -761,9 +794,7 @@ export function LandingPage() {
         <div className="max-w-5xl mx-auto">
           {/* Section Header */}
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">
-              下载 AIMO
-            </h2>
+            <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">下载 AIMO</h2>
             <p className="text-slate-600 dark:text-slate-400">
               选择适合你的平台，开始高效的知识管理之旅
             </p>
@@ -773,9 +804,7 @@ export function LandingPage() {
           <div className="mb-12">
             <div className="flex items-center gap-2 mb-6">
               <Monitor className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-              <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
-                桌面端
-              </h3>
+              <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">桌面端</h3>
               {versions?.desktop.version && (
                 <span className="px-2 py-0.5 text-xs font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full">
                   v{versions.desktop.version}
@@ -816,9 +845,7 @@ export function LandingPage() {
           <div>
             <div className="flex items-center gap-2 mb-6">
               <Smartphone className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-              <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
-                移动端
-              </h3>
+              <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">移动端</h3>
               {versions?.apk.version && (
                 <span className="px-2 py-0.5 text-xs font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full">
                   v{versions.apk.version}
@@ -1046,9 +1073,7 @@ function DownloadCard({
       <h3 className="mt-4 text-lg font-semibold text-slate-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-300">
         {platform}
       </h3>
-      <p className="mt-1 text-xs text-slate-500 dark:text-slate-500">
-        {requirements}
-      </p>
+      <p className="mt-1 text-xs text-slate-500 dark:text-slate-500">{requirements}</p>
     </a>
   );
 }

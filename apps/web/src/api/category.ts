@@ -1,8 +1,4 @@
-import type {
-  CreateCategoryDto,
-  UpdateCategoryDto,
-  CategoryDto,
-} from '@aimo/dto';
+import type { CreateCategoryDto, UpdateCategoryDto, CategoryDto } from '@aimo/dto';
 import request from '../utils/request';
 
 /**

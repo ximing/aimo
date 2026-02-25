@@ -25,17 +25,17 @@ export const memoTagsMigration: Migration = {
   version: 2,
   tableName: 'memos',
   description: 'Add tags field to memos table for tagging support',
-  
+
   up: async (connection: Connection) => {
     try {
       console.log('Starting migration: Add tags field to memos');
-      
+
       // Note: LanceDB doesn't support ALTER TABLE
       // Solution: Create new table, copy data, replace old table
-      
+
       const db = connection;
       const tableNames = await db.tableNames();
-      
+
       // Check if migration already applied (for idempotency)
       const memosTempExists = tableNames.includes('memos_v2_temp');
       if (memosTempExists) {
@@ -47,42 +47,42 @@ export const memoTagsMigration: Migration = {
           // Ignore
         }
       }
-      
+
       if (!tableNames.includes('memos')) {
         throw new Error('Source table "memos" not found');
       }
-      
+
       // Step 1: Read all existing data
       console.log('Reading existing memos data...');
       const oldTable = await db.openTable('memos');
       const allMemos = await oldTable.query().toArray();
-      
+
       console.log(`Found ${allMemos.length} existing memos`);
-      
+
       // Step 2: Create new table with updated schema (imported from schema.ts)
       console.log('Creating new memos table with updated schema...');
-      
+
       // Import the updated schema
       const { memosSchema: updatedMemosSchema } = await import('../../models/db/schema.js');
-      
+
       // Create temporary table with new schema
       const tempTableName = 'memos_v2_temp';
       await db.createEmptyTable(tempTableName, updatedMemosSchema);
-      
+
       // Step 3: Copy data from old table to new table
       console.log('Migrating data to new schema...');
       const newTable = await db.openTable(tempTableName);
-      
+
       const migratedMemos = allMemos.map((memo: any) => ({
         ...memo,
         tags: [], // New field - initialize as empty array
       }));
-      
+
       await newTable.add(migratedMemos);
-      
+
       // Step 4: Delete old table and rename new table
       console.log('Replacing old table with new table...');
-      
+
       // In LanceDB, we need to delete the old table
       const oldTableRef = await db.openTable('memos');
       // LanceDB doesn't have direct drop, so we delete all records
@@ -94,24 +94,26 @@ export const memoTagsMigration: Migration = {
           await oldTableRef.delete(`memoId = '${record.memoId}'`);
         }
       }
-      
+
       // Copy all data from temp table back to original
       const allNewMemos = await newTable.query().toArray();
       await oldTableRef.add(allNewMemos);
-      
+
       // Clean up temp table
-      await db.openTable(tempTableName).then(async (table) => {
-        // Delete all records from temp table
-        const tempRecords = await table.query().toArray();
-        for (const record of tempRecords) {
-          await table.delete(`memoId = '${record.memoId}'`);
-        }
-      }).catch(() => {
-        // Ignore cleanup errors
-      });
-      
+      await db
+        .openTable(tempTableName)
+        .then(async (table) => {
+          // Delete all records from temp table
+          const tempRecords = await table.query().toArray();
+          for (const record of tempRecords) {
+            await table.delete(`memoId = '${record.memoId}'`);
+          }
+        })
+        .catch(() => {
+          // Ignore cleanup errors
+        });
+
       console.log('Migration completed: tags field added to memos');
-      
     } catch (error) {
       console.error('Migration failed:', error);
       throw error;
@@ -149,7 +151,7 @@ export interface MemoRecord {
   categoryId?: string;
   content: string;
   attachments?: string[];
-  tags?: string[];                // NEW FIELD
+  tags?: string[]; // NEW FIELD
   embedding: number[];
   createdAt: number;
   updatedAt: number;
@@ -173,7 +175,7 @@ export const ALL_MIGRATIONS: Migration[] = [
   usersTableMigration,
   memosTableMigration,
   // ... other v1 migrations
-  
+
   // Version 2: Add tags support
   memoTagsMigration,
 ];
@@ -206,7 +208,7 @@ export const tagsTableMigration: Migration = {
   version: 3,
   tableName: 'tags',
   description: 'Create new tags table for tag management',
-  
+
   up: async (connection: Connection) => {
     const tagsSchema = new Schema([
       new Field('tagId', new Utf8(), false),
@@ -215,7 +217,7 @@ export const tagsTableMigration: Migration = {
       new Field('color', new Utf8(), true),
       new Field('createdAt', new Timestamp(TimeUnit.MILLISECOND), false),
     ]);
-    
+
     await connection.createEmptyTable('tags', tagsSchema);
   },
 };
@@ -230,22 +232,22 @@ export const transformMemoContentMigration: Migration = {
   version: 4,
   tableName: 'memos',
   description: 'Transform memo content format (e.g., Markdown to HTML)',
-  
+
   up: async (connection: Connection) => {
     const table = await connection.openTable('memos');
     const allMemos = await table.query().toArray();
-    
+
     // Transform each memo
     const transformedMemos = allMemos.map((memo) => ({
       ...memo,
       content: transformMarkdownToHtml(memo.content), // Custom transformation
     }));
-    
+
     // Delete all old records
     for (const memo of allMemos) {
       await table.delete(`memoId = '${memo.memoId}'`);
     }
-    
+
     // Re-insert with transformed data
     await table.add(transformedMemos);
   },
@@ -260,6 +262,7 @@ function transformMarkdownToHtml(markdown: string): string {
 ## Best Practices
 
 1. **Make migrations idempotent** - Running twice should be safe
+
    ```typescript
    // Check if already applied
    const results = await table.query().where(...).limit(1).toArray();
@@ -269,6 +272,7 @@ function transformMarkdownToHtml(markdown: string): string {
    ```
 
 2. **Handle empty tables gracefully**
+
    ```typescript
    const records = await table.query().toArray();
    if (records.length === 0) {
@@ -278,6 +282,7 @@ function transformMarkdownToHtml(markdown: string): string {
    ```
 
 3. **Use descriptive names and descriptions**
+
    ```typescript
    export const myMigration: Migration = {
      version: 5,
@@ -288,6 +293,7 @@ function transformMarkdownToHtml(markdown: string): string {
    ```
 
 4. **Log progress for long-running migrations**
+
    ```typescript
    for (let i = 0; i < records.length; i++) {
      if (i % 1000 === 0) {
@@ -306,10 +312,11 @@ function transformMarkdownToHtml(markdown: string): string {
 
 1. **Not updating schema.ts** - Always update schema before creating migration
 2. **SQL injection in WHERE clauses** - Escape quotes in table names
+
    ```typescript
    // ❌ Bad
    const results = await table.query().where(`tableName = '${name}'`).toArray();
-   
+
    // ✅ Good
    const escaped = name.replace(/'/g, "''");
    const results = await table.query().where(`tableName = '${escaped}'`).toArray();

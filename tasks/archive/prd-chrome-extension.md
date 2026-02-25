@@ -15,9 +15,11 @@ AIMO Chrome 扩展是一个浏览器插件，让用户在浏览网页时可以�
 ## User Stories
 
 ### US-001: 初始化扩展配置
+
 **Description:** 作为用户，我首次使用扩展时需要配置 AIMO 服务器地址和登录信息，以便连接到我的知识库。
 
 **Acceptance Criteria:**
+
 - [ ] 扩展首次打开时显示配置页面
 - [ ] 配置表单包含：服务器 URL、用户名、密码三个字段
 - [ ] 点击登录按钮后调用 AIMO `/auth/login` API 获取 JWT token
@@ -27,9 +29,11 @@ AIMO Chrome 扩展是一个浏览器插件，让用户在浏览网页时可以�
 - [ ] TypeScript 类型检查通过
 
 ### US-002: 浮动工具栏显示
+
 **Description:** 作为用户，我在网页上选中文本或图片后，希望在选区附近快速看到操作按钮，无需打开 popup。
 
 **Acceptance Criteria:**
+
 - [ ] 在任意网页选中文本时，选区右下角显示浮动工具栏
 - [ ] 工具栏包含 "保存到 AIMO" 按钮（图标 + 文字）
 - [ ] 点击图片时显示相同的浮动工具栏
@@ -40,9 +44,11 @@ AIMO Chrome 扩展是一个浏览器插件，让用户在浏览网页时可以�
 - [ ] 在浏览器中验证工具栏位置和交互
 
 ### US-003: 文本内容提取与预览
+
 **Description:** 作为用户，我选中文本并点击保存后，希望在 popup 中预览和编辑内容后再提交。
 
 **Acceptance Criteria:**
+
 - [ ] 点击浮动工具栏的保存按钮后，自动打开 popup 弹窗
 - [ ] Popup 显示选中内容的预览区域
 - [ ] 显示内容来源 URL 和页面标题（自动填充，不可编辑）
@@ -54,9 +60,11 @@ AIMO Chrome 扩展是一个浏览器插件，让用户在浏览网页时可以�
 - [ ] 在浏览器中验证文本提取和预览流程
 
 ### US-004: 图片下载与上传
+
 **Description:** 作为用户，我选中图片后，希望图片被下载并上传到 AIMO 服务器，与 memo 关联。
 
 **Acceptance Criteria:**
+
 - [ ] 获取选中图片的 URL（支持 `<img>` 标签和背景图）
 - [ ] 使用 Chrome 下载 API 将图片下载到临时 Blob
 - [ ] 将图片转换为 File 对象，调用 AIMO `/attachments` API 上传
@@ -68,9 +76,11 @@ AIMO Chrome 扩展是一个浏览器插件，让用户在浏览网页时可以�
 - [ ] 在浏览器中验证图片下载和上传流程
 
 ### US-005: Popup 内容管理
+
 **Description:** 作为用户，我希望在 popup 中查看本次浏览会话中已提取的所有内容，支持批量或单独管理。
 
 **Acceptance Criteria:**
+
 - [ ] Popup 主界面显示 "待保存内容" 列表
 - [ ] 每条内容显示：类型图标（文本/图片）、内容摘要、来源页面
 - [ ] 支持单条删除（从列表移除，不保存）
@@ -81,9 +91,11 @@ AIMO Chrome 扩展是一个浏览器插件，让用户在浏览网页时可以�
 - [ ] 在浏览器中验证列表管理和批量操作
 
 ### US-006: 扩展状态与错误处理
+
 **Description:** 作为用户，我希望在扩展遇到问题时得到清晰的反馈，比如未登录或网络错误。
 
 **Acceptance Criteria:**
+
 - [ ] 未配置服务器时，点击工具栏按钮显示 "请先配置服务器"
 - [ ] Token 过期时自动跳转到登录页面
 - [ ] 网络请求失败时显示具体错误信息
@@ -117,17 +129,20 @@ AIMO Chrome 扩展是一个浏览器插件，让用户在浏览网页时可以�
 ## Design Considerations
 
 ### UI 风格
+
 - 简洁现代，与 AIMO Web 界面保持一致
 - 主色调使用 AIMO 品牌色（待定，建议蓝色系）
 - 圆角设计，轻微阴影，符合现代浏览器扩展审美
 
 ### 浮动工具栏
+
 - 位置：选区右下角或图片右下角，距边缘 8px
 - 尺寸：高度 32px，宽度自适应
 - 动画：淡入 150ms，淡出 100ms
 - 内容：AIMO 图标 + "保存" 文字
 
 ### Popup 布局
+
 - 宽度：400px，高度：自适应（最大 600px）
 - 头部：扩展标题 + 设置图标
 - 主体：待保存内容列表/配置表单
@@ -136,6 +151,7 @@ AIMO Chrome 扩展是一个浏览器插件，让用户在浏览网页时可以�
 ## Technical Considerations
 
 ### 项目结构
+
 ```
 apps/extension/
 ├── manifest.json          # 扩展配置
@@ -160,17 +176,20 @@ apps/extension/
 ```
 
 ### 权限需求
+
 - `storage` - 存储配置和待保存内容
 - `activeTab` - 访问当前页面内容
 - `host_permissions` - 访问 AIMO 服务器域名
 
 ### 关键依赖
+
 - TypeScript 5.x
 - React 18（用于 Popup UI）
 - Vite（构建工具）
 - Chrome Extension API 类型定义
 
 ### 安全性
+
 - Token 仅存储在 local storage，不发送给第三方
 - 内容脚本使用 shadow DOM 隔离样式
 - API 请求使用 HTTPS 强制加密

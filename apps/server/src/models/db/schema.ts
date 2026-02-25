@@ -56,16 +56,8 @@ export const memosSchema = new Schema([
   new Field('categoryId', new Utf8(), true), // nullable category id (undefined = uncategorized)
   new Field('content', new Utf8(), false), // non-nullable memo content
   new Field('type', new Utf8(), true), // nullable memo type: 'text' | 'audio' | 'video' (defaults to 'text' if not set)
-  new Field(
-    'attachments',
-    new List(new Field('item', new Utf8(), true)),
-    true
-  ), // nullable list of attachment IDs (URLs generated at runtime)
-  new Field(
-    'tagIds',
-    new List(new Field('item', new Utf8(), true)),
-    true
-  ), // nullable list of tag IDs (new primary field)
+  new Field('attachments', new List(new Field('item', new Utf8(), true)), true), // nullable list of attachment IDs (URLs generated at runtime)
+  new Field('tagIds', new List(new Field('item', new Utf8(), true)), true), // nullable list of tag IDs (new primary field)
   new Field(
     'embedding',
     new FixedSizeList(getEmbeddingDimensions(), new Field('item', new Float32(), true)),
@@ -382,11 +374,7 @@ export const dailyRecommendationsSchema = new Schema([
   new Field('recommendationId', new Utf8(), false), // non-nullable unique recommendation id
   new Field('uid', new Utf8(), false), // non-nullable user id
   new Field('date', new Utf8(), false), // non-nullable date in YYYY-MM-DD format
-  new Field(
-    'memoIds',
-    new List(new Field('item', new Utf8(), true)),
-    false
-  ), // non-nullable list of recommended memo IDs
+  new Field('memoIds', new List(new Field('item', new Utf8(), true)), false), // non-nullable list of recommended memo IDs
   new Field('createdAt', new Timestamp(TimeUnit.MILLISECOND), false), // non-nullable creation timestamp in milliseconds
 ]);
 

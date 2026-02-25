@@ -18,9 +18,11 @@ AI探索页面是一个基于大模型的智能知识发现界面，用户可以
 ## User Stories
 
 ### US-001: 对话界面基础架构
+
 **Description:** 作为用户，我需要一个对话式界面来与AI交互，以便自然地提出关于我笔记的问题。
 
 **Acceptance Criteria:**
+
 - [ ] 页面包含可滚动的消息历史区域
 - [ ] 底部有固定输入框，支持多行文本
 - [ ] 输入框有发送按钮（支持Enter快捷键发送）
@@ -32,9 +34,11 @@ AI探索页面是一个基于大模型的智能知识发现界面，用户可以
 - [ ] Verify in browser using dev-browser skill
 
 ### US-002: LangChain DeepAgents后端架构
+
 **Description:** 作为开发者，我需要搭建基于LangChain的DeepAgents架构，以便智能处理用户查询。
 
 **Acceptance Criteria:**
+
 - [ ] 设计并实现多Agent协作架构：
   - `检索Agent`：负责向量搜索相关笔记
   - `关系分析Agent`：分析笔记间的关联关系
@@ -47,9 +51,11 @@ AI探索页面是一个基于大模型的智能知识发现界面，用户可以
 - [ ] Typecheck/lint passes
 
 ### US-003: 智能检索与来源标注
+
 **Description:** 作为用户，我希望AI回答能显示引用了哪些笔记，以便验证信息来源。
 
 **Acceptance Criteria:**
+
 - [ ] AI回答中引用的笔记以卡片形式展示在回答下方
 - [ ] 每个来源卡片显示：笔记标题、摘要、相似度分数
 - [ ] 点击来源卡片可跳转到对应笔记详情
@@ -59,9 +65,11 @@ AI探索页面是一个基于大模型的智能知识发现界面，用户可以
 - [ ] Verify in browser using dev-browser skill
 
 ### US-004: 笔记关系图谱探索
+
 **Description:** 作为用户，我希望AI能发现并展示笔记间的关联关系，以便理解知识结构。
 
 **Acceptance Criteria:**
+
 - [ ] AI能识别并描述笔记间的主题关联、时间关联、标签关联
 - [ ] 在回答中可选显示关系图谱小部件（3-5个关联笔记）
 - [ ] 关系图谱支持点击节点查看笔记详情
@@ -70,9 +78,11 @@ AI探索页面是一个基于大模型的智能知识发现界面，用户可以
 - [ ] Verify in browser using dev-browser skill
 
 ### US-005: 附件内容理解
+
 **Description:** 作为用户，我希望AI能理解和引用图片、PDF等附件内容，以便全面利用我的资料。
 
 **Acceptance Criteria:**
+
 - [ ] 支持图片附件：AI能描述图片内容并作为回答依据
 - [ ] 支持PDF/文本附件：AI能提取关键信息
 - [ ] 附件来源在回答中明确标注
@@ -81,9 +91,11 @@ AI探索页面是一个基于大模型的智能知识发现界面，用户可以
 - [ ] Verify in browser using dev-browser skill
 
 ### US-006: 多轮对话与上下文记忆
+
 **Description:** 作为用户，我希望能进行追问和深入交流，以便逐步探索问题。
 
 **Acceptance Criteria:**
+
 - [ ] 支持多轮对话，AI能记住之前的上下文
 - [ ] 显示对话轮次指示器
 - [ ] 支持"新建话题"按钮开启独立对话
@@ -93,9 +105,11 @@ AI探索页面是一个基于大模型的智能知识发现界面，用户可以
 - [ ] Verify in browser using dev-browser skill
 
 ### US-007: 探索建议和洞察生成
+
 **Description:** 作为用户，我希望AI能主动给我洞察和建议，以便发现知识盲区。
 
 **Acceptance Criteria:**
+
 - [ ] 提供"发现洞察"功能按钮
 - [ ] AI分析全库笔记后生成：主题聚类、时间趋势、关联建议
 - [ ] 洞察报告以结构化形式展示（分类、标签云、时间线）
@@ -106,6 +120,7 @@ AI探索页面是一个基于大模型的智能知识发现界面，用户可以
 ## Functional Requirements
 
 ### 核心对话功能
+
 - FR-1: 页面必须提供类似ChatGPT的对话界面，用户输入自然语言问题
 - FR-2: 系统必须使用LangChain DeepAgents处理用户查询
 - FR-3: AI响应必须基于用户实际存在的笔记内容，不得 hallucinate
@@ -114,6 +129,7 @@ AI探索页面是一个基于大模型的智能知识发现界面，用户可以
 - FR-6: 点击来源引用必须能打开对应笔记详情页
 
 ### Agent架构
+
 - FR-7: 系统必须实现检索Agent，使用LanceDB向量搜索相关笔记
 - FR-8: 系统必须实现关系分析Agent，查询笔记间的关联关系
 - FR-9: 系统必须实现附件理解Agent，提取图片/PDF的关键信息
@@ -122,12 +138,14 @@ AI探索页面是一个基于大模型的智能知识发现界面，用户可以
 - FR-12: 整个Agent链执行时间不得超过5秒（不含LLM生成）
 
 ### 数据集成
+
 - FR-13: 检索范围必须包括：笔记标题、内容、标签
 - FR-14: 检索范围必须包括：笔记间的relation关系
 - FR-15: 检索范围必须包括：附件的元数据和提取的文本/描述
 - FR-16: 向量搜索返回Top 10相关笔记，由总结Agent筛选最相关的5个
 
 ### UI/UX
+
 - FR-17: AI回答必须使用流式输出（打字机效果）
 - FR-18: 必须显示AI正在"思考中"的状态指示器
 - FR-19: 必须支持对话历史清空和新建话题
@@ -135,6 +153,7 @@ AI探索页面是一个基于大模型的智能知识发现界面，用户可以
 - FR-21: 空状态必须显示示例问题引导用户
 
 ### 性能与限制
+
 - FR-22: 单次对话最多10轮，超出必须提示新建话题
 - FR-23: 用户输入限制500字符
 - FR-24: AI回答限制2000字符
@@ -153,6 +172,7 @@ AI探索页面是一个基于大模型的智能知识发现界面，用户可以
 ## Design Considerations
 
 ### 界面布局
+
 ```
 +--------------------------------------------------+
 |  AI 探索                                          |
@@ -180,11 +200,13 @@ AI探索页面是一个基于大模型的智能知识发现界面，用户可以
 ```
 
 ### 现有组件复用
+
 - 使用已有的`memo-card`组件展示来源笔记
 - 复用`loading-spinner`组件作为思考指示器
 - 复用`markdown-renderer`渲染AI回答
 
 ### 新增组件
+
 - `chat-message`：对话消息气泡组件
 - `source-citation`：来源引用卡片组件
 - `explore-input`：底部输入框组件
@@ -193,6 +215,7 @@ AI探索页面是一个基于大模型的智能知识发现界面，用户可以
 ## Technical Considerations
 
 ### LangChain架构建议
+
 ```
 用户查询
     ↓
@@ -211,17 +234,20 @@ AI探索页面是一个基于大模型的智能知识发现界面，用户可以
 ```
 
 ### 依赖项
+
 - `langchain` - Agent框架核心
 - `@langchain/openai` 或 `@langchain/deepseek` - 模型接入
 - 复用现有`lancedb`服务进行向量检索
 
 ### 集成点
+
 - 复用现有的`SearchService.semanticSearch()`进行笔记检索
 - 复用`MemoRelationService`获取笔记关系
 - 复用`AttachmentService`获取附件信息
 - 新增`ExploreService`协调整个Agent流程
 
 ### 性能优化
+
 - Agent并行执行：检索Agent、关系Agent、附件Agent可并行
 - 使用LangChain的RunnableParallel实现并发
 - 向量搜索结果缓存（5分钟）

@@ -76,9 +76,7 @@ export class MemoService extends Service {
   endDate: Date | null = null;
   categoryFilter: string | null = loadCategoryFilterFromStorage();
   selectedDate: string | null = null; // YYYY-MM-DD format for date filter
-  tagFilter: string | null = null; // Single tag filter (for backward compatibility)
-  tagsFilter: string[] = []; // Multi-select tag filter
-  multiSelectMode = false; // Toggle between single and multi-select tag filtering
+  tagFilter: string[] = []; // Tag filter (multiple tags)
 
   /**
    * Computed: Get filtered memos (for client-side filtering if needed)
@@ -124,11 +122,9 @@ export class MemoService extends Service {
         params.categoryId = this.categoryFilter;
       }
 
-      // Use tags filter in multi-select mode, otherwise use single tag filter
-      if (this.multiSelectMode && this.tagsFilter.length > 0) {
-        params.tags = this.tagsFilter;
-      } else if (this.tagFilter) {
-        params.tag = this.tagFilter;
+      // Use tags filter
+      if (this.tagFilter.length > 0) {
+        params.tags = this.tagFilter;
       }
 
       const response = await memoApi.getMemos(params);
@@ -175,7 +171,15 @@ export class MemoService extends Service {
     tags?: string[]
   ) {
     try {
-      const data: CreateMemoDto = { content, type, categoryId, attachments, relationIds, isPublic, tags };
+      const data: CreateMemoDto = {
+        content,
+        type,
+        categoryId,
+        attachments,
+        relationIds,
+        isPublic,
+        tags,
+      };
       const response = await memoApi.createMemo(data);
 
       if (response.code === 0 && response.data) {
@@ -227,7 +231,15 @@ export class MemoService extends Service {
     tags?: string[]
   ) {
     try {
-      const data: UpdateMemoDto = { content, type, categoryId, attachments, relationIds, isPublic, tags };
+      const data: UpdateMemoDto = {
+        content,
+        type,
+        categoryId,
+        attachments,
+        relationIds,
+        isPublic,
+        tags,
+      };
       const response = await memoApi.updateMemo(memoId, data);
 
       if (response.code === 0 && response.data) {
@@ -324,50 +336,28 @@ export class MemoService extends Service {
   }
 
   /**
-   * Set tag filter (single-select mode)
+   * Set tag filter
    */
   setTagFilter(tagName: string | null) {
-    this.tagFilter = tagName;
-    // Clear multi-select when using single-select
     if (tagName) {
-      this.tagsFilter = [];
-      this.multiSelectMode = false;
-    }
-    this.fetchMemos(true);
-  }
-
-  /**
-   * Toggle multi-select mode
-   */
-  toggleMultiSelectMode(enabled: boolean) {
-    this.multiSelectMode = enabled;
-    if (enabled) {
-      // Convert single tag to multi-select if exists
-      if (this.tagFilter) {
-        this.tagsFilter = [this.tagFilter];
-        this.tagFilter = null;
-      }
+      this.tagFilter = [tagName];
     } else {
-      // Convert multi-select to single tag if exactly one selected
-      if (this.tagsFilter.length === 1) {
-        this.tagFilter = this.tagsFilter[0];
-      }
-      this.tagsFilter = [];
+      this.tagFilter = [];
     }
     this.fetchMemos(true);
   }
 
   /**
-   * Toggle a tag in multi-select mode
+   * Toggle a tag in filter
    */
   toggleTagInFilter(tagName: string) {
-    const index = this.tagsFilter.indexOf(tagName);
+    const index = this.tagFilter.indexOf(tagName);
     if (index > -1) {
       // Remove tag if already selected
-      this.tagsFilter = this.tagsFilter.filter((t) => t !== tagName);
+      this.tagFilter = this.tagFilter.filter((t) => t !== tagName);
     } else {
       // Add tag if not selected
-      this.tagsFilter = [...this.tagsFilter, tagName];
+      this.tagFilter = [...this.tagFilter, tagName];
     }
     this.fetchMemos(true);
   }
@@ -376,19 +366,15 @@ export class MemoService extends Service {
    * Clear all tag filters
    */
   clearAllTagFilters() {
-    this.tagFilter = null;
-    this.tagsFilter = [];
+    this.tagFilter = [];
     this.fetchMemos(true);
   }
 
   /**
-   * Check if a tag is selected (works for both single and multi-select)
+   * Check if a tag is selected
    */
   isTagSelected(tagName: string): boolean {
-    if (this.multiSelectMode) {
-      return this.tagsFilter.includes(tagName);
-    }
-    return this.tagFilter === tagName;
+    return this.tagFilter.includes(tagName);
   }
 
   /**
@@ -402,7 +388,7 @@ export class MemoService extends Service {
       // Parse YYYY-MM-DD format
       // Important: Parse as UTC to match the date exactly, not affected by local timezone
       const [year, month, day] = date.split('-').map(Number);
-      
+
       // Create dates in UTC: start of day 00:00:00 UTC and end of day 23:59:59.999 UTC
       const startOfDay = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
       const endOfDay = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));

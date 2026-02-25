@@ -11,11 +11,7 @@ import type { UserInfoDto } from '@aimo/dto';
 const PROTECTED_PATHS = ['/api', '/home', '/ai-explore', '/gallery', '/settings'];
 
 // Paths that don't require authentication even if they match protected prefixes
-const AUTH_EXCLUDED_PATHS = [
-  '/api/v1/auth/login',
-  '/api/v1/auth/register',
-  '/api/v1/memos/public',
-];
+const AUTH_EXCLUDED_PATHS = ['/api/v1/auth/login', '/api/v1/auth/register', '/api/v1/memos/public'];
 
 /**
  * Check if the request path requires authentication
@@ -41,7 +37,8 @@ export const authHandler = async (request: Request, res: Response, next: NextFun
     }
 
     // Get token from cookie or Authorization header
-    const token = request.cookies?.aimo_token || request.headers.authorization?.replace('Bearer ', '');
+    const token =
+      request.cookies?.aimo_token || request.headers.authorization?.replace('Bearer ', '');
 
     if (!token) {
       return res.status(401).json({

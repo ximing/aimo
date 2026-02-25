@@ -39,11 +39,7 @@ export async function getConfig(): Promise<Config | null> {
  * @param token - JWT authentication token
  * @param username - Optional username for display
  */
-export async function setConfig(
-  url: string,
-  token: string,
-  username?: string
-): Promise<void> {
+export async function setConfig(url: string, token: string, username?: string): Promise<void> {
   try {
     const config: Config = { url, token, username };
     await chrome.storage.local.set({ [CONFIG_KEY]: config });

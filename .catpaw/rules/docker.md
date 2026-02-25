@@ -1,5 +1,5 @@
 ---
-ruleType: Model Request 
+ruleType: Model Request
 description: 构建docker镜像时使用
 ---
 
@@ -13,4 +13,3 @@ description: 构建docker镜像时使用
 - GitHub Actions 里要包含 `pnpm install`、`pnpm --filter @aimo/logger build`、`pnpm --filter @aimo/dto build`、`pnpm --filter @aimo/web build`、`pnpm --filter @aimo/server build`，再执行 `docker build`/`docker push`，确保构建产物和依赖完整。
 - 新增 `packages/*` 包时，GitHub Actions 需同步更新：在 `pnpm --filter` 列表中加入该包，确保构建顺序正确（依赖包先于应用包）。
 - 启动命令建议使用 `node apps/server/dist/index.js`，与构建目录保持一致。
-

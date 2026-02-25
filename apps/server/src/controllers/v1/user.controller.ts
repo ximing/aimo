@@ -11,7 +11,6 @@ import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 import type { UserInfoDto, UpdateUserDto, ChangePasswordDto } from '@aimo/dto';
 import type { Request } from 'express';
 
-
 // Multer middleware for file upload
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -49,7 +48,9 @@ export class UserV1Controller {
       }
 
       // Generate avatar access URL with 7-day expiry
-      const avatar = user.avatar ? await this.avatarService.generateAvatarAccessUrl(user.avatar) : '';
+      const avatar = user.avatar
+        ? await this.avatarService.generateAvatarAccessUrl(user.avatar)
+        : '';
 
       // Return user info
       const userInfo: UserInfoDto = {
@@ -102,7 +103,10 @@ export class UserV1Controller {
   }
 
   @Post('/password')
-  async changePassword(@Body() passwordData: ChangePasswordDto, @CurrentUser() userDto: UserInfoDto) {
+  async changePassword(
+    @Body() passwordData: ChangePasswordDto,
+    @CurrentUser() userDto: UserInfoDto
+  ) {
     try {
       if (!userDto?.uid) {
         return ResponseUtility.error(ErrorCode.UNAUTHORIZED);

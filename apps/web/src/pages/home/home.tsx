@@ -88,15 +88,11 @@ export const HomePage = view(() => {
       memoService.setSelectedDate(null);
     }
 
-    // Handle multi-select tags first (if present)
+    // Handle tags from URL
     if (tagsParams.length > 0) {
-      memoService.multiSelectMode = true;
-      memoService.tagsFilter = tagsParams;
-      memoService.tagFilter = null;
+      memoService.tagFilter = tagsParams;
     } else if (tagParam) {
-      // Single tag mode
-      memoService.multiSelectMode = false;
-      memoService.tagsFilter = [];
+      // Single tag
       memoService.setTagFilter(tagParam);
     } else {
       memoService.setTagFilter(null);
@@ -119,23 +115,19 @@ export const HomePage = view(() => {
     );
   }, [memoService.selectedDate]);
 
-  // Update URL when tag filter changes (single-select)
+  // Update URL when tag filter changes
   useEffect(() => {
-    if (memoService.tagFilter) {
+    if (memoService.tagFilter.length > 0) {
+      const newParams = new URLSearchParams();
+      memoService.tagFilter.forEach((tag) => {
+        newParams.append('tags', tag);
+      });
+      setSearchParams(newParams, { replace: true });
+    } else {
       setSearchParams(
         (prev) => {
           const next = new URLSearchParams(prev);
-          next.set('tag', memoService.tagFilter!);
-          // Remove multi-select params if switching to single
           next.delete('tags');
-          return next;
-        },
-        { replace: true }
-      );
-    } else if (!memoService.multiSelectMode) {
-      setSearchParams(
-        (prev) => {
-          const next = new URLSearchParams(prev);
           next.delete('tag');
           return next;
         },
@@ -143,26 +135,6 @@ export const HomePage = view(() => {
       );
     }
   }, [memoService.tagFilter]);
-
-  // Update URL when multi-select tags change
-  useEffect(() => {
-    if (memoService.multiSelectMode && memoService.tagsFilter.length > 0) {
-      const newParams = new URLSearchParams();
-      memoService.tagsFilter.forEach((tag) => {
-        newParams.append('tags', tag);
-      });
-      setSearchParams(newParams, { replace: true });
-    } else if (memoService.multiSelectMode && memoService.tagsFilter.length === 0) {
-      setSearchParams(
-        (prev) => {
-          const next = new URLSearchParams(prev);
-          next.delete('tags');
-          return next;
-        },
-        { replace: true }
-      );
-    }
-  }, [memoService.tagsFilter, memoService.multiSelectMode]);
 
   // Handle browser back/forward buttons
   useEffect(() => {
@@ -172,22 +144,18 @@ export const HomePage = view(() => {
       const tagsParams = urlParams.getAll('tags');
 
       if (tagsParams.length > 0) {
-        // Multi-select mode from URL
-        memoService.multiSelectMode = true;
-        memoService.tagsFilter = tagsParams;
-        memoService.tagFilter = null;
-      } else if (tagParam && tagParam !== memoService.tagFilter) {
-        memoService.multiSelectMode = false;
-        memoService.tagsFilter = [];
+        // Tags from URL
+        memoService.tagFilter = tagsParams;
+      } else if (tagParam && !memoService.tagFilter.includes(tagParam)) {
         memoService.setTagFilter(tagParam);
-      } else if (!tagParam && !tagsParams.length && (memoService.tagFilter || memoService.tagsFilter.length > 0)) {
+      } else if (!tagParam && !tagsParams.length && memoService.tagFilter.length > 0) {
         memoService.clearAllTagFilters();
       }
     };
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [memoService.tagFilter, memoService.tagsFilter.length]);
+  }, [memoService.tagFilter]);
 
   // Fetch memos on mount (only once)
   useEffect(() => {
@@ -236,24 +204,18 @@ export const HomePage = view(() => {
       <div className="flex-1 flex w-full overflow-hidden relative justify-center">
         {/* Centered Container - Sidebar + Memo as a whole */}
         <div
-          className={`flex h-full ${
-            isCompact || isCollapsed ? 'justify-center' : 'gap-0'
-          }`}
+          className={`flex h-full ${isCompact || isCollapsed ? 'justify-center' : 'gap-0'}`}
           style={{
             minWidth: isCompact ? '100%' : undefined,
           }}
         >
           {isCollapsed && (
-            <div className="absolute left-4 top-4 z-20 flex items-center">
-              {toggleButton}
-            </div>
+            <div className="absolute left-4 top-4 z-20 flex items-center">{toggleButton}</div>
           )}
           {/* Heatmap Sidebar - Collapsible */}
           <div
             className={`${
-              isCompact
-                ? 'absolute left-0 top-0 h-full z-30 shadow-lg'
-                : 'flex-shrink-0'
+              isCompact ? 'absolute left-0 top-0 h-full z-30 shadow-lg' : 'flex-shrink-0'
             } dark:bg-dark-900 transition-all duration-300 ease-in-out overflow-hidden ${
               isCollapsed ? 'w-0 opacity-0 pointer-events-none' : 'w-[300px] opacity-100'
             }`}
@@ -261,19 +223,17 @@ export const HomePage = view(() => {
             <div className="w-[300px] h-full flex flex-col p-4 pt-5 overflow-y-auto">
               {/* Heatmap Section */}
               <div className="flex-shrink-0">
-<div className="flex items-center justify-end mb-0">
-{toggleButton}
-</div>
-<CalendarHeatmap
-  data={memoService.activityData}
-  selectedDate={memoService.selectedDate}
-  onDateSelect={(date) => {
-                      // Toggle date filter: if clicking the same date, clear the filter
-                      if (memoService.selectedDate === date) {
-                        memoService.setSelectedDate(null);
-                      } else {
-                        memoService.setSelectedDate(date);
-                      }
+                <div className="flex items-center justify-end mb-0">{toggleButton}</div>
+                <CalendarHeatmap
+                  data={memoService.activityData}
+                  selectedDate={memoService.selectedDate}
+                  onDateSelect={(date) => {
+                    // Toggle date filter: if clicking the same date, clear the filter
+                    if (memoService.selectedDate === date) {
+                      memoService.setSelectedDate(null);
+                    } else {
+                      memoService.setSelectedDate(date);
+                    }
                   }}
                 />
               </div>
@@ -294,137 +254,120 @@ export const HomePage = view(() => {
               </div>
 
               {/* Reserved space for future features */}
-              <div className="flex-1 mt-6">
-                {/* Future features will be added here */}
-              </div>
+              <div className="flex-1 mt-6">{/* Future features will be added here */}</div>
             </div>
           </div>
 
           {/* Main Content Area */}
-          <div className={`overflow-hidden flex justify-center ${isCollapsed && !isCompact ? '' : 'flex-1'} w-[640px]`}>
+          <div
+            className={`overflow-hidden flex justify-center ${isCollapsed && !isCompact ? '' : 'flex-1'} w-[640px]`}
+          >
             <div className="w-full h-full flex flex-col">
-            {/* Top Search Bar - Fixed, part of the content area */}
-            <header className="flex-shrink-0 sticky top-0 z-40 px-4 pt-4 pb-2">
-              <div className="flex items-center gap-3 flex-wrap">
-                {/* Date Filter Status */}
-                {memoService.selectedDate && (
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg">
-                      <Calendar size={14} className="text-primary-600 dark:text-primary-400" />
-                      <span className="text-sm text-primary-700 dark:text-primary-300">
-                        {memoService.selectedDate}
-                      </span>
-                      <button
-                        onClick={() => memoService.setSelectedDate(null)}
-                        className="ml-1 p-0.5 text-primary-500 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-200 hover:bg-primary-100 dark:hover:bg-primary-800 rounded transition-colors"
-                        aria-label="清除日期筛选"
-                        title="清除日期筛选"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Tag Filter Status */}
-                {(memoService.tagFilter || memoService.tagsFilter.length > 0) && (
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                      <Filter size={14} className="text-blue-600 dark:text-blue-400" />
-                      <span className="text-sm text-blue-600 dark:text-blue-400 font-medium">
-                        筛选:
-                      </span>
-                      <div className="flex items-center gap-1">
-                        {/* Single tag filter */}
-                        {memoService.tagFilter && (
-                          <div className="flex items-center">
-                            <span className="text-sm text-blue-700 dark:text-blue-300">
-                              #{memoService.tagFilter}
-                            </span>
-                            <button
-                              onClick={() => memoService.setTagFilter(null)}
-                              className="ml-0.5 p-0.5 text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-200 hover:bg-blue-100 dark:hover:bg-blue-800 rounded transition-colors"
-                              aria-label="清除标签筛选"
-                              title="清除标签筛选"
-                            >
-                              <X size={12} />
-                            </button>
-                          </div>
-                        )}
-                        {/* Multi-select tags */}
-                        {memoService.tagsFilter.map((tag, index) => (
-                          <div key={tag} className="flex items-center">
-                            <span className="text-sm text-blue-700 dark:text-blue-300">
-                              #{tag}
-                            </span>
-                            <button
-                              onClick={() => memoService.toggleTagInFilter(tag)}
-                              className="ml-0.5 p-0.5 text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-200 hover:bg-blue-100 dark:hover:bg-blue-800 rounded transition-colors"
-                              aria-label={`移除标签 ${tag}`}
-                              title={`移除标签 ${tag}`}
-                            >
-                              <X size={12} />
-                            </button>
-                            {index < memoService.tagsFilter.length - 1 && (
-                              <span className="text-blue-400 mx-1">+</span>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                      {/* Clear all button for multi-select */}
-                      {memoService.tagsFilter.length > 0 && (
+              {/* Top Search Bar - Fixed, part of the content area */}
+              <header className="flex-shrink-0 sticky top-0 z-40 px-4 pt-4 pb-2">
+                <div className="flex items-center gap-3 flex-wrap">
+                  {/* Date Filter Status */}
+                  {memoService.selectedDate && (
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg">
+                        <Calendar size={14} className="text-primary-600 dark:text-primary-400" />
+                        <span className="text-sm text-primary-700 dark:text-primary-300">
+                          {memoService.selectedDate}
+                        </span>
                         <button
-                          onClick={() => memoService.clearAllTagFilters()}
-                          className="ml-1 p-0.5 text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-200 hover:bg-blue-100 dark:hover:bg-blue-800 rounded transition-colors"
-                          aria-label="清除所有标签筛选"
-                          title="清除所有标签筛选"
+                          onClick={() => memoService.setSelectedDate(null)}
+                          className="ml-1 p-0.5 text-primary-500 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-200 hover:bg-primary-100 dark:hover:bg-primary-800 rounded transition-colors"
+                          aria-label="清除日期筛选"
+                          title="清除日期筛选"
                         >
                           <X size={14} />
                         </button>
-                      )}
+                      </div>
                     </div>
+                  )}
+
+                  {/* Tag Filter Status */}
+                  {memoService.tagFilter.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                        <Filter size={14} className="text-blue-600 dark:text-blue-400" />
+                        <span className="text-sm text-blue-600 dark:text-blue-400 font-medium">
+                          筛选:
+                        </span>
+                        <div className="flex items-center gap-1">
+                          {memoService.tagFilter.map((tag, index) => (
+                            <div key={tag} className="flex items-center">
+                              <span className="text-sm text-blue-700 dark:text-blue-300">
+                                #{tag}
+                              </span>
+                              <button
+                                onClick={() => memoService.toggleTagInFilter(tag)}
+                                className="ml-0.5 p-0.5 text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-200 hover:bg-blue-100 dark:hover:bg-blue-800 rounded transition-colors"
+                                aria-label={`移除标签 ${tag}`}
+                                title={`移除标签 ${tag}`}
+                              >
+                                <X size={12} />
+                              </button>
+                              {index < memoService.tagFilter.length - 1 && (
+                                <span className="text-blue-400 mx-1">+</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        {/* Clear all button */}
+                        {memoService.tagFilter.length > 0 && (
+                          <button
+                            onClick={() => memoService.clearAllTagFilters()}
+                            className="ml-1 p-0.5 text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-200 hover:bg-blue-100 dark:hover:bg-blue-800 rounded transition-colors"
+                            aria-label="清除所有标签筛选"
+                            title="清除所有标签筛选"
+                          >
+                            <X size={14} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <CategoryFilter />
+                  {/* Search + Sort Bar */}
+                  <div className="ml-auto">
+                    <SearchSortBar />
                   </div>
-                )}
-
-                <CategoryFilter />
-                {/* Search + Sort Bar */}
-                <div className="ml-auto">
-                  <SearchSortBar />
                 </div>
+              </header>
+
+              {/* Memo Editor - Fixed */}
+              <div className="px-4 pb-0 flex-shrink-0 mt-0.5">
+                <section aria-label="Create new memo">
+                  <MemoEditor />
+                </section>
               </div>
-            </header>
 
-          {/* Memo Editor - Fixed */}
-          <div className="px-4 pb-0 flex-shrink-0 mt-0.5">
-            <section aria-label="Create new memo">
-              <MemoEditor />
-            </section>
-          </div>
-
-          {/* Memos List - Scrollable */}
-          <div
-            id="memo-list-container"
-            className="flex-1 overflow-y-auto mt-6 pb-8 min-h-0 px-4 relative"
-            onScroll={handleScroll}
-          >
-            <section aria-label="Your memos">
-              <MemoList />
-            </section>
-
-            {/* Scroll to Top Button */}
-            {showScrollTop && (
-              <button
-                onClick={scrollToTop}
-                className="fixed bottom-8 right-8 p-3 bg-primary-500 hover:bg-primary-600 dark:bg-primary-600 dark:hover:bg-primary-500 text-white rounded-full shadow-lg transition-all duration-300 hover:scale-110 animate-fade-in"
-                aria-label="Scroll to top"
+              {/* Memos List - Scrollable */}
+              <div
+                id="memo-list-container"
+                className="flex-1 overflow-y-auto mt-6 pb-8 min-h-0 px-4 relative"
+                onScroll={handleScroll}
               >
-                <ArrowUp size={20} />
-              </button>
-            )}
-          </div>
+                <section aria-label="Your memos">
+                  <MemoList />
+                </section>
+
+                {/* Scroll to Top Button */}
+                {showScrollTop && (
+                  <button
+                    onClick={scrollToTop}
+                    className="fixed bottom-8 right-8 p-3 bg-primary-500 hover:bg-primary-600 dark:bg-primary-600 dark:hover:bg-primary-500 text-white rounded-full shadow-lg transition-all duration-300 hover:scale-110 animate-fade-in"
+                    aria-label="Scroll to top"
+                  >
+                    <ArrowUp size={20} />
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
-      </div>
       </div>
     </Layout>
   );

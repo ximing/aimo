@@ -52,14 +52,13 @@
 
 ## 📸 界面预览
 
-| 智能笔记编辑 | 语义搜索 | 知识图谱 |
-|:---:|:---:|:---:|
+|                 智能笔记编辑                  |                   语义搜索                    |                   知识图谱                    |
+| :-------------------------------------------: | :-------------------------------------------: | :-------------------------------------------: |
 | ![编辑](./apps/web/src/assets/landing/00.png) | ![搜索](./apps/web/src/assets/landing/01.png) | ![图谱](./apps/web/src/assets/landing/02.png) |
 
-| 多媒体支持 | AI 探索 | 主题切换 |
-|:---:|:---:|:---:|
+|                   多媒体支持                    |                     AI 探索                     |                   主题切换                    |
+| :---------------------------------------------: | :---------------------------------------------: | :-------------------------------------------: |
 | ![多媒体](./apps/web/src/assets/landing/03.png) | ![AI探索](./apps/web/src/assets/landing/04.png) | ![主题](./apps/web/src/assets/landing/05.png) |
-
 
 ## 🚀 快速开始
 
@@ -117,13 +116,13 @@ docker run -d \
 
 ## 📥 下载客户端
 
-| 平台 | 下载链接 | 系统要求 |
-|:---:|:---:|:---:|
-| macOS | [下载](https://github.com/ximing/aimo/releases/latest) | macOS 12+ |
-| Windows | [下载](https://github.com/ximing/aimo/releases/latest) | Windows 10+ |
-| Linux | [下载](https://github.com/ximing/aimo/releases/latest) | Ubuntu 20.04+ |
-| Android | [下载](https://github.com/ximing/aimo-app/releases/latest) | Android 8.0+ |
-| iOS | 待上架 | - |
+|  平台   |                          下载链接                          |   系统要求    |
+| :-----: | :--------------------------------------------------------: | :-----------: |
+|  macOS  |   [下载](https://github.com/ximing/aimo/releases/latest)   |   macOS 12+   |
+| Windows |   [下载](https://github.com/ximing/aimo/releases/latest)   |  Windows 10+  |
+|  Linux  |   [下载](https://github.com/ximing/aimo/releases/latest)   | Ubuntu 20.04+ |
+| Android | [下载](https://github.com/ximing/aimo-app/releases/latest) | Android 8.0+  |
+|   iOS   |                           待上架                           |       -       |
 
 ## ⚙️ 环境变量配置
 

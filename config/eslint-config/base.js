@@ -25,7 +25,16 @@ export const config = [
         'error',
         {
           alphabetize: { order: 'asc', caseInsensitive: true },
-          groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index', 'object', 'type'],
+          groups: [
+            'builtin',
+            'external',
+            'internal',
+            'parent',
+            'sibling',
+            'index',
+            'object',
+            'type',
+          ],
           'newlines-between': 'always',
         },
       ],

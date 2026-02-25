@@ -62,8 +62,8 @@ export const deleteConversation = (conversationId: string) => {
  * Add a message to a conversation
  */
 export const addMessage = (conversationId: string, data: AddMessageDto) => {
-  return request.post<
-    unknown,
-    { code: number; data: { message: string; data: AIMessageDto } }
-  >(`/api/v1/explore/conversations/${conversationId}/messages`, data);
+  return request.post<unknown, { code: number; data: { message: string; data: AIMessageDto } }>(
+    `/api/v1/explore/conversations/${conversationId}/messages`,
+    data
+  );
 };

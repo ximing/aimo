@@ -26,7 +26,8 @@ const extractPlainText = (content: string): string => {
 };
 
 // Default avatar
-const DEFAULT_AVATAR = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%239ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpath d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"%3E%3C/path%3E%3Ccircle cx="12" cy="7" r="4"%3E%3C/circle%3E%3C/svg%3E';
+const DEFAULT_AVATAR =
+  'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%239ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpath d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"%3E%3C/path%3E%3Ccircle cx="12" cy="7" r="4"%3E%3C/circle%3E%3C/svg%3E';
 
 export const SharePage = view(({ memoId: propMemoId }: { memoId?: string }) => {
   const attachmentService = useService(AttachmentService);
@@ -195,10 +196,7 @@ export const SharePage = view(({ memoId: propMemoId }: { memoId?: string }) => {
         <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
             {/* Logo */}
-            <Link
-              to="/"
-              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-            >
+            <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
               <span className="text-xl font-bold text-gray-900 dark:text-white">AIMO</span>
             </Link>
 
@@ -296,10 +294,7 @@ export const SharePage = view(({ memoId: propMemoId }: { memoId?: string }) => {
       </main>
 
       {/* Attachment Preview Modal */}
-      <AttachmentPreviewModal
-        isOpen={isPreviewOpen}
-        onClose={handleClosePreview}
-      />
+      <AttachmentPreviewModal isOpen={isPreviewOpen} onClose={handleClosePreview} />
     </div>
   );
 });

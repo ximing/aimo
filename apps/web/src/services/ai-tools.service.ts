@@ -11,12 +11,7 @@ import { toast } from './toast.service';
 /**
  * Type of AI tool - used for dynamic modal rendering
  */
-export type AIToolType =
-  | 'generate-tags'
-  | 'summarize'
-  | 'translate'
-  | 'expand'
-  | 'grammar-check';
+export type AIToolType = 'generate-tags' | 'summarize' | 'translate' | 'expand' | 'grammar-check';
 
 /**
  * Modal state for AI tools
@@ -229,9 +224,7 @@ export class AIToolsService extends Service {
     const normalizedTag = tag.trim().toLowerCase();
     if (
       normalizedTag &&
-      !this.tagGeneration.selectedTags.some(
-        (t) => t.toLowerCase() === normalizedTag
-      )
+      !this.tagGeneration.selectedTags.some((t) => t.toLowerCase() === normalizedTag)
     ) {
       this.tagGeneration.selectedTags.push(tag.trim());
       return true;
@@ -276,9 +269,7 @@ export class AIToolsService extends Service {
     // Don't allow duplicates (case-insensitive)
     if (
       normalizedNewTag !== normalizedOldTag &&
-      this.tagGeneration.selectedTags.some(
-        (t) => t.toLowerCase() === normalizedNewTag
-      )
+      this.tagGeneration.selectedTags.some((t) => t.toLowerCase() === normalizedNewTag)
     ) {
       return false;
     }
@@ -301,7 +292,9 @@ export class AIToolsService extends Service {
   /**
    * Save tags to memo
    */
-  async saveTags(memoId: string): Promise<{ success: boolean; memo?: MemoWithAttachmentsDto; message?: string }> {
+  async saveTags(
+    memoId: string
+  ): Promise<{ success: boolean; memo?: MemoWithAttachmentsDto; message?: string }> {
     this.isSaving = true;
 
     try {

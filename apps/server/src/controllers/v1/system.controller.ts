@@ -7,7 +7,6 @@ import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 
 import type { UserInfoDto } from '@aimo/dto';
 
-
 @Service()
 @JsonController('/api/v1/system')
 export class SystemController {
