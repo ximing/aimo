@@ -728,13 +728,6 @@ export class MemoService {
       const updateValues: Record<string, any> = { updatedAt: now };
       const updateValuesSql: Record<string, string> = {};
 
-      if (resolvedTagNames.length > 0) {
-        updateValues.tags = resolvedTagNames;
-      } else {
-        // Use SQL expression to set NULL for list type
-        updateValuesSql.tags = 'arrow_cast(NULL, \'List(Utf8)\')';
-      }
-
       if (resolvedTagIds.length > 0) {
         updateValues.tagIds = resolvedTagIds;
       } else {
