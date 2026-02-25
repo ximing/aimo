@@ -41,7 +41,7 @@ A modern AI-powered note-taking and knowledge management tool that combines sema
 
 - **Web App** - Responsive design for desktop and mobile browsers
 - **Desktop Client** - Electron app for macOS, Windows, and Linux
-- **Mobile App** - Android APK support
+- **Mobile App** - Android APK support, iOS pending release
 - **Browser Extension** - Quick web content saving (in development)
 
 ### 🎨 Personalization
@@ -122,6 +122,7 @@ docker run -d \
 | Windows | [Download](https://github.com/ximing/aimo/releases/latest) | Windows 10+ |
 | Linux | [Download](https://github.com/ximing/aimo/releases/latest) | Ubuntu 20.04+ |
 | Android | [Download](https://github.com/ximing/aimo-app/releases/latest) | Android 8.0+ |
+| iOS | Pending release | - |
 
 ## ⚙️ Environment Variables
 

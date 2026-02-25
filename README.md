@@ -41,7 +41,7 @@
 
 - **Web 应用** - 响应式设计，支持桌面和移动端浏览器
 - **桌面客户端** - Electron 应用，支持 macOS、Windows、Linux
-- **移动应用** - Android APK 支持
+- **移动应用** - Android APK 支持，iOS 待上架
 - **浏览器扩展** - 快速收藏网页内容（开发中）
 
 ### 🎨 个性化
@@ -123,6 +123,7 @@ docker run -d \
 | Windows | [下载](https://github.com/ximing/aimo/releases/latest) | Windows 10+ |
 | Linux | [下载](https://github.com/ximing/aimo/releases/latest) | Ubuntu 20.04+ |
 | Android | [下载](https://github.com/ximing/aimo-app/releases/latest) | Android 8.0+ |
+| iOS | 待上架 | - |
 
 ## ⚙️ 环境变量配置
 
