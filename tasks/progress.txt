@@ -5,3 +5,24 @@ Branch: ralph/timed-notification
 ## Status
 
 ## Notes
+
+## Codebase Patterns
+- Use Apache Arrow Schema and Field types for LanceDB table schemas
+- Create migration scripts in `apps/server/src/migrations/scripts/` with version numbers (e.g., 015-add-push-rules.ts)
+- Register migrations in `apps/server/src/migrations/scripts/index.ts` in the ALL_MIGRATIONS array
+
+---
+
+## 2026-02-25 - US-001
+- Implemented: Created push_rules database table with schema fields: id, uid, name, pushTime, contentType, channels (JSON string), enabled, createdAt, updatedAt
+- Files changed:
+  - apps/server/src/models/db/schema.ts - Added pushRulesSchema and PushRuleRecord interface
+  - apps/server/src/models/db/index.ts - Added export for schema.ts
+  - apps/server/src/migrations/scripts/015-add-push-rules.ts - New migration script
+  - apps/server/src/migrations/scripts/index.ts - Registered the new migration
+
+- **Learnings for future iterations:**
+  - LanceDB uses Apache Arrow types for schema definition
+  - JSON fields are stored as string in LanceDB (use JSON.stringify/parse)
+  - Migration version numbers continue from existing migrations (last was 014, this is 015)
+  - Migration scripts follow the pattern: createTableIfNotExists helper, then export Migration object with version, tableName, description, and up function

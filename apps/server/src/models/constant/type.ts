@@ -15,6 +15,7 @@ export const OBJECT_TYPE = {
   MESSAGE: 'MESSAGE',
   RECOMMENDATION: 'RECOMMENDATION',
   TAG: 'TAG',
+  PUSH_RULE: 'PUSH_RULE',
 };
 
 export const PAGE_CATEGORY = {

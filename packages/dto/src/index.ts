@@ -33,3 +33,6 @@ export * from './ai.js';
 
 // Tag DTOs
 export * from './tag.js';
+
+// Push Rule DTOs
+export * from './push-rule.js';
