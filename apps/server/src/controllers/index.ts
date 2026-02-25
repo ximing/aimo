@@ -8,6 +8,7 @@ import { ExploreController } from './v1/explore.controller.js';
 import { InsightsController } from './v1/insights.controller.js';
 import { MemoV1Controller } from './v1/memo.controller.js';
 import { OcrV1Controller } from './v1/ocr.controller.js';
+import { PushRuleV1Controller } from './v1/push-rule.controller.js';
 import { TagV1Controller } from './v1/tag.controller.js';
 import { UserV1Controller } from './v1/user.controller.js';
 import { SystemController } from './v1/system.controller.js';
@@ -26,6 +27,7 @@ export const controllers = [
   OcrV1Controller,
   ExploreController,
   AIV1Controller,
+  PushRuleV1Controller,
   SystemController,
   StaticController,
 ];
