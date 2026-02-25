@@ -29,6 +29,7 @@ import { addTagIdsToMemosMigration } from './011-add-memo-tag-ids.js';
 import { migrateTagsDataMigration } from './012-migrate-tags-data.js';
 import { createTagIndexesMigration } from './013-create-tag-indexes.js';
 import { fixTagIdsColumnTypeMigration } from './014-fix-tag-ids-column-type.js';
+import { pushRulesTableMigration } from './015-add-push-rules.js';
 
 import type { Migration } from '../types.js';
 
@@ -91,6 +92,9 @@ export const ALL_MIGRATIONS: Migration[] = [
 
   // Version 14: Fix tagIds column type if it was inferred as Null
   fixTagIdsColumnTypeMigration,
+
+  // Version 15: Create push_rules table
+  pushRulesTableMigration,
 
   // Add future migrations here
   // Example:

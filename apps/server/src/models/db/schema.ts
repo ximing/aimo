@@ -388,3 +388,34 @@ export interface DailyRecommendationRecord {
   memoIds: string[];
   createdAt: number; // timestamp in milliseconds
 }
+
+/**
+ * Push Rules table schema
+ * Stores user push notification rule configurations
+ */
+export const pushRulesSchema = new Schema([
+  new Field('id', new Utf8(), false), // non-nullable unique rule id
+  new Field('uid', new Utf8(), false), // non-nullable user id
+  new Field('name', new Utf8(), false), // non-nullable rule name
+  new Field('pushTime', new Int32(), false), // non-nullable push hour (0-23)
+  new Field('contentType', new Utf8(), false), // non-nullable content type: 'daily_pick' | 'daily_memos'
+  new Field('channels', new Utf8(), true), // nullable JSON string for channel configurations
+  new Field('enabled', new Int32(), false), // non-nullable enabled flag (0 or 1)
+  new Field('createdAt', new Timestamp(TimeUnit.MILLISECOND), false), // non-nullable creation timestamp in milliseconds
+  new Field('updatedAt', new Timestamp(TimeUnit.MILLISECOND), false), // non-nullable update timestamp in milliseconds
+]);
+
+/**
+ * Type definition for push rule records
+ */
+export interface PushRuleRecord {
+  id: string;
+  uid: string;
+  name: string;
+  pushTime: number; // 0-23
+  contentType: 'daily_pick' | 'daily_memos';
+  channels?: string; // JSON string for channel configurations
+  enabled: number; // 0 or 1
+  createdAt: number; // timestamp in milliseconds
+  updatedAt: number; // timestamp in milliseconds
+}
