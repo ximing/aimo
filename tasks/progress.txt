@@ -131,3 +131,16 @@ Branch: ralph/timed-notification
   - Uses ChannelFactory to get appropriate channel adapter
   - Each channel's send() is called with title and msg
   - Failed pushes are logged and skipped, continuing with other channels
+
+---
+
+## 2026-02-26 - US-009
+- Implemented: Added push rules API to frontend
+- Files changed:
+  - apps/web/src/api/push-rules.ts - New API file with CRUD functions
+
+- **Learnings for future iterations:**
+  - Frontend API files use request utility with generic type parameters
+  - Uses @aimo/dto for type definitions
+  - Exports: getPushRules, getPushRule, createPushRule, updatePushRule, deletePushRule
+  - Response format matches backend: { code: number; data: { rules: PushRuleDto[] } }
