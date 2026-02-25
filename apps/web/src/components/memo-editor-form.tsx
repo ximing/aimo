@@ -4,12 +4,13 @@ import { MemoService } from '../services/memo.service';
 import { CategoryService } from '../services/category.service';
 import { TagService } from '../services/tag.service';
 import { AIToolsService } from '../services/ai-tools.service';
+import { ToastService } from '../services/toast.service';
 import { AttachmentUploader, type AttachmentItem } from './attachment-uploader';
 import { TagInput } from './tag-input';
 import { attachmentApi } from '../api/attachment';
 import { ocrApi } from '../api/ocr';
 import * as memoApi from '../api/memo';
-import { Paperclip, X, Check, ChevronDown, Plus, Globe, Lock, Sparkles, Tags } from 'lucide-react';
+import { ScanText, Paperclip, X, Check, ChevronDown, Plus, Globe, Lock, Sparkles, Tags } from 'lucide-react';
 import type { MemoListItemDto, MemoWithAttachmentsDto } from '@aimo/dto';
 import { CreateCategoryModal } from '../pages/home/components/create-category-modal';
 import { AIToolSelectorModal, TagGeneratorModal } from './ai';
@@ -54,6 +55,7 @@ export const MemoEditorForm = view(
     const formRef = useRef<HTMLFormElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const ocrFileInputRef = useRef<HTMLInputElement>(null);
     const suggestionsRef = useRef<HTMLDivElement>(null);
     const categoryDropdownRef = useRef<HTMLDivElement>(null);
     const aiDropdownRef = useRef<HTMLDivElement>(null);
@@ -63,6 +65,7 @@ export const MemoEditorForm = view(
     const categoryService = useService(CategoryService);
     const tagService = useService(TagService);
     const aiToolsService = useService(AIToolsService);
+    const toastService = useService(ToastService);
 
     // 初始化编辑模式的数据
     useEffect(() => {
@@ -366,6 +369,10 @@ export const MemoEditorForm = view(
       fileInputRef.current?.click();
     };
 
+    const handleOCRClick = () => {
+      ocrFileInputRef.current?.click();
+    };
+
     const handleAIToolClick = () => {
       setIsAIDropdownOpen(!isAIDropdownOpen);
     };
@@ -409,9 +416,6 @@ export const MemoEditorForm = view(
       }
 
       const filesToUpload = files.slice(0, remainingSlots);
-
-      // 分离图片文件和其他文件（用于 OCR 识别）
-      const imageFiles = filesToUpload.filter((file) => file.type.startsWith('image/'));
 
       // 立即上传每个文件
       for (const file of filesToUpload) {
@@ -459,10 +463,82 @@ export const MemoEditorForm = view(
         }
       }
 
-      // 对图片文件进行 OCR 识别
-      if (imageFiles.length > 0) {
+      // 重置 input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    };
+
+    // OCR 专用文件选择处理函数 - 先上传附件，再调用 OCR 服务
+    const handleOCRFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = Array.from(e.target.files || []);
+      if (files.length === 0) return;
+
+      // 检查剩余空间
+      const remainingSlots = 9 - attachments.length;
+      if (remainingSlots <= 0) {
+        setError('最多只能上传 9 个附件');
+        return;
+      }
+
+      const filesToUpload = files.slice(0, remainingSlots);
+      const uploadedUrls: string[] = [];
+
+      // 上传每个文件
+      for (const file of filesToUpload) {
+        const tempId = `temp-${Date.now()}-${Math.random()}`;
+        setUploadingFiles((prev) => new Set(prev).add(tempId));
+
+        // 先添加到列表（显示上传中状态）
+        const tempAttachment: AttachmentItem = {
+          attachmentId: tempId,
+          file,
+          url: URL.createObjectURL(file),
+          type: file.type,
+          name: file.name,
+        };
+        setAttachments((prev) => [...prev, tempAttachment]);
+
         try {
-          const ocrTexts = await ocrApi.parse(imageFiles);
+          // 上传文件
+          const uploadedAttachment = await attachmentApi.upload(file);
+          const fileUrl = uploadedAttachment.url;
+
+          // 保存上传后的 URL
+          uploadedUrls.push(fileUrl);
+
+          // 更新为已上传的附件
+          setAttachments((prev) =>
+            prev.map((att) =>
+              att.attachmentId === tempId
+                ? {
+                    attachmentId: uploadedAttachment.attachmentId,
+                    url: fileUrl,
+                    type: uploadedAttachment.type,
+                    name: uploadedAttachment.filename,
+                  }
+                : att
+            )
+          );
+        } catch (error) {
+          console.error('Upload failed:', error);
+          // 上传失败，移除这个附件
+          setAttachments((prev) => prev.filter((att) => att.attachmentId !== tempId));
+          setError(`文件 "${file.name}" 上传失败`);
+        } finally {
+          setUploadingFiles((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(tempId);
+            return newSet;
+          });
+        }
+      }
+
+      // 所有文件上传完成后，调用 OCR 服务
+      if (uploadedUrls.length > 0) {
+        try {
+          // 使用上传后的 URL 调用 OCR
+          const ocrTexts = await ocrApi.parseByUrls(uploadedUrls);
           // 过滤掉空文本
           const validTexts = ocrTexts.filter((text) => text.trim().length > 0);
           if (validTexts.length > 0) {
@@ -481,13 +557,15 @@ export const MemoEditorForm = view(
           }
         } catch (error) {
           console.error('OCR failed:', error);
-          // OCR 失败不影响附件上传，只记录错误
+          // 透传后端错误消息
+          const errorMsg = error instanceof Error ? error.message : 'OCR 识别失败，请重试';
+          toastService.show(errorMsg, { type: 'error' });
         }
       }
 
       // 重置 input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+      if (ocrFileInputRef.current) {
+        ocrFileInputRef.current.value = '';
       }
     };
 
@@ -678,6 +756,17 @@ export const MemoEditorForm = view(
               disabled={loading}
             />
 
+            {/* OCR 专用文件输入 - 支持图片和 PDF */}
+            <input
+              ref={ocrFileInputRef}
+              type="file"
+              multiple
+              accept="image/*,.pdf"
+              onChange={handleOCRFileSelect}
+              className="hidden"
+              disabled={loading}
+            />
+
             {/* 操作栏：附件按钮和保存按钮 */}
             <div className="flex items-center justify-between">
               {/* 左侧：附件按钮和AI工具按钮 */}
@@ -691,6 +780,18 @@ export const MemoEditorForm = view(
                   title={`添加附件${attachments.length > 0 ? ` (${attachments.length}/9)` : ' (0/9)'}`}
                 >
                   <Paperclip className="w-5 h-5" />
+                </button>
+
+                {/* OCR 识别按钮 */}
+                <button
+                  type="button"
+                  onClick={handleOCRClick}
+                  disabled={loading}
+                  className="p-2 text-gray-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-500 hover:bg-gray-100 dark:hover:bg-dark-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="OCR 文字识别"
+                  title="OCR 文字识别"
+                >
+                  <ScanText className="w-5 h-5" />
                 </button>
 
                 {/* AI Tools Dropdown */}
