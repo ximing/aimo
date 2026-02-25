@@ -86,3 +86,30 @@ Branch: ralph/timed-notification
   - ChannelFactory is decorated with @Service() for TypeDI
   - ChannelConfig interface defines type, nickname, msgType, htmlHeight
   - Throw error for unsupported channel types
+
+---
+
+## 2026-02-26 - US-006
+- Implemented: Created content generator for daily_pick
+- Files changed:
+  - apps/server/src/services/channels/content-generator.interface.ts - New interface with generate method
+  - apps/server/src/services/channels/daily-content.generator.ts - New implementation for daily_pick and daily_memos
+
+- **Learnings for future iterations:**
+  - ContentGenerator interface defines generate(contentType, uid) method returning PushContent
+  - DailyContentGenerator uses LanceDbService to query memos table
+  - daily_pick: randomly selects one memo from user's collection
+  - HTML escaping uses manual replace with escape map (not document.createElement in Node.js)
+
+---
+
+## 2026-02-26 - US-007
+- Implemented: Created content generator for daily_memos
+- Files changed:
+  - apps/server/src/services/channels/daily-content.generator.ts - Added daily_memos generation
+
+- **Learnings for future iterations:**
+  - daily_memos filters memos by createdAt date for today
+  - Uses startOfDay and endOfDay timestamps for filtering
+  - Returns count in title like "今日备忘录 (3条)"
+  - Empty state handled when no memos today
