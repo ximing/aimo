@@ -7,6 +7,7 @@ import { AIToolsService } from '../services/ai-tools.service';
 import { AttachmentUploader, type AttachmentItem } from './attachment-uploader';
 import { TagInput } from './tag-input';
 import { attachmentApi } from '../api/attachment';
+import { ocrApi } from '../api/ocr';
 import * as memoApi from '../api/memo';
 import { Paperclip, X, Check, ChevronDown, Plus, Globe, Lock, Sparkles, Tags } from 'lucide-react';
 import type { MemoListItemDto, MemoWithAttachmentsDto } from '@aimo/dto';
@@ -409,6 +410,9 @@ export const MemoEditorForm = view(
 
       const filesToUpload = files.slice(0, remainingSlots);
 
+      // 分离图片文件和其他文件（用于 OCR 识别）
+      const imageFiles = filesToUpload.filter((file) => file.type.startsWith('image/'));
+
       // 立即上传每个文件
       for (const file of filesToUpload) {
         const tempId = `temp-${Date.now()}-${Math.random()}`;
@@ -452,6 +456,32 @@ export const MemoEditorForm = view(
             newSet.delete(tempId);
             return newSet;
           });
+        }
+      }
+
+      // 对图片文件进行 OCR 识别
+      if (imageFiles.length > 0) {
+        try {
+          const ocrTexts = await ocrApi.parse(imageFiles);
+          // 过滤掉空文本
+          const validTexts = ocrTexts.filter((text) => text.trim().length > 0);
+          if (validTexts.length > 0) {
+            // 将 OCR 识别的文本追加到内容中
+            const ocrContent = validTexts.join('\n\n');
+            setContent((prev) => {
+              if (prev.trim()) {
+                return prev + '\n\n' + ocrContent;
+              }
+              return ocrContent;
+            });
+            // 如果编辑器未激活，激活它
+            if (!isEditorActive) {
+              setIsEditorActive(true);
+            }
+          }
+        } catch (error) {
+          console.error('OCR failed:', error);
+          // OCR 失败不影响附件上传，只记录错误
         }
       }
 
@@ -719,7 +749,7 @@ export const MemoEditorForm = view(
                       disabled={loading}
                       className={`flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
                         selectedCategoryId
-                          ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
+                          ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
                           : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-700'
                       } disabled:opacity-50 disabled:cursor-not-allowed`}
                       aria-expanded={isCategoryDropdownOpen}
@@ -741,7 +771,7 @@ export const MemoEditorForm = view(
                           onClick={() => handleSelectCategory(null)}
                           className={`w-full flex items-center justify-between px-4 py-2 text-sm transition-colors ${
                             !selectedCategoryId
-                              ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
+                              ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
                               : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700'
                           }`}
                         >
@@ -763,7 +793,7 @@ export const MemoEditorForm = view(
                               onClick={() => handleSelectCategory(category.categoryId)}
                               className={`w-full flex items-center justify-between px-4 py-2 text-sm transition-colors ${
                                 selectedCategoryId === category.categoryId
-                                  ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
+                                  ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
                                   : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700'
                               }`}
                             >
@@ -787,7 +817,7 @@ export const MemoEditorForm = view(
                         <button
                           type="button"
                           onClick={handleOpenCreateCategoryModal}
-                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
+                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
                         >
                           <Plus size={14} />
                           <span>新建类别</span>
@@ -803,7 +833,7 @@ export const MemoEditorForm = view(
                   disabled={loading}
                   className={`flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
                     isPublic
-                      ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                      ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
                       : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-700'
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                   aria-pressed={isPublic}
