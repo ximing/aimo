@@ -165,6 +165,22 @@ export class PushRuleService {
   }
 
   /**
+   * Get all enabled push rules
+   */
+  async findAllEnabled(): Promise<PushRuleDto[]> {
+    try {
+      const table = await this.lanceDatabase.openTable('push_rules');
+
+      const results = await table.query().where('enabled = 1').toArray();
+
+      return results.map((record) => this.toDto(record as PushRuleRecord));
+    } catch (error) {
+      console.error('Failed to get enabled push rules:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Convert database record to DTO
    */
   private toDto(record: PushRuleRecord): PushRuleDto {

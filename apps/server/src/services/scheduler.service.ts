@@ -1,8 +1,13 @@
 import cron from 'node-cron';
-import { Service } from 'typedi';
+import { Service, Inject } from 'typedi';
 
 import { config } from '../config/config.js';
 import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
+
+import { PushRuleService } from './push-rule.service.js';
+import { DailyContentGenerator } from './channels/daily-content.generator.js';
+import { ChannelFactory } from './channels/channel.factory.js';
+import type { PushRuleDto } from '@aimo/dto';
 
 /**
  * 调度服务
@@ -13,7 +18,12 @@ export class SchedulerService {
   private tasks: cron.ScheduledTask[] = [];
   private isInitialized = false;
 
-  constructor(private lanceDatabaseService: LanceDatabaseService) {}
+  constructor(
+    private lanceDatabaseService: LanceDatabaseService,
+    @Inject() private pushRuleService: PushRuleService,
+    @Inject() private contentGenerator: DailyContentGenerator,
+    @Inject() private channelFactory: ChannelFactory
+  ) {}
 
   /**
    * 初始化所有定时任务
@@ -28,6 +38,9 @@ export class SchedulerService {
 
     // 注册数据库优化任务
     this.registerDatabaseOptimizationTask();
+
+    // 注册推送通知任务
+    this.registerPushNotificationTask();
 
     this.isInitialized = true;
     console.log('Scheduler service initialized successfully');
@@ -64,6 +77,95 @@ export class SchedulerService {
     console.log(
       `Database optimization task scheduled: ${cronExpression} (${config.locale.timezone})`
     );
+  }
+
+  /**
+   * 注册推送通知定时任务
+   * 每分钟执行一次，检查是否有需要推送的规则
+   */
+  private registerPushNotificationTask(): void {
+    // Run every minute to check for pending pushes
+    const task = cron.schedule(
+      '* * * * *',
+      async () => {
+        try {
+          await this.processPushNotifications();
+        } catch (error) {
+          console.error('Error processing push notifications:', error);
+        }
+      },
+      {
+        timezone: config.locale.timezone || 'Asia/Shanghai',
+      }
+    );
+
+    this.tasks.push(task);
+    console.log('Push notification task scheduled: every minute');
+  }
+
+  /**
+   * 处理推送通知
+   * 检查当前时间匹配的推送规则，并发送通知
+   */
+  private async processPushNotifications(): Promise<void> {
+    const now = new Date();
+    const currentHour = now.getHours();
+
+    // Get all push rules
+    // Note: In a production system, we would need to get all rules and filter
+    // For now, we need to query all users' rules - let's fetch enabled rules
+    const allRules = await this.getAllEnabledRules();
+
+    // Filter rules that match current hour and are enabled
+    const matchingRules = allRules.filter((rule) => rule.pushTime === currentHour && rule.enabled);
+
+    if (matchingRules.length === 0) {
+      return;
+    }
+
+    console.log(`Processing ${matchingRules.length} push rules for hour ${currentHour}`);
+
+    for (const rule of matchingRules) {
+      try {
+        await this.sendPushForRule(rule);
+      } catch (error) {
+        console.error(`Failed to send push for rule ${rule.id}:`, error);
+        // Skip failed pushes and continue
+      }
+    }
+  }
+
+  /**
+   * 获取所有已启用的推送规则
+   */
+  private async getAllEnabledRules(): Promise<PushRuleDto[]> {
+    return this.pushRuleService.findAllEnabled();
+  }
+
+  /**
+   * 为单个规则发送推送
+   */
+  private async sendPushForRule(rule: PushRuleDto): Promise<void> {
+    // Generate content based on content type
+    const content = await this.contentGenerator.generate(rule.contentType, rule.uid);
+
+    // Get channels and send
+    for (const channelConfig of rule.channels) {
+      try {
+        const channel = this.channelFactory.getChannel(channelConfig);
+        await channel.send({
+          title: content.title,
+          msg: content.msg,
+        });
+        console.log(`Push sent for rule ${rule.id} via channel ${channelConfig.type}`);
+      } catch (error) {
+        console.error(
+          `Failed to send push for rule ${rule.id} via channel ${channelConfig.type}:`,
+          error
+        );
+        // Continue with other channels
+      }
+    }
   }
 
   /**

@@ -113,3 +113,21 @@ Branch: ralph/timed-notification
   - Uses startOfDay and endOfDay timestamps for filtering
   - Returns count in title like "今日备忘录 (3条)"
   - Empty state handled when no memos today
+
+---
+
+## 2026-02-26 - US-008
+- Implemented: Implemented scheduled task runner for push notifications
+- Files changed:
+  - apps/server/src/services/scheduler.service.ts - Added push notification task
+  - apps/server/src/services/push-rule.service.ts - Added findAllEnabled method
+
+- **Learnings for future iterations:**
+  - SchedulerService uses node-cron for scheduling tasks
+  - Push task runs every minute (* * * * *) and checks current hour
+  - Uses PushRuleService.findAllEnabled() to get all enabled rules
+  - Filters rules by matching pushTime with currentHour
+  - Uses DailyContentGenerator to generate content based on contentType
+  - Uses ChannelFactory to get appropriate channel adapter
+  - Each channel's send() is called with title and msg
+  - Failed pushes are logged and skipped, continuing with other channels
