@@ -144,3 +144,22 @@ Branch: ralph/timed-notification
   - Uses @aimo/dto for type definitions
   - Exports: getPushRules, getPushRule, createPushRule, updatePushRule, deletePushRule
   - Response format matches backend: { code: number; data: { rules: PushRuleDto[] } }
+
+---
+
+## 2026-02-26 - US-010 & US-011
+- Implemented: Push rules list UI and form modal in settings
+- Files changed:
+  - apps/web/src/pages/settings/components/push-rules-list.tsx - List component with add/edit/delete
+  - apps/web/src/pages/settings/components/push-rule-form-modal.tsx - Form modal for create/edit
+  - apps/web/src/pages/settings/components/push-rules.tsx - Container component
+  - apps/web/src/pages/settings/components/settings-menu.tsx - Added "推送规则" menu item
+  - apps/web/src/App.tsx - Added route for /settings/push-rules
+
+- **Learnings for future iterations:**
+  - Settings pages use nested routes with React Router
+  - Menu items link to routes like /settings/push-rules
+  - Modal pattern: separate component with isOpen, onClose, onSuccess props
+  - API response format: request utility returns data directly (not axios response), so use response.code not response.data.code
+  - Import paths: from components/ to api/ is ../../../api/
+  - Form state: use editRule prop to distinguish create vs edit mode

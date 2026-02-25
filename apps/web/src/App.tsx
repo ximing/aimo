@@ -8,6 +8,7 @@ import { AccountSettings } from './pages/settings/components/account-settings';
 import { ImportData } from './pages/settings/components/import-data';
 import { ExportData } from './pages/settings/components/export-data';
 import { About } from './pages/settings/components/about';
+import { PushRulesSettings } from './pages/settings/components/push-rules';
 import AIExplorePage from './pages/ai-explore';
 import GalleryPage from './pages/gallery';
 import SharePage from './pages/share';
@@ -65,6 +66,7 @@ function App() {
         >
           <Route index element={<Navigate to="/settings/account" replace />} />
           <Route path="account" element={<AccountSettings />} />
+          <Route path="push-rules" element={<PushRulesSettings />} />
           <Route path="import" element={<ImportData />} />
           <Route path="export" element={<ExportData />} />
           <Route path="about" element={<About />} />

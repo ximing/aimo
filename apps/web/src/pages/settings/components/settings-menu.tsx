@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router';
-import { User, Import, Download, Info } from 'lucide-react';
+import { User, Import, Download, Info, Bell } from 'lucide-react';
 
 export const SettingsMenu = () => {
   const menuItems: Array<{ id: string; label: string; icon: React.ReactNode; to: string }> = [
@@ -8,6 +8,12 @@ export const SettingsMenu = () => {
       label: '账户设置',
       icon: <User className="w-5 h-5" />,
       to: '/settings/account',
+    },
+    {
+      id: 'push-rules',
+      label: '推送规则',
+      icon: <Bell className="w-5 h-5" />,
+      to: '/settings/push-rules',
     },
     {
       id: 'import',
