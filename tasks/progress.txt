@@ -163,3 +163,17 @@ Branch: ralph/timed-notification
   - API response format: request utility returns data directly (not axios response), so use response.code not response.data.code
   - Import paths: from components/ to api/ is ../../../api/
   - Form state: use editRule prop to distinguish create vs edit mode
+
+---
+
+## 2026-02-26 - US-012
+- Implemented: MeoW channel configuration fields in form
+- Files changed:
+  - apps/web/src/pages/settings/components/push-rule-form-modal.tsx - Added msgType and htmlHeight fields
+
+- **Learnings for future iterations:**
+  - Conditional rendering: htmlHeight input only shows when msgType=html
+  - State management: Load existing channel config when editing rule
+  - Form values: msgType defaults to 'html', htmlHeight defaults to 500
+  - Save logic: htmlHeight is only included when msgType='html'
+
