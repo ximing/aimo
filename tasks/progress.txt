@@ -43,3 +43,46 @@ Branch: ralph/timed-notification
   - Use LanceDbService to open tables and perform CRUD operations
   - Use generateTypeId with OBJECT_TYPE to generate unique IDs
   - Channel configurations stored as JSON string in the database, parsed when reading
+
+---
+
+## 2026-02-25 - US-003
+- Implemented: Created push rules REST API controller
+- Files changed:
+  - apps/server/src/controllers/v1/push-rule.controller.ts - New controller with CRUD endpoints
+  - apps/server/src/controllers/index.ts - Registered the controller
+
+- **Learnings for future iterations:**
+  - Controllers are in apps/server/src/controllers/v1/ directory
+  - Use routing-controllers decorators: @JsonController, @Get, @Post, @Put, @Delete, @Body, @Param, @CurrentUser
+  - Register controllers in apps/server/src/controllers/index.ts
+  - Use ResponseUtil for consistent API responses
+  - Use ErrorCode for error handling
+  - Validation is done manually in controller/service layer
+
+---
+
+## 2026-02-25 - US-004
+- Implemented: Created PushChannel interface and MeoW adapter
+- Files changed:
+  - apps/server/src/services/channels/push-channel.interface.ts - New interface with send(options) method
+  - apps/server/src/services/channels/meow.channel.ts - New MeoWChannel class implementing PushChannel
+
+- **Learnings for future iterations:**
+  - Create services/channels/ directory for channel adapters
+  - PushChannel interface defines send(options) with title, msg, and optional url
+  - MeoWChannel sends POST requests to api.chuckfang.com with form data
+  - Use @Service() decorator for TypeDI to enable dependency injection if needed
+
+---
+
+## 2026-02-25 - US-005
+- Implemented: Created ChannelFactory for adapter pattern
+- Files changed:
+  - apps/server/src/services/channels/channel.factory.ts - New factory class with getChannel method
+
+- **Learnings for future iterations:**
+  - Factory pattern uses switch statement to return appropriate channel instance
+  - ChannelFactory is decorated with @Service() for TypeDI
+  - ChannelConfig interface defines type, nickname, msgType, htmlHeight
+  - Throw error for unsupported channel types
