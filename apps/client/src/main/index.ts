@@ -215,6 +215,25 @@ function createWindow(): void {
   });
 }
 
+function showMainWindow(): void {
+  if (!mainWindow) {
+    createWindow();
+    return;
+  }
+
+  if (mainWindow.isMinimized()) {
+    mainWindow.restore();
+  }
+
+  mainWindow.show();
+  mainWindow.focus();
+
+  if (process.platform === 'darwin') {
+    app.focus({ steal: true });
+    mainWindow.moveTop();
+  }
+}
+
 function toggleWindowVisibility(): void {
   if (!mainWindow) {
     createWindow();
@@ -224,8 +243,7 @@ function toggleWindowVisibility(): void {
   if (mainWindow.isVisible()) {
     mainWindow.hide();
   } else {
-    mainWindow.show();
-    mainWindow.focus();
+    showMainWindow();
   }
 }
 
@@ -266,12 +284,7 @@ function createTray(): void {
     {
       label: '显示主窗口',
       click: () => {
-        if (mainWindow) {
-          mainWindow.show();
-          mainWindow.focus();
-        } else {
-          createWindow();
-        }
+        showMainWindow();
       },
     },
     { type: 'separator' },
@@ -288,16 +301,12 @@ function createTray(): void {
 
   // Click tray icon to toggle window visibility
   tray.on('click', () => {
-    if (mainWindow) {
-      if (mainWindow.isVisible()) {
-        mainWindow.hide();
-      } else {
-        mainWindow.show();
-        mainWindow.focus();
-      }
-    } else {
-      createWindow();
+    if (mainWindow && mainWindow.isVisible()) {
+      mainWindow.hide();
+      return;
     }
+
+    showMainWindow();
   });
 }
 
@@ -381,12 +390,7 @@ function createApplicationMenu(): void {
     {
       label: '显示主窗口',
       click: () => {
-        if (mainWindow) {
-          mainWindow.show();
-          mainWindow.focus();
-        } else {
-          createWindow();
-        }
+        showMainWindow();
       },
     },
   ];
@@ -506,16 +510,7 @@ app.on('window-all-closed', () => {
 
 app.on('activate', () => {
   // macOS: click dock icon to restore window
-  if (mainWindow) {
-    if (mainWindow.isVisible()) {
-      mainWindow.focus();
-    } else {
-      mainWindow.show();
-      mainWindow.focus();
-    }
-  } else {
-    createWindow();
-  }
+  showMainWindow();
 });
 
 // Register IPC handlers
@@ -629,6 +624,10 @@ autoUpdater.on('error', (error) => {
     status: 'error',
     error: error.message,
   });
+});
+
+app.on('before-quit', () => {
+  isQuiting = true;
 });
 
 // Unregister all shortcuts when app is about to quit
