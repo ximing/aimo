@@ -54,7 +54,7 @@ request.interceptors.response.use(
     // Return the data directly if the response is successful
     return response.data;
   },
-  (error: AxiosError<{ code: number; message: string }>) => {
+  (error: AxiosError<{ code: number; msg?: string; message?: string }>) => {
     // Handle error responses
     if (error.response) {
       const { status, data } = error.response;
@@ -75,22 +75,28 @@ request.interceptors.response.use(
         }
 
         case 403:
-          console.error('Forbidden:', data?.message || 'Access denied');
+          console.error('Forbidden:', data?.msg || data?.message || 'Access denied');
           break;
 
         case 404:
-          console.error('Not found:', data?.message || 'Resource not found');
+          console.error('Not found:', data?.msg || data?.message || 'Resource not found');
           break;
 
         case 500:
-          console.error('Server error:', data?.message || 'Internal server error');
+          console.error('Server error:', data?.msg || data?.message || 'Internal server error');
           break;
 
         default:
-          console.error('Request failed:', data?.message || 'Unknown error');
+          console.error('Request failed:', data?.msg || data?.message || 'Unknown error');
       }
 
-      return Promise.reject(data || error);
+      // Return both msg and message for downstream error handling
+      const errorData = {
+        code: data?.code,
+        msg: data?.msg || data?.message,
+        message: data?.msg || data?.message,
+      };
+      return Promise.reject(errorData || error);
     } else if (error.request) {
       // Request made but no response
       console.error('Network error: No response from server');

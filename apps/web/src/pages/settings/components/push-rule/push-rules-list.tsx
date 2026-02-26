@@ -33,6 +33,8 @@ export const PushRulesList = view(({ onAddRule, onEditRule }: PushRulesListProps
     );
   }
 
+  const validRules = pushRuleService.rules.filter((rule): rule is PushRuleDto => Boolean(rule));
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -46,7 +48,7 @@ export const PushRulesList = view(({ onAddRule, onEditRule }: PushRulesListProps
         </button>
       </div>
 
-      {pushRuleService.rules.length === 0 ? (
+      {validRules.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
           <Bell className="w-12 h-12 mx-auto mb-4 text-gray-400" />
           <p>暂无推送规则</p>
@@ -54,7 +56,7 @@ export const PushRulesList = view(({ onAddRule, onEditRule }: PushRulesListProps
         </div>
       ) : (
         <div className="space-y-4">
-          {pushRuleService.rules.map((rule: PushRuleDto) => (
+          {validRules.map((rule) => (
             <div
               key={rule.id}
               className="bg-white dark:bg-dark-800 rounded-lg border border-gray-200 dark:border-dark-700 p-4"
@@ -77,7 +79,11 @@ export const PushRulesList = view(({ onAddRule, onEditRule }: PushRulesListProps
                     <span>推送时间: {pushRuleService.formatTime(rule.pushTime)}</span>
                     <span>内容类型: {pushRuleService.formatContentType(rule.contentType)}</span>
                     <span>
-                      渠道: {rule.channels.map((c: PushChannelConfigDto) => c.nickname || c.type).join(', ')}
+                      渠道:{' '}
+                      {(rule.channels || [])
+                        .filter((c): c is PushChannelConfigDto => Boolean(c))
+                        .map((c) => c.nickname || c.type)
+                        .join(', ') || '-'}
                     </span>
                   </div>
                 </div>

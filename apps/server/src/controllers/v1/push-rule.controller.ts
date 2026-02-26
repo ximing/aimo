@@ -146,4 +146,23 @@ export class PushRuleV1Controller {
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
+
+  @Post('/:id/test')
+  async testPush(@Param('id') id: string, @CurrentUser() user: UserInfoDto) {
+    try {
+      if (!user?.uid) {
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
+      }
+
+      await this.pushRuleService.testPush(id, user.uid);
+
+      return ResponseUtility.success({
+        message: 'Test push sent successfully',
+      });
+    } catch (error) {
+      console.error('Test push error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to send test push';
+      return ResponseUtility.error(ErrorCode.DB_ERROR, errorMessage);
+    }
+  }
 }

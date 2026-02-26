@@ -22,7 +22,9 @@ export class PushRuleService extends Service {
       const response = await pushRulesApi.getPushRules();
 
       if (response.code === 0 && response.data) {
-        this.rules = response.data.rules || [];
+        this.rules = (response.data.pushRules || []).filter(
+          (rule): rule is PushRuleDto => Boolean(rule)
+        );
         return { success: true };
       } else {
         this.error = 'Failed to fetch push rules';
@@ -47,7 +49,16 @@ export class PushRuleService extends Service {
       const response = await pushRulesApi.createPushRule(data);
 
       if (response.code === 0 && response.data) {
-        this.rules = [...this.rules, response.data.rule];
+        const pushRule =
+          (response.data as { pushRule?: PushRuleDto; rule?: PushRuleDto }).pushRule ||
+          (response.data as { pushRule?: PushRuleDto; rule?: PushRuleDto }).rule;
+
+        if (!pushRule) {
+          this.error = 'Failed to create push rule';
+          return { success: false, message: this.error };
+        }
+
+        this.rules = [...this.rules, pushRule];
         return { success: true };
       } else {
         this.error = 'Failed to create push rule';
@@ -73,7 +84,16 @@ export class PushRuleService extends Service {
       const response = await pushRulesApi.updatePushRule(ruleId, data);
 
       if (response.code === 0 && response.data) {
-        this.rules = this.rules.map((r) => (r.id === ruleId ? response.data.rule : r));
+        const pushRule =
+          (response.data as { pushRule?: PushRuleDto; rule?: PushRuleDto }).pushRule ||
+          (response.data as { pushRule?: PushRuleDto; rule?: PushRuleDto }).rule;
+
+        if (!pushRule) {
+          this.error = 'Failed to update push rule';
+          return { success: false, message: this.error };
+        }
+
+        this.rules = this.rules.map((r) => (r.id === ruleId ? pushRule : r));
         return { success: true };
       } else {
         this.error = 'Failed to update push rule';
@@ -105,6 +125,28 @@ export class PushRuleService extends Service {
     } catch (error: unknown) {
       console.error('Delete push rule error:', error);
       this.error = error instanceof Error ? error.message : 'Failed to delete push rule';
+      return { success: false, message: this.error };
+    }
+  }
+
+  /**
+   * Test push notification for a rule
+   */
+  async testPush(ruleId: string): Promise<{ success: boolean; message?: string }> {
+    this.error = null;
+
+    try {
+      const response = await pushRulesApi.testPushRule(ruleId);
+
+      if (response.code === 0) {
+        return { success: true, message: '测试消息已发送' };
+      } else {
+        this.error = 'Failed to send test push';
+        return { success: false, message: this.error };
+      }
+    } catch (error: unknown) {
+      console.error('Test push error:', error);
+      this.error = error instanceof Error ? error.message : 'Failed to send test push';
       return { success: false, message: this.error };
     }
   }

@@ -1,14 +1,18 @@
-import { Service } from 'typedi';
+import { Inject, Service } from 'typedi';
 
 import { OBJECT_TYPE } from '../models/constant/type.js';
 import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
 import { generateTypeId } from '../utils/id.js';
+import { ChannelFactory } from './channels/channel.factory.js';
 
 import type { PushRuleRecord } from '../models/db/schema.js';
 import type { CreatePushRuleDto, PushRuleDto, UpdatePushRuleDto } from '@aimo/dto';
 
 @Service()
 export class PushRuleService {
+  @Inject()
+  private channelFactory!: ChannelFactory;
+
   constructor(private lanceDatabase: LanceDatabaseService) {}
 
   /**
@@ -177,6 +181,35 @@ export class PushRuleService {
     } catch (error) {
       console.error('Failed to get enabled push rules:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Test push notification for a channel
+   */
+  async testPush(ruleId: string, uid: string): Promise<void> {
+    const rule = await this.findById(ruleId, uid);
+    if (!rule) {
+      throw new Error('Push rule not found');
+    }
+
+    if (!rule.channels || rule.channels.length === 0) {
+      throw new Error('No channels configured');
+    }
+
+    // Send test message through each channel
+    for (const channelConfig of rule.channels) {
+      try {
+        const channel = this.channelFactory.getChannel(channelConfig);
+        await channel.send({
+          title: '测试推送',
+          msg: '这是一条测试消息，如果你能看到这条消息，说明推送配置正确！',
+        });
+        console.log(`Test push sent for rule ${ruleId} via channel ${channelConfig.type}`);
+      } catch (error) {
+        console.error(`Failed to send test push for rule ${ruleId} via channel ${channelConfig.type}:`, error);
+        throw error;
+      }
     }
   }
 

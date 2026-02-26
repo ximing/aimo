@@ -61,6 +61,9 @@ export const generateTypeId = (type: (typeof OBJECT_TYPE)[keyof typeof OBJECT_TY
     case OBJECT_TYPE.TAG: {
       return `t${typeid()}`;
     }
+    case OBJECT_TYPE.PUSH_RULE: {
+      return `push${typeid()}`;
+    }
   }
   throw new Error(`Invalid type: ${type}`);
 };

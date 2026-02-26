@@ -13,7 +13,6 @@ export interface FeishuChannelConfig {
  * Feishu Channel Implementation
  * Sends push notifications to Feishu custom bot webhook
  */
-@Service()
 export class FeishuChannel implements PushChannel {
   constructor(private config: FeishuChannelConfig) {}
 

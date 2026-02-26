@@ -12,7 +12,6 @@ export interface MeowChannelConfig {
  * MeoW Channel Implementation
  * Sends push notifications to the MeoW (api.chuckfang.com) endpoint
  */
-@Service()
 export class MeowChannel implements PushChannel {
   private readonly apiUrl = 'https://api.chuckfang.com';
 
@@ -23,31 +22,18 @@ export class MeowChannel implements PushChannel {
    */
   async send(options: PushChannelOptions): Promise<void> {
     try {
-      const params = new URLSearchParams();
-
-      if (this.config.nickname) {
-        params.append('nickname', this.config.nickname);
-      }
-
       const msgType = this.config.msgType || 'text';
-      params.append('msgType', msgType);
-
-      if (msgType === 'html' && this.config.htmlHeight) {
-        params.append('htmlHeight', this.config.htmlHeight.toString());
-      }
-
-      params.append('title', options.title);
-      params.append('msg', options.msg);
-
-      if (options.url) {
-        params.append('url', options.url);
-      }
-
-      const response = await fetch(`${this.apiUrl}?${params.toString()}`, {
+      const response = await fetch(`${this.apiUrl}/${this.config.nickname}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          msgType: msgType,
+          title: options.title,
+          msg: options.msg,
+          url: options.url,
+        }),
       });
 
       if (!response.ok) {

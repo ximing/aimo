@@ -26,7 +26,9 @@ export const PushRuleFormModal = view(({ isOpen, onClose, onSuccess, editRule }:
   const [secret, setSecret] = useState('');
   const [enabled, setEnabled] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [testing, setTesting] = useState(false);
   const [error, setError] = useState('');
+  const [testMessage, setTestMessage] = useState('');
 
   useEffect(() => {
     if (editRule) {
@@ -57,6 +59,31 @@ export const PushRuleFormModal = view(({ isOpen, onClose, onSuccess, editRule }:
     }
     setError('');
   }, [editRule, isOpen]);
+
+  const handleTest = async () => {
+    if (!editRule) {
+      setTestMessage('请先保存规则后再测试');
+      return;
+    }
+
+    try {
+      setTesting(true);
+      setTestMessage('');
+
+      const result = await pushRuleService.testPush(editRule.id);
+
+      if (result.success) {
+        setTestMessage('测试消息已发送，请检查是否收到');
+      } else {
+        setTestMessage(result.message || '测试失败');
+      }
+    } catch (err) {
+      console.error('Test push error:', err);
+      setTestMessage('测试失败，请检查配置');
+    } finally {
+      setTesting(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,9 +147,14 @@ export const PushRuleFormModal = view(({ isOpen, onClose, onSuccess, editRule }:
 
       onSuccess();
       onClose();
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Failed to save push rule:', err);
-      setError(editRule ? '更新失败' : '创建失败');
+      const errorMessage = err && typeof err === 'object' && 'msg' in err
+        ? (err as { msg?: string }).msg
+        : err && typeof err === 'object' && 'message' in err
+          ? (err as { message?: string }).message
+          : null;
+      setError(errorMessage || (editRule ? '更新失败' : '创建失败'));
     } finally {
       setLoading(false);
     }
@@ -198,7 +230,7 @@ export const PushRuleFormModal = view(({ isOpen, onClose, onSuccess, editRule }:
                   className="text-primary-600 focus:ring-primary-500"
                 />
                 <span className="text-sm text-gray-700 dark:text-gray-300">每日推荐</span>
-                <span className="text-xs text-gray-500">(随机推荐一条备忘录)</span>
+                <span className="text-xs text-gray-500">(随机推荐三条memo)</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -209,8 +241,8 @@ export const PushRuleFormModal = view(({ isOpen, onClose, onSuccess, editRule }:
                   onChange={() => setContentType('daily_memos')}
                   className="text-primary-600 focus:ring-primary-500"
                 />
-                <span className="text-sm text-gray-700 dark:text-gray-300">今日备忘录</span>
-                <span className="text-xs text-gray-500">(今日所有备忘录)</span>
+                <span className="text-sm text-gray-700 dark:text-gray-300">今日memo</span>
+                <span className="text-xs text-gray-500">(回顾今日memo)</span>
               </label>
             </div>
           </div>
@@ -323,21 +355,45 @@ export const PushRuleFormModal = view(({ isOpen, onClose, onSuccess, editRule }:
             </div>
           )}
 
-          <div className="flex justify-end gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg transition-colors"
-            >
-              取消
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
-            >
-              {loading ? '保存中...' : '保存'}
-            </button>
+          {testMessage && (
+            <div className={`p-3 text-sm rounded-lg ${
+              testMessage.includes('成功') || testMessage.includes('已发送')
+                ? 'text-green-600 bg-green-50 dark:bg-green-900/20'
+                : 'text-red-600 bg-red-50 dark:bg-red-900/20'
+            }`}>
+              {testMessage}
+            </div>
+          )}
+
+          <div className="flex justify-between pt-4">
+            <div>
+              {editRule && (
+                <button
+                  type="button"
+                  onClick={handleTest}
+                  disabled={testing}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {testing ? '发送中...' : '发送测试'}
+                </button>
+              )}
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg transition-colors"
+              >
+                取消
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
+              >
+                {loading ? '保存中...' : '保存'}
+              </button>
+            </div>
           </div>
         </form>
       </div>
