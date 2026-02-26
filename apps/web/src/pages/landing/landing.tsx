@@ -138,7 +138,7 @@ export function LandingPage() {
   useEffect(() => {
     // Check auth status on mount
     authService.checkAuth();
-  }, []);
+  }, [authService]);
 
   useEffect(() => {
     const handleScroll = () => {

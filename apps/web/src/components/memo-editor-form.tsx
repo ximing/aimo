@@ -101,12 +101,12 @@ export const MemoEditorForm = view(
     // 获取类别列表
     useEffect(() => {
       categoryService.fetchCategories();
-    }, []);
+    }, [categoryService]);
 
     // 获取标签列表（用于标签输入建议）
     useEffect(() => {
       tagService.fetchTags();
-    }, []);
+    }, [tagService]);
 
     // 点击外部关闭类别下拉框
     useEffect(() => {

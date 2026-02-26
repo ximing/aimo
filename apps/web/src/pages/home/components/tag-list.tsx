@@ -23,7 +23,7 @@ export const TagList = view(() => {
   // Fetch tags on mount
   useEffect(() => {
     tagService.fetchTags();
-  }, []);
+  }, [tagService]);
 
   const handleTagClick = (tagName: string) => {
     // Toggle tag in filter

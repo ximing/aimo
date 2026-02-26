@@ -97,7 +97,7 @@ export const HomePage = view(() => {
     } else {
       memoService.setTagFilter(null);
     }
-  }, []);
+  }, [memoService]);
 
   // Update URL when selected date changes
   useEffect(() => {
@@ -113,7 +113,7 @@ export const HomePage = view(() => {
       },
       { replace: true }
     );
-  }, [memoService.selectedDate]);
+  }, [memoService.selectedDate, setSearchParams]);
 
   // Update URL when tag filter changes
   useEffect(() => {
@@ -134,7 +134,7 @@ export const HomePage = view(() => {
         { replace: true }
       );
     }
-  }, [memoService.tagFilter]);
+  }, [memoService.tagFilter, setSearchParams]);
 
   // Handle browser back/forward buttons
   useEffect(() => {
@@ -155,13 +155,13 @@ export const HomePage = view(() => {
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [memoService.tagFilter]);
+  }, [memoService]);
 
   // Fetch memos on mount (only once)
   useEffect(() => {
     memoService.fetchMemos();
     memoService.fetchActivityStats();
-  }, []);
+  }, [memoService]);
 
   // Toggle collapsed state
   const toggleCollapsed = useCallback(() => {

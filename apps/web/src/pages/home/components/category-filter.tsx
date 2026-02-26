@@ -15,7 +15,7 @@ export const CategoryFilter = view(() => {
   // Fetch categories on mount
   useEffect(() => {
     categoryService.fetchCategories();
-  }, []);
+  }, [categoryService]);
 
   // Close dropdown when clicking outside
   useEffect(() => {

@@ -1,4 +1,5 @@
 import request from '../utils/request';
+import type { InternalAxiosRequestConfig } from 'axios';
 
 /**
  * Download attachment as Blob through secure proxy
@@ -12,7 +13,7 @@ export const downloadAttachment = async (
     {
       responseType: 'blob',
       timeout: 60000, // 60 second timeout for large files
-    } as any
+    } as InternalAxiosRequestConfig
   );
 
   return response;
