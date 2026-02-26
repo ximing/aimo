@@ -2,11 +2,16 @@
  * Push Rule DTOs
  */
 
+export type PushChannelType = 'meow' | 'feishu';
+
 export interface PushChannelConfigDto {
-  type: 'meow'; // Channel type - currently only 'meow' is supported
+  type: PushChannelType; // Channel type - 'meow' or 'feishu'
   nickname?: string; // Optional nickname for the channel
-  msgType?: 'text' | 'html'; // Message type - defaults to 'text'
-  htmlHeight?: number; // Height for HTML messages (only used when msgType is 'html')
+  msgType?: 'text' | 'html'; // Message type - defaults to 'text' (only for meow)
+  htmlHeight?: number; // Height for HTML messages (only used when msgType is 'html' for meow)
+  // Feishu specific config
+  webhookUrl?: string; // Feishu webhook URL
+  secret?: string; // Feishu signing secret (optional)
 }
 
 export interface CreatePushRuleDto {

@@ -1,11 +1,16 @@
-import { Service } from 'typedi';
+import { Inject, Service } from 'typedi';
 
 import { LanceDbService } from '../../sources/lancedb.js';
+import { RecommendationService } from '../recommendation.service.js';
 
 import type { ContentGenerator, PushContent } from './content-generator.interface.js';
+import type { MemoListItemDto } from '@aimo/dto';
 
 @Service()
 export class DailyContentGenerator implements ContentGenerator {
+  @Inject()
+  private recommendationService!: RecommendationService;
+
   constructor(private lanceDb: LanceDbService) {}
 
   /**
@@ -23,37 +28,39 @@ export class DailyContentGenerator implements ContentGenerator {
   }
 
   /**
-   * Generate daily_pick: randomly select one memo from user's collection
+   * Generate daily_pick: get 3 recommended memos using AI (same as home page daily recommendations)
    */
   private async generateDailyPick(uid: string): Promise<PushContent> {
-    const memosTable = await this.lanceDb.openTable('memos');
+    // Use the same recommendation service as the home page
+    const recommendedMemos = await this.recommendationService.generateDailyRecommendations(uid);
 
-    // Get all memos for the user
-    const memos = await memosTable.query().where(`uid = '${uid}'`).toArray();
-
-    if (memos.length === 0) {
+    if (recommendedMemos.length === 0) {
       return {
         title: '今日推荐',
         msg: '<p>你还没有记录任何备忘录，来创建一个吧！</p>',
       };
     }
 
-    // Randomly select one memo
-    const randomIndex = Math.floor(Math.random() * memos.length);
-    const selectedMemo = memos[randomIndex] as any;
-
     const title = '今日推荐';
-    const content = selectedMemo.content || '';
-    const createdAt = selectedMemo.createdAt
-      ? new Date(selectedMemo.createdAt).toLocaleDateString('zh-CN')
-      : '';
+
+    // Format all 3 memos
+    const memoItems = recommendedMemos.map((memo: MemoListItemDto) => {
+      const content = memo.content || '';
+      const createdAt = memo.createdAt
+        ? new Date(memo.createdAt).toLocaleDateString('zh-CN')
+        : '';
+
+      return `
+        <div style="margin-bottom: 16px; padding: 12px; background: #f5f5f5; border-radius: 8px;">
+          <p style="color: #999; font-size: 12px; margin: 0 0 8px 0;">${createdAt}</p>
+          <p style="margin: 0; font-size: 14px; line-height: 1.6;">${this.escapeHtml(content)}</p>
+        </div>
+      `;
+    }).join('');
 
     const msg = `
       <div style="font-size: 14px; line-height: 1.6;">
-        <p style="color: #666; margin-bottom: 8px;">${createdAt}</p>
-        <div style="background: #f5f5f5; padding: 12px; border-radius: 8px;">
-          ${this.escapeHtml(content)}
-        </div>
+        ${memoItems}
       </div>
     `;
 

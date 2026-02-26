@@ -8,7 +8,7 @@ import { AccountSettings } from './pages/settings/components/account-settings';
 import { ImportData } from './pages/settings/components/import-data';
 import { ExportData } from './pages/settings/components/export-data';
 import { About } from './pages/settings/components/about';
-import { PushRulesSettings } from './pages/settings/components/push-rules';
+import { PushRulesSettings } from './pages/settings/components/push-rule';
 import AIExplorePage from './pages/ai-explore';
 import GalleryPage from './pages/gallery';
 import SharePage from './pages/share';

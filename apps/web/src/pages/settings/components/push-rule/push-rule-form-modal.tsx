@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
+import { useService, view } from '@rabjs/react';
 import { X } from 'lucide-react';
-import type { PushRuleDto, CreatePushRuleDto, UpdatePushRuleDto, PushChannelConfigDto } from '@aimo/dto';
-import { createPushRule, updatePushRule } from '../../../api/push-rules';
+import type { PushRuleDto, CreatePushRuleDto, UpdatePushRuleDto, PushChannelConfigDto, PushChannelType } from '@aimo/dto';
+import { PushRuleService } from './push-rule.service';
 
 interface PushRuleFormModalProps {
   isOpen: boolean;
@@ -10,13 +11,19 @@ interface PushRuleFormModalProps {
   editRule?: PushRuleDto | null;
 }
 
-export const PushRuleFormModal = ({ isOpen, onClose, onSuccess, editRule }: PushRuleFormModalProps) => {
+export const PushRuleFormModal = view(({ isOpen, onClose, onSuccess, editRule }: PushRuleFormModalProps) => {
+  const pushRuleService = useService(PushRuleService);
+
   const [name, setName] = useState('');
   const [pushTime, setPushTime] = useState(9);
   const [contentType, setContentType] = useState<'daily_pick' | 'daily_memos'>('daily_pick');
+  const [channelType, setChannelType] = useState<PushChannelType>('meow');
   const [nickname, setNickname] = useState('');
   const [msgType, setMsgType] = useState<'text' | 'html'>('html');
   const [htmlHeight, setHtmlHeight] = useState(500);
+  // Feishu specific
+  const [webhookUrl, setWebhookUrl] = useState('');
+  const [secret, setSecret] = useState('');
   const [enabled, setEnabled] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -27,17 +34,25 @@ export const PushRuleFormModal = ({ isOpen, onClose, onSuccess, editRule }: Push
       setPushTime(editRule.pushTime);
       setContentType(editRule.contentType);
       const channel = editRule.channels[0];
-      setNickname(channel?.nickname || '');
-      setMsgType(channel?.msgType || 'html');
-      setHtmlHeight(channel?.htmlHeight || 500);
+      if (channel) {
+        setChannelType(channel.type);
+        setNickname(channel.nickname || '');
+        setMsgType(channel.msgType || 'html');
+        setHtmlHeight(channel.htmlHeight || 500);
+        setWebhookUrl(channel.webhookUrl || '');
+        setSecret(channel.secret || '');
+      }
       setEnabled(editRule.enabled);
     } else {
       setName('');
       setPushTime(9);
       setContentType('daily_pick');
+      setChannelType('meow');
       setNickname('');
       setMsgType('html');
       setHtmlHeight(500);
+      setWebhookUrl('');
+      setSecret('');
       setEnabled(true);
     }
     setError('');
@@ -51,19 +66,34 @@ export const PushRuleFormModal = ({ isOpen, onClose, onSuccess, editRule }: Push
       return;
     }
 
-    if (!nickname.trim()) {
-      setError('请输入推送昵称');
-      return;
+    if (channelType === 'meow') {
+      if (!nickname.trim()) {
+        setError('请输入推送昵称');
+        return;
+      }
+    } else if (channelType === 'feishu') {
+      if (!webhookUrl.trim()) {
+        setError('请输入飞书 webhook 地址');
+        return;
+      }
     }
 
-    const channels: PushChannelConfigDto[] = [
-      {
+    const channels: PushChannelConfigDto[] = [];
+
+    if (channelType === 'meow') {
+      channels.push({
         type: 'meow',
         nickname: nickname.trim(),
         msgType,
         htmlHeight: msgType === 'html' ? htmlHeight : undefined,
-      },
-    ];
+      });
+    } else if (channelType === 'feishu') {
+      channels.push({
+        type: 'feishu',
+        webhookUrl: webhookUrl.trim(),
+        secret: secret.trim() || undefined,
+      });
+    }
 
     try {
       setLoading(true);
@@ -77,7 +107,7 @@ export const PushRuleFormModal = ({ isOpen, onClose, onSuccess, editRule }: Push
           channels,
           enabled,
         };
-        await updatePushRule(editRule.id, data);
+        await pushRuleService.updateRule(editRule.id, data);
       } else {
         const data: CreatePushRuleDto = {
           name: name.trim(),
@@ -85,7 +115,7 @@ export const PushRuleFormModal = ({ isOpen, onClose, onSuccess, editRule }: Push
           contentType,
           channels,
         };
-        await createPushRule(data);
+        await pushRuleService.createRule(data);
       }
 
       onSuccess();
@@ -187,45 +217,96 @@ export const PushRuleFormModal = ({ isOpen, onClose, onSuccess, editRule }: Push
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              推送昵称
-            </label>
-            <input
-              type="text"
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
-              placeholder="你的昵称"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-dark-600 rounded-lg bg-white dark:bg-dark-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              消息类型
+              推送渠道
             </label>
             <select
-              value={msgType}
-              onChange={(e) => setMsgType(e.target.value as 'text' | 'html')}
+              value={channelType}
+              onChange={(e) => setChannelType(e.target.value as PushChannelType)}
               className="w-full px-3 py-2 border border-gray-300 dark:border-dark-600 rounded-lg bg-white dark:bg-dark-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
-              <option value="html">HTML</option>
-              <option value="text">纯文本</option>
+              <option value="meow">MeoW</option>
+              <option value="feishu">飞书群</option>
             </select>
           </div>
 
-          {msgType === 'html' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                HTML 高度
-              </label>
-              <input
-                type="number"
-                value={htmlHeight}
-                onChange={(e) => setHtmlHeight(Number(e.target.value))}
-                min={100}
-                max={1000}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-dark-600 rounded-lg bg-white dark:bg-dark-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
-            </div>
+          {channelType === 'meow' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  推送昵称
+                </label>
+                <input
+                  type="text"
+                  value={nickname}
+                  onChange={(e) => setNickname(e.target.value)}
+                  placeholder="你的昵称"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-dark-600 rounded-lg bg-white dark:bg-dark-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  消息类型
+                </label>
+                <select
+                  value={msgType}
+                  onChange={(e) => setMsgType(e.target.value as 'text' | 'html')}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-dark-600 rounded-lg bg-white dark:bg-dark-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                >
+                  <option value="html">HTML</option>
+                  <option value="text">纯文本</option>
+                </select>
+              </div>
+
+              {msgType === 'html' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    HTML 高度
+                  </label>
+                  <input
+                    type="number"
+                    value={htmlHeight}
+                    onChange={(e) => setHtmlHeight(Number(e.target.value))}
+                    min={100}
+                    max={1000}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-dark-600 rounded-lg bg-white dark:bg-dark-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+              )}
+            </>
+          )}
+
+          {channelType === 'feishu' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Webhook 地址 <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={webhookUrl}
+                  onChange={(e) => setWebhookUrl(e.target.value)}
+                  placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/xxxxx"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-dark-600 rounded-lg bg-white dark:bg-dark-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  签名密钥 <span className="text-xs text-gray-500">(可选)</span>
+                </label>
+                <input
+                  type="text"
+                  value={secret}
+                  onChange={(e) => setSecret(e.target.value)}
+                  placeholder="飞书机器人签名密钥"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-dark-600 rounded-lg bg-white dark:bg-dark-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  如在飞书机器人设置了签名校验，请填写密钥
+                </p>
+              </div>
+            </>
           )}
 
           {editRule && (
@@ -262,4 +343,4 @@ export const PushRuleFormModal = ({ isOpen, onClose, onSuccess, editRule }: Push
       </div>
     </div>
   );
-};
+});

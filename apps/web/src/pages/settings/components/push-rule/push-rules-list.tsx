@@ -1,32 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useService,view } from '@rabjs/react';
 import { Bell, Plus, Pencil, Trash2 } from 'lucide-react';
-import type { PushRuleDto } from '@aimo/dto';
-import { getPushRules, deletePushRule } from '../../../api/push-rules';
+import type { PushRuleDto, PushChannelConfigDto } from '@aimo/dto';
+import { PushRuleService } from './push-rule.service';
 
 interface PushRulesListProps {
   onAddRule: () => void;
   onEditRule: (rule: PushRuleDto) => void;
 }
 
-export const PushRulesList = ({ onAddRule, onEditRule }: PushRulesListProps) => {
-  const [rules, setRules] = useState<PushRuleDto[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const fetchRules = async () => {
-    try {
-      const response = await getPushRules();
-      if (response.code === 0) {
-        setRules(response.data.rules);
-      }
-    } catch (error) {
-      console.error('Failed to fetch push rules:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+export const PushRulesList = view(({ onAddRule, onEditRule }: PushRulesListProps) => {
+  const pushRuleService = useService(PushRuleService);
 
   useEffect(() => {
-    fetchRules();
+    pushRuleService.fetchRules();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleDelete = async (ruleId: string) => {
@@ -34,32 +22,10 @@ export const PushRulesList = ({ onAddRule, onEditRule }: PushRulesListProps) => 
       return;
     }
 
-    try {
-      const response = await deletePushRule(ruleId);
-      if (response.code === 0) {
-        setRules(rules.filter((r) => r.id !== ruleId));
-      }
-    } catch (error) {
-      console.error('Failed to delete push rule:', error);
-    }
+    await pushRuleService.deleteRule(ruleId);
   };
 
-  const formatTime = (hour: number) => {
-    return `${hour.toString().padStart(2, '0')}:00`;
-  };
-
-  const formatContentType = (type: string) => {
-    switch (type) {
-      case 'daily_pick':
-        return '每日推荐';
-      case 'daily_memos':
-        return '今日备忘录';
-      default:
-        return type;
-    }
-  };
-
-  if (loading) {
+  if (pushRuleService.loading) {
     return (
       <div className="flex items-center justify-center py-8">
         <div className="text-gray-500">加载中...</div>
@@ -80,7 +46,7 @@ export const PushRulesList = ({ onAddRule, onEditRule }: PushRulesListProps) => 
         </button>
       </div>
 
-      {rules.length === 0 ? (
+      {pushRuleService.rules.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
           <Bell className="w-12 h-12 mx-auto mb-4 text-gray-400" />
           <p>暂无推送规则</p>
@@ -88,7 +54,7 @@ export const PushRulesList = ({ onAddRule, onEditRule }: PushRulesListProps) => 
         </div>
       ) : (
         <div className="space-y-4">
-          {rules.map((rule) => (
+          {pushRuleService.rules.map((rule: PushRuleDto) => (
             <div
               key={rule.id}
               className="bg-white dark:bg-dark-800 rounded-lg border border-gray-200 dark:border-dark-700 p-4"
@@ -108,10 +74,10 @@ export const PushRulesList = ({ onAddRule, onEditRule }: PushRulesListProps) => 
                     </span>
                   </div>
                   <div className="mt-2 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-                    <span>推送时间: {formatTime(rule.pushTime)}</span>
-                    <span>内容类型: {formatContentType(rule.contentType)}</span>
+                    <span>推送时间: {pushRuleService.formatTime(rule.pushTime)}</span>
+                    <span>内容类型: {pushRuleService.formatContentType(rule.contentType)}</span>
                     <span>
-                      渠道: {rule.channels.map((c) => c.nickname || c.type).join(', ')}
+                      渠道: {rule.channels.map((c: PushChannelConfigDto) => c.nickname || c.type).join(', ')}
                     </span>
                   </div>
                 </div>
@@ -138,4 +104,4 @@ export const PushRulesList = ({ onAddRule, onEditRule }: PushRulesListProps) => 
       )}
     </div>
   );
-};
+});

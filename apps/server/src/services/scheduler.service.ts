@@ -81,12 +81,12 @@ export class SchedulerService {
 
   /**
    * 注册推送通知定时任务
-   * 每分钟执行一次，检查是否有需要推送的规则
+   * 每小时执行一次，检查是否有需要推送的规则
    */
   private registerPushNotificationTask(): void {
-    // Run every minute to check for pending pushes
+    // Run every hour to check for pending pushes
     const task = cron.schedule(
-      '* * * * *',
+      '0 * * * *',
       async () => {
         try {
           await this.processPushNotifications();
@@ -100,7 +100,7 @@ export class SchedulerService {
     );
 
     this.tasks.push(task);
-    console.log('Push notification task scheduled: every minute');
+    console.log('Push notification task scheduled: every hour');
   }
 
   /**
