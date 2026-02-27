@@ -9,3 +9,13 @@ Branch: ralph/chrome-extension-v1
 ## Codebase Patterns
 
 ---
+
+## 2026-02-27 - US-001
+- Added source?: string field to CreateMemoDto, MemoDto, MemoWithAttachmentsDto, and MemoListItemDto in packages/dto/src/memo.ts
+- Rebuilt DTO package
+- Typecheck passes
+- **Learnings for future iterations:**
+  - Memo DTOs are in packages/dto/src/memo.ts - all related interfaces (CreateMemoDto, MemoDto, MemoWithAttachmentsDto, MemoListItemDto) need to be updated together
+  - After modifying DTOs, run `pnpm --filter @aimo/dto build` to regenerate types
+  - Server typecheck requires logger package to be built first: `pnpm --filter @aimo/logger build`
+---
