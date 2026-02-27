@@ -153,3 +153,16 @@ Branch: ralph/chrome-extension-v1
   - SAVE_TO_MEMO creates memo directly via API
   - Both message types are handled by background script
 ---
+
+## 2026-02-27 - US-012
+- Added showLoadingNotification function with spinner animation
+- Shows "正在上传图片..." loading state while uploading images
+- Loading notification is removed when upload completes or fails
+- Success/error notifications shown after loading completes
+- Typecheck passes
+- Build passes
+- **Learnings for future iterations:**
+  - chrome.runtime.sendMessage is request/response - no easy progress updates
+  - Show loading state while waiting for response
+  - Loading notification returns element so caller can remove it
+---

@@ -344,6 +344,14 @@ function hideToolbar(): void {
 async function handleSaveClick(): Promise<void> {
   if (!currentSelection) return;
 
+  const isImage = currentSelection.type === 'image';
+
+  // Show uploading status for images
+  let uploadNotification: HTMLElement | null = null;
+  if (isImage) {
+    uploadNotification = showLoadingNotification('正在上传图片...');
+  }
+
   try {
     // Save directly to memo via API
     const message = {
@@ -353,6 +361,11 @@ async function handleSaveClick(): Promise<void> {
 
     // Send message to background script
     const response = await chrome.runtime.sendMessage(message);
+
+    // Remove loading notification
+    if (uploadNotification) {
+      uploadNotification.remove();
+    }
 
     if (response?.success) {
       // Show success message
@@ -364,6 +377,10 @@ async function handleSaveClick(): Promise<void> {
       showNotification(response?.error || '保存失败，请检查扩展配置', 'error');
     }
   } catch (error) {
+    // Remove loading notification
+    if (uploadNotification) {
+      uploadNotification.remove();
+    }
     console.error('Error saving content:', error);
     showNotification('保存失败，请检查网络连接', 'error');
   }
@@ -432,6 +449,94 @@ function showNotification(message: string, type: 'success' | 'error'): void {
       notification.remove();
     }, 300);
   }, 3000);
+}
+
+/**
+ * Show a loading notification that can be removed manually
+ * @param message - Message to display
+ * @returns The notification element (caller should remove it)
+ */
+function showLoadingNotification(message: string): HTMLElement {
+  // Create notification element
+  const notification = document.createElement('div');
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    background: #3b82f6;
+    color: white;
+    border-radius: 8px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 2147483647;
+    animation: aimo-notification-slide-in 0.3s ease-out;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  `;
+
+  // Add spinner
+  const spinner = document.createElement('div');
+  spinner.style.cssText = `
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: aimo-spin 0.8s linear infinite;
+  `;
+
+  // Add spin animation if not already present
+  if (!document.getElementById('aimo-notification-styles')) {
+    const style = document.createElement('style');
+    style.id = 'aimo-notification-styles';
+    style.textContent = `
+      @keyframes aimo-notification-slide-in {
+        from {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+      @keyframes aimo-notification-slide-out {
+        from {
+          transform: translateX(0);
+          opacity: 1;
+        }
+        to {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+      }
+      @keyframes aimo-spin {
+        to { transform: rotate(360deg); }
+      }
+    `;
+    document.head.appendChild(style);
+  } else {
+    // Add spin animation if styles exist but spin is missing
+    const existingStyle = document.getElementById('aimo-notification-styles');
+    if (existingStyle && !existingStyle.textContent?.includes('aimo-spin')) {
+      existingStyle.textContent += `
+        @keyframes aimo-spin {
+          to { transform: rotate(360deg); }
+        }
+      `;
+    }
+  }
+
+  notification.appendChild(spinner);
+  notification.appendChild(document.createTextNode(message));
+
+  document.body.appendChild(notification);
+
+  return notification;
 }
 
 /**
