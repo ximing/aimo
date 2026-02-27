@@ -213,8 +213,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 14,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added Settings tab to ConfigPage with category dropdown. Categories fetched from GET /api/v1/categories API. Settings saved to chrome.storage.local using getSettings/setSettings functions."
     },
     {
       "id": "US-015",

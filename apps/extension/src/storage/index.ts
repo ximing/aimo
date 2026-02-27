@@ -3,6 +3,46 @@ import type { Config, PendingItem } from '../types';
 // Storage keys
 const CONFIG_KEY = 'aimo_config';
 const PENDING_ITEMS_KEY = 'aimo_pending_items';
+const SETTINGS_KEY = 'aimo_settings';
+
+/**
+ * Extension settings interface
+ */
+export interface Settings {
+  defaultCategoryId?: string;
+  saveSourceUrl?: boolean;
+}
+
+/**
+ * Get settings from local storage
+ * @returns Settings object or default settings
+ */
+export async function getSettings(): Promise<Settings> {
+  try {
+    const result = await chrome.storage.local.get(SETTINGS_KEY);
+    return result[SETTINGS_KEY] ?? {};
+  } catch (error) {
+    throw new StorageError(
+      `Failed to get settings: ${error instanceof Error ? error.message : String(error)}`,
+      'getSettings'
+    );
+  }
+}
+
+/**
+ * Save settings to local storage
+ * @param settings - Settings to save
+ */
+export async function setSettings(settings: Settings): Promise<void> {
+  try {
+    await chrome.storage.local.set({ [SETTINGS_KEY]: settings });
+  } catch (error) {
+    throw new StorageError(
+      `Failed to save settings: ${error instanceof Error ? error.message : String(error)}`,
+      'setSettings'
+    );
+  }
+}
 
 /**
  * Storage error class for better error handling

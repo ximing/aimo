@@ -434,3 +434,22 @@ export async function getCurrentConfig(): Promise<Config | null> {
 export async function logout(): Promise<void> {
   await clearConfig();
 }
+
+/**
+ * Category interface
+ */
+export interface Category {
+  id: string;
+  name: string;
+  [key: string]: unknown;
+}
+
+/**
+ * Get user categories
+ * @returns Array of categories
+ */
+export async function getCategories(): Promise<Category[]> {
+  return apiRequest<Category[]>('/api/v1/categories', {
+    method: 'GET',
+  });
+}

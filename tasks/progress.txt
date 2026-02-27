@@ -178,3 +178,20 @@ Branch: ralph/chrome-extension-v1
   - Response format uses ResponseUtility.success/error helpers
   - Uses routing-controllers decorators (@Get, @Post, @Put, @Delete)
 ---
+
+## 2026-02-27 - US-014
+- Added getCategories() function to apps/extension/src/api/aimo.ts
+- Added Settings interface to apps/extension/src/types/index.ts
+- Added getSettings() and setSettings() functions to apps/extension/src/storage/index.ts
+- Updated ConfigPage to have Account and Settings tabs
+- Settings tab fetches categories from API and shows dropdown
+- User can select default category or clear selection
+- Setting saved to chrome.storage.local
+- Typecheck passes
+- Build passes
+- **Learnings for future iterations:**
+  - Settings stored separately from Config using SETTINGS_KEY ('aimo_settings')
+  - Categories fetched from GET /api/v1/categories endpoint
+  - useEffect loads categories when Settings tab is activated
+  - handleCategoryChange saves to storage immediately on change
+---

@@ -132,3 +132,11 @@ export class ApiError extends Error {
     this.name = 'ApiError';
   }
 }
+
+/** Extension settings */
+export interface Settings {
+  /** Default category ID for saving memos */
+  defaultCategoryId?: string;
+  /** Whether to save source URL with memos */
+  saveSourceUrl?: boolean;
+}

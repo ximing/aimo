@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { login, testConnection } from '../api/aimo.js';
+import { login, testConnection, getCategories, type Category } from '../api/aimo.js';
 import { setConfig } from '../storage/index.js';
+import { getSettings, setSettings } from '../storage/index.js';
 import type { Config } from '../types/index.js';
 
 interface ConfigPageProps {
@@ -27,6 +28,10 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
     initialErrorMessage ? { general: initialErrorMessage } : {}
   );
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [activeTab, setActiveTab] = useState<'account' | 'settings'>('account');
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
+  const [isLoadingCategories, setIsLoadingCategories] = useState(false);
 
   // Detect dark mode preference
   useEffect(() => {
@@ -49,6 +54,39 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
       }
     });
   }, []);
+
+  // Load settings and categories when switching to settings tab
+  useEffect(() => {
+    if (activeTab === 'settings') {
+      // Load saved settings
+      getSettings().then((settings) => {
+        setSelectedCategoryId(settings.defaultCategoryId || '');
+      });
+
+      // Fetch categories
+      setIsLoadingCategories(true);
+      getCategories()
+        .then((cats) => {
+          setCategories(cats);
+        })
+        .catch((err) => {
+          console.error('Failed to load categories:', err);
+        })
+        .finally(() => {
+          setIsLoadingCategories(false);
+        });
+    }
+  }, [activeTab]);
+
+  // Save settings when category changes
+  const handleCategoryChange = async (categoryId: string) => {
+    setSelectedCategoryId(categoryId);
+    const currentSettings = await getSettings();
+    await setSettings({
+      ...currentSettings,
+      defaultCategoryId: categoryId || undefined,
+    });
+  };
 
   const validateUrl = (value: string): boolean => {
     if (!value.trim()) {
@@ -292,6 +330,36 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
       color: isDarkMode ? '#9ca3af' : '#6b7280',
       textAlign: 'center' as const,
     },
+    tabs: {
+      display: 'flex',
+      gap: '8px',
+      marginBottom: '16px',
+    },
+    tab: {
+      flex: 1,
+      padding: '10px 16px',
+      fontSize: '14px',
+      fontWeight: 500,
+      borderRadius: '8px',
+      border: 'none',
+      cursor: 'pointer',
+      backgroundColor: isDarkMode ? '#374151' : '#f3f4f6',
+      color: isDarkMode ? '#d1d5db' : '#374151',
+    },
+    tabActive: {
+      backgroundColor: '#3b82f6',
+      color: '#ffffff',
+    },
+    select: {
+      padding: '10px 12px',
+      fontSize: '14px',
+      borderRadius: '8px',
+      border: `1px solid ${isDarkMode ? '#4b5563' : '#d1d5db'}`,
+      backgroundColor: isDarkMode ? '#374151' : '#ffffff',
+      color: isDarkMode ? '#f3f4f6' : '#1f2937',
+      outline: 'none',
+      cursor: 'pointer',
+    },
   };
 
   return (
@@ -304,8 +372,33 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} style={styles.form}>
-        {errors.general && <div style={styles.generalError}>{errors.general}</div>}
+      {/* Tab navigation */}
+      <div style={styles.tabs}>
+        <button
+          type="button"
+          onClick={() => setActiveTab('account')}
+          style={{
+            ...styles.tab,
+            ...(activeTab === 'account' ? styles.tabActive : {}),
+          }}
+        >
+          账号
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('settings')}
+          style={{
+            ...styles.tab,
+            ...(activeTab === 'settings' ? styles.tabActive : {}),
+          }}
+        >
+          设置
+        </button>
+      </div>
+
+      {activeTab === 'account' ? (
+        <form onSubmit={handleSubmit} style={styles.form}>
+          {errors.general && <div style={styles.generalError}>{errors.general}</div>}
 
         <div style={styles.fieldGroup}>
           <label htmlFor="url" style={styles.label}>
@@ -491,7 +584,37 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
         >
           {isLoading ? '登录中...' : '登录'}
         </button>
-      </form>
+        </form>
+      ) : (
+        <div style={styles.form}>
+          {/* Settings Tab */}
+          <div style={styles.fieldGroup}>
+            <label style={styles.label}>默认分类</label>
+            <select
+              value={selectedCategoryId}
+              onChange={(e) => handleCategoryChange(e.target.value)}
+              style={styles.select}
+              disabled={isLoadingCategories}
+            >
+              <option value="">不选择分类</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+            <span style={{ fontSize: '12px', color: isDarkMode ? '#9ca3af' : '#6b7280', marginTop: '4px' }}>
+              保存内容时将使用此分类
+            </span>
+          </div>
+
+          {isLoadingCategories && (
+            <div style={{ fontSize: '13px', color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
+              加载分类中...
+            </div>
+          )}
+        </div>
+      )}
 
       <div style={styles.footer}>首次使用？请先配置您的 AIMO 服务器地址</div>
     </div>
