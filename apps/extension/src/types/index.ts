@@ -101,6 +101,7 @@ export interface CreateMemoRequest {
   categoryId?: string;
   attachments?: string[];
   relationIds?: string[];
+  source?: string;
 }
 
 /** Memo DTO */

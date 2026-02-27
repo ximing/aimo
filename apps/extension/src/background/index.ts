@@ -1,5 +1,5 @@
 // Service worker for Chrome Extension
-import { addPendingItem, getPendingItemsCount, clearPendingItems } from '../storage';
+import { addPendingItem, getPendingItemsCount, clearPendingItems, getSettings } from '../storage';
 import { createMemo, downloadAndUploadImage, getCurrentConfig, isLoggedIn } from '../api/aimo';
 import { ApiError } from '../types';
 import type { ExtractedContent, Config } from '../types';
@@ -96,13 +96,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             throw new ApiError('请先登录', undefined, 'NOT_LOGGED_IN');
           }
 
+          // Get settings to check if source URL should be saved
+          const settings = await getSettings();
+          const saveSourceUrl = settings.saveSourceUrl ?? true;
+          const source = saveSourceUrl ? content.sourceUrl : undefined;
+
           // Handle image content - download and upload
           if (content.type === 'image') {
             const attachmentId = await downloadAndUploadImage(content.content);
             const memo = await createMemo(
               content.sourceTitle || '图片备忘录',
               content.sourceUrl,
-              [attachmentId]
+              [attachmentId],
+              source
             );
             return memo;
           }
@@ -110,7 +116,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           // Handle text content
           const memo = await createMemo(
             content.content,
-            content.sourceUrl
+            content.sourceUrl,
+            undefined,
+            source
           );
           return memo;
         })

@@ -206,3 +206,17 @@ Branch: ralph/chrome-extension-v1
   - Toggle uses custom button with sliding circle animation
   - State defaults to true using nullish coalescing: settings.saveSourceUrl ?? true
 ---
+
+## 2026-02-27 - US-016
+- Added source field to CreateMemoRequest in types/index.ts
+- Updated createMemo in api/aimo.ts to accept source parameter
+- Updated background script to get settings and check saveSourceUrl toggle
+- Passes source to createMemo when saveSourceUrl is enabled (defaults to true)
+- Typecheck passes
+- Build passes
+- **Learnings for future iterations:**
+  - Content script already captures sourceUrl in ExtractedContent
+  - Background script imports getSettings from storage module
+  - Uses nullish coalescing to default to true: settings.saveSourceUrl ?? true
+  - createMemo now accepts optional 4th parameter for source
+---

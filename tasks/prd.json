@@ -244,8 +244,8 @@
         "Typecheck passes"
       ],
       "priority": 16,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Content script already captures sourceUrl. Background script gets settings and checks saveSourceUrl toggle. Passes source to createMemo function. createMemo updated to accept source parameter. Build passes."
     },
     {
       "id": "US-017",
