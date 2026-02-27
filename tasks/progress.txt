@@ -67,3 +67,14 @@ Branch: ralph/chrome-extension-v1
   - Badges are added in the footer section near category and isPublic badges
   - Use a tags for external links to ensure proper accessibility
 ---
+
+## 2026-02-27 - US-006
+- Verified existing extension build in apps/extension
+- Ran `pnpm build` - builds successfully
+- Verified manifest.json is in dist/
+- Verified popup (dist/popup.js, dist/src/popup/index.html), background (dist/background/index.js), content scripts (dist/content/index.js) are built
+- Typecheck passes
+- **Learnings for future iterations:**
+  - Extension is in apps/extension with Vite build system
+  - Build output is in dist/ folder
+---
