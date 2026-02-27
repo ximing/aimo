@@ -439,6 +439,20 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
                     公开
                   </a>
                 )}
+                {/* Source URL Badge */}
+                {memo.source && (
+                  <a
+                    href={memo.source}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 text-xs rounded-full hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors cursor-pointer"
+                    title={`来源: ${memo.source}`}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Link className="w-3 h-3" />
+                    来源
+                  </a>
+                )}
                 {/* Show relevance score if available (from vector search) */}
                 {'relevanceScore' in memo &&
                   (memo as MemoListItemWithScoreDto).relevanceScore !== undefined && (

@@ -55,3 +55,15 @@ Branch: ralph/chrome-extension-v1
   - Memo interface in memo.schema.ts is separate from MemoRecord in schema.ts - need to update both
   - Controller passes DTO data directly to service createMemo method
 ---
+
+## 2026-02-27 - US-005
+- Added source URL badge to MemoCard component in apps/web/src/pages/home/components/memo-card.tsx
+- Badge shows Link icon with "来源" text when memo.source exists
+- Clicking opens source URL in new tab
+- Uses green color scheme for visibility in both light and dark themes
+- Build passes
+- **Learnings for future iterations:**
+  - MemoListItemDto already has source field from US-001
+  - Badges are added in the footer section near category and isPublic badges
+  - Use a tags for external links to ensure proper accessibility
+---
