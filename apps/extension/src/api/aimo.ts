@@ -218,19 +218,22 @@ export async function testConnection(url: string): Promise<boolean> {
  * @param sourceUrl - Source URL (used for content formatting)
  * @param attachmentIds - Optional array of attachment IDs
  * @param source - Optional source URL to save as memo source field
+ * @param categoryId - Optional category ID
  * @returns Created memo
  */
 export async function createMemo(
   content: string,
   sourceUrl: string,
   attachmentIds?: string[],
-  source?: string
+  source?: string,
+  categoryId?: string
 ): Promise<CreateMemoResponse> {
   const memoData: CreateMemoRequest = {
     content: formatContentWithSource(content, sourceUrl),
     type: 'text',
     attachments: attachmentIds,
     source,
+    categoryId,
   };
 
   return apiRequest<CreateMemoResponse>('/api/v1/memos', {

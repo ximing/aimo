@@ -220,3 +220,15 @@ Branch: ralph/chrome-extension-v1
   - Uses nullish coalescing to default to true: settings.saveSourceUrl ?? true
   - createMemo now accepts optional 4th parameter for source
 ---
+
+## 2026-02-27 - US-017
+- Updated createMemo in api/aimo.ts to accept categoryId parameter
+- Updated background script to get defaultCategoryId from settings
+- Passes categoryId to createMemo when set in settings
+- Typecheck passes
+- Build passes
+- **Learnings for future iterations:**
+  - createMemo accepts optional 5th parameter for categoryId
+  - Settings.defaultCategoryId comes from chrome.storage.local via getSettings()
+  - Category ID is only sent if user has configured a default category in settings
+---

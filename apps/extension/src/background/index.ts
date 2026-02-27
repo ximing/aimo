@@ -96,10 +96,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             throw new ApiError('请先登录', undefined, 'NOT_LOGGED_IN');
           }
 
-          // Get settings to check if source URL should be saved
+          // Get settings
           const settings = await getSettings();
           const saveSourceUrl = settings.saveSourceUrl ?? true;
           const source = saveSourceUrl ? content.sourceUrl : undefined;
+          const categoryId = settings.defaultCategoryId;
 
           // Handle image content - download and upload
           if (content.type === 'image') {
@@ -108,7 +109,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
               content.sourceTitle || '图片备忘录',
               content.sourceUrl,
               [attachmentId],
-              source
+              source,
+              categoryId
             );
             return memo;
           }
@@ -118,7 +120,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             content.content,
             content.sourceUrl,
             undefined,
-            source
+            source,
+            categoryId
           );
           return memo;
         })
