@@ -196,8 +196,8 @@
         "Typecheck passes"
       ],
       "priority": 13,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Already exists in apps/server/src/controllers/v1/category.controller.ts"
     },
     {
       "id": "US-014",
