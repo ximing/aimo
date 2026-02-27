@@ -12,6 +12,7 @@ interface FormErrors {
   url?: string;
   email?: string;
   password?: string;
+  token?: string;
   general?: string;
 }
 
@@ -19,6 +20,8 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
   const [url, setUrl] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [token, setToken] = useState('');
+  const [loginMethod, setLoginMethod] = useState<'password' | 'token'>('password');
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>(
     initialErrorMessage ? { general: initialErrorMessage } : {}
@@ -77,12 +80,18 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
       }
     }
 
-    if (!email.trim()) {
-      newErrors.email = '请输入用户名/邮箱';
-    }
+    if (loginMethod === 'password') {
+      if (!email.trim()) {
+        newErrors.email = '请输入用户名/邮箱';
+      }
 
-    if (!password) {
-      newErrors.password = '请输入密码';
+      if (!password) {
+        newErrors.password = '请输入密码';
+      }
+    } else {
+      if (!token.trim()) {
+        newErrors.token = '请输入 Token';
+      }
     }
 
     setErrors(newErrors);
@@ -103,24 +112,35 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
       // Normalize URL - add https:// if no protocol specified
       const normalizedUrl = url.startsWith('http') ? url : `https://${url}`;
 
-      // First save the URL to config temporarily for the login call
-      await setConfig(normalizedUrl, '', '');
+      let finalToken: string;
+      let username: string;
 
-      // Try to login
-      const loginResponse = await login(email, password);
+      if (loginMethod === 'token') {
+        // Token login - use provided token directly
+        finalToken = token.trim();
 
-      // Save complete config
-      await setConfig(
-        normalizedUrl,
-        loginResponse.token,
-        loginResponse.user.nickname || loginResponse.user.email
-      );
+        // Save config with token
+        await setConfig(normalizedUrl, finalToken, 'Token 用户');
+        username = 'Token 用户';
+      } else {
+        // Password login - call login API
+        // First save the URL to config temporarily for the login call
+        await setConfig(normalizedUrl, '', '');
+
+        // Try to login
+        const loginResponse = await login(email, password);
+        finalToken = loginResponse.token;
+        username = loginResponse.user.nickname || loginResponse.user.email;
+
+        // Save complete config
+        await setConfig(normalizedUrl, finalToken, username);
+      }
 
       // Notify parent with saved config
       const config: Config = {
         url: normalizedUrl,
-        token: loginResponse.token,
-        username: loginResponse.user.nickname || loginResponse.user.email,
+        token: finalToken,
+        username,
       };
 
       onConfigSaved(config);
@@ -322,53 +342,139 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
           )}
         </div>
 
+        {/* Login method toggle */}
         <div style={styles.fieldGroup}>
-          <label htmlFor="email" style={styles.label}>
-            用户名 / 邮箱
-          </label>
-          <input
-            id="email"
-            type="text"
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-              if (errors.email) {
-                setErrors((prev) => ({ ...prev, email: undefined }));
-              }
-            }}
-            placeholder="your@email.com"
+          <div
             style={{
-              ...styles.input,
-              ...(errors.email ? styles.inputError : {}),
+              display: 'flex',
+              gap: '8px',
+              marginBottom: '4px',
             }}
-            disabled={isLoading}
-          />
-          {errors.email && <span style={styles.errorText}>{errors.email}</span>}
+          >
+            <button
+              type="button"
+              onClick={() => setLoginMethod('password')}
+              style={{
+                flex: 1,
+                padding: '8px 12px',
+                fontSize: '13px',
+                fontWeight: 500,
+                borderRadius: '6px',
+                border: 'none',
+                cursor: isLoading ? 'not-allowed' : 'pointer',
+                backgroundColor: loginMethod === 'password'
+                  ? '#3b82f6'
+                  : (isDarkMode ? '#374151' : '#e5e7eb'),
+                color: loginMethod === 'password'
+                  ? '#ffffff'
+                  : (isDarkMode ? '#d1d5db' : '#374151'),
+                opacity: isLoading ? 0.6 : 1,
+              }}
+              disabled={isLoading}
+            >
+              密码登录
+            </button>
+            <button
+              type="button"
+              onClick={() => setLoginMethod('token')}
+              style={{
+                flex: 1,
+                padding: '8px 12px',
+                fontSize: '13px',
+                fontWeight: 500,
+                borderRadius: '6px',
+                border: 'none',
+                cursor: isLoading ? 'not-allowed' : 'pointer',
+                backgroundColor: loginMethod === 'token'
+                  ? '#3b82f6'
+                  : (isDarkMode ? '#374151' : '#e5e7eb'),
+                color: loginMethod === 'token'
+                  ? '#ffffff'
+                  : (isDarkMode ? '#d1d5db' : '#374151'),
+                opacity: isLoading ? 0.6 : 1,
+              }}
+              disabled={isLoading}
+            >
+              Token 登录
+            </button>
+          </div>
         </div>
 
-        <div style={styles.fieldGroup}>
-          <label htmlFor="password" style={styles.label}>
-            密码
-          </label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => {
-              setPassword(e.target.value);
-              if (errors.password) {
-                setErrors((prev) => ({ ...prev, password: undefined }));
-              }
-            }}
-            placeholder="••••••••"
-            style={{
-              ...styles.input,
-              ...(errors.password ? styles.inputError : {}),
-            }}
-            disabled={isLoading}
-          />
-          {errors.password && <span style={styles.errorText}>{errors.password}</span>}
-        </div>
+        {loginMethod === 'password' ? (
+          <>
+            <div style={styles.fieldGroup}>
+              <label htmlFor="email" style={styles.label}>
+                用户名 / 邮箱
+              </label>
+              <input
+                id="email"
+                type="text"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (errors.email) {
+                    setErrors((prev) => ({ ...prev, email: undefined }));
+                  }
+                }}
+                placeholder="your@email.com"
+                style={{
+                  ...styles.input,
+                  ...(errors.email ? styles.inputError : {}),
+                }}
+                disabled={isLoading}
+              />
+              {errors.email && <span style={styles.errorText}>{errors.email}</span>}
+            </div>
+
+            <div style={styles.fieldGroup}>
+              <label htmlFor="password" style={styles.label}>
+                密码
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (errors.password) {
+                    setErrors((prev) => ({ ...prev, password: undefined }));
+                  }
+                }}
+                placeholder="••••••••"
+                style={{
+                  ...styles.input,
+                  ...(errors.password ? styles.inputError : {}),
+                }}
+                disabled={isLoading}
+              />
+              {errors.password && <span style={styles.errorText}>{errors.password}</span>}
+            </div>
+          </>
+        ) : (
+          <div style={styles.fieldGroup}>
+            <label htmlFor="token" style={styles.label}>
+              Token
+            </label>
+            <input
+              id="token"
+              type="password"
+              value={token}
+              onChange={(e) => {
+                setToken(e.target.value);
+                if (errors.token) {
+                  setErrors((prev) => ({ ...prev, token: undefined }));
+                }
+              }}
+              placeholder="请输入您的 API Token"
+              style={{
+                ...styles.input,
+                ...(errors.token ? styles.inputError : {}),
+              }}
+              disabled={isLoading}
+            />
+            {errors.token && <span style={styles.errorText}>{errors.token}</span>}
+          </div>
+        )}
 
         <button
           type="submit"
