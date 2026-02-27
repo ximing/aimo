@@ -240,6 +240,7 @@ function updateToolbarContent(): void {
   const isImage = currentSelection.type === 'image';
   const typeLabel = isImage ? '图片' : '文本';
   const typeIcon = isImage ? getImageIconSVG() : getTextIconSVG();
+  const saveText = isImage ? '保存图片到 AIMO' : '保存到 AIMO';
 
   toolbar.innerHTML = `
     ${getLogoSVG()}
@@ -250,7 +251,7 @@ function updateToolbarContent(): void {
     <div class="aimo-divider"></div>
     <button class="aimo-save-btn" id="aimo-save-btn">
       ${getSaveIconSVG()}
-      <span>保存到 AIMO</span>
+      <span>${saveText}</span>
     </button>
   `;
 
@@ -557,16 +558,83 @@ function handleImageClick(event: MouseEvent): void {
     event.preventDefault();
     event.stopPropagation();
 
-    const rect = element.getBoundingClientRect();
-    currentSelection = {
-      type: 'image',
-      content: imageUrl,
-      sourceUrl: window.location.href,
-      sourceTitle: document.title,
-    };
+    showImageToolbar(element, imageUrl);
+  }
+}
 
-    showToolbar();
-    positionToolbar(rect);
+/**
+ * Show toolbar for image (used by both hover and click)
+ */
+function showImageToolbar(element: HTMLElement, imageUrl: string): void {
+  const rect = element.getBoundingClientRect();
+  currentSelection = {
+    type: 'image',
+    content: imageUrl,
+    sourceUrl: window.location.href,
+    sourceTitle: document.title,
+  };
+
+  showToolbar();
+  positionToolbar(rect);
+}
+
+/**
+ * Handle image hover - shows toolbar on mouseenter
+ */
+let imageHoverTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function handleImageHover(event: MouseEvent): void {
+  const target = event.target as HTMLElement;
+
+  // Skip if hovering inside the AIMO toolbar
+  if (target.closest('#aimo-toolbar-container')) return;
+
+  // Check if the element or its parent has an image
+  let element: HTMLElement | null = target;
+  let imageUrl: string | null = null;
+
+  // Try to find image on the hovered element or its parents
+  while (element && element !== document.body) {
+    imageUrl = extractImageUrl(element);
+    if (imageUrl && hasVisibleImage(element)) {
+      break;
+    }
+    imageUrl = null;
+    element = element.parentElement;
+  }
+
+  if (imageUrl && element) {
+    // Clear any pending hide
+    if (imageHoverTimeout) {
+      clearTimeout(imageHoverTimeout);
+      imageHoverTimeout = null;
+    }
+
+    // Show toolbar after a short delay to avoid flashing
+    imageHoverTimeout = setTimeout(() => {
+      showImageToolbar(element!, imageUrl!);
+    }, 300);
+  }
+}
+
+/**
+ * Handle mouse leaving an image - hides toolbar
+ */
+function handleImageLeave(event: MouseEvent): void {
+  const target = event.target as HTMLElement;
+
+  // Skip if leaving from the AIMO toolbar
+  if (target.closest('#aimo-toolbar-container')) return;
+
+  // Clear pending show timeout
+  if (imageHoverTimeout) {
+    clearTimeout(imageHoverTimeout);
+    imageHoverTimeout = null;
+  }
+
+  // Hide toolbar if it's showing an image
+  if (currentSelection?.type === 'image') {
+    hideToolbar();
   }
 }
 
@@ -617,6 +685,10 @@ document.addEventListener('selectionchange', debouncedSelectionChange);
 
 // Listen for image clicks
 document.addEventListener('click', handleImageClick);
+
+// Listen for image hover (with passive for performance)
+document.addEventListener('mouseover', handleImageHover, { passive: true });
+document.addEventListener('mouseout', handleImageLeave, { passive: true });
 
 // Listen for clicks outside toolbar (delayed to avoid immediate close on selection)
 document.addEventListener(

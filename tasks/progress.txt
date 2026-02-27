@@ -110,3 +110,18 @@ Branch: ralph/chrome-extension-v1
   - Captures sourceUrl and sourceTitle when text is selected
   - Handles both text and image content types
 ---
+
+## 2026-02-27 - US-009
+- Added image hover support to content script in apps/extension/src/content/index.ts
+- Added mouseover/mouseout event listeners for image hover detection
+- Shows toolbar after 300ms delay on hover to avoid flashing
+- Hides toolbar when mouse leaves image
+- Button shows '保存图片到 AIMO' text for images
+- Still supports click-based image saving as fallback
+- Typecheck passes
+- Build passes
+- **Learnings for future iterations:**
+  - Used setTimeout with 300ms delay to avoid showing button on brief mouseover
+  - Image hover and click handlers share showImageToolbar() function
+  - hasVisibleImage() checks for both <img> tags and background-image styles
+---
