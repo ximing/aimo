@@ -195,3 +195,14 @@ Branch: ralph/chrome-extension-v1
   - useEffect loads categories when Settings tab is activated
   - handleCategoryChange saves to storage immediately on change
 ---
+
+## 2026-02-27 - US-015
+- Added saveSourceUrl toggle to Settings tab in ConfigPage
+- Toggle defaults to enabled (true)
+- Setting saved to chrome.storage.local using setSettings()
+- Typecheck passes
+- Build passes
+- **Learnings for future iterations:**
+  - Toggle uses custom button with sliding circle animation
+  - State defaults to true using nullish coalescing: settings.saveSourceUrl ?? true
+---

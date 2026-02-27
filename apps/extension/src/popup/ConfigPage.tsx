@@ -31,6 +31,7 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
   const [activeTab, setActiveTab] = useState<'account' | 'settings'>('account');
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
+  const [saveSourceUrl, setSaveSourceUrl] = useState<boolean>(true);
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
 
   // Detect dark mode preference
@@ -61,6 +62,7 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
       // Load saved settings
       getSettings().then((settings) => {
         setSelectedCategoryId(settings.defaultCategoryId || '');
+        setSaveSourceUrl(settings.saveSourceUrl ?? true);
       });
 
       // Fetch categories
@@ -85,6 +87,16 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
     await setSettings({
       ...currentSettings,
       defaultCategoryId: categoryId || undefined,
+    });
+  };
+
+  // Save settings when source URL toggle changes
+  const handleSaveSourceUrlChange = async (enabled: boolean) => {
+    setSaveSourceUrl(enabled);
+    const currentSettings = await getSettings();
+    await setSettings({
+      ...currentSettings,
+      saveSourceUrl: enabled,
     });
   };
 
@@ -613,6 +625,44 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
               加载分类中...
             </div>
           )}
+
+          {/* Save Source URL Toggle */}
+          <div style={{ ...styles.fieldGroup, marginTop: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <label style={styles.label}>保存来源网址</label>
+              <button
+                type="button"
+                onClick={() => handleSaveSourceUrlChange(!saveSourceUrl)}
+                style={{
+                  width: '44px',
+                  height: '24px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  backgroundColor: saveSourceUrl ? '#3b82f6' : (isDarkMode ? '#4b5563' : '#d1d5db'),
+                  position: 'relative',
+                  transition: 'background-color 0.2s',
+                }}
+              >
+                <div
+                  style={{
+                    width: '20px',
+                    height: '20px',
+                    borderRadius: '50%',
+                    backgroundColor: '#ffffff',
+                    position: 'absolute',
+                    top: '2px',
+                    left: saveSourceUrl ? '22px' : '2px',
+                    transition: 'left 0.2s',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                  }}
+                />
+              </button>
+            </div>
+            <span style={{ fontSize: '12px', color: isDarkMode ? '#9ca3af' : '#6b7280', marginTop: '4px' }}>
+              保存网页内容时记录来源网址
+            </span>
+          </div>
         </div>
       )}
 

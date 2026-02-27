@@ -229,8 +229,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 15,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added toggle to Settings tab. Toggle defaults to enabled. Setting saved to chrome.storage.local using setSettings()."
     },
     {
       "id": "US-016",
