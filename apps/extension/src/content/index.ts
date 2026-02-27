@@ -345,9 +345,9 @@ async function handleSaveClick(): Promise<void> {
   if (!currentSelection) return;
 
   try {
-    // Store the content to session storage
+    // Save directly to memo via API
     const message = {
-      type: 'SAVE_CONTENT',
+      type: 'SAVE_TO_MEMO',
       data: currentSelection,
     };
 
@@ -355,8 +355,8 @@ async function handleSaveClick(): Promise<void> {
     const response = await chrome.runtime.sendMessage(message);
 
     if (response?.success) {
-      // Open popup after saving to storage
-      chrome.runtime.sendMessage({ type: 'OPEN_POPUP' });
+      // Show success message
+      showNotification('已保存到 AIMO', 'success');
       hideToolbar();
     } else {
       console.error('Failed to save content:', response?.error);

@@ -140,3 +140,16 @@ Branch: ralph/chrome-extension-v1
   - api/aimo exports isLoggedIn, createMemo, downloadAndUploadImage, getCurrentConfig
   - Error handling wraps ApiError and generic errors consistently
 ---
+
+## 2026-02-27 - US-011
+- Updated content script handleSaveClick to use SAVE_TO_MEMO instead of SAVE_CONTENT
+- Content script now directly creates memo via API instead of saving to local storage
+- Shows success notification with '已保存到 AIMO' message
+- Shows error notification on failure
+- Typecheck passes
+- Build passes
+- **Learnings for future iterations:**
+  - SAVE_CONTENT saves to pending items in chrome.storage for later sync
+  - SAVE_TO_MEMO creates memo directly via API
+  - Both message types are handled by background script
+---
