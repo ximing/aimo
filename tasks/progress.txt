@@ -125,3 +125,18 @@ Branch: ralph/chrome-extension-v1
   - Image hover and click handlers share showImageToolbar() function
   - hasVisibleImage() checks for both <img> tags and background-image styles
 ---
+
+## 2026-02-27 - US-010
+- Added background script API handler in apps/extension/src/background/index.ts
+- Added SAVE_TO_MEMO handler for creating memos via API (both text and image)
+- Added CHECK_AUTH handler for checking login status
+- Uses getCurrentConfig from api/aimo (not getConfig which is internal)
+- ApiError imported from types/index.ts
+- Typecheck passes
+- Build passes
+- **Learnings for future iterations:**
+  - Background script runs in service worker context (not DOM)
+  - Message handlers use return true to keep channel open for async responses
+  - api/aimo exports isLoggedIn, createMemo, downloadAndUploadImage, getCurrentConfig
+  - Error handling wraps ApiError and generic errors consistently
+---

@@ -1,6 +1,8 @@
 // Service worker for Chrome Extension
 import { addPendingItem, getPendingItemsCount, clearPendingItems } from '../storage';
-import type { ExtractedContent } from '../types';
+import { createMemo, downloadAndUploadImage, getCurrentConfig, isLoggedIn } from '../api/aimo';
+import { ApiError } from '../types';
+import type { ExtractedContent, Config } from '../types';
 
 console.log('AIMO background service worker started');
 
@@ -81,6 +83,70 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           });
         });
       return true; // Keep channel open for async response
+    }
+
+    case 'SAVE_TO_MEMO': {
+      // Save content directly to memo via API
+      const content = message.data as ExtractedContent;
+
+      // Check if user is logged in
+      isLoggedIn()
+        .then(async (loggedIn) => {
+          if (!loggedIn) {
+            throw new ApiError('请先登录', undefined, 'NOT_LOGGED_IN');
+          }
+
+          // Handle image content - download and upload
+          if (content.type === 'image') {
+            const attachmentId = await downloadAndUploadImage(content.content);
+            const memo = await createMemo(
+              content.sourceTitle || '图片备忘录',
+              content.sourceUrl,
+              [attachmentId]
+            );
+            return memo;
+          }
+
+          // Handle text content
+          const memo = await createMemo(
+            content.content,
+            content.sourceUrl
+          );
+          return memo;
+        })
+        .then((memo) => {
+          sendResponse({ success: true, memo });
+        })
+        .catch((error) => {
+          console.error('Failed to save to memo:', error);
+          const errorMessage = error instanceof ApiError
+            ? error.message
+            : (error instanceof Error ? error.message : String(error));
+          sendResponse({
+            success: false,
+            error: errorMessage,
+          });
+        });
+      return true; // Keep channel open for async response
+    }
+
+    case 'CHECK_AUTH': {
+      // Check if user is logged in and has valid config
+      getCurrentConfig()
+        .then((config: Config | null) => {
+          if (!config?.url || !config?.token) {
+            sendResponse({ success: false, loggedIn: false, error: '未配置' });
+            return;
+          }
+          sendResponse({ success: true, loggedIn: true, config });
+        })
+        .catch((error: unknown) => {
+          sendResponse({
+            success: false,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        });
+      return true;
     }
 
     case 'OPEN_POPUP':
