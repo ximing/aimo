@@ -146,12 +146,13 @@ export class SchedulerService {
    * 为单个规则发送推送
    */
   private async sendPushForRule(rule: PushRuleDto): Promise<void> {
-    // Generate content based on content type
-    const content = await this.contentGenerator.generate(rule.contentType, rule.uid);
-
     // Get channels and send
     for (const channelConfig of rule.channels) {
       try {
+        // Generate content based on the channel's msgType
+        const msgType = channelConfig.msgType || 'text';
+        const content = await this.contentGenerator.generate(rule.contentType, rule.uid, msgType);
+
         const channel = this.channelFactory.getChannel(channelConfig);
         await channel.send({
           title: content.title,

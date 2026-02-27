@@ -16,12 +16,12 @@ export class DailyContentGenerator implements ContentGenerator {
   /**
    * Generate content based on content type
    */
-  async generate(contentType: string, uid: string): Promise<PushContent> {
+  async generate(contentType: string, uid: string, msgType: 'text' | 'html' = 'text'): Promise<PushContent> {
     switch (contentType) {
       case 'daily_pick':
-        return this.generateDailyPick(uid);
+        return this.generateDailyPick(uid, msgType);
       case 'daily_memos':
-        return this.generateDailyMemos(uid);
+        return this.generateDailyMemos(uid, msgType);
       default:
         throw new Error(`Unsupported content type: ${contentType}`);
     }
@@ -30,7 +30,7 @@ export class DailyContentGenerator implements ContentGenerator {
   /**
    * Generate daily_pick: get 3 recommended memos using AI (same as home page daily recommendations)
    */
-  private async generateDailyPick(uid: string): Promise<PushContent> {
+  private async generateDailyPick(uid: string, msgType: 'text' | 'html'): Promise<PushContent> {
     // Use the same recommendation service as the home page
     const recommendedMemos = await this.recommendationService.generateDailyRecommendations(uid);
 
@@ -38,6 +38,7 @@ export class DailyContentGenerator implements ContentGenerator {
       return {
         title: '今日推荐',
         msg: '<p>你还没有记录任何备忘录，来创建一个吧！</p>',
+        isHtml: true,
       };
     }
 
@@ -50,10 +51,13 @@ export class DailyContentGenerator implements ContentGenerator {
         ? new Date(memo.createdAt).toLocaleDateString('zh-CN')
         : '';
 
+      // Only escape HTML for text msgType, not for html
+      const displayContent = msgType === 'html' ? content : this.escapeHtml(content);
+
       return `
         <div style="margin-bottom: 16px; padding: 12px; background: #f5f5f5; border-radius: 8px;">
           <p style="color: #999; font-size: 12px; margin: 0 0 8px 0;">${createdAt}</p>
-          <p style="margin: 0; font-size: 14px; line-height: 1.6;">${this.escapeHtml(content)}</p>
+          <p style="margin: 0; font-size: 14px; line-height: 1.6;">${displayContent}</p>
         </div>
       `;
     }).join('');
@@ -64,13 +68,13 @@ export class DailyContentGenerator implements ContentGenerator {
       </div>
     `;
 
-    return { title, msg };
+    return { title, msg, isHtml: true };
   }
 
   /**
    * Generate daily_memos: get all memos created today
    */
-  private async generateDailyMemos(uid: string): Promise<PushContent> {
+  private async generateDailyMemos(uid: string, msgType: 'text' | 'html'): Promise<PushContent> {
     const memosTable = await this.lanceDb.openTable('memos');
 
     // Get start and end of today
@@ -91,6 +95,7 @@ export class DailyContentGenerator implements ContentGenerator {
       return {
         title: '今日备忘录',
         msg: '<p>今天还没有记录任何备忘录</p>',
+        isHtml: true,
       };
     }
 
@@ -101,10 +106,14 @@ export class DailyContentGenerator implements ContentGenerator {
       const createdAt = memo.createdAt
         ? new Date(memo.createdAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
         : '';
+
+      // Only escape HTML for text msgType, not for html
+      const displayContent = msgType === 'html' ? content : this.escapeHtml(content);
+
       return `
         <div style="margin-bottom: 12px; padding: 8px; background: #f5f5f5; border-radius: 6px;">
           <p style="color: #999; font-size: 12px; margin: 0 0 4px 0;">${createdAt}</p>
-          <p style="margin: 0;">${this.escapeHtml(content)}</p>
+          <p style="margin: 0;">${displayContent}</p>
         </div>
       `;
     }).join('');
@@ -115,7 +124,7 @@ export class DailyContentGenerator implements ContentGenerator {
       </div>
     `;
 
-    return { title, msg };
+    return { title, msg, isHtml: true };
   }
 
   /**
