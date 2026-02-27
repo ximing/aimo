@@ -431,7 +431,7 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
                     href={`/share/${memo.memoId}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary-50 dark:bg-primary-950/30 text-primary-700 dark:text-primary-400 text-xs rounded-full hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-pink-50 dark:bg-pink-950/30 text-pink-700 dark:text-pink-400 text-xs rounded-full hover:bg-pink-100 dark:hover:bg-pink-900/50 transition-colors cursor-pointer"
                     title="公开笔记 - 点击新窗口打开"
                     onClick={(e) => e.stopPropagation()}
                   >

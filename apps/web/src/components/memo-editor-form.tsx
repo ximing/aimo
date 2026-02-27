@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { view, useService } from '@rabjs/react';
 import { MemoService } from '../services/memo.service';
 import { CategoryService } from '../services/category.service';
@@ -6,11 +6,10 @@ import { TagService } from '../services/tag.service';
 import { AIToolsService } from '../services/ai-tools.service';
 import { ToastService } from '../services/toast.service';
 import { AttachmentUploader, type AttachmentItem } from './attachment-uploader';
-import { TagInput } from './tag-input';
 import { attachmentApi } from '../api/attachment';
 import { ocrApi } from '../api/ocr';
 import * as memoApi from '../api/memo';
-import { ScanText, Paperclip, X, Check, ChevronDown, Plus, Globe, Lock, Sparkles, Tags } from 'lucide-react';
+import { ScanText, Paperclip, X, Check, ChevronDown, Plus, Globe, Lock, Sparkles, Tags, Hash, Link, Link2Off } from 'lucide-react';
 import type { MemoListItemDto, MemoWithAttachmentsDto } from '@aimo/dto';
 import { CreateCategoryModal } from '../pages/home/components/create-category-modal';
 import { AIToolSelectorModal, TagGeneratorModal } from './ai';
@@ -45,6 +44,14 @@ export const MemoEditorForm = view(
     const [isPublic, setIsPublic] = useState<boolean>(initialMemo?.isPublic ?? false);
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
     const [isAIDropdownOpen, setIsAIDropdownOpen] = useState(false);
+    const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
+    const [tagInputValue, setTagInputValue] = useState('');
+    const [tagHighlightedIndex, setTagHighlightedIndex] = useState(-1);
+    // 从 localStorage 读取推荐相关笔记的设置
+    const [enableRecommendations, setEnableRecommendations] = useState<boolean>(() => {
+      const stored = localStorage.getItem('memo_enableRecommendations');
+      return stored !== null ? JSON.parse(stored) : true;
+    });
 
     // 当 defaultCategoryId 变化时，同步更新 selectedCategoryId（创建模式下）
     useEffect(() => {
@@ -59,6 +66,8 @@ export const MemoEditorForm = view(
     const suggestionsRef = useRef<HTMLDivElement>(null);
     const categoryDropdownRef = useRef<HTMLDivElement>(null);
     const aiDropdownRef = useRef<HTMLDivElement>(null);
+    const tagDropdownRef = useRef<HTMLDivElement>(null);
+    const tagInputRef = useRef<HTMLInputElement>(null);
     const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
     const memoService = useService(MemoService);
@@ -138,6 +147,22 @@ export const MemoEditorForm = view(
         return () => document.removeEventListener('mousedown', handleClickOutside);
       }
     }, [isAIDropdownOpen]);
+
+    // 点击外部关闭标签下拉框
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (tagDropdownRef.current && !tagDropdownRef.current.contains(event.target as Node)) {
+          setIsTagDropdownOpen(false);
+          setTagInputValue('');
+          setTagHighlightedIndex(-1);
+        }
+      };
+
+      if (isTagDropdownOpen) {
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+      }
+    }, [isTagDropdownOpen]);
 
     // 点击编辑区外部时收起（避免选择类别时失焦）
     useEffect(() => {
@@ -264,8 +289,8 @@ export const MemoEditorForm = view(
         clearTimeout(debounceTimerRef.current);
       }
 
-      // 当内容变化时，使用防抖获取推荐的相关 memo
-      if (value.trim().length >= 2) {
+      // 当内容变化时，使用防抖获取推荐的相关 memo（仅在启用推荐时）
+      if (enableRecommendations && value.trim().length >= 2) {
         // 设置新的防抖计时器（延迟 500ms）
         debounceTimerRef.current = setTimeout(() => {
           searchRelationSuggestions(value);
@@ -365,16 +390,31 @@ export const MemoEditorForm = view(
       }
     };
 
-    const handleAttachmentClick = () => {
+    const handleAttachmentMouseDown = (e: React.MouseEvent) => {
+      // 阻止默认的 focus 行为，防止触发展开逻辑
+      // 然后直接触发文件选择
+      e.preventDefault();
       fileInputRef.current?.click();
+      // 同时展开编辑器
+      if (!isEditorActive) {
+        setIsEditorActive(true);
+      }
     };
 
-    const handleOCRClick = () => {
+    const handleOCRMouseDown = (e: React.MouseEvent) => {
+      e.preventDefault();
       ocrFileInputRef.current?.click();
+      if (!isEditorActive) {
+        setIsEditorActive(true);
+      }
     };
 
-    const handleAIToolClick = () => {
+    const handleAIToolMouseDown = (e: React.MouseEvent) => {
+      e.preventDefault();
       setIsAIDropdownOpen(!isAIDropdownOpen);
+      if (!isEditorActive) {
+        setIsEditorActive(true);
+      }
     };
 
     const handleSelectAITool = (toolId: string) => {
@@ -617,6 +657,95 @@ export const MemoEditorForm = view(
       setSelectedCategoryId(categoryId);
     };
 
+    // 计算标签建议
+    const tagSuggestions = useMemo(() => {
+      const existingTags = tagService.tags;
+      if (tagInputValue.trim()) {
+        const normalizedInput = tagInputValue.trim().toLowerCase();
+        return existingTags
+          .filter(
+            (tag) =>
+              tag.name.toLowerCase().includes(normalizedInput) &&
+              !selectedTags.some((t) => t.toLowerCase() === tag.name.toLowerCase())
+          )
+          .slice(0, 5);
+      }
+      return existingTags
+        .filter((tag) => !selectedTags.some((t) => t.toLowerCase() === tag.name.toLowerCase()))
+        .slice(0, 5);
+    }, [tagInputValue, tagService.tags, selectedTags]);
+
+    const addTag = (tagName: string) => {
+      const normalizedName = tagName.trim();
+      if (!normalizedName) return;
+
+      const isDuplicate = selectedTags.some((t) => t.toLowerCase() === normalizedName.toLowerCase());
+      if (isDuplicate) {
+        setTagInputValue('');
+        return;
+      }
+
+      setSelectedTags([...selectedTags, normalizedName]);
+      setTagInputValue('');
+      setTagHighlightedIndex(-1);
+    };
+
+    const removeTag = (tagToRemove: string) => {
+      setSelectedTags(selectedTags.filter((t) => t !== tagToRemove));
+    };
+
+    const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (tagSuggestions.length > 0) {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          setTagHighlightedIndex((prev) => (prev < tagSuggestions.length - 1 ? prev + 1 : prev));
+          return;
+        }
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          setTagHighlightedIndex((prev) => (prev > 0 ? prev - 1 : -1));
+          return;
+        }
+        if (e.key === 'Enter' && tagHighlightedIndex >= 0) {
+          e.preventDefault();
+          addTag(tagSuggestions[tagHighlightedIndex].name);
+          setIsTagDropdownOpen(false);
+          return;
+        }
+      }
+
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (tagInputValue.trim()) {
+          addTag(tagInputValue);
+          setIsTagDropdownOpen(false);
+        }
+        return;
+      }
+
+      if (e.key === 'Escape') {
+        setIsTagDropdownOpen(false);
+        setTagInputValue('');
+        setTagHighlightedIndex(-1);
+        return;
+      }
+
+      if (e.key === 'Backspace' && !tagInputValue && selectedTags.length > 0) {
+        removeTag(selectedTags[selectedTags.length - 1]);
+        return;
+      }
+    };
+
+    const handleTagButtonClick = () => {
+      if (!isEditorActive) {
+        setIsEditorActive(true);
+      }
+      setIsTagDropdownOpen(!isTagDropdownOpen);
+      if (!isTagDropdownOpen) {
+        setTimeout(() => tagInputRef.current?.focus(), 0);
+      }
+    };
+
     const showCategorySelector = mode === 'edit' || isEditorActive;
 
     // Get selected category name
@@ -736,14 +865,28 @@ export const MemoEditorForm = view(
               </div>
             )}
 
-            {/* 标签输入区域 */}
-            {showCategorySelector && (
-              <TagInput
-                tags={selectedTags}
-                onTagsChange={setSelectedTags}
-                existingTags={tagService.tags}
-                disabled={loading}
-              />
+            {/* 标签展示区域 */}
+            {showCategorySelector && selectedTags.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2">
+                {selectedTags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-800 rounded-full text-xs text-primary-700 dark:text-primary-300"
+                  >
+                    <Hash className="w-3 h-3" />
+                    <span>{tag}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeTag(tag)}
+                      disabled={loading}
+                      className="text-primary-400 hover:text-primary-600 dark:text-primary-500 dark:hover:text-primary-300 transition-colors disabled:opacity-50 cursor-pointer"
+                      aria-label={`Remove tag ${tag}`}
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
             )}
             {/* 隐藏的文件输入 */}
             <input
@@ -773,7 +916,7 @@ export const MemoEditorForm = view(
               <div className="flex items-center gap-1">
                 <button
                   type="button"
-                  onClick={handleAttachmentClick}
+                  onMouseDown={handleAttachmentMouseDown}
                   disabled={loading || attachments.length >= 9}
                   className="p-2 text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-500 hover:bg-gray-100 dark:hover:bg-dark-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label="添加附件"
@@ -782,10 +925,87 @@ export const MemoEditorForm = view(
                   <Paperclip className="w-5 h-5" />
                 </button>
 
+                {/* 标签按钮 */}
+                <div className="relative" ref={tagDropdownRef}>
+                  <button
+                    type="button"
+                    onClick={handleTagButtonClick}
+                    disabled={loading}
+                    className={`p-2 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                      isTagDropdownOpen
+                        ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-100 dark:hover:bg-dark-700'
+                    }`}
+                    aria-label="添加标签"
+                    title="添加标签"
+                    aria-expanded={isTagDropdownOpen}
+                    aria-haspopup="listbox"
+                  >
+                    <Hash className="w-5 h-5" />
+                  </button>
+
+                  {/* 标签下拉框 */}
+                  {isTagDropdownOpen && (
+                    <div className="absolute left-0 top-full mt-1 w-56 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg shadow-lg z-50">
+                      <div className="p-2 border-b border-gray-100 dark:border-dark-700">
+                        <input
+                          ref={tagInputRef}
+                          type="text"
+                          value={tagInputValue}
+                          onChange={(e) => {
+                            setTagInputValue(e.target.value);
+                            setTagHighlightedIndex(-1);
+                          }}
+                          onKeyDown={handleTagInputKeyDown}
+                          placeholder="输入标签名，回车添加..."
+                          className="w-full px-2 py-1.5 text-sm bg-gray-50 dark:bg-dark-700 border border-gray-200 dark:border-dark-600 rounded text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-primary-400 dark:focus-within:border-primary-500"
+                          autoFocus
+                        />
+                      </div>
+                      {tagSuggestions.length > 0 && (
+                        <div className="max-h-40 overflow-y-auto py-1">
+                          <div className="px-3 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-dark-700">
+                            {tagInputValue.trim() ? '建议标签' : '热门标签'}
+                          </div>
+                          {tagSuggestions.map((tag, index) => (
+                            <button
+                              key={tag.tagId}
+                              type="button"
+                              onClick={() => {
+                                addTag(tag.name);
+                                setIsTagDropdownOpen(false);
+                              }}
+                              onMouseEnter={() => setTagHighlightedIndex(index)}
+                              className={`w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors ${
+                                index === tagHighlightedIndex
+                                  ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
+                                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-700'
+                              }`}
+                            >
+                              <span className="flex items-center gap-2">
+                                <span className="text-primary-600 dark:text-primary-400">#</span>
+                                {tag.name}
+                              </span>
+                              {tag.usageCount !== undefined && tag.usageCount > 0 && (
+                                <span className="text-xs text-gray-400 dark:text-gray-500">{tag.usageCount}</span>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {tagInputValue.trim() && tagSuggestions.length === 0 && (
+                        <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400 text-center">
+                          按 Enter 创建新标签
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 {/* OCR 识别按钮 */}
                 <button
                   type="button"
-                  onClick={handleOCRClick}
+                  onMouseDown={handleOCRMouseDown}
                   disabled={loading}
                   className="p-2 text-gray-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-500 hover:bg-gray-100 dark:hover:bg-dark-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label="OCR 文字识别"
@@ -798,7 +1018,7 @@ export const MemoEditorForm = view(
                 <div className="relative" ref={aiDropdownRef}>
                   <button
                     type="button"
-                    onClick={handleAIToolClick}
+                    onMouseDown={handleAIToolMouseDown}
                     disabled={loading}
                     className={`p-2 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                       isAIDropdownOpen
@@ -831,22 +1051,18 @@ export const MemoEditorForm = view(
 
               {/* 右侧：操作按钮 */}
               <div className="flex items-center gap-2">
-                {mode === 'edit' && onCancel && (
-                  <button
-                    type="button"
-                    onClick={handleCancelEdit}
-                    disabled={loading}
-                    className="px-3 py-1.5 border border-gray-200 dark:border-dark-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors disabled:opacity-50 cursor-pointer"
-                    aria-label="Cancel editing"
-                  >
-                    取消
-                  </button>
-                )}
                 {showCategorySelector && (
                   <div className="relative" ref={categoryDropdownRef}>
                     <button
                       type="button"
-                      onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        // 确保编辑器展开
+                        if (!isEditorActive) {
+                          setIsEditorActive(true);
+                        }
+                        setIsCategoryDropdownOpen(!isCategoryDropdownOpen);
+                      }}
                       disabled={loading}
                       className={`flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
                         selectedCategoryId
@@ -930,11 +1146,18 @@ export const MemoEditorForm = view(
                 {/* Public Toggle */}
                 <button
                   type="button"
-                  onClick={() => setIsPublic(!isPublic)}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    // 确保编辑器展开
+                    if (!isEditorActive) {
+                      setIsEditorActive(true);
+                    }
+                    setIsPublic(!isPublic);
+                  }}
                   disabled={loading}
                   className={`flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
                     isPublic
-                      ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
+                      ? 'text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-900/20'
                       : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-700'
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                   aria-pressed={isPublic}
@@ -943,6 +1166,47 @@ export const MemoEditorForm = view(
                   {isPublic ? <Globe size={14} /> : <Lock size={14} />}
                   <span>{isPublic ? '公开' : '私有'}</span>
                 </button>
+                {/* 推荐相关笔记开关 */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newValue = !enableRecommendations;
+                    setEnableRecommendations(newValue);
+                    localStorage.setItem('memo_enableRecommendations', JSON.stringify(newValue));
+                    // 关闭推荐时清除已有推荐
+                    if (!newValue) {
+                      setSuggestions([]);
+                      setShowSuggestions(false);
+                    }
+                  }}
+                  disabled={loading}
+                  className={`flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    enableRecommendations
+                      ? 'text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/20'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-700'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  aria-pressed={enableRecommendations}
+                  title={enableRecommendations ? '推荐相关笔记已开启' : '推荐相关笔记已关闭'}
+                >
+                  {enableRecommendations ? (
+                    <Link size={14} />
+                  ) : (
+                    <Link2Off size={14} />
+                  )}
+                  <span>推荐</span>
+                </button>
+                {/* 取消按钮 - 仅编辑模式显示，紧挨着保存按钮 */}
+                {mode === 'edit' && onCancel && (
+                  <button
+                    type="button"
+                    onClick={handleCancelEdit}
+                    disabled={loading}
+                    className="px-3 py-1.5 border border-gray-200 dark:border-dark-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors disabled:opacity-50 cursor-pointer"
+                    aria-label="Cancel editing"
+                  >
+                    取消
+                  </button>
+                )}
                 <button
                   type="submit"
                   disabled={loading || !content.trim()}
