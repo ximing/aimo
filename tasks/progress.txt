@@ -78,3 +78,19 @@ Branch: ralph/chrome-extension-v1
   - Extension is in apps/extension with Vite build system
   - Build output is in dist/ folder
 ---
+
+## 2026-02-27 - US-007
+- Added token input option to ConfigPage login form in apps/extension/src/popup/ConfigPage.tsx
+- Added tab toggle between password login and token login methods
+- Updated form validation to handle both login methods
+- Updated handleSubmit to support both password login (calls /api/v1/auth/login) and token login (uses token directly)
+- Token is saved to chrome.storage on success
+- Error messages shown on failure
+- Typecheck passes
+- Build passes
+- **Learnings for future iterations:**
+  - Extension popup UI uses inline styles (React.CSSProperties)
+  - Login uses setConfig() from storage/index.js to save credentials
+  - Both login methods ultimately save to chrome.storage with url, token, and username
+  - Config type has username as optional
+---
