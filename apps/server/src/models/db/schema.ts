@@ -56,6 +56,7 @@ export const memosSchema = new Schema([
   new Field('categoryId', new Utf8(), true), // nullable category id (undefined = uncategorized)
   new Field('content', new Utf8(), false), // non-nullable memo content
   new Field('type', new Utf8(), true), // nullable memo type: 'text' | 'audio' | 'video' (defaults to 'text' if not set)
+  new Field('source', new Utf8(), true), // nullable source URL (e.g., from Chrome extension)
   new Field('attachments', new List(new Field('item', new Utf8(), true)), true), // nullable list of attachment IDs (URLs generated at runtime)
   new Field('tagIds', new List(new Field('item', new Utf8(), true)), true), // nullable list of tag IDs (new primary field)
   new Field(
@@ -89,6 +90,7 @@ export interface MemoRecord {
   categoryId?: string; // optional category id (undefined = uncategorized)
   content: string;
   type?: string; // optional memo type: 'text' | 'audio' | 'video' (defaults to 'text' if not set)
+  source?: string; // optional source URL (e.g., from Chrome extension)
   attachments?: string[]; // attachment IDs array (URLs generated at runtime)
   tags?: string[]; // optional array of tag strings (legacy, for backward compatibility)
   tagIds?: string[]; // optional array of tag IDs (new primary field)

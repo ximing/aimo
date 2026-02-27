@@ -19,3 +19,14 @@ Branch: ralph/chrome-extension-v1
   - After modifying DTOs, run `pnpm --filter @aimo/dto build` to regenerate types
   - Server typecheck requires logger package to be built first: `pnpm --filter @aimo/logger build`
 ---
+
+## 2026-02-27 - US-002
+- Added source field to memosSchema in apps/server/src/models/db/schema.ts using Arrow types (new Field('source', new Utf8(), true))
+- Added source?: string to MemoRecord interface
+- Typecheck passes
+- **Learnings for future iterations:**
+  - LanceDB schema is defined in apps/server/src/models/db/schema.ts
+  - Schema uses Apache Arrow types (Schema, Field, Utf8, etc.)
+  - Optional fields use nullable: true in the Field constructor
+  - TypeScript interfaces mirror the schema fields for type safety
+---
