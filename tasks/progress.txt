@@ -7,7 +7,11 @@ Branch: ralph/chrome-extension-v1
 ## Notes
 
 ## Codebase Patterns
-
+- Migrations are in apps/server/src/migrations/scripts/ and follow a numbered version pattern (e.g., 016-add-memo-source.ts)
+- Each migration exports a Migration object with version, tableName, description, and up() function
+- Register new migrations in apps/server/src/migrations/scripts/index.ts by importing and adding to ALL_MIGRATIONS array
+- Use LanceDB's addColumns() to add new columns, with valueSql: 'CAST(NULL AS STRING)' to explicitly set Utf8 type
+- Handle "already exists" errors gracefully by catching and returning early
 ---
 
 ## 2026-02-27 - US-001
@@ -29,4 +33,15 @@ Branch: ralph/chrome-extension-v1
   - Schema uses Apache Arrow types (Schema, Field, Utf8, etc.)
   - Optional fields use nullable: true in the Field constructor
   - TypeScript interfaces mirror the schema fields for type safety
+---
+
+## 2026-02-27 - US-003
+- Created migration script 016-add-memo-source.ts to add source column to memos table
+- Migration uses LanceDB's addColumns() with valueSql: 'CAST(NULL AS STRING)' to add nullable source column
+- Registered migration in index.ts (ALL_MIGRATIONS array)
+- Typecheck passes
+- **Learnings for future iterations:**
+  - Migration version numbers continue from existing migrations (latest was 015)
+  - Use try/catch to handle "already exists" errors gracefully
+  - Migration will run automatically on server startup via the migration executor
 ---
