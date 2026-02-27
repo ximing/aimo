@@ -165,7 +165,8 @@ export class MemoV1Controller {
         memoData.createdAt,
         memoData.updatedAt,
         memoData.tags,
-        memoData.tagIds
+        memoData.tagIds,
+        memoData.source
       );
       return ResponseUtility.success({
         message: 'Memo created successfully',

@@ -164,7 +164,8 @@ export class MemoService {
     createdAt?: number,
     updatedAt?: number,
     tags?: string[],
-    tagIds?: string[]
+    tagIds?: string[],
+    source?: string
   ): Promise<MemoWithAttachmentsDto> {
     try {
       if (!content || content.trim().length === 0) {
@@ -217,6 +218,7 @@ export class MemoService {
         isPublic: isPublic || false,
         createdAt: createdAt || now,
         updatedAt: updatedAt || now,
+        source: source || undefined,
       };
 
       // Prepare record for LanceDB with only attachment IDs

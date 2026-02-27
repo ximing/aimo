@@ -15,6 +15,7 @@ export interface Memo {
   isPublic?: boolean; // Whether this memo is public (visible to others without auth)
   createdAt: number; // timestamp in milliseconds
   updatedAt: number; // timestamp in milliseconds
+  source?: string; // Optional source URL (e.g., from Chrome extension)
 }
 
 export type NewMemo = Omit<Memo, 'createdAt' | 'updatedAt'> & {

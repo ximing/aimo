@@ -45,3 +45,13 @@ Branch: ralph/chrome-extension-v1
   - Use try/catch to handle "already exists" errors gracefully
   - Migration will run automatically on server startup via the migration executor
 ---
+
+## 2026-02-27 - US-004
+- Updated memo.service.ts createMemo() to accept source parameter and include it in memo object
+- Added source?: string to Memo interface in apps/server/src/models/db/memo.schema.ts
+- Updated memo.controller.ts to pass memoData.source to service
+- Typecheck passes
+- **Learnings for future iterations:**
+  - Memo interface in memo.schema.ts is separate from MemoRecord in schema.ts - need to update both
+  - Controller passes DTO data directly to service createMemo method
+---
