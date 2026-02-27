@@ -1,6 +1,6 @@
 # Ralph Progress: Chrome Extension
 
-Branch: ralph/chrome-extension
+Branch: ralph/chrome-extension-v1
 
 ## Status
 

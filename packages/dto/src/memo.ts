@@ -17,6 +17,7 @@ export interface CreateMemoDto {
   isPublic?: boolean; // Whether this memo is public (visible to others without auth)
   createdAt?: number; // Optional timestamp in milliseconds (for imports)
   updatedAt?: number; // Optional timestamp in milliseconds (for imports)
+  source?: string; // Source URL (e.g., from Chrome extension)
 }
 
 export interface UpdateMemoDto {
@@ -43,6 +44,7 @@ export interface MemoDto {
   isPublic?: boolean; // Whether this memo is public (visible to others without auth)
   createdAt: number; // timestamp in milliseconds
   updatedAt: number; // timestamp in milliseconds
+  source?: string; // Source URL (e.g., from Chrome extension)
 }
 
 /**
@@ -61,6 +63,7 @@ export interface MemoWithAttachmentsDto {
   isPublic?: boolean; // Whether this memo is public (visible to others without auth)
   createdAt: number; // timestamp in milliseconds
   updatedAt: number; // timestamp in milliseconds
+  source?: string; // Source URL (e.g., from Chrome extension)
 }
 
 /**
@@ -79,6 +82,7 @@ export interface MemoListItemDto {
   isPublic?: boolean; // Whether this memo is public (visible to others without auth)
   createdAt: number; // timestamp in milliseconds
   updatedAt: number; // timestamp in milliseconds
+  source?: string; // Source URL (e.g., from Chrome extension)
 }
 
 export interface MemoSearchOptionsDto {
