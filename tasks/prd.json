@@ -119,8 +119,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 8,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Uses selectionchange event instead of mouseup (more robust)"
     },
     {
       "id": "US-009",

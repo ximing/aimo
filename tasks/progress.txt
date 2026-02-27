@@ -94,3 +94,19 @@ Branch: ralph/chrome-extension-v1
   - Both login methods ultimately save to chrome.storage with url, token, and username
   - Config type has username as optional
 ---
+
+## 2026-02-27 - US-008
+- Verified existing text selection floating button implementation in apps/extension/src/content/index.ts
+- Content script listens to selectionchange event (more robust than mouseup)
+- When text is selected, floating button appears near selection
+- Button shows '保存到 AIMO' text (Save to AIMO in Chinese)
+- Uses shadow DOM for proper styling and visibility on any background
+- Button is hidden when no text is selected or on scroll
+- Typecheck passes
+- Build passes
+- **Learnings for future iterations:**
+  - Content script uses shadow DOM for style isolation
+  - Uses selectionchange event instead of mouseup for better detection
+  - Captures sourceUrl and sourceTitle when text is selected
+  - Handles both text and image content types
+---
