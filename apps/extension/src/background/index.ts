@@ -88,6 +88,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case 'SAVE_TO_MEMO': {
       // Save content directly to memo via API
       const content = message.data as ExtractedContent;
+      console.log('SAVE_TO_MEMO received:', content);
 
       // Check if user is logged in
       isLoggedIn()
@@ -126,6 +127,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           return memo;
         })
         .then((memo) => {
+          console.log('SAVE_TO_MEMO success, sending response:', { success: true, memo });
           sendResponse({ success: true, memo });
         })
         .catch((error) => {

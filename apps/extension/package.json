@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:build": "vite build --watch",
     "build": "tsc -b && vite build",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
@@ -18,10 +19,12 @@
   "devDependencies": {
     "@aimo/typescript-config": "workspace:*",
     "@eslint/js": "^9.39.1",
+    "@types/archiver": "^6.0.4",
     "@types/chrome": "^0.0.287",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
+    "archiver": "^6.0.2",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",

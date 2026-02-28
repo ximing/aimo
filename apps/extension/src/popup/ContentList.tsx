@@ -4,6 +4,7 @@ import {
   removePendingItem,
   updatePendingItem,
   clearPendingItems,
+  getSettings,
 } from '../storage/index.js';
 import { ContentItem } from './ContentItem.js';
 import { downloadAndUploadImage, createMemo } from '../api/aimo.js';
@@ -207,6 +208,11 @@ export function ContentList({ isDarkMode, onAuthError }: ContentListProps) {
     setSaveError(null);
     setSaveProgress({ completed: 0, total: pendingItems.length });
 
+    // Load settings for default category and source URL
+    const settings = await getSettings();
+    const defaultCategoryId = settings.defaultCategoryId;
+    const shouldSaveSourceUrl = settings.saveSourceUrl ?? true;
+
     const failedItems: PendingItem[] = [];
     let completedCount = 0;
 
@@ -240,8 +246,11 @@ export function ContentList({ isDarkMode, onAuthError }: ContentListProps) {
             }
           }
 
-          // Create memo
-          await createMemo(item.content, item.sourceUrl, attachmentIds);
+          // Determine source URL based on settings
+          const memoSource = shouldSaveSourceUrl ? item.sourceUrl : undefined;
+
+          // Create memo with category and source
+          await createMemo(item.content, item.sourceUrl, attachmentIds, memoSource, defaultCategoryId);
 
           // Remove successfully saved item from storage
           await removePendingItem(item.id);

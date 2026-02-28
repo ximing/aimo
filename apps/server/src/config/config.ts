@@ -117,6 +117,10 @@ export interface Config {
     language: string; // e.g., 'zh-cn', 'en-us'
     timezone: string; // e.g., 'Asia/Shanghai', 'UTC'
   };
+  ba: {
+    enabled: boolean;
+    token: string;
+  };
   env: string;
 }
 
@@ -249,6 +253,10 @@ export const config: Config = {
   locale: {
     language: process.env.LOCALE_LANGUAGE || 'zh-cn',
     timezone: process.env.LOCALE_TIMEZONE || 'Asia/Shanghai',
+  },
+  ba: {
+    enabled: process.env.BA_AUTH_ENABLED === 'true',
+    token: process.env.BA_AUTH_TOKEN || '',
   },
   env: process.env.NODE_ENV || 'development',
 };

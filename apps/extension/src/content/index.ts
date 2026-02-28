@@ -362,6 +362,9 @@ async function handleSaveClick(): Promise<void> {
     // Send message to background script
     const response = await chrome.runtime.sendMessage(message);
 
+    // DEBUG: Log the response to understand what's happening
+    console.log('SAVE_TO_MEMO response:', response);
+
     // Remove loading notification
     if (uploadNotification) {
       uploadNotification.remove();
@@ -552,30 +555,6 @@ function getSelectionRect(): DOMRect | null {
   return range.getBoundingClientRect();
 }
 
-/**
- * Handle text selection change
- */
-function handleSelectionChange(): void {
-  const selection = window.getSelection();
-  const selectedText = selection?.toString().trim() || '';
-
-  if (selectedText.length > 0) {
-    const rect = getSelectionRect();
-    if (rect) {
-      currentSelection = {
-        type: 'text',
-        content: selectedText,
-        sourceUrl: window.location.href,
-        sourceTitle: document.title,
-      };
-      showToolbar();
-      positionToolbar(rect);
-    }
-  } else if (!currentSelection || currentSelection.type === 'text') {
-    // Only hide if we had a text selection (not an image)
-    hideToolbar();
-  }
-}
 
 /**
  * Extract image URL from an element (handles <img> and background-image)
@@ -754,6 +733,10 @@ function handleDocumentClick(event: MouseEvent): void {
   // Don't hide if clicking inside the toolbar
   if (toolbarContainer.contains(target)) return;
 
+  // Don't hide if there's still a text selection (user is still selecting)
+  const selection = window.getSelection();
+  if (selection && selection.toString().trim().length > 0) return;
+
   // Don't hide if clicking on an image (handled by image click)
   if ((event.target as HTMLElement).tagName === 'IMG') return;
 
@@ -770,23 +753,35 @@ function handleScroll(): void {
   }
 }
 
-// Debounce utility
-function debounce<T extends (...args: unknown[]) => void>(
-  func: T,
-  wait: number
-): (...args: Parameters<T>) => void {
-  let timeout: ReturnType<typeof setTimeout> | null = null;
-  return (...args: Parameters<T>) => {
-    if (timeout) clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
+// Handle mouseup - show toolbar after selection completes
+function handleMouseUp(event: MouseEvent): void {
+  // Skip if clicking inside the AIMO toolbar
+  const target = event.target as HTMLElement;
+  if (target.closest('#aimo-toolbar-container')) return;
+
+  // Small delay to let selection stabilize
+  setTimeout(() => {
+    const selection = window.getSelection();
+    const selectedText = selection?.toString().trim() || '';
+
+    if (selectedText.length > 0) {
+      const rect = getSelectionRect();
+      if (rect) {
+        currentSelection = {
+          type: 'text',
+          content: selectedText,
+          sourceUrl: window.location.href,
+          sourceTitle: document.title,
+        };
+        showToolbar();
+        positionToolbar(rect);
+      }
+    }
+  }, 50);
 }
 
-// Debounced selection handler
-const debouncedSelectionChange = debounce(handleSelectionChange, 100);
-
-// Listen for selection changes
-document.addEventListener('selectionchange', debouncedSelectionChange);
+// Listen for mouseup to detect selection completion
+document.addEventListener('mouseup', handleMouseUp);
 
 // Listen for image clicks
 document.addEventListener('click', handleImageClick);

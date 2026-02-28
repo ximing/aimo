@@ -80,9 +80,9 @@ async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promi
       );
     }
 
-    // Check for API error
-    if (!data.success) {
-      throw new ApiError(data.message || '请求失败', response.status, 'API_ERROR');
+    // Check for API error (code !== 0 means error)
+    if (data.code !== 0) {
+      throw new ApiError(data.msg || '请求失败', response.status, 'API_ERROR');
     }
 
     return data.data as T;
@@ -136,10 +136,12 @@ export async function login(email: string, password: string): Promise<LoginRespo
       );
     }
 
-    if (!data.success) {
-      // Map specific error messages to Chinese
-      const message = data.message || '';
-      if (message.toLowerCase().includes('user not found')) {
+    // Handle both success (code=0) and error responses
+    // Backend returns { code: 0, msg: "...", data: {...} }
+    if (data.code !== 0) {
+      // Map specific error codes to Chinese messages
+      const message = data.msg || '';
+      if (data.code === 404 || message.toLowerCase().includes('user not found') || message.toLowerCase().includes('not found')) {
         throw new ApiError('用户不存在', response.status, 'USER_NOT_FOUND');
       }
       if (message.toLowerCase().includes('password')) {
@@ -309,8 +311,8 @@ export async function uploadAttachment(
       );
     }
 
-    if (!data.success) {
-      throw new ApiError(data.message || '上传失败', response.status, 'UPLOAD_ERROR');
+    if (data.code !== 0) {
+      throw new ApiError(data.msg || '上传失败', response.status, 'UPLOAD_ERROR');
     }
 
     return data.data as UploadAttachmentResponse;
@@ -451,11 +453,20 @@ export interface Category {
 }
 
 /**
+ * Categories response from API
+ */
+interface CategoriesResponse {
+  message: string;
+  categories: Category[];
+}
+
+/**
  * Get user categories
  * @returns Array of categories
  */
 export async function getCategories(): Promise<Category[]> {
-  return apiRequest<Category[]>('/api/v1/categories', {
+  const response = await apiRequest<CategoriesResponse>('/api/v1/categories', {
     method: 'GET',
   });
+  return response.categories;
 }

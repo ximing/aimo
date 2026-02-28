@@ -12,6 +12,7 @@
     "build:web": "pnpm --filter @aimo/web build",
     "build:server": "pnpm --filter @aimo/server build",
     "build:client": "pnpm --filter @aimo/client build",
+    "build:extension": "pnpm --filter @aimo/extension build",
     "lint": "turbo lint",
     "lint:fix": "turbo lint:fix",
     "format": "prettier --write .",

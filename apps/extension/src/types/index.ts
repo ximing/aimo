@@ -51,12 +51,12 @@ export interface ExtractedContent {
 
 /** API Response wrapper from AIMO server */
 export interface ApiResponse<T> {
-  /** Whether the request was successful */
-  success: boolean;
+  /** Response code (0 = success) */
+  code: number;
+  /** Response message */
+  msg: string;
   /** Response data */
   data?: T;
-  /** Error message if not successful */
-  message?: string;
 }
 
 /** Login request payload */

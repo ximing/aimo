@@ -115,7 +115,7 @@ export function MainPage({ config, onOpenSettings, onAuthError }: MainPageProps)
             <div style={styles.userInfo}>{config.username || '已登录'}</div>
           </div>
         </div>
-        <button onClick={onOpenSettings} style={styles.settingsButton} title="设置">
+        <button type="button" onClick={onOpenSettings} style={styles.settingsButton} title="设置">
           <SettingsIcon />
         </button>
       </div>
