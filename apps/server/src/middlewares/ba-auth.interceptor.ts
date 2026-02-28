@@ -1,5 +1,4 @@
-import { MiddlewareFn } from 'routing-controllers';
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { config } from '../config/config.js';
 
 /**
@@ -16,10 +15,10 @@ import { config } from '../config/config.js';
  * Expected header format:
  * Authorization: Bearer <token>
  */
-export const baAuthInterceptor: MiddlewareFn = async (
+export const baAuthInterceptor = async (
   request: Request,
   response: Response,
-  next: (err?: any) => any
+  next: NextFunction
 ) => {
   // Check if BA authentication is enabled
   if (!config.ba.enabled) {
