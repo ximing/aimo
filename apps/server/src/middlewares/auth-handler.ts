@@ -11,7 +11,12 @@ import type { UserInfoDto } from '@aimo/dto';
 const PROTECTED_PATHS = ['/api', '/home', '/ai-explore', '/gallery', '/settings'];
 
 // Paths that don't require authentication even if they match protected prefixes
-const AUTH_EXCLUDED_PATHS = ['/api/v1/auth/login', '/api/v1/auth/register', '/api/v1/memos/public'];
+const AUTH_EXCLUDED_PATHS = [
+  '/api/v1/auth/login',
+  '/api/v1/auth/register',
+  '/api/v1/memos/public',
+  '/api/v1/memos/ba',
+];
 
 /**
  * Check if the request path requires authentication

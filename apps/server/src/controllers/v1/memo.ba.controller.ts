@@ -24,10 +24,7 @@ export class MemoBAController {
    */
   @Post('/create')
   @UseBefore(baAuthInterceptor)
-  async createMemoByBA(
-    @QueryParam('uid') uid: string,
-    @Body() memoData: CreateMemoDto
-  ) {
+  async createMemoByBA(@QueryParam('uid') uid: string, @Body() memoData: CreateMemoDto) {
     try {
       if (!uid) {
         return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'User ID (uid) is required');

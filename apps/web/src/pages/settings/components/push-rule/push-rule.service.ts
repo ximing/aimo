@@ -22,8 +22,8 @@ export class PushRuleService extends Service {
       const response = await pushRulesApi.getPushRules();
 
       if (response.code === 0 && response.data) {
-        this.rules = (response.data.pushRules || []).filter(
-          (rule): rule is PushRuleDto => Boolean(rule)
+        this.rules = (response.data.pushRules || []).filter((rule): rule is PushRuleDto =>
+          Boolean(rule)
         );
         return { success: true };
       } else {

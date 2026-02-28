@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useService,view } from '@rabjs/react';
+import { useService, view } from '@rabjs/react';
 import { Bell, Plus, Pencil, Trash2 } from 'lucide-react';
 import type { PushRuleDto, PushChannelConfigDto } from '@aimo/dto';
 import { PushRuleService } from './push-rule.service';

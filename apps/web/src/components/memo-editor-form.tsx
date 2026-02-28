@@ -9,7 +9,21 @@ import { AttachmentUploader, type AttachmentItem } from './attachment-uploader';
 import { attachmentApi } from '../api/attachment';
 import { ocrApi } from '../api/ocr';
 import * as memoApi from '../api/memo';
-import { ScanText, Paperclip, X, Check, ChevronDown, Plus, Globe, Lock, Sparkles, Tags, Hash, Link, Link2Off } from 'lucide-react';
+import {
+  ScanText,
+  Paperclip,
+  X,
+  Check,
+  ChevronDown,
+  Plus,
+  Globe,
+  Lock,
+  Sparkles,
+  Tags,
+  Hash,
+  Link,
+  Link2Off,
+} from 'lucide-react';
 import type { MemoListItemDto, MemoWithAttachmentsDto } from '@aimo/dto';
 import { CreateCategoryModal } from '../pages/home/components/create-category-modal';
 import { AIToolSelectorModal, TagGeneratorModal } from './ai';
@@ -679,7 +693,9 @@ export const MemoEditorForm = view(
       const normalizedName = tagName.trim();
       if (!normalizedName) return;
 
-      const isDuplicate = selectedTags.some((t) => t.toLowerCase() === normalizedName.toLowerCase());
+      const isDuplicate = selectedTags.some(
+        (t) => t.toLowerCase() === normalizedName.toLowerCase()
+      );
       if (isDuplicate) {
         setTagInputValue('');
         return;
@@ -987,7 +1003,9 @@ export const MemoEditorForm = view(
                                 {tag.name}
                               </span>
                               {tag.usageCount !== undefined && tag.usageCount > 0 && (
-                                <span className="text-xs text-gray-400 dark:text-gray-500">{tag.usageCount}</span>
+                                <span className="text-xs text-gray-400 dark:text-gray-500">
+                                  {tag.usageCount}
+                                </span>
                               )}
                             </button>
                           ))}
@@ -1188,11 +1206,7 @@ export const MemoEditorForm = view(
                   aria-pressed={enableRecommendations}
                   title={enableRecommendations ? '推荐相关笔记已开启' : '推荐相关笔记已关闭'}
                 >
-                  {enableRecommendations ? (
-                    <Link size={14} />
-                  ) : (
-                    <Link2Off size={14} />
-                  )}
+                  {enableRecommendations ? <Link size={14} /> : <Link2Off size={14} />}
                   <span>推荐</span>
                 </button>
                 {/* 取消按钮 - 仅编辑模式显示，紧挨着保存按钮 */}

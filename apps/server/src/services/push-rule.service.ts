@@ -207,7 +207,10 @@ export class PushRuleService {
         });
         console.log(`Test push sent for rule ${ruleId} via channel ${channelConfig.type}`);
       } catch (error) {
-        console.error(`Failed to send test push for rule ${ruleId} via channel ${channelConfig.type}:`, error);
+        console.error(
+          `Failed to send test push for rule ${ruleId} via channel ${channelConfig.type}:`,
+          error
+        );
         throw error;
       }
     }

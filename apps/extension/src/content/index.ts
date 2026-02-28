@@ -555,7 +555,6 @@ function getSelectionRect(): DOMRect | null {
   return range.getBoundingClientRect();
 }
 
-
 /**
  * Extract image URL from an element (handles <img> and background-image)
  */

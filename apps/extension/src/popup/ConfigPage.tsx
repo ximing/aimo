@@ -412,190 +412,185 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
         <form onSubmit={handleSubmit} style={styles.form}>
           {errors.general && <div style={styles.generalError}>{errors.general}</div>}
 
-        <div style={styles.fieldGroup}>
-          <label htmlFor="url" style={styles.label}>
-            服务器地址
-          </label>
-          <input
-            id="url"
-            type="text"
-            value={url}
-            onChange={(e) => {
-              setUrl(e.target.value);
-              if (errors.url) {
-                setErrors((prev) => ({ ...prev, url: undefined }));
-              }
-            }}
-            placeholder="https://aimo.example.com"
-            style={{
-              ...styles.input,
-              ...(errors.url ? styles.inputError : {}),
-            }}
-            disabled={isLoading}
-          />
-          {errors.url ? (
-            <span style={styles.errorText}>{errors.url}</span>
-          ) : (
-            <button
-              type="button"
-              onClick={handleTestConnection}
-              style={styles.testButton}
-              disabled={isLoading}
-            >
-              测试连接
-            </button>
-          )}
-        </div>
-
-        {/* Login method toggle */}
-        <div style={styles.fieldGroup}>
-          <div
-            style={{
-              display: 'flex',
-              gap: '8px',
-              marginBottom: '4px',
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => setLoginMethod('password')}
-              style={{
-                flex: 1,
-                padding: '8px 12px',
-                fontSize: '13px',
-                fontWeight: 500,
-                borderRadius: '6px',
-                border: 'none',
-                cursor: isLoading ? 'not-allowed' : 'pointer',
-                backgroundColor: loginMethod === 'password'
-                  ? '#3b82f6'
-                  : (isDarkMode ? '#374151' : '#e5e7eb'),
-                color: loginMethod === 'password'
-                  ? '#ffffff'
-                  : (isDarkMode ? '#d1d5db' : '#374151'),
-                opacity: isLoading ? 0.6 : 1,
-              }}
-              disabled={isLoading}
-            >
-              密码登录
-            </button>
-            <button
-              type="button"
-              onClick={() => setLoginMethod('token')}
-              style={{
-                flex: 1,
-                padding: '8px 12px',
-                fontSize: '13px',
-                fontWeight: 500,
-                borderRadius: '6px',
-                border: 'none',
-                cursor: isLoading ? 'not-allowed' : 'pointer',
-                backgroundColor: loginMethod === 'token'
-                  ? '#3b82f6'
-                  : (isDarkMode ? '#374151' : '#e5e7eb'),
-                color: loginMethod === 'token'
-                  ? '#ffffff'
-                  : (isDarkMode ? '#d1d5db' : '#374151'),
-                opacity: isLoading ? 0.6 : 1,
-              }}
-              disabled={isLoading}
-            >
-              Token 登录
-            </button>
-          </div>
-        </div>
-
-        {loginMethod === 'password' ? (
-          <>
-            <div style={styles.fieldGroup}>
-              <label htmlFor="email" style={styles.label}>
-                用户名 / 邮箱
-              </label>
-              <input
-                id="email"
-                type="text"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  if (errors.email) {
-                    setErrors((prev) => ({ ...prev, email: undefined }));
-                  }
-                }}
-                placeholder="your@email.com"
-                style={{
-                  ...styles.input,
-                  ...(errors.email ? styles.inputError : {}),
-                }}
-                disabled={isLoading}
-              />
-              {errors.email && <span style={styles.errorText}>{errors.email}</span>}
-            </div>
-
-            <div style={styles.fieldGroup}>
-              <label htmlFor="password" style={styles.label}>
-                密码
-              </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  if (errors.password) {
-                    setErrors((prev) => ({ ...prev, password: undefined }));
-                  }
-                }}
-                placeholder="••••••••"
-                style={{
-                  ...styles.input,
-                  ...(errors.password ? styles.inputError : {}),
-                }}
-                disabled={isLoading}
-              />
-              {errors.password && <span style={styles.errorText}>{errors.password}</span>}
-            </div>
-          </>
-        ) : (
           <div style={styles.fieldGroup}>
-            <label htmlFor="token" style={styles.label}>
-              Token
+            <label htmlFor="url" style={styles.label}>
+              服务器地址
             </label>
             <input
-              id="token"
-              type="password"
-              value={token}
+              id="url"
+              type="text"
+              value={url}
               onChange={(e) => {
-                setToken(e.target.value);
-                if (errors.token) {
-                  setErrors((prev) => ({ ...prev, token: undefined }));
+                setUrl(e.target.value);
+                if (errors.url) {
+                  setErrors((prev) => ({ ...prev, url: undefined }));
                 }
               }}
-              placeholder="请输入您的 API Token"
+              placeholder="https://aimo.example.com"
               style={{
                 ...styles.input,
-                ...(errors.token ? styles.inputError : {}),
+                ...(errors.url ? styles.inputError : {}),
               }}
               disabled={isLoading}
             />
-            {errors.token && <span style={styles.errorText}>{errors.token}</span>}
+            {errors.url ? (
+              <span style={styles.errorText}>{errors.url}</span>
+            ) : (
+              <button
+                type="button"
+                onClick={handleTestConnection}
+                style={styles.testButton}
+                disabled={isLoading}
+              >
+                测试连接
+              </button>
+            )}
           </div>
-        )}
 
-        <button
-          type="submit"
-          style={styles.submitButton}
-          disabled={isLoading}
-          onMouseEnter={(e) => {
-            if (!isLoading) {
-              e.currentTarget.style.backgroundColor = '#2563eb';
-            }
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = '#3b82f6';
-          }}
-        >
-          {isLoading ? '登录中...' : '登录'}
-        </button>
+          {/* Login method toggle */}
+          <div style={styles.fieldGroup}>
+            <div
+              style={{
+                display: 'flex',
+                gap: '8px',
+                marginBottom: '4px',
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setLoginMethod('password')}
+                style={{
+                  flex: 1,
+                  padding: '8px 12px',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  borderRadius: '6px',
+                  border: 'none',
+                  cursor: isLoading ? 'not-allowed' : 'pointer',
+                  backgroundColor:
+                    loginMethod === 'password' ? '#3b82f6' : isDarkMode ? '#374151' : '#e5e7eb',
+                  color:
+                    loginMethod === 'password' ? '#ffffff' : isDarkMode ? '#d1d5db' : '#374151',
+                  opacity: isLoading ? 0.6 : 1,
+                }}
+                disabled={isLoading}
+              >
+                密码登录
+              </button>
+              <button
+                type="button"
+                onClick={() => setLoginMethod('token')}
+                style={{
+                  flex: 1,
+                  padding: '8px 12px',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  borderRadius: '6px',
+                  border: 'none',
+                  cursor: isLoading ? 'not-allowed' : 'pointer',
+                  backgroundColor:
+                    loginMethod === 'token' ? '#3b82f6' : isDarkMode ? '#374151' : '#e5e7eb',
+                  color: loginMethod === 'token' ? '#ffffff' : isDarkMode ? '#d1d5db' : '#374151',
+                  opacity: isLoading ? 0.6 : 1,
+                }}
+                disabled={isLoading}
+              >
+                Token 登录
+              </button>
+            </div>
+          </div>
+
+          {loginMethod === 'password' ? (
+            <>
+              <div style={styles.fieldGroup}>
+                <label htmlFor="email" style={styles.label}>
+                  用户名 / 邮箱
+                </label>
+                <input
+                  id="email"
+                  type="text"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (errors.email) {
+                      setErrors((prev) => ({ ...prev, email: undefined }));
+                    }
+                  }}
+                  placeholder="your@email.com"
+                  style={{
+                    ...styles.input,
+                    ...(errors.email ? styles.inputError : {}),
+                  }}
+                  disabled={isLoading}
+                />
+                {errors.email && <span style={styles.errorText}>{errors.email}</span>}
+              </div>
+
+              <div style={styles.fieldGroup}>
+                <label htmlFor="password" style={styles.label}>
+                  密码
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (errors.password) {
+                      setErrors((prev) => ({ ...prev, password: undefined }));
+                    }
+                  }}
+                  placeholder="••••••••"
+                  style={{
+                    ...styles.input,
+                    ...(errors.password ? styles.inputError : {}),
+                  }}
+                  disabled={isLoading}
+                />
+                {errors.password && <span style={styles.errorText}>{errors.password}</span>}
+              </div>
+            </>
+          ) : (
+            <div style={styles.fieldGroup}>
+              <label htmlFor="token" style={styles.label}>
+                Token
+              </label>
+              <input
+                id="token"
+                type="password"
+                value={token}
+                onChange={(e) => {
+                  setToken(e.target.value);
+                  if (errors.token) {
+                    setErrors((prev) => ({ ...prev, token: undefined }));
+                  }
+                }}
+                placeholder="请输入您的 API Token"
+                style={{
+                  ...styles.input,
+                  ...(errors.token ? styles.inputError : {}),
+                }}
+                disabled={isLoading}
+              />
+              {errors.token && <span style={styles.errorText}>{errors.token}</span>}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            style={styles.submitButton}
+            disabled={isLoading}
+            onMouseEnter={(e) => {
+              if (!isLoading) {
+                e.currentTarget.style.backgroundColor = '#2563eb';
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#3b82f6';
+            }}
+          >
+            {isLoading ? '登录中...' : '登录'}
+          </button>
         </form>
       ) : (
         <div style={styles.form}>
@@ -615,7 +610,13 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
                 </option>
               ))}
             </select>
-            <span style={{ fontSize: '12px', color: isDarkMode ? '#9ca3af' : '#6b7280', marginTop: '4px' }}>
+            <span
+              style={{
+                fontSize: '12px',
+                color: isDarkMode ? '#9ca3af' : '#6b7280',
+                marginTop: '4px',
+              }}
+            >
               保存内容时将使用此分类
             </span>
           </div>
@@ -639,7 +640,7 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
                   borderRadius: '12px',
                   border: 'none',
                   cursor: 'pointer',
-                  backgroundColor: saveSourceUrl ? '#3b82f6' : (isDarkMode ? '#4b5563' : '#d1d5db'),
+                  backgroundColor: saveSourceUrl ? '#3b82f6' : isDarkMode ? '#4b5563' : '#d1d5db',
                   position: 'relative',
                   transition: 'background-color 0.2s',
                 }}
@@ -659,7 +660,13 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
                 />
               </button>
             </div>
-            <span style={{ fontSize: '12px', color: isDarkMode ? '#9ca3af' : '#6b7280', marginTop: '4px' }}>
+            <span
+              style={{
+                fontSize: '12px',
+                color: isDarkMode ? '#9ca3af' : '#6b7280',
+                marginTop: '4px',
+              }}
+            >
               保存网页内容时记录来源网址
             </span>
           </div>

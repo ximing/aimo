@@ -1,8 +1,4 @@
-import type {
-  PushRuleDto,
-  CreatePushRuleDto,
-  UpdatePushRuleDto,
-} from '@aimo/dto';
+import type { PushRuleDto, CreatePushRuleDto, UpdatePushRuleDto } from '@aimo/dto';
 import request from '../utils/request';
 
 /**

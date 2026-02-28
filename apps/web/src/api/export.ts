@@ -5,9 +5,7 @@ import type { InternalAxiosRequestConfig } from 'axios';
  * Download attachment as Blob through secure proxy
  * This ensures proper authentication and permission checking
  */
-export const downloadAttachment = async (
-  attachmentId: string
-): Promise<Blob> => {
+export const downloadAttachment = async (attachmentId: string): Promise<Blob> => {
   const response = await request.get<unknown, Blob>(
     `/api/v1/attachments/${attachmentId}/download`,
     {

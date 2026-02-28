@@ -18,11 +18,12 @@ function chromeExtensionPlugin() {
 
       // Find actual JS files (not .map files)
       const assetsDir = resolve(distDir, 'assets');
-      let backgroundJs = '', contentJs = '';
+      let backgroundJs = '',
+        contentJs = '';
 
       if (existsSync(assetsDir)) {
         const files = readdirSync(assetsDir);
-        files.forEach(file => {
+        files.forEach((file) => {
           if (!file.endsWith('.map') && file.endsWith('.js')) {
             if (file.includes('background')) backgroundJs = file;
             else if (file.includes('content')) contentJs = file;

@@ -273,19 +273,19 @@ curl -X GET http://localhost:3000/api/v1/memos/memo_123456 \
 
 **Body Parameters (JSON):**
 
-| Parameter   | Type    | Required | Description              |
-| ----------- | ------- | -------- | ------------------------ |
-| content     | string  | Yes      | 笔记内容                 |
-| type        | string  | No       | 笔记类型 (默认: text)    |
-| attachments | array   | No       | 附件 ID 列表             |
-| categoryId  | string  | No       | 分类 ID                  |
-| tags        | array   | No       | 标签名称列表（新建标签） |
-| tagIds      | array   | No       | 标签 ID 列表（已有标签） |
-| relationIds | array   | No       | 相关笔记 ID 列表         |
-| isPublic    | boolean | No       | 是否公开（默认 false）   |
+| Parameter   | Type    | Required | Description                                 |
+| ----------- | ------- | -------- | ------------------------------------------- |
+| content     | string  | Yes      | 笔记内容                                    |
+| type        | string  | No       | 笔记类型 (默认: text)                       |
+| attachments | array   | No       | 附件 ID 列表                                |
+| categoryId  | string  | No       | 分类 ID                                     |
+| tags        | array   | No       | 标签名称列表（新建标签）                    |
+| tagIds      | array   | No       | 标签 ID 列表（已有标签）                    |
+| relationIds | array   | No       | 相关笔记 ID 列表                            |
+| isPublic    | boolean | No       | 是否公开（默认 false）                      |
 | source      | string  | No       | 来源标识（如 'web', 'extension', 'api' 等） |
-| createdAt   | number  | No       | 创建时间戳（毫秒）       |
-| updatedAt   | number  | No       | 更新时间戳（毫秒）       |
+| createdAt   | number  | No       | 创建时间戳（毫秒）                          |
+| updatedAt   | number  | No       | 更新时间戳（毫秒）                          |
 
 **Example Request:**
 
@@ -1318,11 +1318,11 @@ curl -X GET "http://localhost:3000/api/v1/memos/public/memo/memo_123456"
 
 **Error Responses:**
 
-| Status | Description |
-| ------ | ----------- |
-| 400    | 参数错误    |
+| Status | Description    |
+| ------ | -------------- |
+| 400    | 参数错误       |
 | 404    | 公开笔记不存在 |
-| 500    | 数据库错误  |
+| 500    | 数据库错误     |
 
 ---
 

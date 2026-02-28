@@ -53,7 +53,7 @@ export const baAuthInterceptor = async (
   if (token !== config.ba.token) {
     return response.status(401).json({
       success: false,
-      message: 'Invalid token',
+      message: 'Invalid BA token',
     });
   }
 

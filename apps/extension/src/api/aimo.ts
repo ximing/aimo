@@ -141,7 +141,11 @@ export async function login(email: string, password: string): Promise<LoginRespo
     if (data.code !== 0) {
       // Map specific error codes to Chinese messages
       const message = data.msg || '';
-      if (data.code === 404 || message.toLowerCase().includes('user not found') || message.toLowerCase().includes('not found')) {
+      if (
+        data.code === 404 ||
+        message.toLowerCase().includes('user not found') ||
+        message.toLowerCase().includes('not found')
+      ) {
         throw new ApiError('用户不存在', response.status, 'USER_NOT_FOUND');
       }
       if (message.toLowerCase().includes('password')) {

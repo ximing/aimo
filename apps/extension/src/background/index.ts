@@ -132,9 +132,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         })
         .catch((error) => {
           console.error('Failed to save to memo:', error);
-          const errorMessage = error instanceof ApiError
-            ? error.message
-            : (error instanceof Error ? error.message : String(error));
+          const errorMessage =
+            error instanceof ApiError
+              ? error.message
+              : error instanceof Error
+                ? error.message
+                : String(error);
           sendResponse({
             success: false,
             error: errorMessage,

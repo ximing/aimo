@@ -53,9 +53,7 @@ export const attachmentApi = {
   /**
    * 获取附件列表
    */
-  async getAttachments(
-    params?: GetAttachmentsParams
-  ): Promise<GetAttachmentsResponse> {
+  async getAttachments(params?: GetAttachmentsParams): Promise<GetAttachmentsResponse> {
     const response = await request.get<
       unknown,
       { code: number; data: GetAttachmentsResponse; message?: string }

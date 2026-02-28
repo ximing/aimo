@@ -16,7 +16,11 @@ export class DailyContentGenerator implements ContentGenerator {
   /**
    * Generate content based on content type
    */
-  async generate(contentType: string, uid: string, msgType: 'text' | 'html' = 'text'): Promise<PushContent> {
+  async generate(
+    contentType: string,
+    uid: string,
+    msgType: 'text' | 'html' = 'text'
+  ): Promise<PushContent> {
     switch (contentType) {
       case 'daily_pick':
         return this.generateDailyPick(uid, msgType);
@@ -45,22 +49,24 @@ export class DailyContentGenerator implements ContentGenerator {
     const title = '今日推荐';
 
     // Format all 3 memos
-    const memoItems = recommendedMemos.map((memo: MemoListItemDto) => {
-      const content = memo.content || '';
-      const createdAt = memo.createdAt
-        ? new Date(memo.createdAt).toLocaleDateString('zh-CN')
-        : '';
+    const memoItems = recommendedMemos
+      .map((memo: MemoListItemDto) => {
+        const content = memo.content || '';
+        const createdAt = memo.createdAt
+          ? new Date(memo.createdAt).toLocaleDateString('zh-CN')
+          : '';
 
-      // Only escape HTML for text msgType, not for html
-      const displayContent = msgType === 'html' ? content : this.escapeHtml(content);
+        // Only escape HTML for text msgType, not for html
+        const displayContent = msgType === 'html' ? content : this.escapeHtml(content);
 
-      return `
+        return `
         <div style="margin-bottom: 16px; padding: 12px; background: #f5f5f5; border-radius: 8px;">
           <p style="color: #999; font-size: 12px; margin: 0 0 8px 0;">${createdAt}</p>
           <p style="margin: 0; font-size: 14px; line-height: 1.6;">${displayContent}</p>
         </div>
       `;
-    }).join('');
+      })
+      .join('');
 
     const msg = `
       <div style="font-size: 14px; line-height: 1.6;">
@@ -101,22 +107,27 @@ export class DailyContentGenerator implements ContentGenerator {
 
     const title = `今日备忘录 (${todayMemos.length}条)`;
 
-    const memoItems = todayMemos.map((memo: any) => {
-      const content = memo.content || '';
-      const createdAt = memo.createdAt
-        ? new Date(memo.createdAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
-        : '';
+    const memoItems = todayMemos
+      .map((memo: any) => {
+        const content = memo.content || '';
+        const createdAt = memo.createdAt
+          ? new Date(memo.createdAt).toLocaleTimeString('zh-CN', {
+              hour: '2-digit',
+              minute: '2-digit',
+            })
+          : '';
 
-      // Only escape HTML for text msgType, not for html
-      const displayContent = msgType === 'html' ? content : this.escapeHtml(content);
+        // Only escape HTML for text msgType, not for html
+        const displayContent = msgType === 'html' ? content : this.escapeHtml(content);
 
-      return `
+        return `
         <div style="margin-bottom: 12px; padding: 8px; background: #f5f5f5; border-radius: 6px;">
           <p style="color: #999; font-size: 12px; margin: 0 0 4px 0;">${createdAt}</p>
           <p style="margin: 0;">${displayContent}</p>
         </div>
       `;
-    }).join('');
+      })
+      .join('');
 
     const msg = `
       <div style="font-size: 14px; line-height: 1.6;">

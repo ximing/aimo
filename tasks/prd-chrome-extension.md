@@ -17,9 +17,11 @@
 ## User Stories
 
 ### US-001: 实现 Chrome 插件基础结构
+
 **Description:** 作为开发者，我需要建立 Chrome 插件的基础目录结构和配置文件，以便后续功能开发。
 
 **Acceptance Criteria:**
+
 - [ ] manifest.json 配置正确，包含 popup、background、content_scripts 权限
 - [ ] Vite 构建配置支持 Chrome 插件开发
 - [ ] 项目结构清晰，分为 popup、background、content、types 等模块
@@ -27,9 +29,11 @@
 - [ ] 可以成功构建插件包
 
 ### US-002: 用户登录功能
+
 **Description:** 作为 AIMO 用户，我想要通过插件登录我的 AIMO 账号，以便保存内容到我的笔记。
 
 **Acceptance Criteria:**
+
 - [ ] 登录页面包含 AIMO 服务器地址输入框
 - [ ] 登录页面包含邮箱/用户名和密码输入框
 - [ ] 调用后端 `/api/v1/auth/login` 接口进行登录
@@ -41,18 +45,22 @@
 - [ ] Verify in browser using dev-browser skill
 
 ### US-002-B: 用户登录 - 使用 Token 直接登录
+
 **Description:** 作为已有 API Token 的用户，我想通过直接输入 Token 登录插件。
 
 **Acceptance Criteria:**
+
 - [ ] 登录页面提供 Token 登录选项
 - [ ] 输入 Token 后直接验证可用性
 - [ ] Token 验证成功保存到 chrome.storage
 - [ ] Typecheck 通过
 
 ### US-003: 选中文字显示浮层按钮
+
 **Description:** 作为用户，我在浏览器中选中一段文字后，希望看到浮层按钮来快速保存。
 
 **Acceptance Criteria:**
+
 - [ ] 用户在网页中选中文字时，自动在选区附近显示浮层按钮
 - [ ] 浮层按钮显示「保存到 AIMO」或类似文案
 - [ ] 按钮样式在深色/浅色页面都有良好可见性
@@ -62,9 +70,11 @@
 - [ ] Verify in browser using dev-browser skill
 
 ### US-004: 选中图片显示浮层按钮
+
 **Description:** 作为用户，我在浏览器中右键或悬停图片时，希望看到浮层按钮来保存图片。
 
 **Acceptance Criteria:**
+
 - [ ] 用户悬停图片时，显示浮层按钮
 - [ ] 按钮显示「保存图片到 AIMO」或类似文案
 - [ ] 点击按钮后开始下载图片
@@ -74,9 +84,11 @@
 - [ ] Verify in browser using dev-browser skill
 
 ### US-005: 保存内容到 AIMO
+
 **Description:** 作为用户，我点击浮层按钮后，希望内容被保存到 AIMO 并创建新 memo。
 
 **Acceptance Criteria:**
+
 - [ ] 文字内容直接创建为 text 类型 memo
 - [ ] 图片内容先下载到本地临时存储，再上传到 AIMO 附件接口
 - [ ] 上传完成后创建 memo 并关联附件
@@ -85,9 +97,11 @@
 - [ ] Typecheck 通过
 
 ### US-006: 插件设置页面 - 分类设置
+
 **Description:** 作为用户，我想在插件设置中指定保存 memo 的默认分类。
 
 **Acceptance Criteria:**
+
 - [ ] 设置页面包含「默认分类」选项
 - [ ] 调用后端 API 获取用户已有分类列表
 - [ ] 以下拉列表展示分类供用户选择
@@ -97,9 +111,11 @@
 - [ ] Verify in browser using dev-browser skill
 
 ### US-007: 插件设置页面 - 来源设置
+
 **Description:** 作为用户，我想设置是否保存来源 URL。
 
 **Acceptance Criteria:**
+
 - [ ] 设置页面包含「保存来源 URL」开关
 - [ ] 开关默认为开启状态
 - [ ] 开启时，创建 memo 时自动记录当前页面 URL
@@ -109,9 +125,11 @@
 - [ ] Verify in browser using dev-browser skill
 
 ### US-008: 后端 Memo 增加 source 字段
+
 **Description:** 作为开发者，我需要在 Memo 数据结构中增加 source 字段来存储来源 URL。
 
 **Acceptance Criteria:**
+
 - [ ] 在 packages/dto 的 Memo 相关类型中增加 `source?: string` 字段
 - [ ] 在 LanceDB 的 memo 表中增加 source 字段
 - [ ] 创建数据库迁移添加 source 列
@@ -120,9 +138,11 @@
 - [ ] 后端测试通过
 
 ### US-009: 前端展示来源 URL
+
 **Description:** 作为用户，我想在笔记列表中看到每条 memo 的来源 URL，点击可以跳转。
 
 **Acceptance Criteria:**
+
 - [ ] 在 memo 卡片上显示来源 URL 图标（当 source 有值时）
 - [ ] 当 memo 有 source 字段时显示图标
 - [ ] 点击图标打开 source URL（在新标签页）
@@ -198,6 +218,7 @@
 ### 分类 API
 
 需要确认后端是否有分类相关 API，如果没有需要新增：
+
 - GET /api/v1/categories - 获取用户分类列表
 
 ### 来源 URL 处理

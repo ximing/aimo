@@ -250,7 +250,13 @@ export function ContentList({ isDarkMode, onAuthError }: ContentListProps) {
           const memoSource = shouldSaveSourceUrl ? item.sourceUrl : undefined;
 
           // Create memo with category and source
-          await createMemo(item.content, item.sourceUrl, attachmentIds, memoSource, defaultCategoryId);
+          await createMemo(
+            item.content,
+            item.sourceUrl,
+            attachmentIds,
+            memoSource,
+            defaultCategoryId
+          );
 
           // Remove successfully saved item from storage
           await removePendingItem(item.id);
