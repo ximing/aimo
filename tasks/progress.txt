@@ -3,8 +3,29 @@
 Branch: ralph/drizzle-migration
 
 ## Status
+- US-003: COMPLETED
 
 ## Notes
+
+## 2026-03-01 - US-003
+- Configured drizzle-kit in apps/server/drizzle.config.ts
+- Added db scripts to package.json: db:generate, db:push, db:migrate, db:studio
+- Generated initial migration SQL in src/sources/database/migrations/
+- Implemented DrizzleAdapter.runMigrations() method:
+  - Reads SQL migration files from migrations directory
+  - Queries _migrations table for executed migrations (by hash)
+  - Executes pending migrations with database-type-specific syntax
+  - Records each migration in _migrations table with hash and timestamp
+- Integrated migration execution into app.ts startup sequence (after Drizzle init)
+- Added graceful shutdown cleanup for Drizzle connections
+- Typecheck passes, lint passes (warnings present but no errors)
+- **Learnings:**
+  - drizzle-kit must use .cjs extension with tsx (tsx node_modules/drizzle-kit/bin.cjs)
+  - Use process.env directly in drizzle.config.ts instead of importing config
+  - Migration hashes computed from file content for change detection
+  - MySQL/PostgreSQL: use .execute(), SQLite: use .run() for raw SQL execution
+
+---
 
 ## Codebase Patterns
 - Drizzle ORM integration uses drivers: drizzle-orm/mysql2, drizzle-orm/node-postgres, drizzle-orm/better-sqlite3
