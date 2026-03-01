@@ -12,7 +12,7 @@ export const ResponseUtil = {
   },
 
   error(code: number = ErrorCode.SYSTEM_ERROR, message?: string): ApiResponse<null> {
-    logger.error(code, message);
+    logger.error('ResponseUtil Error', {code, message});
     return {
       code,
       msg: message || ErrorMessage[code] || ErrorMessage[ErrorCode.SYSTEM_ERROR],
