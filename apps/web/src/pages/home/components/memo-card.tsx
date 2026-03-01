@@ -15,6 +15,7 @@ import {
   Folder,
   Copy,
   Globe,
+  ExternalLink,
   Sparkles,
 } from 'lucide-react';
 import { RelatedMemosModal } from './related-memos-modal';
@@ -439,18 +440,18 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
                     公开
                   </a>
                 )}
-                {/* Source URL Badge */}
+                {/* Source URL */}
                 {memo.source && (
                   <a
                     href={memo.source}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 text-xs rounded-full hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors cursor-pointer"
-                    title={`来源: ${memo.source}`}
+                    className="inline-flex items-center justify-center p-1 text-green-700 dark:text-green-400 rounded hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors cursor-pointer"
+                    title={memo.source}
+                    aria-label={`打开来源链接: ${memo.source}`}
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <Link className="w-3 h-3" />
-                    来源
+                    <ExternalLink className="w-3.5 h-3.5" />
                   </a>
                 )}
                 {/* Show relevance score if available (from vector search) */}

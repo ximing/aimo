@@ -29,7 +29,7 @@ export class MeowChannel implements PushChannel {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          msgType: msgType,
+          msgType: msgType.toLocaleLowerCase(),
           title: options.title,
           msg: options.msg,
           url: options.url,

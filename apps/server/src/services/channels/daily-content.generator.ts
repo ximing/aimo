@@ -18,14 +18,12 @@ export class DailyContentGenerator implements ContentGenerator {
    */
   async generate(
     contentType: string,
-    uid: string,
-    msgType: 'text' | 'html' = 'text'
-  ): Promise<PushContent> {
+    uid: string  ): Promise<PushContent> {
     switch (contentType) {
       case 'daily_pick':
-        return this.generateDailyPick(uid, msgType);
+        return this.generateDailyPick(uid);
       case 'daily_memos':
-        return this.generateDailyMemos(uid, msgType);
+        return this.generateDailyMemos(uid);
       default:
         throw new Error(`Unsupported content type: ${contentType}`);
     }
@@ -34,7 +32,7 @@ export class DailyContentGenerator implements ContentGenerator {
   /**
    * Generate daily_pick: get 3 recommended memos using AI (same as home page daily recommendations)
    */
-  private async generateDailyPick(uid: string, msgType: 'text' | 'html'): Promise<PushContent> {
+  private async generateDailyPick(uid: string): Promise<PushContent> {
     // Use the same recommendation service as the home page
     const recommendedMemos = await this.recommendationService.generateDailyRecommendations(uid);
 
@@ -55,14 +53,10 @@ export class DailyContentGenerator implements ContentGenerator {
         const createdAt = memo.createdAt
           ? new Date(memo.createdAt).toLocaleDateString('zh-CN')
           : '';
-
-        // Only escape HTML for text msgType, not for html
-        const displayContent = msgType === 'html' ? content : this.escapeHtml(content);
-
         return `
         <div style="margin-bottom: 16px; padding: 12px; background: #f5f5f5; border-radius: 8px;">
           <p style="color: #999; font-size: 12px; margin: 0 0 8px 0;">${createdAt}</p>
-          <p style="margin: 0; font-size: 14px; line-height: 1.6;">${displayContent}</p>
+          <p style="margin: 0; font-size: 14px; line-height: 1.6;">${this.escapeHtml(content)}</p>
         </div>
       `;
       })
@@ -80,7 +74,7 @@ export class DailyContentGenerator implements ContentGenerator {
   /**
    * Generate daily_memos: get all memos created today
    */
-  private async generateDailyMemos(uid: string, msgType: 'text' | 'html'): Promise<PushContent> {
+  private async generateDailyMemos(uid: string): Promise<PushContent> {
     const memosTable = await this.lanceDb.openTable('memos');
 
     // Get start and end of today
@@ -117,13 +111,10 @@ export class DailyContentGenerator implements ContentGenerator {
             })
           : '';
 
-        // Only escape HTML for text msgType, not for html
-        const displayContent = msgType === 'html' ? content : this.escapeHtml(content);
-
         return `
         <div style="margin-bottom: 12px; padding: 8px; background: #f5f5f5; border-radius: 6px;">
           <p style="color: #999; font-size: 12px; margin: 0 0 4px 0;">${createdAt}</p>
-          <p style="margin: 0;">${displayContent}</p>
+          <p style="margin: 0;">${this.escapeHtml(content)}</p>
         </div>
       `;
       })
