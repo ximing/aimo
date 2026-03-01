@@ -1,0 +1,28 @@
+## Codebase Patterns
+- MySQL configuration follows existing pattern in config.ts with typed interfaces
+- Environment variables use sensible defaults (localhost:3306, root user, aimo database)
+- Drizzle config references config.ts for MySQL credentials to maintain single source of truth
+- Connection pooling configured with max 10 connections by default
+
+---
+
+## 2026-03-01 19:53 - US-001
+- Installed Drizzle ORM dependencies: drizzle-orm (^0.45.1), mysql2 (^3.18.2), drizzle-kit (^0.31.9 dev)
+- Created drizzle.config.ts at apps/server/ with MySQL dialect and schema/migration paths
+- Added MySQLConfig interface to config.ts with host, port, user, password, database, connectionLimit fields
+- Added mysql property to Config interface and initialized in config object with env var defaults
+- Updated .env.example with MySQL configuration section (MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE, MYSQL_CONNECTION_LIMIT)
+
+**Files changed:**
+- apps/server/package.json (dependencies)
+- apps/server/drizzle.config.ts (created)
+- apps/server/src/config/config.ts (added MySQLConfig interface and mysql config)
+- .env.example (added MySQL section)
+
+**Learnings for future iterations:**
+- The project uses a centralized config.ts pattern - all new configuration should be added there with typed interfaces
+- Environment variables should have sensible defaults for development (localhost, standard ports)
+- The drizzle.config.ts references the main config to avoid duplicating connection details
+- Typecheck must pass before committing - run `pnpm typecheck` from apps/server directory
+
+---
