@@ -1,6 +1,7 @@
 /* eslint-disable import/order */
 import { AIV1Controller } from './v1/ai.controller.js';
 import { ASRV1Controller } from './v1/asr.controller.js';
+import { AttachmentBAController } from './v1/attachment.ba.controller.js';
 import { AttachmentV1Controller } from './v1/attachment.controller.js';
 import { AuthV1Controller } from './v1/auth.controller.js';
 import { CategoryV1Controller } from './v1/category.controller.js';
@@ -24,6 +25,7 @@ export const controllers = [
   UserV1Controller,
   CategoryV1Controller,
   TagV1Controller,
+  AttachmentBAController,
   AttachmentV1Controller,
   ASRV1Controller,
   OcrV1Controller,

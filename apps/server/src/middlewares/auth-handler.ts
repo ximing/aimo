@@ -16,6 +16,7 @@ const AUTH_EXCLUDED_PATHS = [
   '/api/v1/auth/register',
   '/api/v1/memos/public',
   '/api/v1/memos/ba',
+  '/api/v1/attachments/ba',
 ];
 
 /**
