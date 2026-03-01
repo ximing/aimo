@@ -16,6 +16,7 @@ import { controllers } from './controllers/index.js';
 import { initIOC } from './ioc.js';
 import { authHandler } from './middlewares/auth-handler.js';
 import { errorHandler } from './middlewares/error-handler.js';
+import { runLanceDBToDrizzleMigration } from './migrations/lancedb-to-drizzle.migration.js';
 import { SchedulerService } from './services/scheduler.service.js';
 import { DrizzleAdapter } from './sources/database/drizzle-adapter.js';
 import { LanceDbService as LanceDatabaseService } from './sources/lancedb.js';
@@ -35,6 +36,9 @@ export async function createApp() {
   const drizzleAdapter = Container.get(DrizzleAdapter);
   await drizzleAdapter.init();
   await drizzleAdapter.runMigrations();
+
+  // Run LanceDB to Drizzle migration (if needed)
+  await runLanceDBToDrizzleMigration();
 
   // Initialize scheduler service for periodic tasks
   try {

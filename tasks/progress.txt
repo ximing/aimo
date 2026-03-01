@@ -3,6 +3,7 @@
 Branch: ralph/drizzle-migration
 
 ## Status
+- US-009: COMPLETED
 - US-008: COMPLETED
 - US-007: COMPLETED
 - US-006: COMPLETED
@@ -11,6 +12,25 @@ Branch: ralph/drizzle-migration
 - US-003: COMPLETED
 
 ## Notes
+
+## 2026-03-01 - US-009
+- Created migration script `src/migrations/lancedb-to-drizzle.migration.ts`
+- Checks if LanceDB has data and Drizzle is empty before migration
+- Exports LanceDB backup to `./backups/lancedb-backup-[timestamp].json` before migration
+- Migrates tables: users, memos, memo_relations, attachments
+- Processes data in batches of 100 records with progress logging
+- Records migration completion in `_migrations` table with hash to prevent re-run
+- Integrated into app.ts after Drizzle migrations run
+- Typecheck passes, lint passes (warnings only)
+- **Learnings:**
+  - LanceDB table data queried via `db.openTable().query().toArray()`
+  - Migration uses MIGRATION_HASH constant for tracking in _migrations table
+  - Batch processing with logging shows progress (e.g., 'Migrated 1/100...')
+  - SQLite requires direct .prepare().run() instead of Drizzle query builder
+  - Timestamp conversion: LanceDB uses milliseconds, Drizzle uses Date objects or Unix timestamps for SQLite
+  - Attachments use createdAt for updatedAt since LanceDB schema doesn't have updatedAt
+
+---
 
 ## 2026-03-01 - US-008
 - Refactored UserService to use UserRepository instead of LanceDB
