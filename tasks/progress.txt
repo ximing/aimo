@@ -524,3 +524,30 @@
 - After updating DTOs, always rebuild the package and run typecheck on both server and web
 - DTOs serve as the contract between frontend and backend - they should only include client-facing fields
 ---
+## 2026-03-01 - US-020
+- Updated LanceDbService to focus on vector-only operations
+- Created migration 017-add-vector-tables.ts for memo_vectors and attachment_vectors tables
+- Added vector CRUD methods to LanceDbService:
+  - insertVector(): Insert vector records into vector tables
+  - deleteVector(): Delete vector records by ID
+  - searchVectors(): Perform vector similarity search
+  - getVector(): Get vector record by ID
+- Updated optimizeAllTables() to only optimize vector tables (memo_vectors, attachment_vectors, embedding_cache, multimodal_embedding_cache)
+- Removed scalar table references from optimization (users, memos, memo_relations, categories, attachments now in MySQL)
+- Registered new migrations in scripts/index.ts
+- Typecheck passes successfully
+
+**Files changed:**
+- apps/server/src/migrations/scripts/017-add-vector-tables.ts (created - migrations for vector tables)
+- apps/server/src/migrations/scripts/index.ts (registered new migrations)
+- apps/server/src/sources/lancedb.ts (added vector CRUD methods, updated optimizeAllTables)
+
+**Learnings for future iterations:**
+- LanceDB table.query().where() is used for filtering by ID, not table.search()
+- table.search(vector) is only for vector similarity search and requires a query vector
+- Vector-only tables (memo_vectors, attachment_vectors) store minimal data: just ID + embedding
+- Scalar data tables have been fully migrated to MySQL in previous user stories
+- The migration system automatically runs new migrations on startup
+- LanceDbService is now purely focused on vector operations (embeddings and similarity search)
+- All scalar data queries should use Drizzle ORM with MySQL (from US-001 to US-015)
+---
