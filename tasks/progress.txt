@@ -14,6 +14,26 @@ Branch: ralph/drizzle-migration
 - Connection pooling configured for each DB type: mysql2 pools, pg pools, better-sqlite3 direct
 ---
 
+## 2026-03-01 - US-002
+- Created schema files in apps/server/src/sources/database/schema/
+- users.ts: User account information (MySQL, PostgreSQL, SQLite)
+- memos.ts: Memo scalar data excluding embeddings (stored in LanceDB)
+- memo-relations.ts: Directed relations between memos
+- attachments.ts: File attachment metadata
+- _migrations.ts: Migration tracking table
+- Each schema includes appropriate column types:
+  - MySQL: mysqlTable with serial, varchar, text, timestamp, int, json
+  - PostgreSQL: pgTable with serial, varchar, text, timestamp, integer, json
+  - SQLite: sqliteTable with integer primary keys and text for strings
+- Indexes defined for frequently queried fields (userId, createdAt, tags)
+- Typecheck passes
+- **Learnings:**
+  - Timestamp mode: use 'date' for MySQL/PostgreSQL, 'timestamp' is invalid
+  - SQLite stores timestamps as integers (Unix timestamps)
+  - PostgreSQL serial is imported as pgSerial from drizzle-orm/pg-core
+  - MySQL uses 'int' not 'integer' for integer columns
+---
+
 ## 2026-03-01 - US-001
 - Created DrizzleAdapter class in apps/server/src/sources/database/drizzle-adapter.ts
 - Implemented connection factory for MySQL, PostgreSQL, and SQLite
