@@ -353,3 +353,34 @@
 - Pattern for pagination: .orderBy().limit().offset()
 - Pattern for multiple IDs: inArray(memos.memoId, memoIds)
 ---
+## 2026-03-01 - US-011
+- Verified SearchService hybrid vector search implementation (already completed in US-010)
+- Confirmed vectorSearch() method in MemoService implements all acceptance criteria:
+  - Queries LanceDB memo_vectors table for top K memo IDs (lines 885-893)
+  - Performs batch query to MySQL using inArray() to fetch full memo records (line 912)
+  - Preserves similarity scores from LanceDB and converts to relevanceScore (line 961)
+  - Full-text search exists in getMemos() using SQL LIKE on content field (line 376)
+  - All scalar fields fetched from MySQL and included in results (lines 942-963)
+  - Search result ordering maintained by vector similarity from LanceDB
+  - Only memoId extracted from LanceDB vector results, all other fields from MySQL
+- Verified all existing search/explore controller endpoints work unchanged:
+  - ExploreController: POST /api/v1/explore, POST /api/v1/explore/quick-search
+  - MemoController: POST /api/v1/memos/search/vector
+- Typecheck passes successfully
+
+**Files reviewed:**
+- apps/server/src/services/memo.service.ts (vectorSearch and getMemos methods)
+- apps/server/src/services/explore.service.ts (uses vectorSearch)
+- apps/server/src/controllers/v1/explore.controller.ts (explore and quickSearch endpoints)
+- apps/server/src/controllers/v1/memo.controller.ts (vectorSearch endpoint)
+
+**Learnings for future iterations:**
+- SearchService does not exist as a separate service - search functionality is in MemoService
+- There are two types of search: vectorSearch() for semantic search and getMemos() for keyword/full-text search
+- vectorSearch() already implements the hybrid approach: LanceDB for vectors + MySQL for scalar data
+- The hybrid pattern was completed in US-010 when MemoService was refactored
+- ExploreService.quickSearch() and ExploreService.explore() both use MemoService.vectorSearch()
+- Relevance score calculation: Math.max(0, Math.min(1, 1 - (distance / 2))) converts distance to 0-1 score
+- Vector results are sliced with offset for pagination before fetching from MySQL
+- getMemos() uses SQL LIKE for full-text search which is different from semantic vector search
+---
