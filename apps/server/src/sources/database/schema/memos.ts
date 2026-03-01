@@ -20,6 +20,7 @@ export const mysqlMemos = mysqlTable('memos', {
   content: text('content').notNull(),
   type: varchar('type', { length: 32 }), // 'text' | 'audio' | 'video'
   source: varchar('source', { length: 2048 }),
+  isPublic: int('is_public').default(0), // Whether memo is public (0 = private, 1 = public)
   // attachments stored as JSON array of attachment IDs
   attachments: json('attachments'), // string[] - attachment IDs
   // tags stored as JSON array of tag IDs
@@ -44,6 +45,7 @@ export const pgMemos = pgTable('memos', {
   content: pgText('content').notNull(),
   type: pgVarchar('type', { length: 32 }),
   source: pgVarchar('source', { length: 2048 }),
+  isPublic: pgInteger('is_public').default(0), // Whether memo is public (0 = private, 1 = public)
   attachments: pgJson('attachments'), // string[]
   tagIds: pgJson('tag_ids'), // string[]
   tags: pgJson('tags'), // string[]
@@ -65,6 +67,7 @@ export const sqliteMemos = sqliteTable('memos', {
   content: sqliteText('content').notNull(),
   type: sqliteText('type'),
   source: sqliteText('source'),
+  isPublic: sqliteInteger('is_public').default(0), // Whether memo is public (0 = private, 1 = public)
   attachments: sqliteText('attachments'), // JSON string
   tagIds: sqliteText('tag_ids'), // JSON string
   tags: sqliteText('tags'), // JSON string
