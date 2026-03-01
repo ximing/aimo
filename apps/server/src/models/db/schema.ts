@@ -421,3 +421,47 @@ export interface PushRuleRecord {
   createdAt: number; // timestamp in milliseconds
   updatedAt: number; // timestamp in milliseconds
 }
+
+/**
+ * Memo Vectors table schema (Vector-only table)
+ * Stores only memo embeddings for semantic search
+ * Scalar memo data is stored in MySQL
+ */
+export const memoVectorsSchema = new Schema([
+  new Field('memoId', new Utf8(), false), // non-nullable unique memo id (primary key, references MySQL memos.memoId)
+  new Field(
+    'embedding',
+    new FixedSizeList(getEmbeddingDimensions(), new Field('item', new Float32(), true)),
+    false
+  ), // dynamic-dim embedding vector
+]);
+
+/**
+ * Type definition for memo vector records
+ */
+export interface MemoVectorRecord {
+  memoId: string;
+  embedding: number[];
+}
+
+/**
+ * Attachment Vectors table schema (Vector-only table)
+ * Stores only multimodal embeddings for attachments
+ * Scalar attachment data is stored in MySQL
+ */
+export const attachmentVectorsSchema = new Schema([
+  new Field('attachmentId', new Utf8(), false), // non-nullable unique attachment id (primary key, references MySQL attachments.attachmentId)
+  new Field(
+    'multimodalEmbedding',
+    new FixedSizeList(1024, new Field('item', new Float32(), true)),
+    false
+  ), // fixed 1024-dim multimodal embedding vector
+]);
+
+/**
+ * Type definition for attachment vector records
+ */
+export interface AttachmentVectorRecord {
+  attachmentId: string;
+  multimodalEmbedding: number[];
+}
