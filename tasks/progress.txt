@@ -96,3 +96,33 @@
 - The app follows a pattern: IOC → MySQL → LanceDB → Scheduler → Express server
 
 ---
+## 2026-03-01 20:30 - US-004
+- Generated initial Drizzle migration files using drizzle-kit generate
+- Created migration 0000_tough_rhino.sql with all 11 tables (users, categories, tags, memos, memo_relations, attachments, ai_conversations, ai_messages, daily_recommendations, push_rules, table_migrations)
+- Reviewed generated SQL: verified all tables, indexes, foreign keys, unique constraints, and timestamps are correct
+- Created migration runner script at apps/server/src/db/migrate.ts with automatic migration execution
+- Integrated migrations into app.ts startup sequence (runs after MySQL connection, before LanceDB initialization)
+- Added pnpm scripts to package.json: migrate (manual migration), migrate:generate (generate new migrations), migrate:studio (Drizzle Studio)
+- Modified drizzle.config.ts to use environment variables directly instead of importing config.ts (avoids module resolution issues)
+- Changed schema path in drizzle.config.ts to point to dist/db/schema/index.js (compiled output) for proper module resolution
+- Typecheck passes successfully
+
+**Files changed:**
+- apps/server/drizzle.config.ts (updated to use env vars and point to dist folder)
+- apps/server/drizzle/0000_tough_rhino.sql (created - initial migration)
+- apps/server/drizzle/meta/0000_snapshot.json (created - migration metadata)
+- apps/server/drizzle/meta/_journal.json (created - migration journal)
+- apps/server/src/db/migrate.ts (created - migration runner)
+- apps/server/src/app.ts (added runMigrations() call in startup sequence)
+- apps/server/package.json (added migrate scripts)
+
+**Learnings for future iterations:**
+- Drizzle-kit needs compiled JavaScript files, not TypeScript source files - point schema path to dist/ folder in drizzle.config.ts
+- Drizzle config should use environment variables directly (with dotenv/config) to avoid circular dependencies with config.ts
+- Migration runner should use a temporary connection separate from the main connection pool
+- Migrations should run after MySQL connection but before LanceDB initialization to ensure schema exists
+- The migrate() function from drizzle-orm/mysql2/migrator handles migration execution automatically
+- Migration files are stored in drizzle/ folder with SQL and metadata (snapshot + journal)
+- App startup sequence is now: IOC → MySQL → Migrations → LanceDB → Scheduler → Express server
+
+---
