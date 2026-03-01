@@ -176,3 +176,33 @@
 - Always fetch after insert/update to get auto-generated/updated timestamps from database
 - The and() operator is useful for combining multiple WHERE conditions
 ---
+
+## 2026-03-01 - US-007
+- Refactored TagService to use Drizzle ORM instead of LanceDB
+- Replaced all LanceDB queries with Drizzle queries using eq(), and(), and sql operators
+- Implemented all required methods: createTag(), getTagsByUser(), getTagById(), getTagsByIds(), findTagByName(), updateTag(), deleteTag()
+- Implemented atomic incrementUsageCount() and decrementUsageCount() using SQL expressions
+- Used sql`${tags.usageCount} + 1` for atomic increment
+- Used sql`GREATEST(0, ${tags.usageCount} - 1)` for atomic decrement (prevents negative values)
+- Used sql`LOWER(${tags.name}) = LOWER(${normalizedName})` for case-insensitive tag name search
+- Kept removeTagFromAllMemos() using LanceDB temporarily (will be updated when MemoService is migrated in US-010)
+- Updated convertToTagDto() to convert Drizzle Date objects to timestamps and null to undefined
+- Removed LanceDB dependency from TagService constructor
+- Fixed import order to follow project conventions
+- Typecheck passes successfully
+
+**Files changed:**
+- apps/server/src/services/tag.service.ts (refactored to use Drizzle)
+
+**Learnings for future iterations:**
+- Foreign key constraint tags.uid → users.uid was already defined in schema (onDelete: 'cascade')
+- Use sql expressions for atomic updates: sql`${column} + 1` or sql`GREATEST(0, ${column} - 1)`
+- GREATEST() function in MySQL prevents negative values in decrement operations
+- For IN queries with dynamic arrays, use sql.raw() with proper escaping: sql`${column} IN ${sql.raw(`(${ids.map(id => `'${id}'`).join(',')})`)}`
+- Case-insensitive search pattern: sql`LOWER(${column}) = LOWER(${value})`
+- When other services still use LanceDB (like MemoService), use dynamic import to avoid circular dependencies
+- Pattern: getDatabase() → db.select().from(table).where(and(eq(table.field1, value1), eq(table.field2, value2)))
+- Pattern: db.insert(table).values(data) for inserts, then fetch to get auto-generated timestamps
+- Pattern: db.update(table).set(updates).where(and(...conditions)) for updates
+- Pattern: db.delete(table).where(and(...conditions)) for deletes
+---
