@@ -129,3 +129,29 @@
 - App startup sequence is now: IOC → MySQL → Migrations → LanceDB → Scheduler → Express server
 
 ---
+## 2026-03-01 - US-005
+- Refactored UserService to use Drizzle ORM instead of LanceDB
+- Replaced all LanceDB queries with Drizzle queries using eq() operator
+- Implemented all required methods: createUser(), getUserByUid(), getUserByEmail(), getUserByPhone(), updateUser()
+- Removed LanceDB dependency from UserService constructor
+- Fixed type compatibility issues between Drizzle (returns null) and DTOs (expect undefined)
+- Updated user.controller.ts, memo.controller.ts, and auth-handler.ts to convert null to undefined using ?? operator
+- Typecheck passes successfully
+
+**Files changed:**
+- apps/server/src/services/user.service.ts (refactored to use Drizzle)
+- apps/server/src/controllers/v1/user.controller.ts (null to undefined conversion)
+- apps/server/src/controllers/v1/memo.controller.ts (null to undefined conversion)
+- apps/server/src/middlewares/auth-handler.ts (null to undefined conversion)
+
+**Learnings for future iterations:**
+- Drizzle nullable fields return `string | null`, but DTOs expect `string | undefined` - use `?? undefined` to convert
+- Always use eq() from 'drizzle-orm' for equality comparisons instead of raw SQL strings
+- Drizzle queries return arrays - check length > 0 and access [0] for single results
+- When updating, remove the primary key from updates object to prevent errors
+- After insert, fetch the created record to get auto-generated timestamps
+- Pattern: getDatabase() → db.select().from(table).where(eq(table.field, value)).limit(1)
+- Pattern: db.insert(table).values(data) for inserts
+- Pattern: db.update(table).set(updates).where(eq(table.pk, id)) for updates
+
+---
