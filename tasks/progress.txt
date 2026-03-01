@@ -463,3 +463,30 @@
 - Pattern: use and(eq(table.field1, value1), eq(table.field2, value2)) for multi-column WHERE clauses
 - JSON columns in Drizzle: json('column_name').$type<Type[]>() for type safety
 ---
+## 2026-03-01 - US-015
+- Refactored PushRuleService to use Drizzle ORM instead of LanceDB
+- Replaced all LanceDB queries with Drizzle queries using eq() and and() operators
+- Implemented all required methods:
+  - create(): Insert to MySQL with channels as JSON string
+  - findByUid(): Query all rules for a user
+  - findById(): Query single rule with and() for id + uid filtering
+  - update(): Drizzle update with partial updates
+  - delete(): Delete from MySQL with existence check
+  - findAllEnabled(): Query rules where enabled = 1
+- Removed LanceDB dependency from PushRuleService constructor
+- Foreign key constraint (push_rules.uid → users.uid) already defined in schema (from US-002)
+- Channels stored as text column with JSON.stringify/parse (text type in schema, not json type)
+- Converted Drizzle Date timestamps to milliseconds for DTO compatibility
+- testPush() method works unchanged (uses findById internally)
+- Typecheck passes successfully
+
+**Files changed:**
+- apps/server/src/services/push-rule.service.ts (refactored to use Drizzle)
+
+**Learnings for future iterations:**
+- Push rules schema uses text column for channels (not json), so JSON.stringify/parse still needed
+- Pattern for partial updates: build updates object with only changed fields, then use .set(updates)
+- The update method is cleaner with Drizzle - no need to delete + re-add like in LanceDB
+- enabled field is stored as int (1/0) not boolean in MySQL
+- testPush() method demonstrates that service methods can be composed (findById → testPush)
+---

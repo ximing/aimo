@@ -1,13 +1,14 @@
+import { eq, and } from 'drizzle-orm';
 import { Inject, Service } from 'typedi';
 
+import { getDatabase } from '../db/connection.js';
+import { pushRules } from '../db/schema/index.js';
 import { OBJECT_TYPE } from '../models/constant/type.js';
-import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
 import { generateTypeId } from '../utils/id.js';
 import { logger } from '../utils/logger.js';
 
 import { ChannelFactory } from './channels/channel.factory.js';
 
-import type { PushRuleRecord } from '../models/db/schema.js';
 import type { CreatePushRuleDto, PushRuleDto, UpdatePushRuleDto } from '@aimo/dto';
 
 @Service()
@@ -15,7 +16,7 @@ export class PushRuleService {
   @Inject()
   private channelFactory!: ChannelFactory;
 
-  constructor(private lanceDatabase: LanceDatabaseService) {}
+  constructor() {}
 
   /**
    * Create a new push rule for a user
@@ -38,10 +39,10 @@ export class PushRuleService {
         throw new Error('At least one channel must be configured');
       }
 
+      const db = getDatabase();
       const id = generateTypeId(OBJECT_TYPE.PUSH_RULE);
-      const now = Date.now();
 
-      const rule: PushRuleRecord = {
+      await db.insert(pushRules).values({
         id,
         uid,
         name: data.name.trim(),
@@ -49,14 +50,12 @@ export class PushRuleService {
         contentType: data.contentType,
         channels: JSON.stringify(data.channels),
         enabled: 1,
-        createdAt: now,
-        updatedAt: now,
-      };
+      });
 
-      const table = await this.lanceDatabase.openTable('push_rules');
-      await table.add([rule as unknown as Record<string, unknown>]);
+      // Fetch the created rule to get auto-generated timestamps
+      const result = await db.select().from(pushRules).where(eq(pushRules.id, id)).limit(1);
 
-      return this.toDto(rule);
+      return this.toDto(result[0]);
     } catch (error) {
       logger.error('Failed to create push rule:', error);
       throw error;
@@ -68,11 +67,10 @@ export class PushRuleService {
    */
   async findByUid(uid: string): Promise<PushRuleDto[]> {
     try {
-      const table = await this.lanceDatabase.openTable('push_rules');
+      const db = getDatabase();
+      const results = await db.select().from(pushRules).where(eq(pushRules.uid, uid));
 
-      const results = await table.query().where(`uid = '${uid}'`).toArray();
-
-      return results.map((record) => this.toDto(record as PushRuleRecord));
+      return results.map((record) => this.toDto(record));
     } catch (error) {
       logger.error('Failed to get push rules:', error);
       throw error;
@@ -84,19 +82,18 @@ export class PushRuleService {
    */
   async findById(id: string, uid: string): Promise<PushRuleDto | null> {
     try {
-      const table = await this.lanceDatabase.openTable('push_rules');
-
-      const results = await table
-        .query()
-        .where(`id = '${id}' AND uid = '${uid}'`)
-        .limit(1)
-        .toArray();
+      const db = getDatabase();
+      const results = await db
+        .select()
+        .from(pushRules)
+        .where(and(eq(pushRules.id, id), eq(pushRules.uid, uid)))
+        .limit(1);
 
       if (results.length === 0) {
         return null;
       }
 
-      return this.toDto(results[0] as PushRuleRecord);
+      return this.toDto(results[0]);
     } catch (error) {
       logger.error('Failed to get push rule:', error);
       throw error;
@@ -108,39 +105,36 @@ export class PushRuleService {
    */
   async update(id: string, uid: string, data: UpdatePushRuleDto): Promise<PushRuleDto | null> {
     try {
-      const table = await this.lanceDatabase.openTable('push_rules');
+      const db = getDatabase();
 
       // Get existing rule
-      const rule = await this.findById(id, uid);
-      if (!rule) {
+      const existing = await db
+        .select()
+        .from(pushRules)
+        .where(and(eq(pushRules.id, id), eq(pushRules.uid, uid)))
+        .limit(1);
+
+      if (existing.length === 0) {
         return null;
       }
 
-      // Build updated record
-      const now = Date.now();
-      const updatedRecord: PushRuleRecord = {
-        id: rule.id,
-        uid: rule.uid,
-        name: data.name === undefined ? rule.name : data.name.trim(),
-        pushTime: data.pushTime === undefined ? rule.pushTime : data.pushTime,
-        contentType: data.contentType === undefined ? rule.contentType : data.contentType,
-        channels:
-          data.channels === undefined
-            ? JSON.stringify(rule.channels)
-            : JSON.stringify(data.channels),
-        enabled: data.enabled === undefined ? (rule.enabled ? 1 : 0) : (data.enabled ? 1 : 0),
-        createdAt: rule.createdAt,
-        updatedAt: now,
-      };
+      const rule = existing[0];
 
-      // Update in database by deleting old and adding new
-      await table.delete(`id = '${id}'`).catch(() => {
-        // Ignore error if record doesn't exist
-      });
+      // Build update object with only changed fields
+      const updates: any = {};
+      if (data.name !== undefined) updates.name = data.name.trim();
+      if (data.pushTime !== undefined) updates.pushTime = data.pushTime;
+      if (data.contentType !== undefined) updates.contentType = data.contentType;
+      if (data.channels !== undefined) updates.channels = JSON.stringify(data.channels);
+      if (data.enabled !== undefined) updates.enabled = data.enabled ? 1 : 0;
 
-      await table.add([updatedRecord as unknown as Record<string, unknown>]);
+      // Update the rule
+      await db.update(pushRules).set(updates).where(eq(pushRules.id, id));
 
-      return this.toDto(updatedRecord);
+      // Fetch the updated rule
+      const result = await db.select().from(pushRules).where(eq(pushRules.id, id)).limit(1);
+
+      return this.toDto(result[0]);
     } catch (error) {
       logger.error('Failed to update push rule:', error);
       throw error;
@@ -152,16 +146,21 @@ export class PushRuleService {
    */
   async delete(id: string, uid: string): Promise<boolean> {
     try {
-      const table = await this.lanceDatabase.openTable('push_rules');
+      const db = getDatabase();
 
       // Check if rule exists
-      const rule = await this.findById(id, uid);
-      if (!rule) {
+      const existing = await db
+        .select()
+        .from(pushRules)
+        .where(and(eq(pushRules.id, id), eq(pushRules.uid, uid)))
+        .limit(1);
+
+      if (existing.length === 0) {
         return false;
       }
 
       // Delete the rule
-      await table.delete(`id = '${id}'`);
+      await db.delete(pushRules).where(eq(pushRules.id, id));
 
       return true;
     } catch (error) {
@@ -175,11 +174,10 @@ export class PushRuleService {
    */
   async findAllEnabled(): Promise<PushRuleDto[]> {
     try {
-      const table = await this.lanceDatabase.openTable('push_rules');
+      const db = getDatabase();
+      const results = await db.select().from(pushRules).where(eq(pushRules.enabled, 1));
 
-      const results = await table.query().where('enabled = 1').toArray();
-
-      return results.map((record) => this.toDto(record as PushRuleRecord));
+      return results.map((record) => this.toDto(record));
     } catch (error) {
       logger.error('Failed to get enabled push rules:', error);
       throw error;
@@ -221,7 +219,7 @@ export class PushRuleService {
   /**
    * Convert database record to DTO
    */
-  private toDto(record: PushRuleRecord): PushRuleDto {
+  private toDto(record: typeof pushRules.$inferSelect): PushRuleDto {
     let channels: any[] = [];
     try {
       channels = record.channels ? JSON.parse(record.channels) : [];
@@ -237,8 +235,8 @@ export class PushRuleService {
       contentType: record.contentType as 'daily_pick' | 'daily_memos',
       channels: channels,
       enabled: record.enabled === 1,
-      createdAt: record.createdAt,
-      updatedAt: record.updatedAt,
+      createdAt: record.createdAt.getTime(),
+      updatedAt: record.updatedAt.getTime(),
     };
   }
 }
