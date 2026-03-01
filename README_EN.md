@@ -66,6 +66,7 @@ A modern AI-powered note-taking and knowledge management tool that combines sema
 
 - **Node.js** >= 20.0
 - **pnpm** >= 10.0
+- **MySQL** >= 8.0 or MariaDB >= 10.6
 - **OpenAI API Key** - For AI features
 
 ### Local Development
@@ -78,11 +79,20 @@ cd aimo
 # 2. Install dependencies
 pnpm install
 
-# 3. Configure environment variables
-cp .env.example .env
-# Edit .env, fill in JWT_SECRET and OPENAI_API_KEY
+# 3. Setup MySQL database
+# Create database
+mysql -u root -p
+CREATE DATABASE aimo CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+EXIT;
 
-# 4. Start development server
+# Or use Docker to start MySQL
+docker-compose up -d mysql
+
+# 4. Configure environment variables
+cp .env.example .env
+# Edit .env, fill in MySQL connection info, JWT_SECRET and OPENAI_API_KEY
+
+# 5. Start development server
 pnpm dev
 
 # The app will start at http://localhost:3000
@@ -134,12 +144,32 @@ JWT_SECRET=your-super-secret-key
 
 # OpenAI API Key
 OPENAI_API_KEY=sk-xxx...
+
+# MySQL Database Connection
+MYSQL_HOST=localhost
+MYSQL_PORT=3306
+MYSQL_USER=root
+MYSQL_PASSWORD=your-mysql-password
+MYSQL_DATABASE=aimo
 ```
 
 ### Database Configuration
 
+AIMO uses a hybrid database architecture:
+
+- **MySQL** (via Drizzle ORM) - Stores all relational data (users, notes, categories, tags, etc.)
+- **LanceDB** - Stores vector embeddings for semantic search
+
 ```env
-# LanceDB storage type: local or s3
+# MySQL Configuration (Required)
+MYSQL_HOST=localhost
+MYSQL_PORT=3306
+MYSQL_USER=root
+MYSQL_PASSWORD=your-mysql-password
+MYSQL_DATABASE=aimo
+MYSQL_CONNECTION_LIMIT=10
+
+# LanceDB Configuration (Vector Storage)
 LANCEDB_STORAGE_TYPE=local
 LANCEDB_PATH=./lancedb_data
 ```

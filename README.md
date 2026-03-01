@@ -66,6 +66,7 @@
 
 - **Node.js** >= 20.0
 - **pnpm** >= 10.0
+- **MySQL** >= 8.0 或 MariaDB >= 10.6
 - **OpenAI API Key** - 用于 AI 功能
 
 ### 本地开发
@@ -78,11 +79,20 @@ cd aimo
 # 2. 安装依赖
 pnpm install
 
-# 3. 配置环境变量
-cp .env.example .env
-# 编辑 .env，填入 JWT_SECRET 和 OPENAI_API_KEY
+# 3. 配置 MySQL 数据库
+# 创建数据库
+mysql -u root -p
+CREATE DATABASE aimo CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+EXIT;
 
-# 4. 启动开发服务器
+# 或使用 Docker 启动 MySQL
+docker-compose up -d mysql
+
+# 4. 配置环境变量
+cp .env.example .env
+# 编辑 .env，填入 MySQL 连接信息、JWT_SECRET 和 OPENAI_API_KEY
+
+# 5. 启动开发服务器
 pnpm dev
 
 # 应用将在 http://localhost:3000 启动
@@ -134,12 +144,32 @@ JWT_SECRET=your-super-secret-key
 
 # OpenAI API 密钥
 OPENAI_API_KEY=sk-xxx...
+
+# MySQL 数据库连接
+MYSQL_HOST=localhost
+MYSQL_PORT=3306
+MYSQL_USER=root
+MYSQL_PASSWORD=your-mysql-password
+MYSQL_DATABASE=aimo
 ```
 
 ### 数据库配置
 
+AIMO 使用混合数据库架构：
+
+- **MySQL** (via Drizzle ORM) - 存储所有关系型数据（用户、笔记、分类、标签等）
+- **LanceDB** - 存储向量嵌入用于语义搜索
+
 ```env
-# LanceDB 存储类型: local 或 s3
+# MySQL 配置（必需）
+MYSQL_HOST=localhost
+MYSQL_PORT=3306
+MYSQL_USER=root
+MYSQL_PASSWORD=your-mysql-password
+MYSQL_DATABASE=aimo
+MYSQL_CONNECTION_LIMIT=10
+
+# LanceDB 配置（向量存储）
 LANCEDB_STORAGE_TYPE=local
 LANCEDB_PATH=./lancedb_data
 ```
