@@ -206,3 +206,24 @@
 - Pattern: db.update(table).set(updates).where(and(...conditions)) for updates
 - Pattern: db.delete(table).where(and(...conditions)) for deletes
 ---
+
+## 2026-03-01 - US-008
+- Refactored MemoRelationService to use Drizzle ORM instead of LanceDB
+- Replaced all LanceDB queries with Drizzle queries using eq() and and() operators
+- Implemented all required methods: createRelation(), getRelatedMemos(), getBacklinks(), deleteRelation(), deleteRelationsBySourceMemo(), deleteRelationsByTargetMemo(), replaceRelations()
+- Removed LanceDB dependency from MemoRelationService constructor
+- Foreign key constraints (sourceMemoId → memos.memoId, targetMemoId → memos.memoId) and composite unique index were already defined in schema (from US-002)
+- Converted Drizzle Date timestamp to milliseconds for MemoRelationRecord compatibility
+- Typecheck passes successfully
+
+**Files changed:**
+- apps/server/src/services/memo-relation.service.ts (refactored to use Drizzle)
+
+**Learnings for future iterations:**
+- Foreign key constraints with onDelete: 'cascade' automatically handle cleanup when memos are deleted
+- Composite unique index on (sourceMemoId, targetMemoId) prevents duplicate relations
+- Pattern for multiple WHERE conditions: use and(eq(table.field1, value1), eq(table.field2, value2))
+- Always fetch after insert to get auto-generated timestamps from database (createdAt)
+- Drizzle returns Date objects for timestamps - convert to milliseconds with .getTime() for compatibility with existing types
+- The replaceRelations() method uses existing helper methods (deleteRelationsBySourceMemo + createRelation) for clean implementation
+---
