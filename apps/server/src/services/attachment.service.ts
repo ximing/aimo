@@ -201,16 +201,18 @@ export class AttachmentService {
     }
 
     const mergedProperties = { ...existingProperties, ...properties };
+    const propertiesJson = JSON.stringify(mergedProperties);
 
-    // Create updated record
+    // Update in place to avoid losing records when a rewrite fails.
+    await table.update({
+      where: `attachmentId = '${attachmentId}' AND uid = '${uid}'`,
+      values: { properties: propertiesJson },
+    });
+
     const updatedRecord: AttachmentRecord = {
       ...existingRecord,
-      properties: JSON.stringify(mergedProperties),
+      properties: propertiesJson,
     };
-
-    // Delete the old record and add the updated one
-    await table.delete(`attachmentId = '${attachmentId}'`);
-    await table.add([updatedRecord as unknown as Record<string, unknown>]);
 
     // Generate access URL and return DTO
     const accessUrl = await this.generateAccessUrl(updatedRecord);
@@ -257,17 +259,26 @@ export class AttachmentService {
       }
 
       const existingRecord = results[0] as AttachmentRecord;
+      const schema = await table.schema();
+      const embeddingField = schema.fields.find((field) => field.name === 'multimodalEmbedding');
+      const expectedDimension = (
+        embeddingField?.type as { listSize?: number } | undefined
+      )?.listSize;
 
-      // Create updated record with multimodal embedding
-      const updatedRecord: AttachmentRecord = {
-        ...existingRecord,
-        multimodalEmbedding: embedding,
-        multimodalModelHash: modelHash,
-      };
+      if (typeof expectedDimension === 'number' && embedding.length !== expectedDimension) {
+        logger.warn(
+          `Skip multimodal embedding update for ${attachmentId}: got ${embedding.length} dims, expected ${expectedDimension}`
+        );
+        return;
+      }
 
-      // Delete the old record and add the updated one
-      await table.delete(`attachmentId = '${attachmentId}'`);
-      await table.add([updatedRecord as unknown as Record<string, unknown>]);
+      await table.update({
+        where: `attachmentId = '${attachmentId}' AND uid = '${existingRecord.uid}'`,
+        values: {
+          multimodalEmbedding: embedding,
+          multimodalModelHash: modelHash,
+        },
+      });
 
       logger.info(
         `Successfully generated and stored multimodal embedding for ${modalityType}: ${filename}`
@@ -372,7 +383,7 @@ export class AttachmentService {
     }
 
     // Delete from database
-    await table.delete(`attachmentId = '${attachmentId}'`);
+    await table.delete(`attachmentId = '${attachmentId}' AND uid = '${uid}'`);
 
     return true;
   }
