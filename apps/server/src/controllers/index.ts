@@ -7,6 +7,7 @@ import { AuthV1Controller } from './v1/auth.controller.js';
 import { CategoryV1Controller } from './v1/category.controller.js';
 import { DebugBAController } from './v1/debug.ba.controller.js';
 import { ExploreController } from './v1/explore.controller.js';
+import { HealthController } from './v1/health.controller.js';
 import { InsightsController } from './v1/insights.controller.js';
 import { MemoBAController } from './v1/memo.ba.controller.js';
 import { MemoV1Controller } from './v1/memo.controller.js';
@@ -19,6 +20,7 @@ import { StaticController } from './static.controller.js';
 
 // Note: StaticController import should stay last to avoid catching API routes
 export const controllers = [
+  HealthController,
   MemoBAController,
   MemoV1Controller,
   InsightsController,

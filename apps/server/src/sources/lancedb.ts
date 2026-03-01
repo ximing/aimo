@@ -149,6 +149,25 @@ export class LanceDbService {
   }
 
   /**
+   * Check LanceDB connection health
+   * Returns true if connection is healthy, false otherwise
+   */
+  async healthCheck(): Promise<boolean> {
+    try {
+      if (!this.initialized) {
+        return false;
+      }
+      // Try to execute a simple query to verify connection
+      // Opening any table should work since the db is initialized
+      await this.db.openTable('memos').then((table) => table.countRows());
+      return true;
+    } catch (error) {
+      logger.error('LanceDB health check failed:', error);
+      return false;
+    }
+  }
+
+  /**
    * Optimize a table to rebuild indexes and consolidate data
    * Should be called after bulk insert/update operations to ensure indexes are up-to-date
    * Non-blocking and handles errors internally - will not throw

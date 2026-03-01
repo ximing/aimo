@@ -4,6 +4,7 @@ Branch: ralph/drizzle-migration
 
 ## Status
 - US-011: COMPLETED
+- US-010: COMPLETED
 - US-009: COMPLETED
 - US-008: COMPLETED
 - US-007: COMPLETED
@@ -185,4 +186,20 @@ Branch: ralph/drizzle-migration
   - Vector search handles pre-filtering (uid, categoryId) in LanceDB
   - Date range filters applied in JavaScript after LanceDB query (LanceDB timestamp comparison limitations)
   - Relevance score normalized from L2 distance (1 - distance/2, clamped 0-1)
+---
+
+## 2026-03-01 - US-010
+- Created health controller `src/controllers/v1/health.controller.ts`
+- Added `GET /health/db` endpoint that checks both Drizzle and LanceDB connections
+- Added `healthCheck()` method to `LanceDbService` (DrizzleAdapter already had one)
+- Drizzle healthCheck runs `SELECT 1` query appropriate for each DB type (mysql/pg/sqlite)
+- LanceDB healthCheck opens memos table and counts rows
+- Returns JSON: `{ drizzle: 'ok', lancedb: 'ok' }` on success
+- Returns `{ drizzle: 'failed', lancedb: 'failed' }` with 503 status if either fails
+- Added HealthController to controllers/index.ts for auto-registration
+- Typecheck passes, lint passes (warnings only)
+- **Learnings:**
+  - DrizzleAdapter.healthCheck() already existed - uses mysqlPool.query/pgPool.query/sqliteDb.prepare
+  - LanceDB health check requires opening a table and performing a simple operation
+  - Health endpoint should be registered early (before static controller) to avoid route conflicts
 ---
