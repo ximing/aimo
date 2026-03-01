@@ -1,7 +1,9 @@
+import { eq, and, desc, asc, sql } from 'drizzle-orm';
 import { Service } from 'typedi';
 
+import { getDatabase } from '../db/connection.js';
+import { aiConversations, aiMessages } from '../db/schema/index.js';
 import { OBJECT_TYPE } from '../models/constant/type.js';
-import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
 import { generateTypeId } from '../utils/id.js';
 import { logger } from '../utils/logger.js';
 
@@ -14,29 +16,15 @@ import type {
   CreateConversationDto,
   UpdateConversationDto,
 } from '@aimo/dto';
-import type { Table } from '@lancedb/lancedb';
 
 /**
  * Service for managing AI conversations and messages
  * Handles CRUD operations for conversation persistence
+ * Uses Drizzle ORM with MySQL for relational data storage
  */
 @Service()
 export class AIConversationService {
-  constructor(private lanceDatabase: LanceDatabaseService) {}
-
-  /**
-   * Get the conversations table
-   */
-  private async getConversationsTable(): Promise<Table> {
-    return this.lanceDatabase.openTable('ai_conversations');
-  }
-
-  /**
-   * Get the messages table
-   */
-  private async getMessagesTable(): Promise<Table> {
-    return this.lanceDatabase.openTable('ai_messages');
-  }
+  constructor() {}
 
   /**
    * Generate a default conversation title from the first message
@@ -53,65 +41,43 @@ export class AIConversationService {
   /**
    * Convert database record to conversation DTO
    */
-  private toConversationDto(record: Record<string, unknown>, messageCount = 0): AIConversationDto {
+  private toConversationDto(
+    record: typeof aiConversations.$inferSelect,
+    messageCount = 0
+  ): AIConversationDto {
     return {
-      conversationId: String(record.conversationId),
-      title: String(record.title),
-      createdAt: Number(record.createdAt),
-      updatedAt: Number(record.updatedAt),
+      conversationId: record.conversationId,
+      title: record.title,
+      createdAt: record.createdAt.getTime(),
+      updatedAt: record.updatedAt.getTime(),
       messageCount,
     };
   }
 
   /**
    * Convert database record to message DTO
-   * LanceDB List<Struct> type is returned as an Arrow List that needs .toArray() conversion
    */
-  private toMessageDto(record: Record<string, unknown>): AIMessageDto {
-    // Convert LanceDB List<Struct> to plain JavaScript array
-    // The sources field comes from schema: List(Struct([memoId, content, similarity]))
+  private toMessageDto(record: typeof aiMessages.$inferSelect): AIMessageDto {
+    // Sources are stored as JSON in MySQL
     let sources: AIMessageSourceDto[] | undefined;
 
-    if (record.sources) {
-      // Handle Arrow List type - call toArray() to convert to plain array
-      let sourcesArray: any[] = [];
-
-      if (typeof record.sources === 'object' && 'toArray' in record.sources) {
-        // It's an Arrow List object, convert to array
-        sourcesArray = (record.sources as any).toArray();
-      } else if (Array.isArray(record.sources)) {
-        // Already a plain array
-        sourcesArray = record.sources;
-      }
-
-      // Convert each source item to plain object if needed
-      sources = sourcesArray.map((item: any) => {
-        // Handle both plain objects and potential Arrow objects
-        if (item && typeof item === 'object') {
-          return {
-            memoId: item.memoId ?? undefined,
-            content: item.content ?? undefined,
-            similarity: item.similarity ?? undefined,
-            relevanceScore: item.relevanceScore ?? undefined,
-            createdAt: item.createdAt ?? undefined,
-          } as AIMessageSourceDto;
-        }
-        return item;
-      });
-
-      // Filter out empty arrays
-      if (sources.length === 0) {
-        sources = undefined;
-      }
+    if (record.sources && Array.isArray(record.sources) && record.sources.length > 0) {
+      sources = record.sources.map((item: any) => ({
+        memoId: item.memoId ?? undefined,
+        content: item.content ?? undefined,
+        similarity: item.similarity ?? undefined,
+        relevanceScore: item.relevanceScore ?? undefined,
+        createdAt: item.createdAt ?? undefined,
+      })) as AIMessageSourceDto[];
     }
 
     return {
-      messageId: String(record.messageId),
-      conversationId: String(record.conversationId),
-      role: String(record.role) as 'user' | 'assistant',
-      content: String(record.content),
+      messageId: record.messageId,
+      conversationId: record.conversationId,
+      role: record.role as 'user' | 'assistant',
+      content: record.content,
       sources,
-      createdAt: Number(record.createdAt),
+      createdAt: record.createdAt.getTime(),
     };
   }
 
@@ -120,19 +86,19 @@ export class AIConversationService {
    */
   async getConversations(uid: string): Promise<AIConversationDto[]> {
     try {
-      const table = await this.getConversationsTable();
+      const db = getDatabase();
 
-      // Query conversations for this user
-      const result = await table.query().where(`uid = '${uid}'`).toArray();
-
-      // Sort by updatedAt desc in JavaScript (LanceDB doesn't support orderBy directly)
-      result.sort((a: any, b: any) => Number(b.updatedAt) - Number(a.updatedAt));
+      // Query conversations for this user, sorted by updatedAt desc
+      const result = await db
+        .select()
+        .from(aiConversations)
+        .where(eq(aiConversations.uid, uid))
+        .orderBy(desc(aiConversations.updatedAt));
 
       // Get message counts for each conversation
       const conversations: AIConversationDto[] = [];
       for (const record of result) {
-        const conversationId = String(record.conversationId);
-        const messageCount = await this.getMessageCount(conversationId);
+        const messageCount = await this.getMessageCount(record.conversationId);
         conversations.push(this.toConversationDto(record, messageCount));
       }
 
@@ -151,14 +117,14 @@ export class AIConversationService {
     uid: string
   ): Promise<AIConversationDetailDto | null> {
     try {
-      const table = await this.getConversationsTable();
+      const db = getDatabase();
 
       // Query the conversation
-      const result = await table
-        .query()
-        .where(`conversationId = '${conversationId}' AND uid = '${uid}'`)
-        .limit(1)
-        .toArray();
+      const result = await db
+        .select()
+        .from(aiConversations)
+        .where(and(eq(aiConversations.conversationId, conversationId), eq(aiConversations.uid, uid)))
+        .limit(1);
 
       if (result.length === 0) {
         return null;
@@ -182,23 +148,25 @@ export class AIConversationService {
    */
   async createConversation(uid: string, data: CreateConversationDto): Promise<AIConversationDto> {
     try {
-      const table = await this.getConversationsTable();
+      const db = getDatabase();
 
-      const now = Date.now();
       const conversationId = generateTypeId(OBJECT_TYPE.CONVERSATION);
       const title = data.title || this.generateDefaultTitle();
 
-      const record = {
+      await db.insert(aiConversations).values({
         conversationId,
         uid,
         title,
-        createdAt: now,
-        updatedAt: now,
-      };
+      });
 
-      await table.add([record]);
+      // Fetch the created conversation to get auto-generated timestamps
+      const result = await db
+        .select()
+        .from(aiConversations)
+        .where(eq(aiConversations.conversationId, conversationId))
+        .limit(1);
 
-      return this.toConversationDto(record, 0);
+      return this.toConversationDto(result[0], 0);
     } catch (error) {
       logger.error('Create conversation error:', error);
       throw new Error('Failed to create conversation');
@@ -214,33 +182,34 @@ export class AIConversationService {
     data: UpdateConversationDto
   ): Promise<AIConversationDto | null> {
     try {
-      const table = await this.getConversationsTable();
+      const db = getDatabase();
 
       // First verify the conversation exists and belongs to the user
-      const existing = await table
-        .query()
-        .where(`conversationId = '${conversationId}' AND uid = '${uid}'`)
-        .limit(1)
-        .toArray();
+      const existing = await db
+        .select()
+        .from(aiConversations)
+        .where(and(eq(aiConversations.conversationId, conversationId), eq(aiConversations.uid, uid)))
+        .limit(1);
 
       if (existing.length === 0) {
         return null;
       }
 
-      const now = Date.now();
-      const updatedRecord = {
-        ...existing[0],
-        title: data.title,
-        updatedAt: now,
-      };
+      // Update the conversation
+      await db
+        .update(aiConversations)
+        .set({ title: data.title })
+        .where(eq(aiConversations.conversationId, conversationId));
 
-      await table.update({
-        where: `conversationId = '${conversationId}'`,
-        values: updatedRecord,
-      });
+      // Fetch the updated conversation
+      const result = await db
+        .select()
+        .from(aiConversations)
+        .where(eq(aiConversations.conversationId, conversationId))
+        .limit(1);
 
       const messageCount = await this.getMessageCount(conversationId);
-      return this.toConversationDto(updatedRecord, messageCount);
+      return this.toConversationDto(result[0], messageCount);
     } catch (error) {
       logger.error('Update conversation error:', error);
       throw new Error('Failed to update conversation');
@@ -249,28 +218,25 @@ export class AIConversationService {
 
   /**
    * Delete a conversation and all its messages
+   * Messages are automatically deleted via foreign key cascade
    */
   async deleteConversation(conversationId: string, uid: string): Promise<boolean> {
     try {
-      const conversationsTable = await this.getConversationsTable();
-      const messagesTable = await this.getMessagesTable();
+      const db = getDatabase();
 
       // First verify the conversation exists and belongs to the user
-      const existing = await conversationsTable
-        .query()
-        .where(`conversationId = '${conversationId}' AND uid = '${uid}'`)
-        .limit(1)
-        .toArray();
+      const existing = await db
+        .select()
+        .from(aiConversations)
+        .where(and(eq(aiConversations.conversationId, conversationId), eq(aiConversations.uid, uid)))
+        .limit(1);
 
       if (existing.length === 0) {
         return false;
       }
 
-      // Delete all messages in the conversation
-      await messagesTable.delete(`conversationId = '${conversationId}'`);
-
-      // Delete the conversation
-      await conversationsTable.delete(`conversationId = '${conversationId}'`);
+      // Delete the conversation (messages are cascade deleted via foreign key)
+      await db.delete(aiConversations).where(eq(aiConversations.conversationId, conversationId));
 
       return true;
     } catch (error) {
@@ -284,12 +250,13 @@ export class AIConversationService {
    */
   async getMessages(conversationId: string): Promise<AIMessageDto[]> {
     try {
-      const table = await this.getMessagesTable();
+      const db = getDatabase();
 
-      const result = await table.query().where(`conversationId = '${conversationId}'`).toArray();
-
-      // Sort by createdAt asc in JavaScript (LanceDB doesn't support orderBy directly)
-      result.sort((a: any, b: any) => Number(a.createdAt) - Number(b.createdAt));
+      const result = await db
+        .select()
+        .from(aiMessages)
+        .where(eq(aiMessages.conversationId, conversationId))
+        .orderBy(asc(aiMessages.createdAt));
 
       return result.map((record) => this.toMessageDto(record));
     } catch (error) {
@@ -303,9 +270,13 @@ export class AIConversationService {
    */
   async getMessageCount(conversationId: string): Promise<number> {
     try {
-      const table = await this.getMessagesTable();
-      const result = await table.query().where(`conversationId = '${conversationId}'`).toArray();
-      return result.length;
+      const db = getDatabase();
+      const result = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(aiMessages)
+        .where(eq(aiMessages.conversationId, conversationId));
+
+      return result[0]?.count || 0;
     } catch (error) {
       logger.error('Get message count error:', error);
       return 0;
@@ -322,45 +293,44 @@ export class AIConversationService {
     data: AddMessageDto
   ): Promise<AIMessageDto | null> {
     try {
-      const messagesTable = await this.getMessagesTable();
-      const conversationsTable = await this.getConversationsTable();
+      const db = getDatabase();
 
       // First verify the conversation exists and belongs to the user
-      const conversation = await conversationsTable
-        .query()
-        .where(`conversationId = '${conversationId}' AND uid = '${uid}'`)
-        .limit(1)
-        .toArray();
+      const conversation = await db
+        .select()
+        .from(aiConversations)
+        .where(and(eq(aiConversations.conversationId, conversationId), eq(aiConversations.uid, uid)))
+        .limit(1);
 
       if (conversation.length === 0) {
         return null;
       }
 
-      const now = Date.now();
       const messageId = generateTypeId(OBJECT_TYPE.MESSAGE);
 
-      const record = {
+      // Insert the message
+      await db.insert(aiMessages).values({
         messageId,
         conversationId,
         role: data.role,
         content: data.content,
         sources: data.sources || [],
-        createdAt: now,
-      };
-
-      await messagesTable.add([record]);
-
-      // Update conversation's updatedAt timestamp
-      const updatedConversation = {
-        ...conversation[0],
-        updatedAt: now,
-      };
-      await conversationsTable.update({
-        where: `conversationId = '${conversationId}'`,
-        values: updatedConversation,
       });
 
-      return this.toMessageDto(record);
+      // Update conversation's updatedAt timestamp (triggers $onUpdate)
+      await db
+        .update(aiConversations)
+        .set({ updatedAt: new Date() })
+        .where(eq(aiConversations.conversationId, conversationId));
+
+      // Fetch the created message to get auto-generated timestamps
+      const result = await db
+        .select()
+        .from(aiMessages)
+        .where(eq(aiMessages.messageId, messageId))
+        .limit(1);
+
+      return this.toMessageDto(result[0]);
     } catch (error) {
       logger.error('Add message error:', error);
       throw new Error('Failed to add message');
@@ -373,18 +343,20 @@ export class AIConversationService {
    */
   async getMostRecentConversation(uid: string): Promise<AIConversationDto | null> {
     try {
-      const table = await this.getConversationsTable();
+      const db = getDatabase();
 
-      const result = await table.query().where(`uid = '${uid}'`).toArray();
+      const result = await db
+        .select()
+        .from(aiConversations)
+        .where(eq(aiConversations.uid, uid))
+        .orderBy(desc(aiConversations.updatedAt))
+        .limit(1);
 
       if (result.length === 0) {
         return null;
       }
 
-      // Sort by updatedAt desc in JavaScript (LanceDB doesn't support orderBy directly)
-      result.sort((a: any, b: any) => Number(b.updatedAt) - Number(a.updatedAt));
-
-      const messageCount = await this.getMessageCount(String(result[0].conversationId));
+      const messageCount = await this.getMessageCount(result[0].conversationId);
       return this.toConversationDto(result[0], messageCount);
     } catch (error) {
       logger.error('Get most recent conversation error:', error);

@@ -384,3 +384,36 @@
 - Vector results are sliced with offset for pagination before fetching from MySQL
 - getMemos() uses SQL LIKE for full-text search which is different from semantic vector search
 ---
+## 2026-03-01 - US-012
+- Refactored AIConversationService to use Drizzle ORM instead of LanceDB
+- Replaced all LanceDB queries with Drizzle queries using eq(), and(), desc(), asc(), and sql operators
+- Implemented all required methods:
+  - createConversation(): Insert to MySQL with auto-generated timestamps
+  - getConversations(): Query with Drizzle, sorted by updatedAt desc
+  - getConversation(): Query with and() for conversationId + uid filtering
+  - updateConversation(): Drizzle update with title change
+  - deleteConversation(): Delete from MySQL (messages cascade deleted via FK)
+  - getMessages(): Query messages sorted by createdAt asc
+  - getMessageCount(): Count query using sql<number>`count(*)`
+  - addMessage(): Insert message + update conversation updatedAt
+  - getMostRecentConversation(): Query with orderBy desc and limit 1
+- Removed LanceDB dependency from AIConversationService constructor
+- Foreign key constraints (ai_conversations.uid → users.uid, ai_messages.conversationId → ai_conversations.conversationId) already defined in schema (from US-002)
+- Messages automatically cascade delete when conversation is deleted via onDelete: 'cascade' FK constraint
+- Updated conversion methods to work with Drizzle Date objects (convert to milliseconds)
+- Sources stored as JSON array in MySQL (already in schema)
+- Typecheck passes successfully
+
+**Files changed:**
+- apps/server/src/services/ai-conversation.service.ts (refactored to use Drizzle)
+
+**Learnings for future iterations:**
+- Foreign key cascade delete handles message cleanup automatically - no manual deletion needed
+- Pattern for sorting: use orderBy(desc(table.field)) or orderBy(asc(table.field))
+- Pattern for count queries: sql<number>`count(*)` with .select({ count: ... })
+- Drizzle Date timestamps need .getTime() conversion for DTOs
+- JSON columns in MySQL work seamlessly with arrays - no special conversion needed (unlike LanceDB Arrow types)
+- The $onUpdate() in schema automatically updates updatedAt, but we still manually set it for explicit updates
+- Always fetch after insert to get auto-generated timestamps (createdAt, updatedAt)
+- Cascade delete via foreign key is cleaner than manual deletion in multiple tables
+---
