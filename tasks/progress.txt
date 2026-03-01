@@ -490,3 +490,37 @@
 - enabled field is stored as int (1/0) not boolean in MySQL
 - testPush() method demonstrates that service methods can be composed (findById → testPush)
 ---
+## 2026-03-01 - US-017
+- Added comprehensive JSDoc comments to all DTO fields across 9 DTO files
+- Reviewed all existing DTOs for completeness against database schemas and controller responses
+- Confirmed all DTOs match their corresponding database tables and controller return types:
+  - MemoDto, MemoWithAttachmentsDto, MemoListItemDto - all scalar fields present
+  - AttachmentDto - all scalar fields (no embeddings exposed to client)
+  - CategoryDto, TagDto - complete with all fields
+  - UserInfoDto, UserProfileDto - complete with all fields
+  - AIConversationDto, AIMessageDto - complete (defined in explore.ts)
+  - PushRuleDto - complete with all fields
+  - ExploreDto, InsightsDto - complete with all fields
+- No missing DTOs identified - all controller responses already have corresponding DTOs
+- Rebuilt DTO package successfully
+- Typecheck passes in both server and web packages
+
+**Files changed:**
+- packages/dto/src/memo.ts (added JSDoc to 13 interfaces)
+- packages/dto/src/attachment.ts (added JSDoc to 5 interfaces)
+- packages/dto/src/category.ts (added JSDoc to 3 interfaces)
+- packages/dto/src/tag.ts (added JSDoc to 5 interfaces)
+- packages/dto/src/user.ts (added JSDoc to 4 interfaces)
+- packages/dto/src/ai.ts (added JSDoc to 5 interfaces)
+- packages/dto/src/explore.ts (added JSDoc to 20+ interfaces)
+- packages/dto/src/push-rule.ts (added JSDoc to 4 interfaces)
+- packages/dto/src/insights.ts (added JSDoc to 5 interfaces)
+
+**Learnings for future iterations:**
+- All DTOs were already complete - no fields were missing from the migration
+- AIConversationDto and AIMessageDto are defined in explore.ts (not in a separate ai-conversation.ts file)
+- AttachmentDto correctly excludes internal fields like uid and storage-specific fields (storageType, path, bucket, etc.)
+- The DTO package uses JSDoc format with /** */ for field-level documentation
+- After updating DTOs, always rebuild the package and run typecheck on both server and web
+- DTOs serve as the contract between frontend and backend - they should only include client-facing fields
+---

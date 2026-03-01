@@ -348,7 +348,7 @@
         "Typecheck passes in both server and web packages"
       ],
       "priority": 18,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
