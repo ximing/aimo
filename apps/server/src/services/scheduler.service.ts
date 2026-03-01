@@ -149,9 +149,7 @@ export class SchedulerService {
     // Get channels and send
     for (const channelConfig of rule.channels) {
       try {
-        // Generate content based on the channel's msgType
-        const msgType = channelConfig.msgType || 'text';
-        const content = await this.contentGenerator.generate(rule.contentType, rule.uid, msgType);
+        const content = await this.contentGenerator.generate(rule.contentType, rule.uid);
 
         const channel = this.channelFactory.getChannel(channelConfig);
         await channel.send({
