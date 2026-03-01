@@ -249,3 +249,28 @@
 - Vector tables act as foreign key references to MySQL primary keys (memoId → memos.memoId, attachmentId → attachments.attachmentId)
 - Indexes on vector fields will be created by the migration system (not in schema definition)
 ---
+
+## 2026-03-01 - US-018
+- Created transaction helper utility at apps/server/src/db/transaction.ts
+- Implemented withTransaction() function for basic transaction execution with automatic rollback
+- Implemented withTransactionContext() function for transactions with custom error context
+- Drizzle's db.transaction() method handles BEGIN, COMMIT, and ROLLBACK automatically
+- Added comprehensive error logging with stack traces for transaction failures
+- Transaction callbacks receive tx object with same API as db for executing queries
+- Rollback happens automatically when callback throws error (no manual rollback needed)
+- Context-aware transactions enrich error messages with operation context for better debugging
+- Typecheck passes successfully
+
+**Files changed:**
+- apps/server/src/db/transaction.ts (created - 125 lines)
+
+**Learnings for future iterations:**
+- Drizzle's transaction() method is the foundation - it handles all SQL transaction commands automatically
+- No need to manually call BEGIN/COMMIT/ROLLBACK - Drizzle handles this
+- Re-throw errors from callback to trigger automatic rollback
+- Use withTransactionContext() for complex operations where context helps debugging
+- Transaction object (tx) has identical API to db - use same query methods
+- Logger debug level for normal transaction flow, error level for failures
+- Pattern: await withTransaction(async (tx) => { /* queries using tx */ })
+- Pattern: await withTransactionContext({ operation: 'name', userId }, async (tx) => { /* queries */ })
+---
