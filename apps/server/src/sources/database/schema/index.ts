@@ -7,6 +7,8 @@ import { mysqlUsers, pgUsers, sqliteUsers, type UsersSelect, type UsersInsert } 
 import { mysqlMemos, pgMemos, sqliteMemos, type MemosSelect, type MemosInsert } from './memos.js';
 import { mysqlMemoRelations, pgMemoRelations, sqliteMemoRelations, type MemoRelationsSelect, type MemoRelationsInsert } from './memo-relations.js';
 import { mysqlAttachments, pgAttachments, sqliteAttachments, type AttachmentsSelect, type AttachmentsInsert } from './attachments.js';
+import { mysqlCategories, pgCategories, sqliteCategories, type CategoriesSelect, type CategoriesInsert } from './categories.js';
+import { mysqlTags, pgTags, sqliteTags, type TagsSelect, type TagsInsert } from './tags.js';
 import { mysqlMigrations, pgMigrations, sqliteMigrations, type MigrationsSelect, type MigrationsInsert } from './_migrations.js';
 
 import type { DatabaseType } from '../drizzle-adapter.js';
@@ -16,6 +18,8 @@ export { mysqlUsers, pgUsers, sqliteUsers, type UsersSelect, type UsersInsert };
 export { mysqlMemos, pgMemos, sqliteMemos, type MemosSelect, type MemosInsert };
 export { mysqlMemoRelations, pgMemoRelations, sqliteMemoRelations, type MemoRelationsSelect, type MemoRelationsInsert };
 export { mysqlAttachments, pgAttachments, sqliteAttachments, type AttachmentsSelect, type AttachmentsInsert };
+export { mysqlCategories, pgCategories, sqliteCategories, type CategoriesSelect, type CategoriesInsert };
+export { mysqlTags, pgTags, sqliteTags, type TagsSelect, type TagsInsert };
 export { mysqlMigrations, pgMigrations, sqliteMigrations, type MigrationsSelect, type MigrationsInsert };
 
 /**
@@ -85,5 +89,33 @@ export function getMigrationsTable(dbType: DatabaseType) {
       return pgMigrations;
     case 'sqlite':
       return sqliteMigrations;
+  }
+}
+
+/**
+ * Get the appropriate categories table based on database type
+ */
+export function getCategoriesTable(dbType: DatabaseType) {
+  switch (dbType) {
+    case 'mysql':
+      return mysqlCategories;
+    case 'postgresql':
+      return pgCategories;
+    case 'sqlite':
+      return sqliteCategories;
+  }
+}
+
+/**
+ * Get the appropriate tags table based on database type
+ */
+export function getTagsTable(dbType: DatabaseType) {
+  switch (dbType) {
+    case 'mysql':
+      return mysqlTags;
+    case 'postgresql':
+      return pgTags;
+    case 'sqlite':
+      return sqliteTags;
   }
 }
