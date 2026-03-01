@@ -1,29 +1,27 @@
 import * as bcrypt from 'bcrypt';
 import { Service } from 'typedi';
+import { eq } from 'drizzle-orm';
 
-import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
+import { getDatabase } from '../db/connection.js';
+import { users } from '../db/schema/users.js';
 import { generateUid } from '../utils/id.js';
 import { logger } from '../utils/logger.js';
 
 import { CategoryService } from './category.service.js';
 
-import type { User, NewUser } from '../models/db/user.schema.js';
-
-// Type for LanceDB table records
-type UserRecord = Record<string, any>;
+import type { User, NewUser } from '../db/schema/users.js';
 
 // Default category name for new users
 const DEFAULT_CATEGORY_NAME = '日记';
 
 @Service()
 export class UserService {
-  constructor(
-    private lanceDatabase: LanceDatabaseService,
-    private categoryService: CategoryService
-  ) {}
+  constructor(private categoryService: CategoryService) {}
 
   async createUser(userData: NewUser): Promise<User> {
     try {
+      const db = getDatabase();
+
       // Check if user with email already exists
       if (userData.email) {
         const existingUser = await this.findUserByEmail(userData.email);
@@ -33,9 +31,9 @@ export class UserService {
       }
 
       // Create new user record
-      const now = Date.now();
-      const user: User = {
-        uid: userData.uid || generateUid(),
+      const uid = userData.uid || generateUid();
+      const newUser: NewUser = {
+        uid,
         email: userData.email,
         phone: userData.phone,
         password: userData.password,
@@ -43,16 +41,17 @@ export class UserService {
         nickname: userData.nickname,
         avatar: userData.avatar,
         status: userData.status ?? 1,
-        createdAt: userData.createdAt || now,
-        updatedAt: userData.updatedAt || now,
       };
 
-      const usersTable = await this.lanceDatabase.openTable('users');
-      await usersTable.add([user as unknown as Record<string, unknown>]);
+      // Insert user into MySQL
+      await db.insert(users).values(newUser);
+
+      // Fetch the created user to get auto-generated timestamps
+      const [createdUser] = await db.select().from(users).where(eq(users.uid, uid));
 
       // Create default category for new user
       try {
-        await this.categoryService.createCategory(user.uid, {
+        await this.categoryService.createCategory(uid, {
           name: DEFAULT_CATEGORY_NAME,
         });
       } catch (error) {
@@ -60,7 +59,7 @@ export class UserService {
         logger.warn('Failed to create default category for user:', error);
       }
 
-      return user;
+      return createdUser;
     } catch (error) {
       logger.error('Error creating user:', error);
       throw error;
@@ -72,11 +71,10 @@ export class UserService {
    */
   async findUserByEmail(email: string): Promise<User | null> {
     try {
-      const usersTable = await this.lanceDatabase.openTable('users');
+      const db = getDatabase();
+      const results = await db.select().from(users).where(eq(users.email, email)).limit(1);
 
-      const results = await usersTable.query().where(`email = '${email}'`).limit(1).toArray();
-
-      return results.length > 0 ? (results[0] as User) : null;
+      return results.length > 0 ? results[0] : null;
     } catch (error) {
       logger.error('Error finding user by email:', error);
       throw error;
@@ -88,13 +86,27 @@ export class UserService {
    */
   async findUserByUid(uid: string): Promise<User | null> {
     try {
-      const usersTable = await this.lanceDatabase.openTable('users');
+      const db = getDatabase();
+      const results = await db.select().from(users).where(eq(users.uid, uid)).limit(1);
 
-      const results = await usersTable.query().where(`uid = '${uid}'`).limit(1).toArray();
-
-      return results.length > 0 ? (results[0] as User) : null;
+      return results.length > 0 ? results[0] : null;
     } catch (error) {
       logger.error('Error finding user by UID:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Find user by phone
+   */
+  async findUserByPhone(phone: string): Promise<User | null> {
+    try {
+      const db = getDatabase();
+      const results = await db.select().from(users).where(eq(users.phone, phone)).limit(1);
+
+      return results.length > 0 ? results[0] : null;
+    } catch (error) {
+      logger.error('Error finding user by phone:', error);
       throw error;
     }
   }
@@ -130,40 +142,24 @@ export class UserService {
    */
   async updateUser(uid: string, updates: Partial<User>): Promise<User | null> {
     try {
-      const usersTable = await this.lanceDatabase.openTable('users');
+      const db = getDatabase();
 
-      // Find existing user
-      const existingUsers = await usersTable.query().where(`uid = '${uid}'`).limit(1).toArray();
-
-      if (existingUsers.length === 0) {
+      // Check if user exists
+      const existingUser = await this.findUserByUid(uid);
+      if (!existingUser) {
         throw new Error('User not found');
       }
 
-      const existingUser = existingUsers[0] as User;
-      const now = Date.now();
-      const updatedUser: UserRecord = {
-        ...existingUser,
-        ...updates,
-        uid: existingUser.uid, // Don't allow changing UID
-        updatedAt: now,
-      };
+      // Remove uid from updates to prevent changing primary key
+      const { uid: _, ...updateValues } = updates;
 
-      const updateValues: Record<string, any> = { updatedAt: now };
-      for (const [key, value] of Object.entries(updates)) {
-        if (key === 'uid') {
-          continue;
-        }
-        if (value !== undefined) {
-          updateValues[key] = value;
-        }
-      }
+      // Update user in MySQL
+      await db.update(users).set(updateValues).where(eq(users.uid, uid));
 
-      await usersTable.update({
-        where: `uid = '${uid}'`,
-        values: updateValues,
-      });
+      // Fetch updated user
+      const [updatedUser] = await db.select().from(users).where(eq(users.uid, uid));
 
-      return updatedUser as User;
+      return updatedUser;
     } catch (error) {
       logger.error('Error updating user:', error);
       throw error;
@@ -175,23 +171,16 @@ export class UserService {
    */
   async deleteUser(uid: string): Promise<boolean> {
     try {
-      const usersTable = await this.lanceDatabase.openTable('users');
+      const db = getDatabase();
 
       // Check if user exists
-      const existing = await usersTable.query().where(`uid = '${uid}'`).limit(1).toArray();
-
-      if (existing.length === 0) {
+      const existingUser = await this.findUserByUid(uid);
+      if (!existingUser) {
         throw new Error('User not found');
       }
 
       // Mark as inactive instead of hard delete
-      await usersTable.update({
-        where: `uid = '${uid}'`,
-        values: {
-          status: 0,
-          updatedAt: Date.now(),
-        },
-      });
+      await db.update(users).set({ status: 0 }).where(eq(users.uid, uid));
 
       return true;
     } catch (error) {

@@ -56,8 +56,8 @@ export class UserV1Controller {
       // Return user info
       const userInfo: UserInfoDto = {
         uid: user.uid,
-        email: user.email,
-        nickname: user.nickname,
+        email: user.email ?? undefined,
+        nickname: user.nickname ?? undefined,
         avatar: avatar,
       };
 
@@ -88,8 +88,8 @@ export class UserV1Controller {
       // Return updated user info
       const userInfo: UserInfoDto = {
         uid: updatedUser.uid,
-        email: updatedUser.email,
-        nickname: updatedUser.nickname,
+        email: updatedUser.email ?? undefined,
+        nickname: updatedUser.nickname ?? undefined,
         avatar: avatar,
       };
 

@@ -73,8 +73,8 @@ export const authHandler = async (request: Request, res: Response, next: NextFun
     // Add user information to request context
     request.user = {
       uid: user.uid,
-      email: user.email,
-      nickname: user.nickname,
+      email: user.email ?? undefined,
+      nickname: user.nickname ?? undefined,
     };
 
     // Continue to the next middleware or route handler

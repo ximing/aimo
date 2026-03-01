@@ -449,8 +449,8 @@ export class MemoV1Controller {
 
       const userInfo: UserInfoDto = {
         uid: user.uid,
-        email: user.email,
-        nickname: user.nickname,
+        email: user.email ?? undefined,
+        nickname: user.nickname ?? undefined,
         avatar: await this.avatarService.generateAvatarAccessUrl(user.avatar || ''),
       };
 
