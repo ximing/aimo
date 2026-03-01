@@ -8,6 +8,7 @@ import { logger } from '../utils/logger.js';
 import { AttachmentService } from './attachment.service.js';
 import { EmbeddingService } from './embedding.service.js';
 import { MemoRelationService } from './memo-relation.service.js';
+import { MemoRepository } from '../repositories/memo.repository.js';
 import { TagService } from './tag.service.js';
 
 import type { Memo, NewMemo } from '../models/db/memo.schema.js';
@@ -64,6 +65,7 @@ export class MemoService {
     private embeddingService: EmbeddingService,
     private attachmentService: AttachmentService,
     private memoRelationService: MemoRelationService,
+    private memoRepository: MemoRepository,
     private tagService: TagService
   ) {}
 
@@ -232,8 +234,25 @@ export class MemoService {
         attachments: attachments && attachments.length > 0 ? attachments : undefined,
       };
 
+      // Write to LanceDB (vectors + ID reference)
       const memosTable = await this.lanceDatabase.openTable('memos');
       await memosTable.add([memoRecord as unknown as Record<string, unknown>]);
+
+      // Write to Drizzle (scalar data)
+      await this.memoRepository.create({
+        memoId,
+        uid,
+        content,
+        type,
+        categoryId: categoryId || undefined,
+        attachments,
+        tagIds: resolvedTagIds.length > 0 ? resolvedTagIds : undefined,
+        tags: resolvedTagNames.length > 0 ? resolvedTagNames : undefined,
+        isPublic: isPublic || false,
+        createdAt: createdAt || now,
+        updatedAt: updatedAt || now,
+        source: source || undefined,
+      });
 
       // Create relations if provided
       if (relationIds && relationIds.length > 0) {
@@ -265,14 +284,26 @@ export class MemoService {
         resolvedTagIds.length > 0 ? await this.tagService.getTagsByIds(resolvedTagIds, uid) : [];
 
       // Return with attachment DTOs (exclude embedding to reduce payload)
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { embedding: _embedding, tagIds: _tagIds, ...memoWithoutEmbedding } = memo;
+      // Fetch from Drizzle to get the canonical response
+      const memoDto = await this.memoRepository.findById(memoId);
+      if (!memoDto) {
+        throw new Error('Failed to retrieve created memo');
+      }
+
       return {
-        ...memoWithoutEmbedding,
-        type,
+        memoId: memoDto.memoId,
+        uid: memoDto.uid,
+        content: memoDto.content,
+        type: memoDto.type,
+        categoryId: memoDto.categoryId,
         attachments: attachmentDtos,
         tags: tagDtos,
-      };
+        tagIds: memoDto.tagIds,
+        isPublic: memoDto.isPublic,
+        createdAt: memoDto.createdAt,
+        updatedAt: memoDto.updatedAt,
+        source: memoDto.source,
+      } as MemoWithAttachmentsDto;
     } catch (error) {
       logger.error('Error creating memo:', error);
       throw error;
@@ -281,6 +312,7 @@ export class MemoService {
 
   /**
    * Get memos for a user with pagination and filters (excludes embedding to reduce payload)
+   * Fetches from Drizzle for scalar data
    */
   async getMemos(options: MemoSearchOptions): Promise<PaginatedMemoListDto> {
     try {
@@ -290,14 +322,11 @@ export class MemoService {
         limit = 10,
         sortBy = 'createdAt',
         sortOrder = 'desc',
-        search,
         categoryId,
         tags,
         startDate,
         endDate,
       } = options;
-
-      const memosTable = await this.lanceDatabase.openTable('memos');
 
       // Resolve tag names to tag IDs for filtering
       let tagIdsToFilter: string[] | undefined;
@@ -305,84 +334,60 @@ export class MemoService {
         tagIdsToFilter = await this.tagService.resolveTagNamesToIds(tags, uid);
       }
 
-      // Build filter conditions
-      // Note: LanceDB Timestamp type cannot be compared with integer literals in SQL
-      // So we build WHERE clause without date filters and apply them in JavaScript
-      const filterConditions: string[] = [`uid = '${uid}'`];
+      // Use Drizzle repository with scalar filters
       const isUncategorizedFilter = categoryId === UNCATEGORIZED_CATEGORY_ID;
 
-      // Add category filter
-      if (categoryId && !isUncategorizedFilter) {
-        filterConditions.push(`categoryId = '${categoryId}'`);
-      }
+      // Handle uncategorized filter - pass undefined to repository
+      const categoryFilter = isUncategorizedFilter ? undefined : categoryId;
 
-      // Add search filter
-      if (search && search.trim().length > 0) {
-        filterConditions.push(`content LIKE '%${search}%'`);
-      }
+      const result = await this.memoRepository.search({
+        uid,
+        page,
+        limit,
+        sortBy,
+        sortOrder,
+        categoryId: categoryFilter,
+        tags: tags,
+        startDate,
+        endDate,
+      });
 
-      const whereClause = filterConditions.join(' AND ');
-
-      // Get all matching records (without date range, which will be filtered in JavaScript)
-      let allResults = await memosTable.query().where(whereClause).toArray();
-
-      // Apply date range filters in JavaScript (LanceDB cannot compare Timestamp with Int64 literals in SQL)
-      const startTimestamp = startDate && !isNaN(startDate.getTime()) ? startDate.getTime() : null;
-      const endTimestamp = endDate && !isNaN(endDate.getTime()) ? endDate.getTime() : null;
-
-      if (startTimestamp !== null || endTimestamp !== null) {
-        allResults = allResults.filter((memo: any) => {
-          const memoTime = memo.createdAt as number;
-          if (startTimestamp !== null && memoTime < startTimestamp) return false;
-          if (endTimestamp !== null && memoTime > endTimestamp) return false;
-          return true;
-        });
-      }
-
-      if (isUncategorizedFilter) {
-        allResults = allResults.filter((memo: any) => memo.categoryId == undefined);
-      }
-
-      // Apply tag filter - memos must have ALL specified tags (AND logic)
+      // Apply tag filter in memory (AND logic)
+      let items = result.items;
       if (tagIdsToFilter && tagIdsToFilter.length > 0) {
-        allResults = allResults.filter((memo: any) => {
-          const memoTagIds = this.convertArrowAttachments(memo.tagIds);
+        items = items.filter((memo) => {
+          const memoTagIds = memo.tagIds || [];
           // Check if memo has ALL the specified tag IDs
           return tagIdsToFilter!.every((tagId) => memoTagIds.includes(tagId));
         });
       }
 
-      const total = allResults.length;
+      // Handle uncategorized filter
+      if (isUncategorizedFilter) {
+        items = items.filter((memo) => !memo.categoryId);
+      }
 
-      // Get paginated results
-      const offset = (page - 1) * limit;
-      const results = allResults
-        .sort((a: any, b: any) => {
-          const aValue = sortBy === 'createdAt' ? a.createdAt : a.updatedAt;
-          const bValue = sortBy === 'createdAt' ? b.createdAt : b.updatedAt;
-          const comparison = aValue - bValue;
-          return sortOrder === 'asc' ? comparison : -comparison;
-        })
-        .slice(offset, offset + limit);
+      const total = items.length;
 
-      // Get attachment IDs and convert to DTOs
-      const items: MemoListItemDto[] = [];
-      for (const memo of results) {
-        const attachmentIds = this.convertArrowAttachments(memo.attachments);
+      // Get attachment DTOs for each memo
+      const itemsWithAttachments: MemoListItemDto[] = [];
+      for (const memo of items) {
+        const attachmentIds = memo.attachments || [];
         const attachmentDtos: AttachmentDto[] =
           attachmentIds.length > 0
             ? await this.attachmentService.getAttachmentsByIds(attachmentIds, uid)
             : [];
 
-        items.push({
+        itemsWithAttachments.push({
           memoId: memo.memoId,
           uid: memo.uid,
           content: memo.content,
-          type: (memo.type as 'text' | 'audio' | 'video') || 'text',
+          type: memo.type,
           categoryId: memo.categoryId,
           attachments: attachmentDtos,
-          tagIds: this.convertArrowAttachments(memo.tagIds),
-          isPublic: memo.isPublic ?? false,
+          tags: memo.tags,
+          tagIds: memo.tagIds,
+          isPublic: memo.isPublic,
           createdAt: memo.createdAt,
           updatedAt: memo.updatedAt,
           source: memo.source,
@@ -390,7 +395,7 @@ export class MemoService {
       }
 
       // Enrich items with tags
-      const itemsWithTags = await this.enrichTags(uid, items);
+      const itemsWithTags = await this.enrichTags(uid, itemsWithAttachments);
 
       // Enrich items with relations
       const enrichedItems = await this.enrichMemosWithRelations(uid, itemsWithTags);
@@ -411,42 +416,35 @@ export class MemoService {
   }
 
   /**
-   * Get a single memo by ID
+   * Get a single memo by ID - fetches from Drizzle
    */
   async getMemoById(memoId: string, uid: string): Promise<MemoWithAttachmentsDto | null> {
     try {
-      const memosTable = await this.lanceDatabase.openTable('memos');
-
-      const results = await memosTable
-        .query()
-        .where(`memoId = '${memoId}' AND uid = '${uid}'`)
-        .limit(1)
-        .toArray();
-
-      if (results.length === 0) {
+      // Fetch from Drizzle
+      const memoDto = await this.memoRepository.findById(memoId);
+      if (!memoDto || memoDto.uid !== uid) {
         return null;
       }
 
-      const memo: any = results[0];
-      const attachmentIds = this.convertArrowAttachments(memo.attachments);
+      const attachmentIds = memoDto.attachments || [];
       const attachmentDtos: AttachmentDto[] =
         attachmentIds.length > 0
           ? await this.attachmentService.getAttachmentsByIds(attachmentIds, uid)
           : [];
 
-      // Build base memo object with attachment DTOs
+      // Build memo object with attachment DTOs
       const memoWithAttachments: MemoListItemDto = {
-        memoId: memo.memoId,
-        uid: memo.uid,
-        content: memo.content,
-        type: (memo.type as 'text' | 'audio' | 'video') || 'text',
-        categoryId: memo.categoryId,
+        memoId: memoDto.memoId,
+        uid: memoDto.uid,
+        content: memoDto.content,
+        type: memoDto.type,
+        categoryId: memoDto.categoryId,
         attachments: attachmentDtos,
-        tagIds: this.convertArrowAttachments(memo.tagIds),
-        isPublic: memo.isPublic ?? false,
-        createdAt: memo.createdAt,
-        updatedAt: memo.updatedAt,
-        source: memo.source,
+        tagIds: memoDto.tagIds,
+        isPublic: memoDto.isPublic,
+        createdAt: memoDto.createdAt,
+        updatedAt: memoDto.updatedAt,
+        source: memoDto.source,
       };
 
       // Enrich with tags
@@ -560,10 +558,61 @@ export class MemoService {
         updateValues.source = source;
       }
 
-      // Update using proper update method with where clause
+      // Update LanceDB (vectors + ID reference)
       await memosTable.update({
         where: `memoId = '${memoId}' AND uid = '${uid}'`,
         values: updateValues,
+      });
+
+      // Update Drizzle (scalar data)
+      const existingTagIds = this.convertArrowAttachments(existingMemo.tagIds);
+      let finalTagIds = existingTagIds;
+      let resolvedTagNames: string[] = [];
+
+      // Resolve tags to tagIds if provided
+      if (tags !== undefined || tagIds !== undefined) {
+        if (tagIds && tagIds.length > 0) {
+          finalTagIds = tagIds;
+          const existingTags = await this.tagService.getTagsByIds(tagIds, uid);
+          resolvedTagNames = existingTags.map((t) => t.name);
+        } else if (tags && tags.length > 0) {
+          finalTagIds = await this.tagService.resolveTagNamesToIds(tags, uid);
+          resolvedTagNames = tags;
+        }
+      }
+
+      // Calculate tag usage changes
+      const addedTagIds = finalTagIds.filter((id) => !existingTagIds.includes(id));
+      const removedTagIds = existingTagIds.filter((id) => !finalTagIds.includes(id));
+
+      // Update usage counts for added tags
+      for (const tagId of addedTagIds) {
+        try {
+          await this.tagService.incrementUsageCount(tagId, uid);
+        } catch (error) {
+          logger.warn(`Failed to increment usage count for tag ${tagId}:`, error);
+        }
+      }
+
+      // Update usage counts for removed tags
+      for (const tagId of removedTagIds) {
+        try {
+          await this.tagService.decrementUsageCount(tagId, uid);
+        } catch (error) {
+          logger.warn(`Failed to decrement usage count for tag ${tagId}:`, error);
+        }
+      }
+
+      // Update in Drizzle
+      await this.memoRepository.update(memoId, {
+        content,
+        type: type !== undefined ? (type === null ? 'text' : type) : undefined,
+        categoryId: categoryId !== undefined ? (categoryId || null) : undefined,
+        attachments: attachments !== undefined ? attachments : undefined,
+        tagIds: finalTagIds.length > 0 ? finalTagIds : undefined,
+        tags: resolvedTagNames.length > 0 ? resolvedTagNames : undefined,
+        isPublic,
+        source,
       });
 
       // Update relations if provided
@@ -576,94 +625,31 @@ export class MemoService {
         }
       }
 
-      // Update tags if provided
-      let finalTagIds = this.convertArrowAttachments(existingMemo.tagIds);
-      if (tags !== undefined || tagIds !== undefined) {
-        try {
-          // Resolve tags to tagIds
-          let resolvedTagIds: string[] = [];
-          if (tagIds && tagIds.length > 0) {
-            resolvedTagIds = tagIds;
-          } else if (tags && tags.length > 0) {
-            resolvedTagIds = await this.tagService.resolveTagNamesToIds(tags, uid);
-          }
-
-          // Calculate tag usage changes
-          const addedTagIds = resolvedTagIds.filter((id) => !finalTagIds.includes(id));
-          const removedTagIds = finalTagIds.filter((id) => !resolvedTagIds.includes(id));
-
-          // Update memo with new tag IDs
-          const tagUpdateValues: Record<string, any> = { updatedAt: now };
-          const tagUpdateValuesSql: Record<string, string> = {};
-
-          if (resolvedTagIds.length > 0) {
-            tagUpdateValues.tagIds = resolvedTagIds;
-          } else {
-            // Use SQL expression to set NULL for list type
-            tagUpdateValuesSql.tagIds = "arrow_cast(NULL, 'List(Utf8)')";
-          }
-
-          const tagUpdateOptions: {
-            where: string;
-            values: Record<string, any>;
-            valuesSql?: Record<string, string>;
-          } = {
-            where: `memoId = '${memoId}' AND uid = '${uid}'`,
-            values: tagUpdateValues,
-          };
-
-          if (Object.keys(tagUpdateValuesSql).length > 0) {
-            tagUpdateOptions.valuesSql = tagUpdateValuesSql;
-          }
-
-          await memosTable.update(tagUpdateOptions);
-
-          // Update usage counts for added tags
-          for (const tagId of addedTagIds) {
-            try {
-              await this.tagService.incrementUsageCount(tagId, uid);
-            } catch (error) {
-              logger.warn(`Failed to increment usage count for tag ${tagId}:`, error);
-            }
-          }
-
-          // Update usage counts for removed tags
-          for (const tagId of removedTagIds) {
-            try {
-              await this.tagService.decrementUsageCount(tagId, uid);
-            } catch (error) {
-              logger.warn(`Failed to decrement usage count for tag ${tagId}:`, error);
-            }
-          }
-
-          finalTagIds = resolvedTagIds;
-        } catch (error) {
-          logger.warn('Failed to update memo tags:', error);
-          // Don't throw - allow memo update even if tags fail
-        }
+      // Fetch updated memo from Drizzle
+      const updatedMemoDto = await this.memoRepository.findById(memoId);
+      if (!updatedMemoDto) {
+        throw new Error('Failed to retrieve updated memo');
       }
 
       // Build updated memo object with attachment DTOs
-      const finalAttachmentIds =
-        attachments === undefined
-          ? this.convertArrowAttachments(existingMemo.attachments)
-          : attachments;
+      const finalAttachmentIds = updatedMemoDto.attachments || [];
       const finalAttachmentDtos: AttachmentDto[] =
         finalAttachmentIds.length > 0
           ? await this.attachmentService.getAttachmentsByIds(finalAttachmentIds, uid)
           : [];
 
       const updatedMemo: MemoListItemDto = {
-        memoId,
-        uid,
-        content,
-        type: existingMemo.type as 'text' | 'audio' | 'video',
-        categoryId: categoryId === undefined ? existingMemo.categoryId : categoryId || undefined,
+        memoId: updatedMemoDto.memoId,
+        uid: updatedMemoDto.uid,
+        content: updatedMemoDto.content,
+        type: updatedMemoDto.type,
+        categoryId: updatedMemoDto.categoryId,
         attachments: finalAttachmentDtos,
         tagIds: finalTagIds,
-        isPublic: isPublic === undefined ? (existingMemo.isPublic ?? false) : isPublic,
-        createdAt: existingMemo.createdAt,
-        updatedAt: now,
+        isPublic: updatedMemoDto.isPublic,
+        createdAt: updatedMemoDto.createdAt,
+        updatedAt: updatedMemoDto.updatedAt,
+        source: updatedMemoDto.source,
       };
 
       // Enrich with tags and relations (same logic as getMemoById)
@@ -725,9 +711,7 @@ export class MemoService {
       const addedTagIds = resolvedTagIds.filter((id) => !existingTagIds.includes(id));
       const removedTagIds = existingTagIds.filter((id) => !resolvedTagIds.includes(id));
 
-      // Update the memo with new tag IDs
-      // Note: LanceDB cannot automatically convert empty array to NULL for List types
-      // We need to use valuesSql to explicitly set NULL when array is empty
+      // Update LanceDB with new tag IDs
       const now = Date.now();
       const updateValues: Record<string, any> = { updatedAt: now };
       const updateValuesSql: Record<string, string> = {};
@@ -756,6 +740,13 @@ export class MemoService {
 
       await memosTable.update(updateOptions);
 
+      // Update Drizzle with new tag IDs
+      await this.memoRepository.update(memoId, {
+        content: '', // Required by UpdateMemoDto but repository handles optional updates
+        tagIds: resolvedTagIds.length > 0 ? resolvedTagIds : undefined,
+        tags: resolvedTagNames.length > 0 ? resolvedTagNames : undefined,
+      });
+
       // Update usage counts for added tags
       for (const tagId of addedTagIds) {
         try {
@@ -774,8 +765,14 @@ export class MemoService {
         }
       }
 
+      // Fetch updated memo from Drizzle
+      const updatedMemoDto = await this.memoRepository.findById(memoId);
+      if (!updatedMemoDto) {
+        throw new Error('Failed to retrieve updated memo');
+      }
+
       // Get attachment DTOs
-      const attachmentIds = this.convertArrowAttachments(existingMemo.attachments);
+      const attachmentIds = updatedMemoDto.attachments || [];
       const attachmentDtos =
         attachmentIds.length > 0
           ? await this.attachmentService.getAttachmentsByIds(attachmentIds, uid)
@@ -787,17 +784,18 @@ export class MemoService {
 
       // Build updated memo object
       const updatedMemo: MemoListItemDto = {
-        memoId,
-        uid,
-        content: existingMemo.content,
-        type: (existingMemo.type as 'text' | 'audio' | 'video') || 'text',
-        categoryId: existingMemo.categoryId,
+        memoId: updatedMemoDto.memoId,
+        uid: updatedMemoDto.uid,
+        content: updatedMemoDto.content,
+        type: updatedMemoDto.type,
+        categoryId: updatedMemoDto.categoryId,
         attachments: attachmentDtos,
         tags: tagDtos,
         tagIds: resolvedTagIds,
-        isPublic: existingMemo.isPublic ?? false,
-        createdAt: existingMemo.createdAt,
-        updatedAt: now,
+        isPublic: updatedMemoDto.isPublic,
+        createdAt: updatedMemoDto.createdAt,
+        updatedAt: updatedMemoDto.updatedAt,
+        source: updatedMemoDto.source,
       };
 
       // Enrich with relations
@@ -813,7 +811,7 @@ export class MemoService {
   }
 
   /**
-   * Delete a memo
+   * Delete a memo - removes from both LanceDB and Drizzle
    */
   async deleteMemo(memoId: string, uid: string): Promise<boolean> {
     try {
@@ -832,8 +830,11 @@ export class MemoService {
       const existingMemo: any = results[0];
       const existingTagIds = this.convertArrowAttachments(existingMemo.tagIds);
 
-      // Delete the memo using LanceDB's delete method
+      // Delete from LanceDB (vectors + ID reference)
       await memosTable.delete(`memoId = '${memoId}' AND uid = '${uid}'`);
+
+      // Delete from Drizzle (scalar data)
+      await this.memoRepository.delete(memoId);
 
       // Clean up relations (both as source and as target)
       try {
@@ -925,43 +926,64 @@ export class MemoService {
         allResults = allResults.filter((memo: any) => memo.categoryId == undefined);
       }
 
-      const total = allResults.length;
+      // Extract memo IDs from LanceDB results
+      const memoIds = allResults.map((m: any) => m.memoId);
+      const memoDistances = new Map<string, number>();
+      for (const m of allResults) {
+        memoDistances.set(m.memoId, m._distance || 0);
+      }
+
+      // Fetch memo details from Drizzle using the IDs
+      const memoDtos = await this.memoRepository.findByIds(memoIds);
+
+      // Sort by the order from LanceDB (relevance)
+      const sortedMemos = memoIds
+        .map((id) => memoDtos.find((m) => m.memoId === id))
+        .filter((m) => m !== undefined) as import('@aimo/dto').MemoDto[];
+
+      const total = sortedMemos.length;
       const totalPages = Math.ceil(total / limit);
-      const paginatedResults = allResults.slice(offset, offset + limit);
+      const paginatedMemos = sortedMemos.slice(offset, offset + limit);
 
       // Map results to DTOs, preserving the distance-based sort order
-      // Results are already sorted by relevance (distance ascending = most similar first)
       const items: MemoListItemWithScoreDto[] = [];
-      for (const memo of paginatedResults) {
-        const attachmentIds = this.convertArrowAttachments(memo.attachments);
+      for (const memo of paginatedMemos) {
+        const attachmentIds = memo.attachments || [];
         const attachmentDtos: AttachmentDto[] =
           attachmentIds.length > 0
             ? await this.attachmentService.getAttachmentsByIds(attachmentIds, uid)
             : [];
 
+        const distance = memoDistances.get(memo.memoId) || 0;
+
         items.push({
           memoId: memo.memoId,
           uid: memo.uid,
           content: memo.content,
-          type: (memo.type as 'text' | 'audio' | 'video') || 'text',
+          type: memo.type,
           categoryId: memo.categoryId,
           attachments: attachmentDtos,
-          tagIds: this.convertArrowAttachments(memo.tagIds),
+          tagIds: memo.tagIds,
+          isPublic: memo.isPublic,
           createdAt: memo.createdAt,
           updatedAt: memo.updatedAt,
+          source: memo.source,
           // LanceDB returns _distance (L2 distance metric)
           // Lower _distance = higher similarity
           // Normalize to relevance score: 0-1, where 1.0 = perfect match
           // For normalized vectors, _distance ranges from 0 to 2
-          relevanceScore: Math.max(0, Math.min(1, 1 - (memo._distance || 0) / 2)),
+          relevanceScore: Math.max(0, Math.min(1, 1 - distance / 2)),
         });
       }
 
       // Enrich items with tags
       const itemsWithTags = await this.enrichTags(uid, items);
 
+      // Enrich items with relations
+      const enrichedItems = await this.enrichMemosWithRelations(uid, itemsWithTags);
+
       return {
-        items: itemsWithTags,
+        items: enrichedItems,
         pagination: {
           total,
           page,
