@@ -274,3 +274,35 @@
 - Pattern: await withTransaction(async (tx) => { /* queries using tx */ })
 - Pattern: await withTransactionContext({ operation: 'name', userId }, async (tx) => { /* queries */ })
 ---
+
+## 2026-03-01 - US-009
+- Refactored AttachmentService to use Drizzle ORM for scalar data and LanceDB for vector embeddings
+- Replaced all LanceDB scalar queries with Drizzle queries using eq(), and(), desc(), and sql operators
+- Implemented all required methods:
+  - createAttachment(): Insert scalar fields to MySQL, store multimodalEmbedding in LanceDB attachment_vectors table
+  - getAttachment(): Query MySQL for scalar data with Drizzle
+  - getAttachmentsByUser(): Query MySQL with pagination and sorting using orderBy()
+  - updateAttachmentProperties(): Update MySQL properties field
+  - deleteAttachment(): Delete from both MySQL and LanceDB attachment_vectors
+  - getAttachmentsByIds(): Batch query MySQL using IN clause with sql.raw()
+  - getAttachmentBuffer(): Query MySQL for download metadata
+- Updated generateAndUpdateMultimodalEmbedding() to store embeddings in LanceDB attachment_vectors table
+- Removed LanceDB dependency from constructor, created local instance for vector operations only
+- Foreign key constraint attachments.uid → users.uid was already defined in schema (from US-002)
+- Converted Drizzle Date timestamps to milliseconds for AttachmentDto compatibility
+- Typecheck passes successfully
+
+**Files changed:**
+- apps/server/src/services/attachment.service.ts (refactored to use Drizzle + LanceDB hybrid approach)
+
+**Learnings for future iterations:**
+- Hybrid approach: scalar data in MySQL via Drizzle, vector data in LanceDB
+- Pattern for pagination with sorting: use .orderBy(desc(table.field)) or .orderBy(table.field) for asc
+- Pattern for count queries: sql<number>`count(*)` with .select({ count: ... })
+- Use sql.raw() for dynamic IN clauses: sql`${table.field} IN ${sql.raw(`(${ids.map(id => `'${id}'`).join(',')})`)}
+- LanceDB service instantiated locally in constructor for vector-only operations (attachment_vectors table)
+- Multimodal embeddings stored separately in attachment_vectors with fixed 1024 dimensions
+- When deleting attachments, also delete from attachment_vectors (wrap in try/catch as vector may not exist)
+- Drizzle nullable fields (string | null) need ?? undefined conversion for DTOs
+- Date timestamps from Drizzle converted to milliseconds with .getTime() for compatibility
+---
