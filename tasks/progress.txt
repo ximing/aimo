@@ -3,9 +3,47 @@
 Branch: ralph/drizzle-migration
 
 ## Status
+- US-005: COMPLETED
+- US-004: COMPLETED
 - US-003: COMPLETED
 
 ## Notes
+
+## 2026-03-01 - US-005
+- Added DATABASE_URL env var support to config.ts with parseMySQLUrl() and parsePostgreSQLUrl() functions
+- Added environment validation on startup with validateRequiredEnvVars() function
+- Validates: JWT_SECRET, OPENAI_API_KEY, and database connection parameters
+- Throws descriptive error messages for missing required vars
+- Updated .env.example files (root and apps/server) with DATABASE_URL, DATABASE_TYPE, DATABASE_POOL_SIZE
+- Updated CLAUDE.md with:
+  - Hybrid storage architecture description (Drizzle + LanceDB)
+  - Database configuration section with connection string examples
+  - Updated Key Technologies to list Drizzle ORM
+  - Added Repository Layer Pattern section
+  - Added Database CLI Commands section
+  - Updated Storage Adapters to include database/ directory
+- Typecheck passes, lint passes (warnings only)
+- **Learnings:**
+  - DATABASE_URL parsing requires separate type-safe functions for each DB type
+  - Connection string format: mysql://user:pass@host:port/db or postgresql://user:pass@host:port/db
+  - Validate env vars at config load time before other initialization
+---
+
+## 2026-03-01 - US-004
+- Created repository layer in apps/server/src/repositories/
+- MemoRepository: create(), findById(), findByUserId(), findByIds(), update(), delete(), search()
+- UserRepository: create(), findByEmail(), findByUid(), update(), delete()
+- AttachmentRepository: create(), findById(), findByIdAndUid(), findByUserId(), findByIds(), updateProperties(), delete()
+- MemoRelationRepository: create(), findBySourceMemoId(), findByTargetMemoId(), delete(), deleteBySourceMemoId(), deleteByTargetMemoId(), replaceRelations()
+- Added isPublic field to memos schema for MySQL, PostgreSQL, and SQLite
+- All repositories use @Service() decorator for TypeDI
+- All methods return DTOs from @aimo/dto package
+- Typecheck passes
+- **Learnings:**
+  - Drizzle union types require `as any` casting for database client operations
+  - isPublic stored as integer (0/1) in DB, converted to boolean in DTOs
+  - UseMemoSearchOptions interface includes tags, startDate, endDate for filtering
+---
 
 ## 2026-03-01 - US-003
 - Configured drizzle-kit in apps/server/drizzle.config.ts

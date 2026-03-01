@@ -6,6 +6,98 @@ import { loadEnv as loadEnvironment } from './env.js';
 // 先加载环境变量
 loadEnvironment();
 
+// Parse DATABASE_URL into connection parameters
+function parseMySQLUrl(url: string): MySQLConfig | undefined {
+  if (!url || !url.includes('mysql://')) return undefined;
+
+  try {
+    const parsedUrl = new URL(url);
+    return {
+      host: parsedUrl.hostname || 'localhost',
+      port: Number(parsedUrl.port) || 3306,
+      username: parsedUrl.username || 'root',
+      password: parsedUrl.password || '',
+      database: parsedUrl.pathname.slice(1) || 'aimo',
+      poolSize: Number(process.env.DATABASE_POOL_SIZE) || 10,
+    };
+  } catch (error) {
+    logger.warn('Failed to parse DATABASE_URL:', error);
+  }
+  return undefined;
+}
+
+function parsePostgreSQLUrl(url: string): PostgreSQLConfig | undefined {
+  if (!url || !url.includes('postgresql://')) return undefined;
+
+  try {
+    const parsedUrl = new URL(url);
+    return {
+      host: parsedUrl.hostname || 'localhost',
+      port: Number(parsedUrl.port) || 5432,
+      username: parsedUrl.username || 'postgres',
+      password: parsedUrl.password || '',
+      database: parsedUrl.pathname.slice(1) || 'aimo',
+      poolSize: Number(process.env.DATABASE_POOL_SIZE) || 10,
+    };
+  } catch (error) {
+    logger.warn('Failed to parse DATABASE_URL:', error);
+  }
+  return undefined;
+}
+
+// Validate required environment variables
+function validateRequiredEnvVars(): void {
+  const errors: string[] = [];
+
+  // JWT_SECRET is required
+  if (!process.env.JWT_SECRET) {
+    errors.push('JWT_SECRET is required for authentication');
+  }
+
+  // OpenAI API key is required for embeddings
+  if (!process.env.OPENAI_API_KEY) {
+    errors.push('OPENAI_API_KEY is required for vector embeddings');
+  }
+
+  // Validate database configuration
+  const dbType = process.env.DATABASE_TYPE || 'mysql';
+
+  if (dbType === 'mysql' || dbType === 'postgresql') {
+    // Check if DATABASE_URL is provided OR individual connection params
+    const hasDatabaseUrl = !!process.env.DATABASE_URL;
+    const hasIndividualParams =
+      (dbType === 'mysql' && (process.env.DATABASE_MYSQL_HOST || process.env.DATABASE_MYSQL_DATABASE)) ||
+      (dbType === 'postgresql' && (process.env.DATABASE_POSTGRES_HOST || process.env.DATABASE_POSTGRES_DATABASE));
+
+    if (!hasDatabaseUrl && !hasIndividualParams) {
+      errors.push(`DATABASE_URL or database connection parameters (DATABASE_${dbType.toUpperCase()}_HOST, DATABASE_${dbType.toUpperCase()}_DATABASE) is required for ${dbType}`);
+    }
+
+    // Validate password warning for production
+    if (process.env.NODE_ENV === 'production') {
+      if (!process.env.DATABASE_URL && !process.env[`DATABASE_${dbType.toUpperCase()}_PASSWORD`]) {
+        logger.warn('WARNING: Database password should be set in production environment');
+      }
+    }
+  } else if (dbType === 'sqlite') {
+    // SQLite only needs a path
+    if (!process.env.DATABASE_SQLITE_PATH && !process.env.DATABASE_URL) {
+      errors.push('DATABASE_SQLITE_PATH or DATABASE_URL is required for SQLite');
+    }
+  }
+
+  if (errors.length > 0) {
+    logger.error('Environment validation failed:');
+    errors.forEach(err => logger.error(`  - ${err}`));
+    throw new Error(`Environment validation failed: ${errors.join('; ')}`);
+  } else {
+    logger.info('Environment validation passed');
+  }
+}
+
+// Run validation after loading env vars
+validateRequiredEnvVars();
+
 // 添加配置调试日志
 logger.info('Current Environment:', process.env.NODE_ENV);
 
@@ -191,25 +283,25 @@ export const config: Config = {
     type: (process.env.DATABASE_TYPE || 'mysql') as DatabaseType,
     mysql:
       process.env.DATABASE_TYPE === 'mysql' || !process.env.DATABASE_TYPE
-        ? {
+        ? (parseMySQLUrl(process.env.DATABASE_URL || '') ?? {
             host: process.env.DATABASE_MYSQL_HOST || 'localhost',
             port: Number(process.env.DATABASE_MYSQL_PORT) || 3306,
             username: process.env.DATABASE_MYSQL_USERNAME || 'root',
             password: process.env.DATABASE_MYSQL_PASSWORD || '',
             database: process.env.DATABASE_MYSQL_DATABASE || 'aimo',
             poolSize: Number(process.env.DATABASE_POOL_SIZE) || 10,
-          }
+          })
         : undefined,
     postgresql:
       process.env.DATABASE_TYPE === 'postgresql'
-        ? {
+        ? (parsePostgreSQLUrl(process.env.DATABASE_URL || '') ?? {
             host: process.env.DATABASE_POSTGRES_HOST || 'localhost',
             port: Number(process.env.DATABASE_POSTGRES_PORT) || 5432,
             username: process.env.DATABASE_POSTGRES_USERNAME || 'postgres',
             password: process.env.DATABASE_POSTGRES_PASSWORD || '',
             database: process.env.DATABASE_POSTGRES_DATABASE || 'aimo',
             poolSize: Number(process.env.DATABASE_POOL_SIZE) || 10,
-          }
+          })
         : undefined,
     sqlite:
       process.env.DATABASE_TYPE === 'sqlite'

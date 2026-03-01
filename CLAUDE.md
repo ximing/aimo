@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-AIMO is a full-stack AI-powered note-taking and knowledge management system. It's a pnpm monorepo with a React 19 frontend and Express.js backend using LanceDB for vector search.
+AIMO is a full-stack AI-powered note-taking and knowledge management system. It's a pnpm monorepo with a React 19 frontend and Express.js backend using a hybrid storage architecture: Drizzle ORM for relational databases (scalar data) and LanceDB for vector storage (embeddings).
 
 ## Development Commands
 
@@ -105,7 +105,8 @@ Always import from `@aimo/dto` for shared types between frontend and backend.
 
 - **Express.js** with routing-controllers (decorator-based routing)
 - **TypeDI** for dependency injection
-- **LanceDB** for vector database (semantic search)
+- **Drizzle ORM** for relational database (MySQL, PostgreSQL, SQLite) - stores scalar data
+- **LanceDB** for vector database (semantic search) - stores embeddings only
 - **OpenAI** for embeddings (text-embedding-3-small default)
 - **JWT** authentication with bcrypt
 - **Multer** for file uploads
@@ -120,11 +121,26 @@ Business logic lives in `src/services/`:
 - `attachment.service.ts` - File storage (local/S3/OSS)
 - `user.service.ts` - User management
 
+### Repository Layer Pattern
+
+Data access lives in `src/repositories/` - services interact with repositories, not directly with Drizzle:
+
+- `memo.repository.ts` - Memo CRUD operations
+- `user.repository.ts` - User operations
+- `attachment.repository.ts` - Attachment metadata
+- `memo-relation.repository.ts` - Memo relations
+
+Repositories are decorated with `@Service()` for TypeDI injection and return DTOs from `@aimo/dto`.
+
 ### Storage Adapters (Multi-adapter Pattern)
 
 Located in `src/sources/`:
 
-- `lancedb.ts` - Vector database abstraction
+- `database/` - Drizzle ORM abstraction (drizzle-adapter.ts, schema/)
+  - Supports MySQL, PostgreSQL, and SQLite
+  - Connection config via `DATABASE_TYPE` env var
+  - Use `DATABASE_URL` for connection string or individual params
+- `lancedb.ts` - Vector database abstraction (embeddings only)
 - `storage/` - File storage adapters (local, S3, OSS)
 
 ### Controllers
@@ -201,6 +217,37 @@ OPENAI_API_KEY=sk-xxx...
 CORS_ORIGIN=http://localhost:3000
 ```
 
+### Database Configuration (Hybrid Storage)
+
+AIMO uses a hybrid storage architecture:
+- **Drizzle ORM** (relational DB): stores scalar data (memos, users, attachments, relations)
+- **LanceDB** (vector DB): stores embeddings only for semantic search
+
+```env
+# Drizzle ORM - Relational Database
+# Database type: mysql, postgresql, or sqlite (default: mysql)
+DATABASE_TYPE=mysql
+
+# Connection URL (alternative to individual params below)
+# MySQL: mysql://user:pass@host:port/database
+# PostgreSQL: postgresql://user:pass@host:port/database
+DATABASE_URL=mysql://root:password@localhost:3306/aimo
+
+# Or use individual connection parameters:
+# DATABASE_MYSQL_HOST=localhost
+# DATABASE_MYSQL_PORT=3306
+# DATABASE_MYSQL_USERNAME=root
+# DATABASE_MYSQL_PASSWORD=password
+# DATABASE_MYSQL_DATABASE=aimo
+
+# Connection pool size (default: 10)
+DATABASE_POOL_SIZE=10
+
+# LanceDB - Vector Database (still required for embeddings)
+LANCEDB_STORAGE_TYPE=local  # or s3
+LANCEDB_PATH=./lancedb_data
+```
+
 ### Storage Configuration
 
 ```env
@@ -224,11 +271,30 @@ AWS_REGION=us-east-1
 
 ## Database Migrations
 
-The project has a migration system in `apps/server/src/migrations/`:
+The project uses Drizzle migrations in `apps/server/src/sources/database/migrations/`:
 
-- Migrations run automatically on startup
-- Each migration has `up()` and `down()` methods
-- Migration state tracked in `_migrations` meta table
+- Migrations run automatically on startup via `DrizzleAdapter.runMigrations()`
+- SQL migration files stored in `src/sources/database/migrations/`
+- Migration state tracked in `_migrations` table (schema defined in `schema/_migrations.ts`)
+- Drizzle Kit configured in `apps/server/drizzle.config.ts`
+
+### Database CLI Commands
+
+```bash
+cd apps/server
+
+# Generate migration from schema changes
+pnpm db:generate
+
+# Push schema changes to database
+pnpm db:push
+
+# Run pending migrations
+pnpm db:migrate
+
+# Open Drizzle Studio
+pnpm db:studio
+```
 
 ## Docker Deployment
 
