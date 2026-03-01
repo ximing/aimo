@@ -3,6 +3,7 @@
 Branch: ralph/drizzle-migration
 
 ## Status
+- US-011: COMPLETED
 - US-009: COMPLETED
 - US-008: COMPLETED
 - US-007: COMPLETED
@@ -29,6 +30,15 @@ Branch: ralph/drizzle-migration
   - SQLite requires direct .prepare().run() instead of Drizzle query builder
   - Timestamp conversion: LanceDB uses milliseconds, Drizzle uses Date objects or Unix timestamps for SQLite
   - Attachments use createdAt for updatedAt since LanceDB schema doesn't have updatedAt
+
+---
+
+## 2026-03-01 - US-011
+- Graceful shutdown already implemented in app.ts (not index.ts as originally specified)
+- Shutdown handler closes Drizzle connections first, then LanceDB connections
+- Order: Stop accepting requests → Close scheduler → Close Drizzle → Close LanceDB
+- Logs shutdown steps for debugging
+- Handles both SIGTERM and SIGINT signals
 
 ---
 
