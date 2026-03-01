@@ -13,6 +13,7 @@ import { Container } from 'typedi';
 
 import { config } from './config/config.js';
 import { controllers } from './controllers/index.js';
+import { initializeDatabase, checkConnectionHealth, closeDatabase } from './db/connection.js';
 import { initIOC } from './ioc.js';
 import { authHandler } from './middlewares/auth-handler.js';
 import { errorHandler } from './middlewares/error-handler.js';
@@ -28,6 +29,16 @@ useContainer(Container);
 
 export async function createApp() {
   await initIOC();
+
+  // Initialize MySQL database connection pool
+  initializeDatabase();
+
+  // Check MySQL connection health
+  const isHealthy = await checkConnectionHealth();
+  if (!isHealthy) {
+    throw new Error('MySQL connection health check failed');
+  }
+
   await Container.get(LanceDatabaseService).init();
 
   // Initialize scheduler service for periodic tasks
@@ -110,6 +121,9 @@ export async function createApp() {
         if (schedulerService.isReady()) {
           await schedulerService.stop();
         }
+
+        // Close MySQL connection pool
+        await closeDatabase();
 
         // Close LanceDB connections and release resources
         await Container.get(LanceDatabaseService).close();

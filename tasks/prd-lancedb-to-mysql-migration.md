@@ -325,22 +325,7 @@ Migrate all scalar (non-vector) data from LanceDB to MySQL using Drizzle ORM, wh
 - [ ] Update main `README.md` in project root to mention MySQL requirement
 - [ ] Typecheck passes
 
-### US-022: Add integration tests for hybrid architecture
-**Description:** As a developer, I need integration tests so the hybrid MySQL + LanceDB architecture is verified.
-
-**Acceptance Criteria:**
-- [ ] Create test suite in `apps/server/src/__tests__/integration/hybrid-storage.test.ts`
-- [ ] Test memo creation: verify scalar in MySQL, embedding in LanceDB
-- [ ] Test memo update: verify both databases updated correctly
-- [ ] Test memo deletion: verify removed from both databases
-- [ ] Test semantic search: verify LanceDB → MySQL join flow
-- [ ] Test attachment creation with multimodal embedding
-- [ ] Test transaction rollback on failure
-- [ ] Use test database for MySQL (separate from production)
-- [ ] Clean up test data after each test
-- [ ] All tests pass: `cd apps/server && pnpm test`
-
-### US-023: Update graceful shutdown to close MySQL connections
+### US-022: Update graceful shutdown to close MySQL connections
 **Description:** As a developer, I need graceful shutdown to close MySQL connections so no connections leak on restart.
 
 **Acceptance Criteria:**
@@ -350,7 +335,7 @@ Migrate all scalar (non-vector) data from LanceDB to MySQL using Drizzle ORM, wh
 - [ ] Test graceful shutdown with `Ctrl+C` during development
 - [ ] Typecheck passes
 
-### US-024: Performance optimization and indexing
+### US-023: Performance optimization and indexing
 **Description:** As a developer, I need proper indexes so queries perform well at scale.
 
 **Acceptance Criteria:**

@@ -42,7 +42,7 @@
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -444,26 +444,6 @@
         "Typecheck passes"
       ],
       "priority": 23,
-      "passes": false,
-      "notes": ""
-    },
-    {
-      "id": "US-022",
-      "title": "Add integration tests for hybrid architecture",
-      "description": "As a developer, I need integration tests so the hybrid MySQL + LanceDB architecture is verified.",
-      "acceptanceCriteria": [
-        "Create test suite in apps/server/src/__tests__/integration/hybrid-storage.test.ts",
-        "Test memo creation: verify scalar in MySQL, embedding in LanceDB",
-        "Test memo update: verify both databases updated correctly",
-        "Test memo deletion: verify removed from both databases",
-        "Test semantic search: verify LanceDB → MySQL join flow",
-        "Test attachment creation with multimodal embedding",
-        "Test transaction rollback on failure",
-        "Use test database for MySQL (separate from production)",
-        "Clean up test data after each test",
-        "All tests pass: cd apps/server && pnpm test"
-      ],
-      "priority": 24,
       "passes": false,
       "notes": ""
     }

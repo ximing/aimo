@@ -3,6 +3,10 @@
 - Environment variables use sensible defaults (localhost:3306, root user, aimo database)
 - Drizzle config references config.ts for MySQL credentials to maintain single source of truth
 - Connection pooling configured with max 10 connections by default
+- Drizzle schemas: Use mysqlTable() with foreign keys via .references(), JSON columns via .$type<T>()
+- VARCHAR key lengths: 191 for primary/foreign keys (MySQL utf8mb4 index limit), 255+ for other fields
+- Timestamps: Use { mode: 'date', fsp: 3 } for millisecond precision to match LanceDB
+- All schemas must be exported from index.ts for migration generation
 
 ---
 
@@ -24,5 +28,40 @@
 - Environment variables should have sensible defaults for development (localhost, standard ports)
 - The drizzle.config.ts references the main config to avoid duplicating connection details
 - Typecheck must pass before committing - run `pnpm typecheck` from apps/server directory
+
+---
+
+## 2026-03-01 20:01 - US-002
+- Created comprehensive Drizzle ORM schema definitions for all MySQL tables
+- Implemented 11 table schemas in apps/server/src/db/schema/ directory:
+  - users.ts: User accounts with indexes on email/phone
+  - categories.ts: Memo categories with foreign key to users
+  - tags.ts: Tags with usage count tracking
+  - memos.ts: Memo content with JSON arrays for attachments/tagIds, foreign keys to users and categories
+  - memo-relations.ts: Directed memo relations with composite unique index on (sourceMemoId, targetMemoId)
+  - attachments.ts: File metadata (excluding multimodalEmbedding which goes to LanceDB)
+  - ai-conversations.ts: AI conversation sessions
+  - ai-messages.ts: Messages with sources stored as JSON array
+  - daily-recommendations.ts: Daily recommendations with unique constraint on (uid, date)
+  - push-rules.ts: Push notification rules with channels as JSON
+  - table-migrations.ts: Migration tracking metadata
+- Created index.ts to export all schemas
+- All schemas include proper primary keys, foreign key constraints with cascade deletes, and indexes on frequently queried fields
+- Used Drizzle's timestamp with defaultNow() and $onUpdate() for automatic timestamp management
+- Exported type-safe types using $inferSelect and $inferInsert
+- Typecheck passes successfully
+
+**Files changed:**
+- apps/server/src/db/schema/*.ts (12 files created: 11 table schemas + index)
+
+**Learnings for future iterations:**
+- Drizzle schemas use mysqlTable() function with column definitions and indexes
+- Foreign keys defined using .references() with onDelete cascade/set null options
+- JSON columns typed using .$type<T>() for type safety
+- Composite indexes/unique constraints defined in second parameter of mysqlTable()
+- Timestamps use { mode: 'date', fsp: 3 } for millisecond precision matching LanceDB
+- VARCHAR lengths: 191 for keys (MySQL utf8mb4 index limit), 255 for emails/paths, larger for URLs
+- Index naming convention: field_idx for single field, descriptive names for composite indexes
+- All schemas must be exported from index.ts for Drizzle migration generation
 
 ---
