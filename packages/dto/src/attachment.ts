@@ -6,28 +6,39 @@
  * Attachment information DTO
  */
 export interface AttachmentDto {
-  attachmentId: string; // unique attachment identifier
+  /** Unique attachment identifier */
+  attachmentId: string;
+  /** Original filename */
   filename: string;
+  /** Public URL to access the attachment */
   url: string;
-  type: string; // MIME type
-  size: number; // file size in bytes
-  createdAt: number; // timestamp in milliseconds
-  coverUrl?: string; // optional cover image URL for videos
-  properties?: Record<string, unknown>; // optional properties: audio(duration), image(width,height), video(duration)
+  /** MIME type of the attachment */
+  type: string;
+  /** File size in bytes */
+  size: number;
+  /** Created timestamp in milliseconds */
+  createdAt: number;
+  /** Optional cover image URL for videos */
+  coverUrl?: string;
+  /** Optional properties: audio(duration), image(width,height), video(duration) */
+  properties?: Record<string, unknown>;
 }
 
 /**
  * Update attachment properties request DTO
  */
 export interface UpdateAttachmentPropertiesDto {
-  properties: Record<string, unknown>; // properties to update: audio(duration), image(width,height), video(duration)
+  /** Properties to update: audio(duration), image(width,height), video(duration) */
+  properties: Record<string, unknown>;
 }
 
 /**
  * Update attachment properties response DTO
  */
 export interface UpdateAttachmentPropertiesResponseDto {
+  /** Success message */
   message: string;
+  /** Updated attachment data */
   attachment: AttachmentDto;
 }
 
@@ -35,7 +46,9 @@ export interface UpdateAttachmentPropertiesResponseDto {
  * Upload attachment response DTO
  */
 export interface UploadAttachmentResponseDto {
+  /** Success message */
   message: string;
+  /** Uploaded attachment data */
   attachment: AttachmentDto;
 }
 
@@ -43,8 +56,12 @@ export interface UploadAttachmentResponseDto {
  * Attachment list response DTO
  */
 export interface AttachmentListResponseDto {
+  /** Array of attachment items */
   items: AttachmentDto[];
+  /** Total number of attachments */
   total: number;
+  /** Current page number */
   page: number;
+  /** Items per page */
   limit: number;
 }
