@@ -40,20 +40,20 @@ BA (Basic Auth) 认证的笔记 API 端点，用于无需 JWT Token 的场景。
 
 **Body Parameters:**
 
-| Parameter   | Type     | Required | Description                                     |
-| ----------- | -------- | -------- | ----------------------------------------------- |
-| content     | string   | Yes      | 笔记内容                                        |
-| type        | string   | No       | 笔记类型：`text`、`audio`、`video`，默认 `text` |
-| categoryId  | string   | No       | 分类 ID                                         |
+| Parameter   | Type     | Required | Description                                      |
+| ----------- | -------- | -------- | ------------------------------------------------ |
+| content     | string   | Yes      | 笔记内容                                         |
+| type        | string   | No       | 笔记类型：`text`、`audio`、`video`，默认 `text`  |
+| categoryId  | string   | No       | 分类 ID                                          |
 | category    | string   | No       | 分类名称（传入时会自动解析/创建分类并使用其 ID） |
-| isPublic    | boolean  | No       | 是否公开                                        |
-| tags        | string[] | No       | 标签名称数组                                    |
-| tagIds      | string[] | No       | 标签 ID 数组                                    |
-| attachments | object[] | No       | 附件列表                                        |
-| relationIds | string[] | No       | 关联笔记 ID 数组                                |
-| source      | string   | No       | 来源标记                                        |
-| createdAt   | number   | No       | 创建时间戳（毫秒）                              |
-| updatedAt   | number   | No       | 更新时间戳（毫秒）                              |
+| isPublic    | boolean  | No       | 是否公开                                         |
+| tags        | string[] | No       | 标签名称数组                                     |
+| tagIds      | string[] | No       | 标签 ID 数组                                     |
+| attachments | object[] | No       | 附件列表                                         |
+| relationIds | string[] | No       | 关联笔记 ID 数组                                 |
+| source      | string   | No       | 来源标记                                         |
+| createdAt   | number   | No       | 创建时间戳（毫秒）                               |
+| updatedAt   | number   | No       | 更新时间戳（毫秒）                               |
 
 **Category 参数行为：**
 
@@ -110,12 +110,12 @@ curl -X POST "http://localhost:3000/api/v1/memos/ba/create?uid=user123" \
 
 **Error Responses:**
 
-| Status Code | Description                             |
-| ----------- | --------------------------------------- |
-| 401         | BA 认证未启用 / Token 无效 / Token 缺失 |
+| Status Code | Description                                   |
+| ----------- | --------------------------------------------- |
+| 401         | BA 认证未启用 / Token 无效 / Token 缺失       |
 | 400         | 参数错误（缺少 uid/content 或 category 为空） |
-| 404         | 用户不存在                              |
-| 500         | 服务器错误                              |
+| 404         | 用户不存在                                    |
+| 500         | 服务器错误                                    |
 
 **401 (BA Not Enabled):**
 

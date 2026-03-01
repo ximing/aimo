@@ -3,7 +3,6 @@
  * 为已有存量用户添加默认的"日记"分类
  */
 
-
 import { OBJECT_TYPE } from '../../models/constant/type.js';
 import { generateTypeId } from '../../utils/id.js';
 import { logger } from '../../utils/logger.js';

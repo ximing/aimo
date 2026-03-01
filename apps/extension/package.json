@@ -9,7 +9,7 @@
     "dev:build": "vite build --watch",
     "build": "tsc -b && vite build",
     "lint": "eslint src/",
-    "lint:fix": "eslint src/ --fix",
+    "lint:fix": "eslint src/ --fix --fix-type problem",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

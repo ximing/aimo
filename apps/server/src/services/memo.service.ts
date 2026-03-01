@@ -1,16 +1,22 @@
 import { Service } from 'typedi';
+import { eq, and, desc, asc, sql, or, inArray, gte, lte } from 'drizzle-orm';
+import * as lancedb from '@lancedb/lancedb';
 
 import { OBJECT_TYPE } from '../models/constant/type.js';
-import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
+import { getDatabase } from '../db/connection.js';
+import { memos } from '../db/schema/memos.js';
+import { withTransaction } from '../db/transaction.js';
 import { generateTypeId } from '../utils/id.js';
 import { logger } from '../utils/logger.js';
+import { config } from '../config/config.js';
+import { toStringList } from '../utils/arrow.js';
 
 import { AttachmentService } from './attachment.service.js';
 import { EmbeddingService } from './embedding.service.js';
 import { MemoRelationService } from './memo-relation.service.js';
 import { TagService } from './tag.service.js';
 
-import type { Memo, NewMemo } from '../models/db/memo.schema.js';
+import type { Memo, NewMemo } from '../db/schema/memos.js';
 import type {
   MemoWithAttachmentsDto,
   PaginatedMemoWithAttachmentsDto,
@@ -25,6 +31,7 @@ import type {
   OnThisDayMemoDto,
   OnThisDayResponseDto,
 } from '@aimo/dto';
+import type { Connection, Table } from '@lancedb/lancedb';
 
 const UNCATEGORIZED_CATEGORY_ID = '__uncategorized__';
 
@@ -59,40 +66,79 @@ export interface MemoVectorSearchOptions {
 
 @Service()
 export class MemoService {
+  private lanceDb!: Connection;
+  private initialized = false;
+
   constructor(
-    private lanceDatabase: LanceDatabaseService,
     private embeddingService: EmbeddingService,
     private attachmentService: AttachmentService,
     private memoRelationService: MemoRelationService,
     private tagService: TagService
-  ) {}
+  ) {
+    // Initialize local LanceDB instance for vector operations
+    this.initLanceDb().catch((error) => {
+      logger.error('Failed to initialize LanceDB in MemoService:', error);
+    });
+  }
 
   /**
-   * Convert Arrow List<Utf8> attachmentIds to plain string array
+   * Initialize local LanceDB connection for vector operations
    */
-  private convertArrowAttachments(arrowAttachments: any): string[] {
-    if (!arrowAttachments) {
-      return [];
-    }
+  private async initLanceDb(): Promise<void> {
+    try {
+      const storageType = config.lancedb.storageType;
+      const path = config.lancedb.path;
 
-    // If it's already a plain array, return as is
-    if (Array.isArray(arrowAttachments)) {
-      return arrowAttachments;
-    }
+      if (storageType === 's3') {
+        const s3Config = config.lancedb.s3;
+        if (!s3Config) {
+          throw new Error('S3 configuration is missing');
+        }
 
-    // If it's an Arrow StringVector, convert to array
-    if (arrowAttachments.toArray) {
-      return arrowAttachments.toArray();
-    }
+        const storageOptions: Record<string, string> = {
+          virtualHostedStyleRequest: 'true',
+          conditionalPut: 'disabled',
+        };
 
-    // If it's an Arrow Vector with data property
-    if (arrowAttachments.data && Array.isArray(arrowAttachments.data)) {
-      return arrowAttachments.data;
-    }
+        if (s3Config.awsAccessKeyId) storageOptions.awsAccessKeyId = s3Config.awsAccessKeyId;
+        if (s3Config.awsSecretAccessKey)
+          storageOptions.awsSecretAccessKey = s3Config.awsSecretAccessKey;
+        if (s3Config.region) storageOptions.awsRegion = s3Config.region;
+        if (s3Config.endpoint) {
+          storageOptions.awsEndpoint = `https://${s3Config.bucket}.oss-${s3Config.region}.aliyuncs.com`;
+        }
 
-    // Fallback: return empty array
-    return [];
+        this.lanceDb = await lancedb.connect(path, { storageOptions });
+      } else {
+        this.lanceDb = await lancedb.connect(path);
+      }
+
+      this.initialized = true;
+      logger.info('MemoService LanceDB initialized for vector operations');
+    } catch (error) {
+      logger.error('Failed to initialize LanceDB for MemoService:', error);
+      throw error;
+    }
   }
+
+  /**
+   * Get LanceDB connection
+   */
+  private getLanceDb(): Connection {
+    if (!this.initialized) {
+      throw new Error('LanceDB not initialized in MemoService');
+    }
+    return this.lanceDb;
+  }
+
+  /**
+   * Open memos table from LanceDB (for vector search with filtering)
+   */
+  private async openMemosTable(): Promise<Table> {
+    const db = this.getLanceDb();
+    return await db.openTable('memos');
+  }
+
 
   /**
    * Enrich memo items with tag data
@@ -112,7 +158,6 @@ export class MemoService {
 
       // If no tags to enrich, return items as-is
       if (allTagIds.size === 0) {
-        // Clear tags field since there are no tagIds
         return items.map((item) => ({
           ...item,
           tags: [],
@@ -176,10 +221,9 @@ export class MemoService {
       // Generate embedding for the content
       const embedding = await this.embeddingService.generateEmbedding(content);
 
-      // Validate attachment IDs exist (only verify they belong to user, don't fetch full details)
+      // Validate attachment IDs exist
       if (attachments && attachments.length > 0) {
         try {
-          // Quick validation that attachments belong to this user
           const attachmentDtos = await this.attachmentService.getAttachmentsByIds(attachments, uid);
           if (attachmentDtos.length !== attachments.length) {
             logger.warn(`Some attachments not found or don't belong to user ${uid}`);
@@ -191,49 +235,58 @@ export class MemoService {
 
       // Resolve tag names to tag IDs if tagIds not provided
       let resolvedTagIds: string[] = [];
-      let resolvedTagNames: string[] = [];
 
       if (tagIds && tagIds.length > 0) {
-        // Use provided tag IDs
         resolvedTagIds = tagIds;
-        // Get tag names for the legacy tags field
-        const existingTags = await this.tagService.getTagsByIds(tagIds, uid);
-        resolvedTagNames = existingTags.map((t) => t.name);
       } else if (tags && tags.length > 0) {
-        // Create or find tags by name
         resolvedTagIds = await this.tagService.resolveTagNamesToIds(tags, uid);
-        resolvedTagNames = tags;
       }
 
       const now = Date.now();
       const memoId = generateTypeId(OBJECT_TYPE.MEMO);
-      const memo: Memo = {
-        memoId,
-        uid,
-        categoryId: categoryId || undefined,
-        type,
-        content,
-        attachments,
-        tagIds: resolvedTagIds.length > 0 ? resolvedTagIds : undefined,
-        embedding,
-        isPublic: isPublic || false,
-        createdAt: createdAt || now,
-        updatedAt: updatedAt || now,
-        source: source || undefined,
-      };
+      const db = getDatabase();
 
-      // Prepare record for LanceDB with only attachment IDs
-      // Convert embedding to array if it's an Arrow object
+      // Use transaction to insert scalar data into MySQL
+      await withTransaction(async (tx) => {
+        // Insert scalar data into MySQL
+        await tx.insert(memos).values({
+          memoId,
+          uid,
+          categoryId: categoryId || null,
+          content,
+          type,
+          source: source || null,
+          attachments: attachments && attachments.length > 0 ? attachments : null,
+          tagIds: resolvedTagIds.length > 0 ? resolvedTagIds : null,
+          isPublic: isPublic || false,
+          createdAt: createdAt ? new Date(createdAt) : new Date(now),
+          updatedAt: updatedAt ? new Date(updatedAt) : new Date(now),
+        });
+
+        logger.info('Memo scalar data inserted into MySQL:', { memoId, uid });
+      });
+
+      // Insert complete record (scalar + vector) into LanceDB memos table (outside transaction)
+      const memosTable = await this.openMemosTable();
       const embeddingArray = Array.isArray(embedding) ? embedding : [...(embedding || [])];
 
-      const memoRecord = {
-        ...memo,
-        embedding: embeddingArray,
-        attachments: attachments && attachments.length > 0 ? attachments : undefined,
-      };
+      await memosTable.add([
+        {
+          memoId,
+          uid,
+          categoryId: categoryId || null,
+          content,
+          type: type || 'text',
+          source: source || null,
+          attachments: attachments || null,
+          tagIds: resolvedTagIds.length > 0 ? resolvedTagIds : null,
+          embedding: embeddingArray,
+          createdAt: createdAt || now,
+          updatedAt: updatedAt || now,
+        } as unknown as Record<string, unknown>,
+      ]);
 
-      const memosTable = await this.lanceDatabase.openTable('memos');
-      await memosTable.add([memoRecord as unknown as Record<string, unknown>]);
+      logger.info('Memo complete record inserted into LanceDB:', { memoId });
 
       // Create relations if provided
       if (relationIds && relationIds.length > 0) {
@@ -241,7 +294,6 @@ export class MemoService {
           await this.memoRelationService.replaceRelations(uid, memoId, relationIds);
         } catch (error) {
           logger.warn('Failed to create memo relations:', error);
-          // Don't throw - allow memo creation even if relations fail
         }
       }
 
@@ -264,14 +316,23 @@ export class MemoService {
       const tagDtos: TagDto[] =
         resolvedTagIds.length > 0 ? await this.tagService.getTagsByIds(resolvedTagIds, uid) : [];
 
-      // Return with attachment DTOs (exclude embedding to reduce payload)
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { embedding: _embedding, tagIds: _tagIds, ...memoWithoutEmbedding } = memo;
+      // Fetch the created record from MySQL
+      const results = await db.select().from(memos).where(eq(memos.memoId, memoId)).limit(1);
+
+      const record = results[0]!;
+
       return {
-        ...memoWithoutEmbedding,
-        type,
+        memoId: record.memoId,
+        uid: record.uid,
+        content: record.content,
+        type: (record.type as 'text' | 'audio' | 'video') || 'text',
+        categoryId: record.categoryId || undefined,
+        source: record.source || undefined,
         attachments: attachmentDtos,
         tags: tagDtos,
+        isPublic: record.isPublic,
+        createdAt: record.createdAt.getTime(),
+        updatedAt: record.updatedAt.getTime(),
       };
     } catch (error) {
       logger.error('Error creating memo:', error);
@@ -280,7 +341,7 @@ export class MemoService {
   }
 
   /**
-   * Get memos for a user with pagination and filters (excludes embedding to reduce payload)
+   * Get memos for a user with pagination and filters
    */
   async getMemos(options: MemoSearchOptions): Promise<PaginatedMemoListDto> {
     try {
@@ -297,7 +358,7 @@ export class MemoService {
         endDate,
       } = options;
 
-      const memosTable = await this.lanceDatabase.openTable('memos');
+      const db = getDatabase();
 
       // Resolve tag names to tag IDs for filtering
       let tagIdsToFilter: string[] | undefined;
@@ -306,69 +367,69 @@ export class MemoService {
       }
 
       // Build filter conditions
-      // Note: LanceDB Timestamp type cannot be compared with integer literals in SQL
-      // So we build WHERE clause without date filters and apply them in JavaScript
-      const filterConditions: string[] = [`uid = '${uid}'`];
+      const conditions: any[] = [eq(memos.uid, uid)];
+
       const isUncategorizedFilter = categoryId === UNCATEGORIZED_CATEGORY_ID;
 
       // Add category filter
       if (categoryId && !isUncategorizedFilter) {
-        filterConditions.push(`categoryId = '${categoryId}'`);
+        conditions.push(eq(memos.categoryId, categoryId));
+      } else if (isUncategorizedFilter) {
+        conditions.push(sql`${memos.categoryId} IS NULL`);
       }
 
       // Add search filter
       if (search && search.trim().length > 0) {
-        filterConditions.push(`content LIKE '%${search}%'`);
+        conditions.push(sql`${memos.content} LIKE ${`%${search}%`}`);
       }
 
-      const whereClause = filterConditions.join(' AND ');
-
-      // Get all matching records (without date range, which will be filtered in JavaScript)
-      let allResults = await memosTable.query().where(whereClause).toArray();
-
-      // Apply date range filters in JavaScript (LanceDB cannot compare Timestamp with Int64 literals in SQL)
-      const startTimestamp = startDate && !isNaN(startDate.getTime()) ? startDate.getTime() : null;
-      const endTimestamp = endDate && !isNaN(endDate.getTime()) ? endDate.getTime() : null;
-
-      if (startTimestamp !== null || endTimestamp !== null) {
-        allResults = allResults.filter((memo: any) => {
-          const memoTime = memo.createdAt as number;
-          if (startTimestamp !== null && memoTime < startTimestamp) return false;
-          if (endTimestamp !== null && memoTime > endTimestamp) return false;
-          return true;
-        });
+      // Add date range filters
+      if (startDate && !isNaN(startDate.getTime())) {
+        conditions.push(gte(memos.createdAt, startDate));
+      }
+      if (endDate && !isNaN(endDate.getTime())) {
+        conditions.push(lte(memos.createdAt, endDate));
       }
 
-      if (isUncategorizedFilter) {
-        allResults = allResults.filter((memo: any) => memo.categoryId == undefined);
-      }
+      // Get total count
+      const countQuery = db
+        .select({ count: sql<number>`count(*)` })
+        .from(memos)
+        .where(and(...conditions));
 
-      // Apply tag filter - memos must have ALL specified tags (AND logic)
-      if (tagIdsToFilter && tagIdsToFilter.length > 0) {
-        allResults = allResults.filter((memo: any) => {
-          const memoTagIds = this.convertArrowAttachments(memo.tagIds);
-          // Check if memo has ALL the specified tag IDs
-          return tagIdsToFilter!.every((tagId) => memoTagIds.includes(tagId));
-        });
-      }
-
-      const total = allResults.length;
+      const countResult = await countQuery;
+      let total = countResult[0]?.count || 0;
 
       // Get paginated results
       const offset = (page - 1) * limit;
-      const results = allResults
-        .sort((a: any, b: any) => {
-          const aValue = sortBy === 'createdAt' ? a.createdAt : a.updatedAt;
-          const bValue = sortBy === 'createdAt' ? b.createdAt : b.updatedAt;
-          const comparison = aValue - bValue;
-          return sortOrder === 'asc' ? comparison : -comparison;
-        })
-        .slice(offset, offset + limit);
+      const sortColumn = sortBy === 'createdAt' ? memos.createdAt : memos.updatedAt;
+      const sortDirection = sortOrder === 'asc' ? asc(sortColumn) : desc(sortColumn);
 
-      // Get attachment IDs and convert to DTOs
+      let query = db
+        .select()
+        .from(memos)
+        .where(and(...conditions))
+        .orderBy(sortDirection)
+        .limit(limit)
+        .offset(offset);
+
+      let results = await query;
+
+      // Apply tag filter if needed (post-query filtering for JSON array)
+      if (tagIdsToFilter && tagIdsToFilter.length > 0) {
+        results = results.filter((memo) => {
+          const memoTagIds = memo.tagIds || [];
+          // Check if memo has ALL the specified tag IDs
+          return tagIdsToFilter!.every((tagId) => memoTagIds.includes(tagId));
+        });
+        // Recalculate total after tag filtering
+        total = results.length;
+      }
+
+      // Convert to DTOs
       const items: MemoListItemDto[] = [];
       for (const memo of results) {
-        const attachmentIds = this.convertArrowAttachments(memo.attachments);
+        const attachmentIds = memo.attachments || [];
         const attachmentDtos: AttachmentDto[] =
           attachmentIds.length > 0
             ? await this.attachmentService.getAttachmentsByIds(attachmentIds, uid)
@@ -379,13 +440,13 @@ export class MemoService {
           uid: memo.uid,
           content: memo.content,
           type: (memo.type as 'text' | 'audio' | 'video') || 'text',
-          categoryId: memo.categoryId,
+          categoryId: memo.categoryId || undefined,
           attachments: attachmentDtos,
-          tagIds: this.convertArrowAttachments(memo.tagIds),
-          isPublic: memo.isPublic ?? false,
-          createdAt: memo.createdAt,
-          updatedAt: memo.updatedAt,
-          source: memo.source,
+          tagIds: memo.tagIds || [],
+          isPublic: memo.isPublic,
+          createdAt: memo.createdAt.getTime(),
+          updatedAt: memo.updatedAt.getTime(),
+          source: memo.source || undefined,
         });
       }
 
@@ -415,20 +476,20 @@ export class MemoService {
    */
   async getMemoById(memoId: string, uid: string): Promise<MemoWithAttachmentsDto | null> {
     try {
-      const memosTable = await this.lanceDatabase.openTable('memos');
+      const db = getDatabase();
 
-      const results = await memosTable
-        .query()
-        .where(`memoId = '${memoId}' AND uid = '${uid}'`)
-        .limit(1)
-        .toArray();
+      const results = await db
+        .select()
+        .from(memos)
+        .where(and(eq(memos.memoId, memoId), eq(memos.uid, uid)))
+        .limit(1);
 
       if (results.length === 0) {
         return null;
       }
 
-      const memo: any = results[0];
-      const attachmentIds = this.convertArrowAttachments(memo.attachments);
+      const memo = results[0];
+      const attachmentIds = memo.attachments || [];
       const attachmentDtos: AttachmentDto[] =
         attachmentIds.length > 0
           ? await this.attachmentService.getAttachmentsByIds(attachmentIds, uid)
@@ -440,22 +501,21 @@ export class MemoService {
         uid: memo.uid,
         content: memo.content,
         type: (memo.type as 'text' | 'audio' | 'video') || 'text',
-        categoryId: memo.categoryId,
+        categoryId: memo.categoryId || undefined,
         attachments: attachmentDtos,
-        tagIds: this.convertArrowAttachments(memo.tagIds),
-        isPublic: memo.isPublic ?? false,
-        createdAt: memo.createdAt,
-        updatedAt: memo.updatedAt,
-        source: memo.source,
+        tagIds: memo.tagIds || [],
+        isPublic: memo.isPublic,
+        createdAt: memo.createdAt.getTime(),
+        updatedAt: memo.updatedAt.getTime(),
+        source: memo.source || undefined,
       };
 
       // Enrich with tags
       const itemsWithTags = await this.enrichTags(uid, [memoWithAttachments]);
 
-      // Enrich with relations using the same logic as getMemos
+      // Enrich with relations
       const enrichedItems = await this.enrichMemosWithRelations(uid, itemsWithTags);
 
-      // Return the enriched memo (without embedding)
       return {
         ...enrichedItems[0],
       } as MemoWithAttachmentsDto;
@@ -486,19 +546,20 @@ export class MemoService {
         throw new Error('Memo content cannot be empty');
       }
 
-      // Find existing memo (get original data with attachmentIds)
-      const memosTable = await this.lanceDatabase.openTable('memos');
-      const results = await memosTable
-        .query()
-        .where(`memoId = '${memoId}' AND uid = '${uid}'`)
-        .limit(1)
-        .toArray();
+      const db = getDatabase();
+
+      // Find existing memo
+      const results = await db
+        .select()
+        .from(memos)
+        .where(and(eq(memos.memoId, memoId), eq(memos.uid, uid)))
+        .limit(1);
 
       if (results.length === 0) {
         throw new Error('Memo not found');
       }
 
-      const existingMemo: any = results[0];
+      const existingMemo = results[0];
 
       // Generate new embedding
       const embedding = await this.embeddingService.generateEmbedding(content);
@@ -515,56 +576,79 @@ export class MemoService {
         }
       }
 
-      // Update the memo
       const now = Date.now();
-      // Convert embedding to array if it's an Arrow object
+
+      // Build update values
+      const updateValues: Partial<typeof memos.$inferInsert> = {
+        content,
+        updatedAt: new Date(now),
+      };
+
+      if (type !== undefined) {
+        updateValues.type = type;
+      }
+
+      if (categoryId !== undefined) {
+        updateValues.categoryId = categoryId;
+      }
+
+      if (attachments !== undefined) {
+        updateValues.attachments = attachments.length > 0 ? attachments : null;
+      }
+
+      if (isPublic !== undefined) {
+        updateValues.isPublic = isPublic;
+      }
+
+      if (source !== undefined) {
+        updateValues.source = source;
+      }
+
+      // Update MySQL scalar data
+      await db
+        .update(memos)
+        .set(updateValues)
+        .where(and(eq(memos.memoId, memoId), eq(memos.uid, uid)));
+
+      logger.info('Memo scalar data updated in MySQL:', { memoId, uid });
+
+      // Update LanceDB complete record (scalar + embedding)
+      const memosTable = await this.openMemosTable();
       const embeddingArray = Array.isArray(embedding) ? embedding : [...(embedding || [])];
 
-      const updateValues: Record<string, any> = {
+      // Build LanceDB update values
+      const lanceUpdateValues: any = {
         content,
         embedding: embeddingArray,
         updatedAt: now,
       };
 
-      // Add type to update if provided (null = clear, undefined = no change)
       if (type !== undefined) {
-        updateValues.type = type === null ? null : type;
+        lanceUpdateValues.type = type || 'text';
       }
 
-      // Add categoryId to update if provided
       if (categoryId !== undefined) {
-        // Only add if not null/undefined (LanceDB doesn't support undefined values in update)
-        if (categoryId === null) {
-          // For null, we need to set it explicitly (clearing the category)
-          updateValues.categoryId = null;
-        } else {
-          updateValues.categoryId = categoryId;
-        }
+        lanceUpdateValues.categoryId = categoryId;
       }
 
-      // Add attachments to update if provided (only store attachment IDs)
-      if (
-        attachments !== undefined && // Only add attachments if there are any, otherwise omit to keep existing
-        attachments.length > 0
-      ) {
-        updateValues.attachments = attachments;
+      if (attachments !== undefined) {
+        lanceUpdateValues.attachments = attachments.length > 0 ? attachments : null;
       }
 
-      // Add isPublic to update if provided
       if (isPublic !== undefined) {
-        updateValues.isPublic = isPublic;
+        lanceUpdateValues.isPublic = isPublic;
       }
 
-      // Add source to update if provided
       if (source !== undefined) {
-        updateValues.source = source;
+        lanceUpdateValues.source = source;
       }
 
-      // Update using proper update method with where clause
       await memosTable.update({
-        where: `memoId = '${memoId}' AND uid = '${uid}'`,
-        values: updateValues,
+        where: `memoId = '${memoId}'`,
+        values: lanceUpdateValues,
       });
+
+      logger.info('Memo complete record updated in LanceDB:', { memoId });
 
       // Update relations if provided
       if (relationIds !== undefined) {
@@ -572,15 +656,13 @@ export class MemoService {
           await this.memoRelationService.replaceRelations(uid, memoId, relationIds);
         } catch (error) {
           logger.warn('Failed to update memo relations:', error);
-          // Don't throw - allow memo update even if relations fail
         }
       }
 
       // Update tags if provided
-      let finalTagIds = this.convertArrowAttachments(existingMemo.tagIds);
+      let finalTagIds = existingMemo.tagIds || [];
       if (tags !== undefined || tagIds !== undefined) {
         try {
-          // Resolve tags to tagIds
           let resolvedTagIds: string[] = [];
           if (tagIds && tagIds.length > 0) {
             resolvedTagIds = tagIds;
@@ -593,32 +675,15 @@ export class MemoService {
           const removedTagIds = finalTagIds.filter((id) => !resolvedTagIds.includes(id));
 
           // Update memo with new tag IDs
-          const tagUpdateValues: Record<string, any> = { updatedAt: now };
-          const tagUpdateValuesSql: Record<string, string> = {};
+          await db
+            .update(memos)
+            .set({
+              tagIds: resolvedTagIds.length > 0 ? resolvedTagIds : null,
+              updatedAt: new Date(now),
+            })
+            .where(and(eq(memos.memoId, memoId), eq(memos.uid, uid)));
 
-          if (resolvedTagIds.length > 0) {
-            tagUpdateValues.tagIds = resolvedTagIds;
-          } else {
-            // Use SQL expression to set NULL for list type
-            tagUpdateValuesSql.tagIds = "arrow_cast(NULL, 'List(Utf8)')";
-          }
-
-          const tagUpdateOptions: {
-            where: string;
-            values: Record<string, any>;
-            valuesSql?: Record<string, string>;
-          } = {
-            where: `memoId = '${memoId}' AND uid = '${uid}'`,
-            values: tagUpdateValues,
-          };
-
-          if (Object.keys(tagUpdateValuesSql).length > 0) {
-            tagUpdateOptions.valuesSql = tagUpdateValuesSql;
-          }
-
-          await memosTable.update(tagUpdateOptions);
-
-          // Update usage counts for added tags
+          // Update usage counts
           for (const tagId of addedTagIds) {
             try {
               await this.tagService.incrementUsageCount(tagId, uid);
@@ -627,7 +692,6 @@ export class MemoService {
             }
           }
 
-          // Update usage counts for removed tags
           for (const tagId of removedTagIds) {
             try {
               await this.tagService.decrementUsageCount(tagId, uid);
@@ -639,15 +703,12 @@ export class MemoService {
           finalTagIds = resolvedTagIds;
         } catch (error) {
           logger.warn('Failed to update memo tags:', error);
-          // Don't throw - allow memo update even if tags fail
         }
       }
 
-      // Build updated memo object with attachment DTOs
+      // Build updated memo object
       const finalAttachmentIds =
-        attachments === undefined
-          ? this.convertArrowAttachments(existingMemo.attachments)
-          : attachments;
+        attachments === undefined ? existingMemo.attachments || [] : attachments;
       const finalAttachmentDtos: AttachmentDto[] =
         finalAttachmentIds.length > 0
           ? await this.attachmentService.getAttachmentsByIds(finalAttachmentIds, uid)
@@ -657,16 +718,17 @@ export class MemoService {
         memoId,
         uid,
         content,
-        type: existingMemo.type as 'text' | 'audio' | 'video',
-        categoryId: categoryId === undefined ? existingMemo.categoryId : categoryId || undefined,
+        type: (type === undefined ? existingMemo.type : type) as 'text' | 'audio' | 'video',
+        categoryId:
+          categoryId === undefined ? existingMemo.categoryId || undefined : categoryId || undefined,
         attachments: finalAttachmentDtos,
         tagIds: finalTagIds,
-        isPublic: isPublic === undefined ? (existingMemo.isPublic ?? false) : isPublic,
-        createdAt: existingMemo.createdAt,
+        isPublic: isPublic === undefined ? existingMemo.isPublic : isPublic,
+        createdAt: existingMemo.createdAt.getTime(),
         updatedAt: now,
       };
 
-      // Enrich with tags and relations (same logic as getMemoById)
+      // Enrich with tags and relations
       const itemsWithTags = await this.enrichTags(uid, [updatedMemo]);
       const enrichedItems = await this.enrichMemosWithRelations(uid, itemsWithTags);
 
@@ -680,168 +742,46 @@ export class MemoService {
   }
 
   /**
-   * Update memo tags (batch update)
-   * Replaces all existing tags with the new tags array
-   * Supports both tag names (legacy) and tagIds
-   */
-  async updateTags(
-    memoId: string,
-    uid: string,
-    tags?: string[],
-    tagIds?: string[]
-  ): Promise<MemoWithAttachmentsDto | null> {
-    try {
-      // Find existing memo
-      const memosTable = await this.lanceDatabase.openTable('memos');
-      const results = await memosTable
-        .query()
-        .where(`memoId = '${memoId}' AND uid = '${uid}'`)
-        .limit(1)
-        .toArray();
-
-      if (results.length === 0) {
-        throw new Error('Memo not found');
-      }
-
-      const existingMemo: any = results[0];
-      const existingTagIds = this.convertArrowAttachments(existingMemo.tagIds);
-
-      // Resolve tags to tagIds
-      let resolvedTagIds: string[] = [];
-      let resolvedTagNames: string[] = [];
-
-      if (tagIds && tagIds.length > 0) {
-        // Use provided tag IDs
-        resolvedTagIds = tagIds;
-        const existingTags = await this.tagService.getTagsByIds(tagIds, uid);
-        resolvedTagNames = existingTags.map((t) => t.name);
-      } else if (tags && tags.length > 0) {
-        // Create or find tags by name
-        resolvedTagIds = await this.tagService.resolveTagNamesToIds(tags, uid);
-        resolvedTagNames = tags;
-      }
-
-      // Calculate tag usage changes
-      const addedTagIds = resolvedTagIds.filter((id) => !existingTagIds.includes(id));
-      const removedTagIds = existingTagIds.filter((id) => !resolvedTagIds.includes(id));
-
-      // Update the memo with new tag IDs
-      // Note: LanceDB cannot automatically convert empty array to NULL for List types
-      // We need to use valuesSql to explicitly set NULL when array is empty
-      const now = Date.now();
-      const updateValues: Record<string, any> = { updatedAt: now };
-      const updateValuesSql: Record<string, string> = {};
-
-      if (resolvedTagIds.length > 0) {
-        updateValues.tagIds = resolvedTagIds;
-      } else {
-        // Use SQL expression to set NULL for list type
-        updateValuesSql.tagIds = "arrow_cast(NULL, 'List(Utf8)')";
-      }
-
-      // Build update options
-      const updateOptions: {
-        where: string;
-        values: Record<string, any>;
-        valuesSql?: Record<string, string>;
-      } = {
-        where: `memoId = '${memoId}' AND uid = '${uid}'`,
-        values: updateValues,
-      };
-
-      // Only add valuesSql if there are fields to set via SQL
-      if (Object.keys(updateValuesSql).length > 0) {
-        updateOptions.valuesSql = updateValuesSql;
-      }
-
-      await memosTable.update(updateOptions);
-
-      // Update usage counts for added tags
-      for (const tagId of addedTagIds) {
-        try {
-          await this.tagService.incrementUsageCount(tagId, uid);
-        } catch (error) {
-          logger.warn(`Failed to increment usage count for tag ${tagId}:`, error);
-        }
-      }
-
-      // Update usage counts for removed tags
-      for (const tagId of removedTagIds) {
-        try {
-          await this.tagService.decrementUsageCount(tagId, uid);
-        } catch (error) {
-          logger.warn(`Failed to decrement usage count for tag ${tagId}:`, error);
-        }
-      }
-
-      // Get attachment DTOs
-      const attachmentIds = this.convertArrowAttachments(existingMemo.attachments);
-      const attachmentDtos =
-        attachmentIds.length > 0
-          ? await this.attachmentService.getAttachmentsByIds(attachmentIds, uid)
-          : [];
-
-      // Get tag DTOs for response
-      const tagDtos: TagDto[] =
-        resolvedTagIds.length > 0 ? await this.tagService.getTagsByIds(resolvedTagIds, uid) : [];
-
-      // Build updated memo object
-      const updatedMemo: MemoListItemDto = {
-        memoId,
-        uid,
-        content: existingMemo.content,
-        type: (existingMemo.type as 'text' | 'audio' | 'video') || 'text',
-        categoryId: existingMemo.categoryId,
-        attachments: attachmentDtos,
-        tags: tagDtos,
-        tagIds: resolvedTagIds,
-        isPublic: existingMemo.isPublic ?? false,
-        createdAt: existingMemo.createdAt,
-        updatedAt: now,
-      };
-
-      // Enrich with relations
-      const enrichedItems = await this.enrichMemosWithRelations(uid, [updatedMemo]);
-
-      return {
-        ...enrichedItems[0],
-      } as MemoWithAttachmentsDto;
-    } catch (error) {
-      logger.error('Error updating memo tags:', error);
-      throw error;
-    }
-  }
-
-  /**
    * Delete a memo
    */
   async deleteMemo(memoId: string, uid: string): Promise<boolean> {
     try {
-      // Get the memo directly to access tagIds before deletion
-      const memosTable = await this.lanceDatabase.openTable('memos');
-      const results = await memosTable
-        .query()
-        .where(`memoId = '${memoId}' AND uid = '${uid}'`)
-        .limit(1)
-        .toArray();
+      const db = getDatabase();
+
+      // Get the memo to access tagIds before deletion
+      const results = await db
+        .select()
+        .from(memos)
+        .where(and(eq(memos.memoId, memoId), eq(memos.uid, uid)))
+        .limit(1);
 
       if (results.length === 0) {
         throw new Error('Memo not found');
       }
 
-      const existingMemo: any = results[0];
-      const existingTagIds = this.convertArrowAttachments(existingMemo.tagIds);
+      const existingMemo = results[0];
+      const existingTagIds = existingMemo.tagIds || [];
 
-      // Delete the memo using LanceDB's delete method
-      await memosTable.delete(`memoId = '${memoId}' AND uid = '${uid}'`);
+      // Use transaction for multi-table delete
+      await withTransaction(async (tx) => {
+        // Delete from MySQL
+        await tx.delete(memos).where(and(eq(memos.memoId, memoId), eq(memos.uid, uid)));
 
-      // Clean up relations (both as source and as target)
+        logger.info('Memo scalar data deleted from MySQL:', { memoId, uid });
+      });
+
+      // Delete from LanceDB memos table (outside transaction)
+      const memosTable = await this.openMemosTable();
+      await memosTable.delete(`memoId = '${memoId}'`);
+
+      logger.info('Memo complete record deleted from LanceDB:', { memoId });
+
+      // Clean up relations
       try {
         await this.memoRelationService.deleteRelationsBySourceMemo(uid, memoId);
         await this.memoRelationService.deleteRelationsByTargetMemo(uid, memoId);
       } catch (error) {
         logger.warn('Failed to delete memo relations during memo deletion:', error);
-        // Don't throw - allow memo deletion even if relation cleanup fails
       }
 
       // Decrement usage counts for tags
@@ -861,19 +801,107 @@ export class MemoService {
   }
 
   /**
+   * Update memo tags (batch update)
+   * Replaces all existing tags with the new tags array
+   */
+  async updateTags(
+    memoId: string,
+    uid: string,
+    tags?: string[],
+    tagIds?: string[]
+  ): Promise<MemoWithAttachmentsDto | null> {
+    try {
+      const db = getDatabase();
+
+      // Find existing memo
+      const results = await db
+        .select()
+        .from(memos)
+        .where(and(eq(memos.memoId, memoId), eq(memos.uid, uid)))
+        .limit(1);
+
+      if (results.length === 0) {
+        throw new Error('Memo not found');
+      }
+
+      const existingMemo = results[0];
+      const existingTagIds = existingMemo.tagIds || [];
+
+      // Resolve tags to tagIds
+      let resolvedTagIds: string[] = [];
+      if (tagIds && tagIds.length > 0) {
+        resolvedTagIds = tagIds;
+      } else if (tags && tags.length > 0) {
+        resolvedTagIds = await this.tagService.resolveTagNamesToIds(tags, uid);
+      }
+
+      // Calculate tag usage changes
+      const addedTagIds = resolvedTagIds.filter((id) => !existingTagIds.includes(id));
+      const removedTagIds = existingTagIds.filter((id) => !resolvedTagIds.includes(id));
+
+      const now = Date.now();
+
+      // Update memo with new tag IDs
+      await db
+        .update(memos)
+        .set({
+          tagIds: resolvedTagIds.length > 0 ? resolvedTagIds : null,
+          updatedAt: new Date(now),
+        })
+        .where(and(eq(memos.memoId, memoId), eq(memos.uid, uid)));
+
+      // Update usage counts
+      for (const tagId of addedTagIds) {
+        try {
+          await this.tagService.incrementUsageCount(tagId, uid);
+        } catch (error) {
+          logger.warn(`Failed to increment usage count for tag ${tagId}:`, error);
+        }
+      }
+
+      for (const tagId of removedTagIds) {
+        try {
+          await this.tagService.decrementUsageCount(tagId, uid);
+        } catch (error) {
+          logger.warn(`Failed to decrement usage count for tag ${tagId}:`, error);
+        }
+      }
+
+      // Get updated memo
+      const attachmentIds = existingMemo.attachments || [];
+      const attachmentDtos: AttachmentDto[] =
+        attachmentIds.length > 0
+          ? await this.attachmentService.getAttachmentsByIds(attachmentIds, uid)
+          : [];
+
+      const updatedMemo: MemoListItemDto = {
+        memoId: existingMemo.memoId,
+        uid: existingMemo.uid,
+        content: existingMemo.content,
+        type: (existingMemo.type as 'text' | 'audio' | 'video') || 'text',
+        categoryId: existingMemo.categoryId || undefined,
+        attachments: attachmentDtos,
+        tagIds: resolvedTagIds,
+        isPublic: existingMemo.isPublic,
+        createdAt: existingMemo.createdAt.getTime(),
+        updatedAt: now,
+      };
+
+      // Enrich with relations
+      const enrichedItems = await this.enrichMemosWithRelations(uid, [updatedMemo]);
+
+      return {
+        ...enrichedItems[0],
+      } as MemoWithAttachmentsDto;
+    } catch (error) {
+      logger.error('Error updating memo tags:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Vector search for memos using semantic search with pagination
-   * Following LanceDB best practices: automatic prefiltering via BTREE index on uid
-   * Results are automatically sorted by distance (ascending) = relevance descending
-   *
-   * Best practices from LanceDB official docs:
-   * - Filter by uid BEFORE vector comparison using BTREE index (not full table scan)
-   * - The BTREE index on uid column enables automatic prefiltering
-   * - This narrows down the search space before comparing vectors
-   * - Significantly improves performance by reducing vectors to compare
-   * - .search() returns results sorted by _distance ascending (most similar first)
-   * - _distance represents L2 distance (lower = more similar)
-   * - Use .limit() and .offset() for efficient database-level pagination
-   * - Results: most relevant items for current user only (no cross-user data leakage)
+   * (KEEP EXISTING LANCEDB IMPLEMENTATION - NOT REFACTORED YET)
    */
   async vectorSearch(options: MemoVectorSearchOptions): Promise<PaginatedMemoListWithScoreDto> {
     try {
@@ -886,73 +914,82 @@ export class MemoService {
       // Generate embedding for the query
       const queryEmbedding = await this.embeddingService.generateEmbedding(query);
 
-      const memosTable = await this.lanceDatabase.openTable('memos');
+      // Use memos table from LanceDB for vector search with filtering
+      const memosTable = await this.openMemosTable();
 
-      const offset = (page - 1) * limit;
+      // Build filter string for LanceDB
+      let filterStr = `uid = '${uid}'`;
 
-      const filterConditions: string[] = [`uid = '${uid}'`];
       const isUncategorizedFilter = categoryId === UNCATEGORIZED_CATEGORY_ID;
 
       if (categoryId && !isUncategorizedFilter) {
-        filterConditions.push(`categoryId = '${categoryId}'`);
+        filterStr += ` AND categoryId = '${categoryId}'`;
+      } else if (isUncategorizedFilter) {
+        filterStr += ` AND categoryId IS NULL`;
       }
 
-      const whereClause = filterConditions.join(' AND ');
+      if (startDate && !isNaN(startDate.getTime())) {
+        filterStr += ` AND createdAt >= ${startDate.getTime()}`;
+      }
+      if (endDate && !isNaN(endDate.getTime())) {
+        filterStr += ` AND createdAt <= ${endDate.getTime()}`;
+      }
 
-      // Execute vector search with uid filtering for optimal performance
-      // The BTREE index on uid column enables automatic prefiltering
-      // LanceDB applies the uid filter BEFORE vector comparison (not after full table scan)
-      // This ensures: 1) Only user's memos are searched, 2) Performance is optimized
-      let allResults = await memosTable
+      // Perform vector search with filters in LanceDB
+      const vectorResults = await memosTable
         .search(queryEmbedding)
-        .where(whereClause) // BTREE index enables prefiltering, not postfiltering
+        .where(filterStr)
+        .limit(limit)
+        .offset((page - 1) * limit)
         .toArray();
 
-      // Apply date range filters in JavaScript (LanceDB cannot compare Timestamp with Int64 literals in SQL)
-      const startTimestamp = startDate && !isNaN(startDate.getTime()) ? startDate.getTime() : null;
-      const endTimestamp = endDate && !isNaN(endDate.getTime()) ? endDate.getTime() : null;
-
-      if (startTimestamp !== null || endTimestamp !== null) {
-        allResults = allResults.filter((memo: any) => {
-          const memoTime = memo.createdAt as number;
-          if (startTimestamp !== null && memoTime < startTimestamp) return false;
-          if (endTimestamp !== null && memoTime > endTimestamp) return false;
-          return true;
-        });
+      if (vectorResults.length === 0) {
+        return {
+          items: [],
+          pagination: {
+            total: 0,
+            page,
+            limit,
+            totalPages: 0,
+          },
+        };
       }
 
-      if (isUncategorizedFilter) {
-        allResults = allResults.filter((memo: any) => memo.categoryId == undefined);
-      }
+      // Get total count for pagination (approximate)
+      const countResults = await memosTable
+        .search(queryEmbedding)
+        .where(filterStr)
+        .limit(1000) // Get up to 1000 results for count
+        .toArray();
+      const total = countResults.length;
 
-      const total = allResults.length;
-      const totalPages = Math.ceil(total / limit);
-      const paginatedResults = allResults.slice(offset, offset + limit);
-
-      // Map results to DTOs, preserving the distance-based sort order
-      // Results are already sorted by relevance (distance ascending = most similar first)
+      // Convert to DTOs
       const items: MemoListItemWithScoreDto[] = [];
-      for (const memo of paginatedResults) {
-        const attachmentIds = this.convertArrowAttachments(memo.attachments);
+      for (const result of vectorResults) {
+        const memo = result as any;
+
+        // Convert Apache Arrow List to JavaScript array
+        const attachmentIds = toStringList(memo.attachments);
         const attachmentDtos: AttachmentDto[] =
           attachmentIds.length > 0
             ? await this.attachmentService.getAttachmentsByIds(attachmentIds, uid)
             : [];
+
+        // Convert Apache Arrow List to JavaScript array for tagIds
+        const tagIds = toStringList(memo.tagIds);
 
         items.push({
           memoId: memo.memoId,
           uid: memo.uid,
           content: memo.content,
           type: (memo.type as 'text' | 'audio' | 'video') || 'text',
-          categoryId: memo.categoryId,
+          categoryId: memo.categoryId || undefined,
           attachments: attachmentDtos,
-          tagIds: this.convertArrowAttachments(memo.tagIds),
-          createdAt: memo.createdAt,
-          updatedAt: memo.updatedAt,
-          // LanceDB returns _distance (L2 distance metric)
-          // Lower _distance = higher similarity
-          // Normalize to relevance score: 0-1, where 1.0 = perfect match
-          // For normalized vectors, _distance ranges from 0 to 2
+          tagIds,
+          isPublic: memo.isPublic ?? false,
+          createdAt: typeof memo.createdAt === 'number' ? memo.createdAt : new Date(memo.createdAt).getTime(),
+          updatedAt: typeof memo.updatedAt === 'number' ? memo.updatedAt : new Date(memo.updatedAt).getTime(),
+          source: memo.source || undefined,
           relevanceScore: Math.max(0, Math.min(1, 1 - (memo._distance || 0) / 2)),
         });
       }
@@ -966,55 +1003,41 @@ export class MemoService {
           total,
           page,
           limit,
-          totalPages,
+          totalPages: Math.ceil(total / limit),
         },
       };
     } catch (error) {
-      logger.error('Error performing vector search:', error);
+      logger.error('Error in vector search:', error);
       throw error;
     }
   }
 
   /**
-   * Get all memos for a user (for specific operations)
+   * Get all memos by user ID (internal use)
+   * Used for relation enrichment
    */
   async getAllMemosByUid(uid: string): Promise<Memo[]> {
     try {
-      const memosTable = await this.lanceDatabase.openTable('memos');
-
-      const results = await memosTable.query().where(`uid = '${uid}'`).toArray();
-
-      // Convert attachment IDs to DTOs
-      const memos: Memo[] = [];
-      for (const memo of results) {
-        const attachmentIds = this.convertArrowAttachments(memo.attachments);
-        const attachmentDtos: AttachmentDto[] =
-          attachmentIds.length > 0
-            ? await this.attachmentService.getAttachmentsByIds(attachmentIds, uid)
-            : [];
-
-        memos.push({
-          ...memo,
-          attachments: attachmentDtos,
-        });
-      }
-
-      return memos as Memo[];
+      const db = getDatabase();
+      return await db.select().from(memos).where(eq(memos.uid, uid));
     } catch (error) {
-      logger.error('Error getting all memos:', error);
+      logger.error('Error getting all memos by uid:', error);
       throw error;
     }
   }
 
   /**
-   * Get total count of memos for a user
-   * Uses countRows() which is more efficient than loading all records
+   * Get total memo count for a user
    */
   async getMemoCount(uid: string): Promise<number> {
     try {
-      const memosTable = await this.lanceDatabase.openTable('memos');
-      const count = await memosTable.countRows(`uid = '${uid}'`);
-      return count;
+      const db = getDatabase();
+      const result = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(memos)
+        .where(eq(memos.uid, uid));
+
+      return result[0]?.count || 0;
     } catch (error) {
       logger.error('Error getting memo count:', error);
       throw error;
@@ -1022,43 +1045,29 @@ export class MemoService {
   }
 
   /**
-   * Get a single memo by offset position
-   * Used for efficient random sampling without loading all IDs
+   * Get memo by offset (for iteration)
    */
   async getMemoByOffset(uid: string, offset: number): Promise<Memo | null> {
     try {
-      const memosTable = await this.lanceDatabase.openTable('memos');
-      const results = await memosTable
-        .query()
-        .where(`uid = '${uid}'`)
-        .offset(offset)
+      const db = getDatabase();
+      const results = await db
+        .select()
+        .from(memos)
+        .where(eq(memos.uid, uid))
+        .orderBy(desc(memos.createdAt))
         .limit(1)
-        .toArray();
+        .offset(offset);
 
-      if (results.length === 0) {
-        return null;
-      }
-
-      const memo = results[0];
-      const attachmentIds = this.convertArrowAttachments(memo.attachments);
-      const attachmentDtos: AttachmentDto[] =
-        attachmentIds.length > 0
-          ? await this.attachmentService.getAttachmentsByIds(attachmentIds, uid)
-          : [];
-
-      return {
-        ...memo,
-        attachments: attachmentDtos,
-      } as Memo;
+      return results[0] || null;
     } catch (error) {
       logger.error('Error getting memo by offset:', error);
-      return null;
+      throw error;
     }
   }
 
   /**
-   * Find related memos based on vector similarity to a given memo
-   * Excludes the memo itself and returns paginated similar memos with relevance scores
+   * Find related memos using vector similarity
+   * (KEEP EXISTING LANCEDB IMPLEMENTATION)
    */
   async findRelatedMemos(
     memoId: string,
@@ -1067,43 +1076,69 @@ export class MemoService {
     limit: number = 10
   ): Promise<PaginatedMemoListWithScoreDto> {
     try {
-      // Get the memo to verify access and get the embedding directly from DB
-      const memosTable = await this.lanceDatabase.openTable('memos');
-      const memoResults = await memosTable
+      // Get the memo's embedding from LanceDB
+      const memosTable = await this.openMemosTable();
+      const vectorResults = await memosTable
         .query()
-        .where(`memoId = '${memoId}' AND uid = '${uid}'`)
+        .where(`memoId = '${memoId}'`)
         .limit(1)
         .toArray();
 
-      if (memoResults.length === 0) {
-        throw new Error('Memo not found');
+      if (vectorResults.length === 0) {
+        throw new Error('Memo not found in vector store');
       }
 
-      const sourceMemoData = memoResults[0];
-      const sourceEmbedding = sourceMemoData.embedding;
+      const memoEmbedding = (vectorResults[0] as any).embedding;
+
+      // Search for similar memos (excluding the query memo itself)
       const offset = (page - 1) * limit;
-
-      // Perform vector search with the memo's embedding
-      const results = await memosTable
-        .search(sourceEmbedding)
-        .where(`uid = '${uid}' AND memoId != '${memoId}'`) // Exclude the memo itself
-        .limit(limit)
-        .offset(offset)
+      const similarMemos = await memosTable
+        .search(memoEmbedding)
+        .where(`uid = '${uid}'`) // Filter by user
+        .limit(limit + offset + 1) // +1 to exclude self
         .toArray();
 
-      // Fetch total count for pagination (all candidate memos excluding self)
-      const allResults = await memosTable
-        .query()
-        .where(`uid = '${uid}' AND memoId != '${memoId}'`)
-        .toArray();
+      // Filter out the query memo itself and apply pagination
+      const filteredResults = similarMemos
+        .filter((m: any) => m.memoId !== memoId)
+        .slice(offset, offset + limit);
 
-      const total = allResults.length;
-      const totalPages = Math.ceil(total / limit);
+      const total = similarMemos.filter((m: any) => m.memoId !== memoId).length;
 
-      // Convert attachment IDs to DTOs and exclude embedding
+      // Get scalar data from MySQL
+      const db = getDatabase();
+      const memoIds = filteredResults.map((m: any) => m.memoId);
+
+      if (memoIds.length === 0) {
+        return {
+          items: [],
+          pagination: {
+            total: 0,
+            page,
+            limit,
+            totalPages: 0,
+          },
+        };
+      }
+
+      const memosFromDb = await db
+        .select()
+        .from(memos)
+        .where(and(eq(memos.uid, uid), inArray(memos.memoId, memoIds)));
+
+      // Build result map
+      const memoMap = new Map<string, any>();
+      for (const fr of filteredResults) {
+        memoMap.set((fr as any).memoId, {
+          distance: (fr as any)._distance || 0,
+        });
+      }
+
+      // Convert to DTOs
       const items: MemoListItemWithScoreDto[] = [];
-      for (const memo of results) {
-        const attachmentIds = this.convertArrowAttachments(memo.attachments);
+      for (const memo of memosFromDb) {
+        const vectorInfo = memoMap.get(memo.memoId);
+        const attachmentIds = memo.attachments || [];
         const attachmentDtos: AttachmentDto[] =
           attachmentIds.length > 0
             ? await this.attachmentService.getAttachmentsByIds(attachmentIds, uid)
@@ -1114,12 +1149,12 @@ export class MemoService {
           uid: memo.uid,
           content: memo.content,
           type: (memo.type as 'text' | 'audio' | 'video') || 'text',
-          categoryId: memo.categoryId,
+          categoryId: memo.categoryId || undefined,
           attachments: attachmentDtos,
-          tagIds: this.convertArrowAttachments(memo.tagIds),
-          createdAt: memo.createdAt,
-          updatedAt: memo.updatedAt,
-          relevanceScore: Math.max(0, Math.min(1, 1 - (memo._distance || 0) / 2)),
+          tagIds: memo.tagIds || [],
+          createdAt: memo.createdAt.getTime(),
+          updatedAt: memo.updatedAt.getTime(),
+          relevanceScore: Math.max(0, Math.min(1, 1 - (vectorInfo?.distance || 0) / 2)),
         });
       }
 
@@ -1132,7 +1167,7 @@ export class MemoService {
           total,
           page,
           limit,
-          totalPages,
+          totalPages: Math.ceil(total / limit),
         },
       };
     } catch (error) {
@@ -1143,7 +1178,6 @@ export class MemoService {
 
   /**
    * Get multiple memos by their IDs
-   * Returns memos that belong to the specified user
    */
   async getMemosByIds(memoIds: string[], uid: string): Promise<MemoListItemDto[]> {
     try {
@@ -1151,18 +1185,16 @@ export class MemoService {
         return [];
       }
 
-      const memosTable = await this.lanceDatabase.openTable('memos');
-
-      // Build filter for memo IDs
-      const idConditions = memoIds.map((id) => `memoId = '${id}'`).join(' OR ');
-      const whereClause = `uid = '${uid}' AND (${idConditions})`;
-
-      const results = await memosTable.query().where(whereClause).toArray();
+      const db = getDatabase();
+      const results = await db
+        .select()
+        .from(memos)
+        .where(and(eq(memos.uid, uid), inArray(memos.memoId, memoIds)));
 
       // Convert to DTOs
       const items: MemoListItemDto[] = [];
       for (const memo of results) {
-        const attachmentIds = this.convertArrowAttachments(memo.attachments);
+        const attachmentIds = memo.attachments || [];
         const attachmentDtos: AttachmentDto[] =
           attachmentIds.length > 0
             ? await this.attachmentService.getAttachmentsByIds(attachmentIds, uid)
@@ -1173,12 +1205,12 @@ export class MemoService {
           uid: memo.uid,
           content: memo.content,
           type: (memo.type as 'text' | 'audio' | 'video') || 'text',
-          categoryId: memo.categoryId,
+          categoryId: memo.categoryId || undefined,
           attachments: attachmentDtos,
-          tagIds: this.convertArrowAttachments(memo.tagIds),
-          isPublic: memo.isPublic ?? false,
-          createdAt: memo.createdAt,
-          updatedAt: memo.updatedAt,
+          tagIds: memo.tagIds || [],
+          isPublic: memo.isPublic,
+          createdAt: memo.createdAt.getTime(),
+          updatedAt: memo.updatedAt.getTime(),
         });
       }
 
@@ -1194,20 +1226,34 @@ export class MemoService {
 
   /**
    * Enrich memo list items with their relation data
-   * Fetch all related memos for each item
    */
   private async enrichMemosWithRelations(
     uid: string,
     items: MemoListItemDto[]
   ): Promise<MemoListItemDto[]> {
     try {
-      const memosTable = await this.lanceDatabase.openTable('memos');
       const memosMap = new Map<string, any>();
 
       // Build a map of all memos for quick lookup
       const allMemos = await this.getAllMemosByUid(uid);
       for (const memo of allMemos) {
-        memosMap.set(memo.memoId, memo);
+        const attachmentIds = memo.attachments || [];
+        const attachmentDtos: AttachmentDto[] =
+          attachmentIds.length > 0
+            ? await this.attachmentService.getAttachmentsByIds(attachmentIds, uid)
+            : [];
+
+        memosMap.set(memo.memoId, {
+          memoId: memo.memoId,
+          uid: memo.uid,
+          content: memo.content,
+          type: (memo.type as 'text' | 'audio' | 'video') || 'text',
+          categoryId: memo.categoryId || undefined,
+          attachments: attachmentDtos,
+          tags: [], // Will be enriched if needed
+          createdAt: memo.createdAt.getTime(),
+          updatedAt: memo.updatedAt.getTime(),
+        });
       }
 
       // For each item, fetch its relations
@@ -1220,17 +1266,7 @@ export class MemoService {
           for (const relatedMemoId of relatedMemoIds) {
             const relatedMemo = memosMap.get(relatedMemoId);
             if (relatedMemo) {
-              relations.push({
-                memoId: relatedMemo.memoId,
-                uid: relatedMemo.uid,
-                content: relatedMemo.content,
-                type: relatedMemo.type || 'text',
-                categoryId: relatedMemo.categoryId,
-                attachments: relatedMemo.attachments,
-                tags: relatedMemo.tags,
-                createdAt: relatedMemo.createdAt,
-                updatedAt: relatedMemo.updatedAt,
-              });
+              relations.push(relatedMemo);
             }
           }
 
@@ -1247,70 +1283,59 @@ export class MemoService {
       return enrichedItems;
     } catch (error) {
       logger.error('Error enriching memos with relations:', error);
-      // Return original items if enrichment fails
       return items;
     }
   }
 
   /**
    * Get activity stats for calendar heatmap
-   * Returns daily memo counts for the last 90 days
+   * (KEEP EXISTING MYSQL IMPLEMENTATION)
    */
   async getActivityStats(uid: string, days: number = 90): Promise<MemoActivityStatsDto> {
     try {
-      const memosTable = await this.lanceDatabase.openTable('memos');
+      const db = getDatabase();
 
-      // Calculate date range in UTC
+      // Calculate date range
       const endDate = new Date();
       const startDate = new Date();
       startDate.setDate(endDate.getDate() - days);
 
       // Format date key as YYYY-MM-DD in UTC
-      const formatDateKeyUTC = (timestamp: number) => {
-        const date = new Date(timestamp); // timestamp is milliseconds since epoch
+      const formatDateKeyUTC = (date: Date) => {
         const year = date.getUTCFullYear();
         const month = String(date.getUTCMonth() + 1).padStart(2, '0');
         const day = String(date.getUTCDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
       };
 
-      // Get all memos for the user
-      // LanceDB Timestamp type cannot be compared with integer literals in SQL, so we filter in JavaScript
-      const allMemos = await memosTable.query().where(`uid = '${uid}'`).toArray();
+      // Get memos within date range
+      const memosInRange = await db
+        .select()
+        .from(memos)
+        .where(
+          and(eq(memos.uid, uid), gte(memos.createdAt, startDate), lte(memos.createdAt, endDate))
+        );
 
-      // Get timestamps for date range
-      const startTimestamp = startDate.getTime();
-      const endTimestamp = endDate.getTime();
-
-      // Filter memos by date range in JavaScript
-      const memosByDate = allMemos.filter((memo: any) => {
-        const createdAt = memo.createdAt as number;
-        return createdAt >= startTimestamp && createdAt <= endTimestamp;
-      });
-
-      // Group memos by date (YYYY-MM-DD in UTC)
+      // Group memos by date
       const dateCountMap = new Map<string, number>();
 
-      for (const memo of memosByDate) {
-        const createdAt = memo.createdAt as number;
-        const dateKey = formatDateKeyUTC(createdAt); // YYYY-MM-DD (UTC)
-
+      for (const memo of memosInRange) {
+        const dateKey = formatDateKeyUTC(memo.createdAt);
         dateCountMap.set(dateKey, (dateCountMap.get(dateKey) || 0) + 1);
       }
 
-      // Convert to array format
-      const items: MemoActivityStatsItemDto[] = [];
-      for (const [date, count] of dateCountMap) {
-        items.push({ date, count });
-      }
-
-      // Sort by date
-      items.sort((a, b) => a.date.localeCompare(b.date));
+      // Convert to array
+      const items: MemoActivityStatsItemDto[] = Array.from(dateCountMap.entries()).map(
+        ([date, count]) => ({
+          date,
+          count,
+        })
+      );
 
       return {
         items,
-        startDate: formatDateKeyUTC(startTimestamp),
-        endDate: formatDateKeyUTC(endTimestamp),
+        startDate: formatDateKeyUTC(startDate),
+        endDate: formatDateKeyUTC(endDate),
       };
     } catch (error) {
       logger.error('Error getting activity stats:', error);
@@ -1319,56 +1344,54 @@ export class MemoService {
   }
 
   /**
-   * Get memos from previous years on the same month/day as today
-   * Excludes memos from the current year
-   * Results are sorted by year descending (most recent first)
-   * Limited to 10 results maximum
+   * Get "On This Day" memos
    */
   async getOnThisDayMemos(uid: string): Promise<OnThisDayResponseDto> {
     try {
-      const now = new Date();
-      const currentYear = now.getFullYear();
-      const currentMonth = now.getMonth(); // 0-11
-      const currentDay = now.getDate(); // 1-31
+      const db = getDatabase();
+      const today = new Date();
+      const currentMonth = today.getUTCMonth() + 1;
+      const currentDay = today.getUTCDate();
 
-      // Format today's month-day as MM-DD
-      const todayMonthDay = `${String(currentMonth + 1).padStart(2, '0')}-${String(currentDay).padStart(2, '0')}`;
+      // Get all memos for this user
+      const allMemos = await db.select().from(memos).where(eq(memos.uid, uid));
 
-      // Get all memos for the user
-      const memosTable = await this.lanceDatabase.openTable('memos');
-      const allMemos = await memosTable.query().where(`uid = '${uid}'`).toArray();
+      // Filter memos by month and day
+      const memosOnThisDay = allMemos.filter((memo) => {
+        const memoDate = memo.createdAt;
+        return (
+          memoDate.getUTCMonth() + 1 === currentMonth &&
+          memoDate.getUTCDate() === currentDay &&
+          memoDate.getUTCFullYear() !== today.getUTCFullYear()
+        );
+      });
 
-      // Filter memos that match the current month/day but not current year
-      const matchingMemos: OnThisDayMemoDto[] = [];
+      // Convert to array of OnThisDayMemoDto
+      const items: OnThisDayMemoDto[] = [];
 
-      for (const memo of allMemos) {
-        const createdAt = memo.createdAt as number;
-        const memoDate = new Date(createdAt);
-        const memoYear = memoDate.getFullYear();
-        const memoMonth = memoDate.getMonth();
-        const memoDay = memoDate.getDate();
+      for (const memo of memosOnThisDay) {
+        const year = memo.createdAt.getUTCFullYear();
 
-        // Match month and day, but exclude current year
-        if (memoMonth === currentMonth && memoDay === currentDay && memoYear !== currentYear) {
-          matchingMemos.push({
-            memoId: memo.memoId,
-            content: memo.content,
-            createdAt,
-            year: memoYear,
-          });
-        }
+        const memoDto: OnThisDayMemoDto = {
+          memoId: memo.memoId,
+          content: memo.content,
+          createdAt: memo.createdAt.getTime(),
+          year,
+        };
+
+        items.push(memoDto);
       }
 
-      // Sort by year descending (most recent first)
-      matchingMemos.sort((a, b) => b.year - a.year);
+      // Sort by year descending (newest first)
+      items.sort((a, b) => b.year - a.year);
 
-      // Limit to 10 results
-      const limitedMemos = matchingMemos.slice(0, 10);
+      // Format todayMonthDay as MM-DD
+      const monthDay = `${String(currentMonth).padStart(2, '0')}-${String(currentDay).padStart(2, '0')}`;
 
       return {
-        items: limitedMemos,
-        total: limitedMemos.length,
-        todayMonthDay,
+        items,
+        total: items.length,
+        todayMonthDay: monthDay,
       };
     } catch (error) {
       logger.error('Error getting on this day memos:', error);
@@ -1377,9 +1400,7 @@ export class MemoService {
   }
 
   /**
-   * Get public memos for a user (no authentication required)
-   * Returns memos where isPublic = true for the specified user
-   * Supports pagination and sorting
+   * Get public memos with pagination
    */
   async getPublicMemos(
     uid: string,
@@ -1389,32 +1410,37 @@ export class MemoService {
     sortOrder: 'asc' | 'desc' = 'desc'
   ): Promise<PaginatedMemoListDto> {
     try {
-      const memosTable = await this.lanceDatabase.openTable('memos');
+      const db = getDatabase();
+      const offset = (page - 1) * limit;
 
-      // Query memos that are public for this user
-      const whereClause = `uid = '${uid}' AND isPublic = true`;
-      const allResults = await memosTable.query().where(whereClause).toArray();
+      // Get total count for this user's public memos
+      const countResult = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(memos)
+        .where(and(eq(memos.uid, uid), eq(memos.isPublic, true)));
 
-      const total = allResults.length;
+      const total = countResult[0]?.count || 0;
+
+      // Determine sort column and direction
+      const sortColumn = sortBy === 'createdAt' ? memos.createdAt : memos.updatedAt;
+      const sortDirection = sortOrder === 'asc' ? asc(sortColumn) : desc(sortColumn);
 
       // Get paginated results
-      const offset = (page - 1) * limit;
-      const results = allResults
-        .sort((a: any, b: any) => {
-          const aValue = sortBy === 'createdAt' ? a.createdAt : a.updatedAt;
-          const bValue = sortBy === 'createdAt' ? b.createdAt : b.updatedAt;
-          const comparison = aValue - bValue;
-          return sortOrder === 'asc' ? comparison : -comparison;
-        })
-        .slice(offset, offset + limit);
+      const results = await db
+        .select()
+        .from(memos)
+        .where(and(eq(memos.uid, uid), eq(memos.isPublic, true)))
+        .orderBy(sortDirection)
+        .limit(limit)
+        .offset(offset);
 
-      // Get attachment IDs and convert to DTOs
+      // Convert to DTOs
       const items: MemoListItemDto[] = [];
       for (const memo of results) {
-        const attachmentIds = this.convertArrowAttachments(memo.attachments);
+        const attachmentIds = memo.attachments || [];
         const attachmentDtos: AttachmentDto[] =
           attachmentIds.length > 0
-            ? await this.attachmentService.getAttachmentsByIds(attachmentIds, uid)
+            ? await this.attachmentService.getAttachmentsByIds(attachmentIds, memo.uid)
             : [];
 
         items.push({
@@ -1422,17 +1448,21 @@ export class MemoService {
           uid: memo.uid,
           content: memo.content,
           type: (memo.type as 'text' | 'audio' | 'video') || 'text',
-          categoryId: memo.categoryId,
+          categoryId: memo.categoryId || undefined,
           attachments: attachmentDtos,
-          tagIds: this.convertArrowAttachments(memo.tagIds),
-          isPublic: memo.isPublic ?? false,
-          createdAt: memo.createdAt,
-          updatedAt: memo.updatedAt,
+          tagIds: memo.tagIds || [],
+          isPublic: memo.isPublic,
+          createdAt: memo.createdAt.getTime(),
+          updatedAt: memo.updatedAt.getTime(),
         });
       }
 
       // Enrich items with tags
-      const itemsWithTags = await this.enrichTags(uid, items);
+      const itemsWithTags: MemoListItemDto[] = [];
+      for (const item of items) {
+        const enriched = await this.enrichTags(item.uid, [item]);
+        itemsWithTags.push(enriched[0]);
+      }
 
       return {
         items: itemsWithTags,
@@ -1450,63 +1480,49 @@ export class MemoService {
   }
 
   /**
-   * Get a random public memo for a user (no authentication required)
-   * Returns a single random memo where isPublic = true
-   * Uses efficient count + offset approach to avoid loading all memos into memory
+   * Get random public memo
    */
   async getRandomPublicMemo(uid: string): Promise<MemoListItemDto | null> {
     try {
-      const memosTable = await this.lanceDatabase.openTable('memos');
+      const db = getDatabase();
 
-      // Get count of public memos for this user
-      const whereClause = `uid = '${uid}' AND isPublic = true`;
-      const totalCount = await memosTable.countRows(whereClause);
+      // Get all public memos for this user
+      const publicMemos = await db
+        .select()
+        .from(memos)
+        .where(and(eq(memos.uid, uid), eq(memos.isPublic, true)));
 
-      if (totalCount === 0) {
+      if (publicMemos.length === 0) {
         return null;
       }
 
-      // Pick a random offset
-      const randomOffset = Math.floor(Math.random() * totalCount);
+      // Pick random memo
+      const randomIndex = Math.floor(Math.random() * publicMemos.length);
+      const memo = publicMemos[randomIndex];
 
-      // Get memo at the random offset position
-      const results = await memosTable
-        .query()
-        .where(whereClause)
-        .offset(randomOffset)
-        .limit(1)
-        .toArray();
-
-      if (results.length === 0) {
-        return null;
-      }
-
-      const memo = results[0];
-
-      // Get attachment DTOs
-      const attachmentIds = this.convertArrowAttachments(memo.attachments);
+      const attachmentIds = memo.attachments || [];
       const attachmentDtos: AttachmentDto[] =
         attachmentIds.length > 0
           ? await this.attachmentService.getAttachmentsByIds(attachmentIds, uid)
           : [];
 
-      // Build memo object with tagIds
       const memoItem: MemoListItemDto = {
         memoId: memo.memoId,
         uid: memo.uid,
         content: memo.content,
         type: (memo.type as 'text' | 'audio' | 'video') || 'text',
-        categoryId: memo.categoryId,
+        categoryId: memo.categoryId || undefined,
         attachments: attachmentDtos,
-        tagIds: this.convertArrowAttachments(memo.tagIds),
-        isPublic: memo.isPublic ?? false,
-        createdAt: memo.createdAt,
-        updatedAt: memo.updatedAt,
+        tagIds: memo.tagIds || [],
+        isPublic: memo.isPublic,
+        createdAt: memo.createdAt.getTime(),
+        updatedAt: memo.updatedAt.getTime(),
       };
 
       // Enrich with tags
-      const [enrichedMemo] = await this.enrichTags(uid, [memoItem]);
-      return enrichedMemo;
+      const enriched = await this.enrichTags(uid, [memoItem]);
+
+      return enriched[0];
     } catch (error) {
       logger.error('Error getting random public memo:', error);
       throw error;
@@ -1514,51 +1530,52 @@ export class MemoService {
   }
 
   /**
-   * Get a single public memo by ID (no authentication required)
-   * Returns a memo where isPublic = true for the specified memoId
+   * Get public memo by ID (no auth required)
    */
   async getPublicMemoById(memoId: string): Promise<MemoWithAttachmentsDto | null> {
     try {
-      const memosTable = await this.lanceDatabase.openTable('memos');
+      const db = getDatabase();
 
-      // Query memo that is public with the given memoId
-      const results = await memosTable
-        .query()
-        .where(`memoId = '${memoId}' AND isPublic = true`)
-        .limit(1)
-        .toArray();
+      const results = await db
+        .select()
+        .from(memos)
+        .where(and(eq(memos.memoId, memoId), eq(memos.isPublic, true)))
+        .limit(1);
 
       if (results.length === 0) {
         return null;
       }
 
-      const memo: any = results[0];
-      const attachmentIds = this.convertArrowAttachments(memo.attachments);
-
-      // For public memos, we need to get attachments with the owner's uid
+      const memo = results[0];
+      const attachmentIds = memo.attachments || [];
       const attachmentDtos: AttachmentDto[] =
         attachmentIds.length > 0
           ? await this.attachmentService.getAttachmentsByIds(attachmentIds, memo.uid)
           : [];
 
-      // Build memo object with attachment DTOs
       const memoWithAttachments: MemoListItemDto = {
         memoId: memo.memoId,
         uid: memo.uid,
         content: memo.content,
         type: (memo.type as 'text' | 'audio' | 'video') || 'text',
-        categoryId: memo.categoryId,
+        categoryId: memo.categoryId || undefined,
         attachments: attachmentDtos,
-        tagIds: this.convertArrowAttachments(memo.tagIds),
-        isPublic: memo.isPublic ?? false,
-        createdAt: memo.createdAt,
-        updatedAt: memo.updatedAt,
+        tagIds: memo.tagIds || [],
+        isPublic: memo.isPublic,
+        createdAt: memo.createdAt.getTime(),
+        updatedAt: memo.updatedAt.getTime(),
+        source: memo.source || undefined,
       };
 
-      // Enrich with tags using the memo owner's uid
-      const [enrichedMemo] = await this.enrichTags(memo.uid, [memoWithAttachments]);
+      // Enrich with tags
+      const itemsWithTags = await this.enrichTags(memo.uid, [memoWithAttachments]);
 
-      return enrichedMemo as MemoWithAttachmentsDto;
+      // Enrich with relations
+      const enrichedItems = await this.enrichMemosWithRelations(memo.uid, itemsWithTags);
+
+      return {
+        ...enrichedItems[0],
+      } as MemoWithAttachmentsDto;
     } catch (error) {
       logger.error('Error getting public memo by ID:', error);
       throw error;

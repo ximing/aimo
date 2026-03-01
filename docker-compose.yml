@@ -1,6 +1,41 @@
 version: '3.8'
 
 services:
+  mysql:
+    image: mysql:8.0
+    container_name: aimo-mysql
+    ports:
+      - '3306:3306'
+    volumes:
+      # MySQL 数据文件映射到外部磁盘
+      - ./data/mysql:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_PASSWORD:-aimo_password}
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-aimo}
+      - MYSQL_USER=${MYSQL_USER:-aimo}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-aimo_password}
+      # 配置 MySQL 字符集
+      - MYSQL_CHARSET=utf8mb4
+      - MYSQL_COLLATION=utf8mb4_unicode_ci
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'mysqladmin',
+          'ping',
+          '-h',
+          'localhost',
+          '-u',
+          'root',
+          '-p${MYSQL_PASSWORD:-aimo_password}',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
   app:
     # 使用预构建的镜像 (推荐生产环境使用 stable 标签)
     image: ghcr.io/ximing/aimo:stable
@@ -14,6 +49,9 @@ services:
     #   dockerfile: Dockerfile
     # image: aimo:latest
     container_name: aimo-app
+    depends_on:
+      mysql:
+        condition: service_healthy
     ports:
       - '3000:3000'
     volumes:
@@ -32,6 +70,14 @@ services:
 
       # ===== JWT 配置 =====
       - JWT_SECRET=${JWT_SECRET:-your-secret-key-change-in-production}
+
+      # ===== MySQL 数据库配置 =====
+      - MYSQL_HOST=${MYSQL_HOST:-mysql}
+      - MYSQL_PORT=${MYSQL_PORT:-3306}
+      - MYSQL_USER=${MYSQL_USER:-aimo}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-aimo_password}
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-aimo}
+      - MYSQL_CONNECTION_LIMIT=${MYSQL_CONNECTION_LIMIT:-10}
 
       # ===== LanceDB 配置 =====
       - LANCEDB_STORAGE_TYPE=${LANCEDB_STORAGE_TYPE:-local}

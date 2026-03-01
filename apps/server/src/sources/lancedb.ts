@@ -182,24 +182,23 @@ export class LanceDbService {
   }
 
   /**
-   * Optimize all tables to rebuild indexes and consolidate data
+   * Optimize all vector tables to rebuild indexes and consolidate data
    * Useful after bulk operations or periodic maintenance
+   * Only optimizes vector-only tables (memo_vectors, attachment_vectors, embedding caches)
+   * Scalar data tables (users, memos, categories, etc.) are now in MySQL
    *
    * @param cleanupOlderThanDays - Optional: Clean up versions older than N days (default: uses config.lancedb.versionRetentionDays)
    */
   async optimizeAllTables(cleanupOlderThanDays?: number): Promise<void> {
-    const tables = [
-      'users',
-      'memos',
-      'memo_relations',
-      'categories',
-      'attachments',
+    const vectorTables = [
+      'memo_vectors',
+      'attachment_vectors',
       'embedding_cache',
       'multimodal_embedding_cache',
     ];
-    logger.info(`Starting optimization for all tables...`);
+    logger.info(`Starting optimization for all vector tables...`);
 
-    for (const tableName of tables) {
+    for (const tableName of vectorTables) {
       try {
         await this.optimizeTable(tableName, cleanupOlderThanDays);
       } catch (error) {
@@ -208,7 +207,83 @@ export class LanceDbService {
       }
     }
 
-    logger.info(`All tables optimization completed`);
+    logger.info(`All vector tables optimization completed`);
+  }
+
+  /**
+   * Insert a vector record into a vector table
+   * @param tableName - Name of the vector table (memo_vectors, attachment_vectors)
+   * @param record - Vector record to insert
+   */
+  async insertVector(tableName: string, record: Record<string, any>): Promise<void> {
+    try {
+      const table = await this.openTable(tableName);
+      await table.add([record]);
+      logger.debug(`Inserted vector into ${tableName}`);
+    } catch (error) {
+      logger.error(`Failed to insert vector into ${tableName}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a vector record from a vector table by ID
+   * @param tableName - Name of the vector table (memo_vectors, attachment_vectors)
+   * @param idField - Name of the ID field (memoId, attachmentId)
+   * @param idValue - Value of the ID to delete
+   */
+  async deleteVector(tableName: string, idField: string, idValue: string): Promise<void> {
+    try {
+      const table = await this.openTable(tableName);
+      await table.delete(`${idField} = '${idValue}'`);
+      logger.debug(`Deleted vector from ${tableName} where ${idField} = ${idValue}`);
+    } catch (error) {
+      logger.error(`Failed to delete vector from ${tableName}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Search for similar vectors in a vector table
+   * @param tableName - Name of the vector table (memo_vectors, attachment_vectors)
+   * @param queryVector - Query embedding vector
+   * @param limit - Maximum number of results to return
+   * @returns Array of records with similarity scores
+   */
+  async searchVectors(
+    tableName: string,
+    queryVector: number[],
+    limit: number = 10
+  ): Promise<any[]> {
+    try {
+      const table = await this.openTable(tableName);
+      const results = await table.vectorSearch(queryVector).limit(limit).toArray();
+
+      logger.debug(`Searched ${tableName} for ${limit} similar vectors`);
+      return results;
+    } catch (error) {
+      logger.error(`Failed to search vectors in ${tableName}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get a vector record by ID
+   * @param tableName - Name of the vector table (memo_vectors, attachment_vectors)
+   * @param idField - Name of the ID field (memoId, attachmentId)
+   * @param idValue - Value of the ID to retrieve
+   * @returns Vector record or null if not found
+   */
+  async getVector(tableName: string, idField: string, idValue: string): Promise<any | null> {
+    try {
+      const table = await this.openTable(tableName);
+      const results = await table.query().where(`${idField} = '${idValue}'`).limit(1).toArray();
+
+      return results.length > 0 ? results[0] : null;
+    } catch (error) {
+      logger.error(`Failed to get vector from ${tableName}:`, error);
+      throw error;
+    }
   }
 
   /**

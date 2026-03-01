@@ -4,17 +4,22 @@
  */
 
 export interface MemoActivityStatsItemDto {
-  date: string; // ISO date string (YYYY-MM-DD)
-  count: number; // Number of memos created on this date
+  /** ISO date string (YYYY-MM-DD) */
+  date: string;
+  /** Number of memos created on this date */
+  count: number;
 }
 
 /**
  * Memo activity stats response for heatmap
  */
 export interface MemoActivityStatsDto {
+  /** Array of activity stats items */
   items: MemoActivityStatsItemDto[];
-  startDate: string; // ISO date string
-  endDate: string; // ISO date string
+  /** Start date of the stats range (ISO date string) */
+  startDate: string;
+  /** End date of the stats range (ISO date string) */
+  endDate: string;
 }
 
 /**
@@ -22,19 +27,26 @@ export interface MemoActivityStatsDto {
  * Shows memos from previous years on the same month/day
  */
 export interface OnThisDayMemoDto {
+  /** Unique memo identifier */
   memoId: string;
+  /** Memo content text */
   content: string;
-  createdAt: number; // timestamp in milliseconds
-  year: number; // The year this memo was created
+  /** Created timestamp in milliseconds */
+  createdAt: number;
+  /** The year this memo was created */
+  year: number;
 }
 
 /**
  * Response for "on this day" API
  */
 export interface OnThisDayResponseDto {
+  /** Array of memos from this day in previous years */
   items: OnThisDayMemoDto[];
+  /** Total number of memos */
   total: number;
-  todayMonthDay: string; // MM-DD format
+  /** Today's month and day (MM-DD format) */
+  todayMonthDay: string;
 }
 
 /**
@@ -42,6 +54,8 @@ export interface OnThisDayResponseDto {
  * Returns AI-curated memos for daily review
  */
 export interface DailyRecommendationsResponseDto {
+  /** Array of recommended memo items */
   items: import('./memo.js').MemoListItemDto[];
+  /** Total number of recommendations */
   total: number;
 }

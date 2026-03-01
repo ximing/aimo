@@ -93,7 +93,7 @@ export class MigrationManager {
       }
 
       // Get current version from metadata
-      const currentVersion = await MigrationExecutor.getCurrentVersion(metadataTable, tableName);
+      let currentVersion = await MigrationExecutor.getCurrentVersion(metadataTable, tableName);
 
       // Get target version from migrations
       const targetVersion = getLatestVersion(tableName);
@@ -101,11 +101,10 @@ export class MigrationManager {
       if (this.options.verbose) {
         logger.info(`  Current version: ${currentVersion}, Target version: ${targetVersion}`);
       }
-
       // If versions match, nothing to do
       if (currentVersion === targetVersion) {
-      if (this.options.verbose) {
-        logger.info(`  Table ${tableName} is up to date`);
+        if (this.options.verbose) {
+          logger.info(`  Table ${tableName} is up to date`);
         }
         return;
       }
@@ -114,8 +113,8 @@ export class MigrationManager {
       const pendingMigrations = getMigrationsFromVersion(tableName, currentVersion);
 
       if (pendingMigrations.length === 0) {
-      if (this.options.verbose) {
-        logger.info(`  No pending migrations for table ${tableName}`);
+        if (this.options.verbose) {
+          logger.info(`  No pending migrations for table ${tableName}`);
         }
         return;
       }
@@ -136,8 +135,8 @@ export class MigrationManager {
         }
       } else {
         await MigrationExecutor.executeMigrations(connection, pendingMigrations, metadataTable);
-      if (this.options.verbose) {
-        logger.info(`  Successfully migrated ${tableName} to v${targetVersion}`);
+        if (this.options.verbose) {
+          logger.info(`  Successfully migrated ${tableName} to v${targetVersion}`);
         }
       }
     } catch (error) {

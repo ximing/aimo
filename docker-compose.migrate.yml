@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  # MySQL database for development
+  mysql:
+    image: mysql:8.0
+    container_name: aimo-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-aimo_root_password}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-aimo}
+      MYSQL_USER: ${MYSQL_USER:-aimo}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-aimo_password}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - aimo-network
+
+  # Migration runner service
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.migrate
+    container_name: aimo-migrate
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      # MySQL connection
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_USER: ${MYSQL_USER:-aimo}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-aimo_password}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-aimo}
+
+      # LanceDB configuration
+      LANCEDB_STORAGE_TYPE: ${LANCEDB_STORAGE_TYPE:-local}
+      LANCEDB_PATH: ${LANCEDB_PATH:-./lancedb_data}
+
+      # Other required env vars
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-key-at-least-32-characters-long}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-sk-xxx}
+      NODE_ENV: production
+    volumes:
+      # Mount LanceDB data directory
+      - ${LANCEDB_PATH:-./lancedb_data}:/app/lancedb_data
+      # Mount migration files (for generate command)
+      - ./apps/server/drizzle:/app/apps/server/drizzle
+      - ./apps/server/src/db:/app/apps/server/src/db
+    networks:
+      - aimo-network
+    # Override command based on what migration you want to run
+    # See usage examples below
+    command: ["node", "apps/server/dist/scripts/docker-migrate.js", "migrate"]
+
+volumes:
+  mysql_data:
+
+networks:
+  aimo-network:
+    driver: bridge

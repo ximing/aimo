@@ -55,7 +55,10 @@ export class DebugBAController {
         tableName,
         error: error instanceof Error ? error.message : String(error),
       });
-      return ResponseUtility.error(ErrorCode.NOT_FOUND, `Table '${tableName}' not found or error: ${error instanceof Error ? error.message : String(error)}`);
+      return ResponseUtility.error(
+        ErrorCode.NOT_FOUND,
+        `Table '${tableName}' not found or error: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -124,7 +127,10 @@ export class DebugBAController {
         pageSize,
         error: error instanceof Error ? error.message : String(error),
       });
-      return ResponseUtility.error(ErrorCode.NOT_FOUND, `Table '${tableName}' not found or error: ${error instanceof Error ? error.message : String(error)}`);
+      return ResponseUtility.error(
+        ErrorCode.NOT_FOUND,
+        `Table '${tableName}' not found or error: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 }

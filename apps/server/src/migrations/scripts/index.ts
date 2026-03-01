@@ -31,6 +31,11 @@ import { createTagIndexesMigration } from './013-create-tag-indexes.js';
 import { fixTagIdsColumnTypeMigration } from './014-fix-tag-ids-column-type.js';
 import { pushRulesTableMigration } from './015-add-push-rules.js';
 import { addSourceToMemosMigration } from './016-add-memo-source.js';
+import {
+  memoVectorsTableMigration,
+  attachmentVectorsTableMigration,
+} from './017-add-vector-tables.js';
+import { backfillMemoVectorsMigration } from './018-backfill-memo-vectors.js';
 
 import type { Migration } from '../types.js';
 
@@ -99,6 +104,13 @@ export const ALL_MIGRATIONS: Migration[] = [
 
   // Version 16: Add source field to memos table
   addSourceToMemosMigration,
+
+  // Version 17: Add vector-only tables for hybrid MySQL+LanceDB architecture
+  memoVectorsTableMigration,
+  attachmentVectorsTableMigration,
+
+  // Version 18: Backfill memo_vectors from legacy memos embeddings
+  backfillMemoVectorsMigration,
 
   // Add future migrations here
   // Example:

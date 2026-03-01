@@ -120,7 +120,7 @@ export class EmbeddingService {
       }
 
       // Cache miss, generate embedding
-        logger.debug('Cache miss for embedding, generating new one...');
+      logger.debug('Cache miss for embedding, generating new one...');
       const result = await embed({
         model: this.model,
         value: text,

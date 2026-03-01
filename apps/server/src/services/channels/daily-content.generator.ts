@@ -16,9 +16,7 @@ export class DailyContentGenerator implements ContentGenerator {
   /**
    * Generate content based on content type
    */
-  async generate(
-    contentType: string,
-    uid: string  ): Promise<PushContent> {
+  async generate(contentType: string, uid: string): Promise<PushContent> {
     switch (contentType) {
       case 'daily_pick': {
         return this.generateDailyPick(uid);

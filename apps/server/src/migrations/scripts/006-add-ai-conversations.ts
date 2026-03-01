@@ -6,7 +6,6 @@
 import { aiConversationsSchema, aiMessagesSchema } from '../../models/db/schema.js';
 import { logger } from '../../utils/logger.js';
 
-
 import type { Migration } from '../types.js';
 import type { Connection } from '@lancedb/lancedb';
 

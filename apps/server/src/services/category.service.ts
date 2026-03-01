@@ -1,44 +1,17 @@
 import { Service } from 'typedi';
+import { eq, and, sql } from 'drizzle-orm';
 
 import { OBJECT_TYPE } from '../models/constant/type.js';
-import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
+import { getDatabase } from '../db/connection.js';
+import { categories } from '../db/schema/categories.js';
 import { generateTypeId } from '../utils/id.js';
 import { logger } from '../utils/logger.js';
 
-import type { CategoryRecord } from '../models/db/schema.js';
 import type { CategoryDto, CreateCategoryDto, UpdateCategoryDto } from '@aimo/dto';
 
 @Service()
 export class CategoryService {
-  constructor(private lanceDatabase: LanceDatabaseService) {}
-
-  /**
-   * Clear categoryId from all memos that have the specified category
-   */
-  async clearCategoryFromMemos(uid: string, categoryId: string): Promise<void> {
-    try {
-      const memosTable = await this.lanceDatabase.openTable('memos');
-
-      // Find all memos with this category
-      const results = await memosTable
-        .query()
-        .where(`uid = '${uid}' AND categoryId = '${categoryId}'`)
-        .toArray();
-
-      // Update each memo to set categoryId to null
-      for (const memo of results) {
-        await memosTable.update({
-          where: `memoId = '${memo.memoId}'`,
-          values: { categoryId: null },
-        });
-      }
-
-      logger.info(`Cleared category ${categoryId} from ${results.length} memos`);
-    } catch (error) {
-      logger.error('Failed to clear category from memos:', error);
-      // Don't throw - allow category deletion even if memo update fails
-    }
-  }
+  constructor() {}
 
   /**
    * Create a new category for a user
@@ -58,21 +31,27 @@ export class CategoryService {
       }
 
       const categoryId = generateTypeId(OBJECT_TYPE.CATEGORY);
-      const now = Date.now();
 
-      const category: CategoryRecord = {
+      const db = getDatabase();
+      await db.insert(categories).values({
         categoryId,
         uid,
         name: trimmedName,
-        color: data.color?.trim() || undefined,
-        createdAt: now,
-        updatedAt: now,
-      };
+        color: data.color?.trim() || null,
+      });
 
-      const table = await this.lanceDatabase.openTable('categories');
-      await table.add([category as unknown as Record<string, unknown>]);
+      // Fetch the created category to get auto-generated timestamps
+      const results = await db
+        .select()
+        .from(categories)
+        .where(eq(categories.categoryId, categoryId))
+        .limit(1);
 
-      return this.toCategoryDto(category);
+      if (results.length === 0) {
+        throw new Error('Failed to retrieve created category');
+      }
+
+      return this.toCategoryDto(results[0]);
     } catch (error) {
       logger.error('Failed to create category:', error);
       throw error;
@@ -84,16 +63,13 @@ export class CategoryService {
    */
   async getCategoriesByUid(uid: string): Promise<CategoryDto[]> {
     try {
-      const table = await this.lanceDatabase.openTable('categories');
-
-      const results = await table.query().where(`uid = '${uid}'`).toArray();
+      const db = getDatabase();
+      const results = await db.select().from(categories).where(eq(categories.uid, uid));
 
       // Sort by name alphabetically (case-insensitive)
-      results.sort((a: any, b: any) =>
-        a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
-      );
+      results.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
 
-      return results.map((record) => this.toCategoryDto(record as CategoryRecord));
+      return results.map((record) => this.toCategoryDto(record));
     } catch (error) {
       logger.error('Failed to get categories:', error);
       throw error;
@@ -105,17 +81,20 @@ export class CategoryService {
    */
   async getCategoryByName(uid: string, name: string): Promise<CategoryDto | null> {
     try {
-      const table = await this.lanceDatabase.openTable('categories');
+      const db = getDatabase();
 
-      // Query all categories for this user and filter by name (case-insensitive)
-      const results = await table.query().where(`uid = '${uid}'`).toArray();
+      // Use LOWER() for case-insensitive comparison
+      const results = await db
+        .select()
+        .from(categories)
+        .where(and(eq(categories.uid, uid), sql`LOWER(${categories.name}) = LOWER(${name})`))
+        .limit(1);
 
-      const normalizedName = name.toLowerCase();
-      const matchingCategory = results.find(
-        (record: any) => record.name.toLowerCase() === normalizedName
-      );
+      if (results.length === 0) {
+        return null;
+      }
 
-      return matchingCategory ? this.toCategoryDto(matchingCategory as CategoryRecord) : null;
+      return this.toCategoryDto(results[0]);
     } catch (error) {
       logger.error('Failed to get category by name:', error);
       throw error;
@@ -127,19 +106,18 @@ export class CategoryService {
    */
   async getCategoryById(categoryId: string, uid: string): Promise<CategoryDto | null> {
     try {
-      const table = await this.lanceDatabase.openTable('categories');
-
-      const results = await table
-        .query()
-        .where(`categoryId = '${categoryId}' AND uid = '${uid}'`)
-        .limit(1)
-        .toArray();
+      const db = getDatabase();
+      const results = await db
+        .select()
+        .from(categories)
+        .where(and(eq(categories.categoryId, categoryId), eq(categories.uid, uid)))
+        .limit(1);
 
       if (results.length === 0) {
         return null;
       }
 
-      return this.toCategoryDto(results[0] as CategoryRecord);
+      return this.toCategoryDto(results[0]);
     } catch (error) {
       logger.error('Failed to get category:', error);
       throw error;
@@ -155,8 +133,6 @@ export class CategoryService {
     data: UpdateCategoryDto
   ): Promise<CategoryDto | null> {
     try {
-      const table = await this.lanceDatabase.openTable('categories');
-
       // Get existing category
       const category = await this.getCategoryById(categoryId, uid);
       if (!category) {
@@ -172,29 +148,33 @@ export class CategoryService {
         }
       }
 
-      // Update fields
-      const updatedRecord: CategoryRecord = {
-        categoryId: category.categoryId,
-        uid: category.uid,
-        name: data.name === undefined ? category.name : data.name.trim(),
-        color:
-          data.color === null
-            ? undefined
-            : (data.color === undefined
-              ? category.color
-              : data.color.trim()),
-        createdAt: category.createdAt,
-        updatedAt: Date.now(),
-      };
+      // Build updates object (only include fields that are being updated)
+      const updates: Partial<typeof categories.$inferInsert> = {};
 
-      // Update in database by deleting old and adding new
-      await table.delete(`categoryId = '${categoryId}'`).catch(() => {
-        // Ignore error if record doesn't exist
-      });
+      if (data.name !== undefined) {
+        updates.name = data.name.trim();
+      }
 
-      await table.add([updatedRecord as unknown as Record<string, unknown>]);
+      if (data.color !== undefined) {
+        updates.color = data.color === null ? null : data.color.trim();
+      }
 
-      return this.toCategoryDto(updatedRecord);
+      // Perform update
+      const db = getDatabase();
+      await db.update(categories).set(updates).where(eq(categories.categoryId, categoryId));
+
+      // Fetch updated category
+      const results = await db
+        .select()
+        .from(categories)
+        .where(eq(categories.categoryId, categoryId))
+        .limit(1);
+
+      if (results.length === 0) {
+        return null;
+      }
+
+      return this.toCategoryDto(results[0]);
     } catch (error) {
       logger.error('Failed to update category:', error);
       throw error;
@@ -203,23 +183,20 @@ export class CategoryService {
 
   /**
    * Delete a category
-   * Note: Memos associated with this category will have their categoryId set to null (uncategorized)
+   * Note: Memos associated with this category will have their categoryId set to null automatically
+   * via the foreign key constraint (onDelete: 'set null')
    */
   async deleteCategory(categoryId: string, uid: string): Promise<boolean> {
     try {
-      const table = await this.lanceDatabase.openTable('categories');
-
       // Check if category exists
       const category = await this.getCategoryById(categoryId, uid);
       if (!category) {
         return false;
       }
 
-      // Clear categoryId from all memos that have this category
-      await this.clearCategoryFromMemos(uid, categoryId);
-
-      // Delete the category
-      await table.delete(`categoryId = '${categoryId}'`);
+      // Delete the category (MySQL will automatically set categoryId to null in memos)
+      const db = getDatabase();
+      await db.delete(categories).where(eq(categories.categoryId, categoryId));
 
       return true;
     } catch (error) {
@@ -231,14 +208,14 @@ export class CategoryService {
   /**
    * Convert database record to DTO
    */
-  private toCategoryDto(record: CategoryRecord): CategoryDto {
+  private toCategoryDto(record: typeof categories.$inferSelect): CategoryDto {
     return {
       categoryId: record.categoryId,
       uid: record.uid,
       name: record.name,
-      color: record.color,
-      createdAt: record.createdAt,
-      updatedAt: record.updatedAt,
+      color: record.color ?? undefined,
+      createdAt: record.createdAt.getTime(),
+      updatedAt: record.updatedAt.getTime(),
     };
   }
 }
