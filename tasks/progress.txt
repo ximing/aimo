@@ -227,3 +227,25 @@
 - Drizzle returns Date objects for timestamps - convert to milliseconds with .getTime() for compatibility with existing types
 - The replaceRelations() method uses existing helper methods (deleteRelationsBySourceMemo + createRelation) for clean implementation
 ---
+
+## 2026-03-01 - US-016
+- Created vector-only table schemas for LanceDB to separate embeddings from scalar data
+- Added memoVectorsSchema with fields: memoId (string), embedding (dynamic-dim vector)
+- Added attachmentVectorsSchema with fields: attachmentId (string), multimodalEmbedding (1024-dim vector)
+- Exported new types: MemoVectorRecord and AttachmentVectorRecord
+- Updated lancedb.ts to export new vector record types
+- Embedding cache tables (embedding_cache, multimodal_embedding_cache) remain unchanged
+- Typecheck passes successfully
+
+**Files changed:**
+- apps/server/src/models/db/schema.ts (added memoVectorsSchema, attachmentVectorsSchema, and type definitions)
+- apps/server/src/sources/lancedb.ts (exported new vector record types)
+
+**Learnings for future iterations:**
+- Vector-only tables use minimal schemas with just ID + embedding fields for efficiency
+- memo_vectors uses dynamic embedding dimensions from config (getEmbeddingDimensions())
+- attachment_vectors uses fixed 1024-dim multimodal embeddings
+- These schemas define the structure but table creation/migration happens in migration system
+- Vector tables act as foreign key references to MySQL primary keys (memoId → memos.memoId, attachmentId → attachments.attachmentId)
+- Indexes on vector fields will be created by the migration system (not in schema definition)
+---
