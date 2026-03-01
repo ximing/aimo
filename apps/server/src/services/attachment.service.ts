@@ -87,29 +87,30 @@ export class AttachmentService {
 
     // Save to database
     const table = await this.lanceDatabaseService.openTable('attachments');
-    await table.add([record as unknown as Record<string, unknown>]);
+    const result = await table.add([record as unknown as Record<string, unknown>]);
+    logger.info('Attachment created:', result);
 
     // Generate multimodal embedding asynchronously for images and videos if enabled
     // This is non-blocking and happens in the background
-    if (config.multimodal.enabled) {
-      const isImage = mimeType.startsWith('image/');
-      const isVideo = mimeType.startsWith('video/');
+    // if (config.multimodal.enabled) {
+    //   const isImage = mimeType.startsWith('image/');
+    //   const isVideo = mimeType.startsWith('video/');
 
-      if (isImage || isVideo) {
-        // Fire and forget - do not await
-        this.generateAndUpdateMultimodalEmbedding(
-          record.attachmentId,
-          path,
-          isImage ? 'image' : 'video',
-          filename
-        ).catch((error) => {
-          logger.error(
-            `Background multimodal embedding generation failed for ${filename}:`,
-            error
-          );
-        });
-      }
-    }
+    //   if (isImage || isVideo) {
+    //     // Fire and forget - do not await
+    //     this.generateAndUpdateMultimodalEmbedding(
+    //       record.attachmentId,
+    //       path,
+    //       isImage ? 'image' : 'video',
+    //       filename
+    //     ).catch((error) => {
+    //       logger.error(
+    //         `Background multimodal embedding generation failed for ${filename}:`,
+    //         error
+    //       );
+    //     });
+    //   }
+    // }
 
     // Generate access URL for immediate return
     const accessUrl = await this.generateAccessUrl(record);
