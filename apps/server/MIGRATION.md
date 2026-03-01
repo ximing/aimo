@@ -511,6 +511,181 @@ Consider adding indexes if you see:
 
 **Note**: Every index has overhead on INSERT/UPDATE/DELETE operations. Only add indexes that significantly improve query performance.
 
+## Data Migration Script
+
+After completing the code migration, use the data migration script to transfer existing data from LanceDB to MySQL.
+
+### Prerequisites
+
+1. **Backup your data** - Create a backup of your LanceDB data directory
+2. **Run schema migrations** - Ensure MySQL schema is up to date: `pnpm migrate`
+3. **Verify connections** - Both MySQL and LanceDB must be accessible
+
+### Usage
+
+#### Dry Run (Preview Only)
+
+Preview the migration without writing data:
+
+```bash
+pnpm migrate:data --dry-run
+```
+
+This will:
+- Count records in each LanceDB table
+- Check for existing records in MySQL
+- Show what would be migrated
+- Display summary without writing data
+
+#### Full Migration
+
+Migrate all tables from LanceDB to MySQL:
+
+```bash
+pnpm migrate:data
+```
+
+#### Migrate Specific Table
+
+Migrate only one table (useful for testing or incremental migration):
+
+```bash
+pnpm migrate:data --table=users
+pnpm migrate:data --table=memos
+pnpm migrate:data --table=categories
+```
+
+Available tables: `users`, `categories`, `tags`, `memos`, `memo_relations`, `attachments`, `ai_conversations`, `ai_messages`, `daily_recommendations`, `push_rules`
+
+#### Advanced Options
+
+```bash
+# Custom batch size (default: 100)
+pnpm migrate:data --batch-size=500
+
+# Custom retry attempts (default: 3)
+pnpm migrate:data --retry=5
+
+# Combine options
+pnpm migrate:data --dry-run --table=memos --batch-size=1000
+```
+
+### Migration Process
+
+The script migrates tables in dependency order:
+
+1. **users** - Base table (no dependencies)
+2. **categories** - Depends on users
+3. **tags** - Depends on users
+4. **memos** - Depends on users, categories
+   - Scalar fields → MySQL
+   - Embeddings → LanceDB `memo_vectors` table
+5. **memo_relations** - Depends on memos
+6. **attachments** - Depends on users
+   - Scalar fields → MySQL
+   - Multimodal embeddings → LanceDB `attachment_vectors` table
+7. **ai_conversations** - Depends on users
+8. **ai_messages** - Depends on ai_conversations
+9. **daily_recommendations** - Depends on users
+10. **push_rules** - Depends on users
+
+### Safety Features
+
+#### Idempotent
+The script checks for existing records before inserting. Running it multiple times is safe - it will skip already migrated records.
+
+#### Progress Logging
+Shows progress every 100 records:
+```
+Progress: 1000/5000 (20%) - Failed: 0, Skipped: 50
+```
+
+#### Error Handling
+- Failed records are logged with details
+- Migration continues for other records
+- Summary shows failed count at the end
+
+#### Retry Logic
+Automatically retries failed operations (default: 3 attempts) with exponential backoff.
+
+### Migration Summary
+
+After completion, you'll see a summary:
+
+```
+═══════════════════════════════════════════
+           MIGRATION SUMMARY
+═══════════════════════════════════════════
+
+📊 users:
+   Total:    150
+   Migrated: 150
+   Failed:   0
+   Skipped:  0
+
+📊 memos:
+   Total:    5000
+   Migrated: 4950
+   Failed:   0
+   Skipped:  50
+
+...
+
+═══════════════════════════════════════════
+Total Migrated: 10450
+Total Failed:   0
+Total Skipped:  50
+═══════════════════════════════════════════
+```
+
+### Troubleshooting
+
+#### Foreign Key Errors
+If you see foreign key constraint violations:
+1. Ensure parent tables are migrated first (users before memos)
+2. Check that referenced records exist in MySQL
+3. Verify foreign key constraints in schema
+
+#### Connection Timeouts
+For large datasets:
+1. Increase batch size: `--batch-size=500`
+2. Run table-by-table: `--table=users`
+3. Check MySQL connection limit: `MYSQL_CONNECTION_LIMIT=20`
+
+#### Duplicate Key Errors
+The script skips existing records. If you see duplicate errors:
+1. Check primary key values in both databases
+2. Ensure UUIDs are unique
+3. Review migration logs for data inconsistencies
+
+### Post-Migration Verification
+
+After migration:
+
+1. **Check Record Counts**
+   ```sql
+   SELECT COUNT(*) FROM users;
+   SELECT COUNT(*) FROM memos;
+   -- Compare with LanceDB counts
+   ```
+
+2. **Verify Foreign Keys**
+   ```sql
+   -- Should return 0 (no orphaned records)
+   SELECT COUNT(*) FROM memos WHERE uid NOT IN (SELECT uid FROM users);
+   ```
+
+3. **Test Application**
+   - Start the server: `pnpm dev`
+   - Test CRUD operations
+   - Verify vector search works
+   - Check AI conversation features
+
+4. **Monitor Performance**
+   - Run index verification: `pnpm verify:indexes`
+   - Check query performance
+   - Monitor connection pool usage
+
 ## Rollback Strategy
 
 If migration causes issues:
@@ -526,8 +701,8 @@ After completing this migration:
 
 1. **Monitor Performance**: Track query times and connection pool usage
 2. **Optimize Indexes**: Add indexes based on slow query logs
-3. **Data Migration**: Run one-time script to migrate existing data (US-019)
-4. **Cleanup**: Remove old LanceDB scalar tables after verification
+3. **Verify Data Integrity**: Run post-migration checks
+4. **Cleanup**: Remove old LanceDB scalar tables after verification (optional)
 
 ## Resources
 

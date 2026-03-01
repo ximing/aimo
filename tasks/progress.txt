@@ -659,3 +659,56 @@
 - Every index has overhead on writes, so only add indexes that improve query performance significantly
 - The verify-indexes script can be run anytime to validate index usage: pnpm verify:indexes
 ---
+## 2026-03-01 - US-019
+- Created comprehensive data migration script at apps/server/src/scripts/migrate-lancedb-to-mysql.ts (762 lines)
+- Implemented migration for all 10 tables in dependency order:
+  1. users → MySQL
+  2. categories → MySQL (depends on users)
+  3. tags → MySQL (depends on users)
+  4. memos → MySQL scalar + LanceDB memo_vectors (depends on users, categories)
+  5. memo_relations → MySQL (depends on memos)
+  6. attachments → MySQL scalar + LanceDB attachment_vectors (depends on users)
+  7. ai_conversations → MySQL (depends on users)
+  8. ai_messages → MySQL (depends on ai_conversations)
+  9. daily_recommendations → MySQL (depends on users)
+  10. push_rules → MySQL (depends on users)
+- Features implemented:
+  - Dry-run mode: Preview migration without writing data (--dry-run flag)
+  - Table-specific migration: Migrate individual tables (--table=users flag)
+  - Progress logging: Shows progress every 100 records
+  - Error handling: Logs failed records and continues migration
+  - Retry logic: Automatic retry with exponential backoff (default: 3 attempts)
+  - Idempotent: Checks for existing records before inserting (safe to run multiple times)
+  - Detailed summary: Shows migrated/failed/skipped counts per table
+- Added pnpm migrate:data script to package.json
+- Documented comprehensive migration guide in apps/server/MIGRATION.md:
+  - Prerequisites and safety checks
+  - Usage examples (dry-run, full migration, table-specific)
+  - Advanced options (batch-size, retry attempts)
+  - Migration process with dependency order
+  - Safety features (idempotent, progress logging, error handling)
+  - Migration summary format
+  - Troubleshooting guide (foreign key errors, connection timeouts, duplicates)
+  - Post-migration verification steps
+- Typecheck passes successfully
+
+**Files changed:**
+- apps/server/src/scripts/migrate-lancedb-to-mysql.ts (created - 762 lines)
+- apps/server/package.json (added migrate:data script)
+- apps/server/MIGRATION.md (added comprehensive Data Migration Script section - 180 lines)
+
+**Learnings for future iterations:**
+- Data migration scripts should be idempotent - check for existing records before inserting
+- Progress logging every N records (100) helps monitor long-running migrations
+- Dry-run mode is essential for previewing changes before committing
+- Table-specific migration allows incremental/testing approach
+- Foreign key dependencies dictate migration order: parent tables before child tables
+- Hybrid data migration: scalar fields → MySQL, vector embeddings → LanceDB vector tables
+- Retry logic with exponential backoff handles transient failures
+- Comprehensive error handling: log errors, continue migration, show summary at end
+- LanceDbService uses openTable() method, not getTable()
+- Use definite assignment assertion (!) for properties initialized in async init()
+- Migration summary should show total/migrated/failed/skipped counts for transparency
+- Document troubleshooting steps based on common issues (FK errors, timeouts, duplicates)
+- Post-migration verification is critical: check counts, verify FKs, test application
+---
