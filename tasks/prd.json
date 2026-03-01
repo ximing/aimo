@@ -116,8 +116,8 @@
         "Typecheck passes"
       ],
       "priority": 7,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented in MemoService.vectorSearch() instead of separate SearchService - vector search in LanceDB returns IDs, details fetched from Drizzle via MemoRepository, supports categoryId/startDate/endDate filters"
     },
     {
       "id": "US-008",

@@ -3,6 +3,7 @@
 Branch: ralph/drizzle-migration
 
 ## Status
+- US-007: COMPLETED
 - US-006: COMPLETED
 - US-005: COMPLETED
 - US-004: COMPLETED
@@ -121,4 +122,18 @@ Branch: ralph/drizzle-migration
   - Store pool/connection references separately (mysqlPool, pgPool, sqliteDb) instead of accessing via Drizzle types
   - DrizzleAdapter decorated with @Service() for TypeDI
   - Config interfaces: DatabaseType, MySQLConfig, PostgreSQLConfig, SQLiteConfig in config.ts
+---
+
+## 2026-03-01 - US-007
+- Verified hybrid search implementation already exists in MemoService.vectorSearch()
+- LanceDB performs vector similarity search and returns IDs
+- MemoRepository.findByIds() fetches scalar details from Drizzle
+- Supports combined queries with categoryId, startDate, endDate filters
+- Returns MemoListItemWithScoreDto with relevance scores
+- Typecheck passes, lint passes (warnings only)
+- **Learnings:**
+  - SearchService functionality integrated into MemoService (not a separate service)
+  - Vector search handles pre-filtering (uid, categoryId) in LanceDB
+  - Date range filters applied in JavaScript after LanceDB query (LanceDB timestamp comparison limitations)
+  - Relevance score normalized from L2 distance (1 - distance/2, clamped 0-1)
 ---
