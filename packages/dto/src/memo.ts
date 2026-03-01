@@ -29,6 +29,7 @@ export interface UpdateMemoDto {
   tagIds?: string[]; // Array of tag IDs - alternative to tags
   relationIds?: string[]; // Array of target memo IDs to relate to (replaces all existing relations)
   isPublic?: boolean; // Whether this memo is public (visible to others without auth)
+  source?: string; // Source URL (e.g., from Chrome extension)
 }
 
 export interface MemoDto {

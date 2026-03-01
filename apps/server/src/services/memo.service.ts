@@ -385,6 +385,7 @@ export class MemoService {
           isPublic: memo.isPublic ?? false,
           createdAt: memo.createdAt,
           updatedAt: memo.updatedAt,
+          source: memo.source,
         });
       }
 
@@ -445,6 +446,7 @@ export class MemoService {
         isPublic: memo.isPublic ?? false,
         createdAt: memo.createdAt,
         updatedAt: memo.updatedAt,
+        source: memo.source,
       };
 
       // Enrich with tags
@@ -476,7 +478,8 @@ export class MemoService {
     relationIds?: string[],
     isPublic?: boolean,
     tags?: string[],
-    tagIds?: string[]
+    tagIds?: string[],
+    source?: string
   ): Promise<MemoWithAttachmentsDto | null> {
     try {
       if (!content || content.trim().length === 0) {
@@ -550,6 +553,11 @@ export class MemoService {
       // Add isPublic to update if provided
       if (isPublic !== undefined) {
         updateValues.isPublic = isPublic;
+      }
+
+      // Add source to update if provided
+      if (source !== undefined) {
+        updateValues.source = source;
       }
 
       // Update using proper update method with where clause
