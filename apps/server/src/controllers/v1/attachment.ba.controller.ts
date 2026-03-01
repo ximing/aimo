@@ -121,7 +121,7 @@ export class AttachmentBAController {
               createdAt,
               properties,
             });
-
+            logger.info('Attachment created by BA', { uid, attachment });
             return resolve(
               ResponseUtility.success({
                 message: 'File uploaded successfully via BA authentication',

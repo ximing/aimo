@@ -50,7 +50,48 @@ BA (Basic Auth) 认证的附件上传 API，用于无需 JWT Token 的服务端�
 | ---------- | ------ | -------- | --------------------------------------------------------------------------- |
 | file       | file   | Yes      | 要上传的文件                                                                 |
 | createdAt  | number | No       | 创建时间戳（毫秒）                                                           |
-| properties | string | No       | 附件属性 JSON 字符串（例如音视频时长、图片尺寸）；如果不是合法 JSON，将被忽略 |
+| properties | string | No       | 附件属性 JSON 字符串；见下方「Properties 详解」                              |
+
+#### Properties 详解
+
+`properties` 是一个 JSON 字符串，用于存储不同类型附件的元数据。不同文件类型需要传递不同的属性：
+
+| 文件类型 | 属性名称    | 类型   | 说明                         | 示例                             |
+| -------- | ----------- | ------ | ---------------------------- | -------------------------------- |
+| **图片** | `width`     | number | 图片宽度（像素）             | `{"width": 1920, "height": 1080}` |
+|          | `height`    | number | 图片高度（像素）             |                                  |
+| **视频** | `duration`  | number | 视频时长（秒）               | `{"duration": 120.5}`            |
+|          | `coverUrl`  | string | 视频封面图 URL（可选）       | `{"duration": 120, "coverUrl": "..."}` |
+| **音频** | `duration`  | number | 音频时长（秒）               | `{"duration": 65.5}`             |
+
+> ⚠️ 注意：properties 必须是合法的 JSON 字符串。如果解析失败，该字段将被忽略。
+
+**示例 - 上传图片：**
+
+```bash
+curl -X POST "http://localhost:3000/api/v1/attachments/ba/upload?uid=user_123" \
+  -H "Authorization: Bearer your-ba-auth-token" \
+  -F "file=@/path/to/photo.jpg" \
+  -F 'properties={"width":3840,"height":2160}'
+```
+
+**示例 - 上传视频：**
+
+```bash
+curl -X POST "http://localhost:3000/api/v1/attachments/ba/upload?uid=user_123" \
+  -H "Authorization: Bearer your-ba-auth-token" \
+  -F "file=@/path/to/video.mp4" \
+  -F 'properties={"duration":185.5,"coverUrl":"user_123/covers/xxx.jpg"}'
+```
+
+**示例 - 上传音频：**
+
+```bash
+curl -X POST "http://localhost:3000/api/v1/attachments/ba/upload?uid=user_123" \
+  -H "Authorization: Bearer your-ba-auth-token" \
+  -F "file=@/path/to/audio.mp3" \
+  -F 'properties={"duration":180}'
+```
 
 **文件类型限制：**
 
