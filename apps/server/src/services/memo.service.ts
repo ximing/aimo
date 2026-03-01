@@ -9,6 +9,7 @@ import { withTransaction } from '../db/transaction.js';
 import { generateTypeId } from '../utils/id.js';
 import { logger } from '../utils/logger.js';
 import { config } from '../config/config.js';
+import { toStringList } from '../utils/arrow.js';
 
 import { AttachmentService } from './attachment.service.js';
 import { EmbeddingService } from './embedding.service.js';
@@ -16,7 +17,6 @@ import { MemoRelationService } from './memo-relation.service.js';
 import { TagService } from './tag.service.js';
 
 import type { Memo, NewMemo } from '../db/schema/memos.js';
-import type { MemoVectorRecord } from '../models/db/schema.js';
 import type {
   MemoWithAttachmentsDto,
   PaginatedMemoWithAttachmentsDto,
@@ -132,12 +132,13 @@ export class MemoService {
   }
 
   /**
-   * Open memo_vectors table
+   * Open memos table from LanceDB (for vector search with filtering)
    */
-  private async openMemoVectorsTable(): Promise<Table> {
+  private async openMemosTable(): Promise<Table> {
     const db = this.getLanceDb();
-    return await db.openTable('memo_vectors');
+    return await db.openTable('memos');
   }
+
 
   /**
    * Enrich memo items with tag data
@@ -245,7 +246,7 @@ export class MemoService {
       const memoId = generateTypeId(OBJECT_TYPE.MEMO);
       const db = getDatabase();
 
-      // Use transaction to insert both scalar and vector data
+      // Use transaction to insert scalar data into MySQL
       await withTransaction(async (tx) => {
         // Insert scalar data into MySQL
         await tx.insert(memos).values({
@@ -265,18 +266,27 @@ export class MemoService {
         logger.info('Memo scalar data inserted into MySQL:', { memoId, uid });
       });
 
-      // Insert embedding into LanceDB memo_vectors (outside transaction)
-      const memoVectorsTable = await this.openMemoVectorsTable();
+      // Insert complete record (scalar + vector) into LanceDB memos table (outside transaction)
+      const memosTable = await this.openMemosTable();
       const embeddingArray = Array.isArray(embedding) ? embedding : [...(embedding || [])];
 
-      await memoVectorsTable.add([
+      await memosTable.add([
         {
           memoId,
+          uid,
+          categoryId: categoryId || null,
+          content,
+          type: type || 'text',
+          source: source || null,
+          attachments: attachments || null,
+          tagIds: resolvedTagIds.length > 0 ? resolvedTagIds : null,
           embedding: embeddingArray,
+          createdAt: createdAt || now,
+          updatedAt: updatedAt || now,
         } as unknown as Record<string, unknown>,
       ]);
 
-      logger.info('Memo embedding inserted into LanceDB:', { memoId });
+      logger.info('Memo complete record inserted into LanceDB:', { memoId });
 
       // Create relations if provided
       if (relationIds && relationIds.length > 0) {
@@ -602,18 +612,43 @@ export class MemoService {
 
       logger.info('Memo scalar data updated in MySQL:', { memoId, uid });
 
-      // Update LanceDB embedding
-      const memoVectorsTable = await this.openMemoVectorsTable();
+      // Update LanceDB complete record (scalar + embedding)
+      const memosTable = await this.openMemosTable();
       const embeddingArray = Array.isArray(embedding) ? embedding : [...(embedding || [])];
 
-      await memoVectorsTable.update({
+      // Build LanceDB update values
+      const lanceUpdateValues: any = {
+        content,
+        embedding: embeddingArray,
+        updatedAt: now,
+      };
+
+      if (type !== undefined) {
+        lanceUpdateValues.type = type || 'text';
+      }
+
+      if (categoryId !== undefined) {
+        lanceUpdateValues.categoryId = categoryId;
+      }
+
+      if (attachments !== undefined) {
+        lanceUpdateValues.attachments = attachments.length > 0 ? attachments : null;
+      }
+
+      if (isPublic !== undefined) {
+        lanceUpdateValues.isPublic = isPublic;
+      }
+
+      if (source !== undefined) {
+        lanceUpdateValues.source = source;
+      }
+
+      await memosTable.update({
         where: `memoId = '${memoId}'`,
-        values: {
-          embedding: embeddingArray,
-        },
+        values: lanceUpdateValues,
       });
 
-      logger.info('Memo embedding updated in LanceDB:', { memoId });
+      logger.info('Memo complete record updated in LanceDB:', { memoId });
 
       // Update relations if provided
       if (relationIds !== undefined) {
@@ -735,11 +770,11 @@ export class MemoService {
         logger.info('Memo scalar data deleted from MySQL:', { memoId, uid });
       });
 
-      // Delete from LanceDB memo_vectors (outside transaction)
-      const memoVectorsTable = await this.openMemoVectorsTable();
-      await memoVectorsTable.delete(`memoId = '${memoId}'`);
+      // Delete from LanceDB memos table (outside transaction)
+      const memosTable = await this.openMemosTable();
+      await memosTable.delete(`memoId = '${memoId}'`);
 
-      logger.info('Memo embedding deleted from LanceDB:', { memoId });
+      logger.info('Memo complete record deleted from LanceDB:', { memoId });
 
       // Clean up relations
       try {
@@ -879,21 +914,36 @@ export class MemoService {
       // Generate embedding for the query
       const queryEmbedding = await this.embeddingService.generateEmbedding(query);
 
-      // Use memo_vectors table for vector search
-      const memoVectorsTable = await this.openMemoVectorsTable();
+      // Use memos table from LanceDB for vector search with filtering
+      const memosTable = await this.openMemosTable();
 
-      const offset = (page - 1) * limit;
+      // Build filter string for LanceDB
+      let filterStr = `uid = '${uid}'`;
 
-      // Perform vector search on memo_vectors table (no uid filter here since it's vector-only)
-      const vectorResults = await memoVectorsTable
+      const isUncategorizedFilter = categoryId === UNCATEGORIZED_CATEGORY_ID;
+
+      if (categoryId && !isUncategorizedFilter) {
+        filterStr += ` AND categoryId = '${categoryId}'`;
+      } else if (isUncategorizedFilter) {
+        filterStr += ` AND categoryId IS NULL`;
+      }
+
+      if (startDate && !isNaN(startDate.getTime())) {
+        filterStr += ` AND createdAt >= ${startDate.getTime()}`;
+      }
+      if (endDate && !isNaN(endDate.getTime())) {
+        filterStr += ` AND createdAt <= ${endDate.getTime()}`;
+      }
+
+      // Perform vector search with filters in LanceDB
+      const vectorResults = await memosTable
         .search(queryEmbedding)
-        .limit(limit + offset)
+        .where(filterStr)
+        .limit(limit)
+        .offset((page - 1) * limit)
         .toArray();
 
-      // Get memo IDs from vector results
-      const memoIds = vectorResults.slice(offset, offset + limit).map((r: any) => r.memoId);
-
-      if (memoIds.length === 0) {
+      if (vectorResults.length === 0) {
         return {
           items: [],
           pagination: {
@@ -905,49 +955,28 @@ export class MemoService {
         };
       }
 
-      // Fetch scalar data from MySQL
-      const db = getDatabase();
-      const conditions: any[] = [eq(memos.uid, uid), inArray(memos.memoId, memoIds)];
-
-      const isUncategorizedFilter = categoryId === UNCATEGORIZED_CATEGORY_ID;
-
-      if (categoryId && !isUncategorizedFilter) {
-        conditions.push(eq(memos.categoryId, categoryId));
-      } else if (isUncategorizedFilter) {
-        conditions.push(sql`${memos.categoryId} IS NULL`);
-      }
-
-      if (startDate && !isNaN(startDate.getTime())) {
-        conditions.push(gte(memos.createdAt, startDate));
-      }
-      if (endDate && !isNaN(endDate.getTime())) {
-        conditions.push(lte(memos.createdAt, endDate));
-      }
-
-      const memosFromDb = await db
-        .select()
-        .from(memos)
-        .where(and(...conditions));
-
-      // Build result map from vector search results
-      const memoMap = new Map<string, any>();
-      for (const vr of vectorResults) {
-        memoMap.set((vr as any).memoId, {
-          distance: (vr as any)._distance || 0,
-        });
-      }
-
-      const total = memosFromDb.length;
+      // Get total count for pagination (approximate)
+      const countResults = await memosTable
+        .search(queryEmbedding)
+        .where(filterStr)
+        .limit(1000) // Get up to 1000 results for count
+        .toArray();
+      const total = countResults.length;
 
       // Convert to DTOs
       const items: MemoListItemWithScoreDto[] = [];
-      for (const memo of memosFromDb) {
-        const vectorInfo = memoMap.get(memo.memoId);
-        const attachmentIds = memo.attachments || [];
+      for (const result of vectorResults) {
+        const memo = result as any;
+
+        // Convert Apache Arrow List to JavaScript array
+        const attachmentIds = toStringList(memo.attachments);
         const attachmentDtos: AttachmentDto[] =
           attachmentIds.length > 0
             ? await this.attachmentService.getAttachmentsByIds(attachmentIds, uid)
             : [];
+
+        // Convert Apache Arrow List to JavaScript array for tagIds
+        const tagIds = toStringList(memo.tagIds);
 
         items.push({
           memoId: memo.memoId,
@@ -956,10 +985,12 @@ export class MemoService {
           type: (memo.type as 'text' | 'audio' | 'video') || 'text',
           categoryId: memo.categoryId || undefined,
           attachments: attachmentDtos,
-          tagIds: memo.tagIds || [],
-          createdAt: memo.createdAt.getTime(),
-          updatedAt: memo.updatedAt.getTime(),
-          relevanceScore: Math.max(0, Math.min(1, 1 - (vectorInfo?.distance || 0) / 2)),
+          tagIds,
+          isPublic: memo.isPublic ?? false,
+          createdAt: typeof memo.createdAt === 'number' ? memo.createdAt : new Date(memo.createdAt).getTime(),
+          updatedAt: typeof memo.updatedAt === 'number' ? memo.updatedAt : new Date(memo.updatedAt).getTime(),
+          source: memo.source || undefined,
+          relevanceScore: Math.max(0, Math.min(1, 1 - (memo._distance || 0) / 2)),
         });
       }
 
@@ -1041,13 +1072,13 @@ export class MemoService {
   async findRelatedMemos(
     memoId: string,
     uid: string,
-    limit: number = 5,
-    page: number = 1
+    page: number = 1,
+    limit: number = 10
   ): Promise<PaginatedMemoListWithScoreDto> {
     try {
       // Get the memo's embedding from LanceDB
-      const memoVectorsTable = await this.openMemoVectorsTable();
-      const vectorResults = await memoVectorsTable
+      const memosTable = await this.openMemosTable();
+      const vectorResults = await memosTable
         .query()
         .where(`memoId = '${memoId}'`)
         .limit(1)
@@ -1061,8 +1092,9 @@ export class MemoService {
 
       // Search for similar memos (excluding the query memo itself)
       const offset = (page - 1) * limit;
-      const similarMemos = await memoVectorsTable
+      const similarMemos = await memosTable
         .search(memoEmbedding)
+        .where(`uid = '${uid}'`) // Filter by user
         .limit(limit + offset + 1) // +1 to exclude self
         .toArray();
 

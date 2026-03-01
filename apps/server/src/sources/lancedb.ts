@@ -336,6 +336,4 @@ export {
   type AIMessageRecord,
   type AIMessageSource,
   type DailyRecommendationRecord,
-  type MemoVectorRecord,
-  type AttachmentVectorRecord,
 } from '../models/db/schema.js';

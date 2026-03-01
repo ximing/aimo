@@ -427,6 +427,13 @@ export interface PushRuleRecord {
  * Stores only memo embeddings for semantic search
  * Scalar memo data is stored in MySQL
  */
+/**
+ * DEPRECATED: Vector-only tables are no longer used
+ * We now keep complete memos and attachments tables in LanceDB (scalar + vector)
+ * This allows for efficient filtering during vector search
+ */
+
+/*
 export const memoVectorsSchema = new Schema([
   new Field('memoId', new Utf8(), false), // non-nullable unique memo id (primary key, references MySQL memos.memoId)
   new Field(
@@ -436,19 +443,11 @@ export const memoVectorsSchema = new Schema([
   ), // dynamic-dim embedding vector
 ]);
 
-/**
- * Type definition for memo vector records
- */
 export interface MemoVectorRecord {
   memoId: string;
   embedding: number[];
 }
 
-/**
- * Attachment Vectors table schema (Vector-only table)
- * Stores only multimodal embeddings for attachments
- * Scalar attachment data is stored in MySQL
- */
 export const attachmentVectorsSchema = new Schema([
   new Field('attachmentId', new Utf8(), false), // non-nullable unique attachment id (primary key, references MySQL attachments.attachmentId)
   new Field(
@@ -458,10 +457,8 @@ export const attachmentVectorsSchema = new Schema([
   ), // fixed 1024-dim multimodal embedding vector
 ]);
 
-/**
- * Type definition for attachment vector records
- */
 export interface AttachmentVectorRecord {
   attachmentId: string;
   multimodalEmbedding: number[];
 }
+*/

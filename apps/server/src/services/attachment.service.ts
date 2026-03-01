@@ -17,7 +17,6 @@ import { logger } from '../utils/logger.js';
 
 import { MultimodalEmbeddingService } from './multimodal-embedding.service.js';
 
-import type { AttachmentVectorRecord } from '../models/db/schema.js';
 import type { UnifiedStorageAdapter } from '../sources/unified-storage-adapter/index.js';
 import type { AttachmentDto } from '@aimo/dto';
 import type { Attachment } from '../db/schema/attachments.js';
@@ -103,7 +102,30 @@ export class AttachmentService {
 
     const record = results[0]!;
 
-    logger.info('Attachment created:', { attachmentId: fileId, uid, filename });
+    // Insert complete record into LanceDB attachments table (without embedding initially)
+    const attachmentsTable = await this.lanceDatabaseService.openTable('attachments');
+    await attachmentsTable.add([
+      {
+        attachmentId: fileId,
+        uid,
+        filename,
+        type: mimeType,
+        size,
+        storageType: attachmentConfig.storageType,
+        path,
+        bucket: this.getStorageMetadata('bucket', attachmentConfig) || null,
+        prefix: this.getStorageMetadata('prefix', attachmentConfig) || null,
+        endpoint: this.getStorageMetadata('endpoint', attachmentConfig) || null,
+        region: this.getStorageMetadata('region', attachmentConfig) || null,
+        isPublicBucket: this.getStorageMetadata('isPublicBucket', attachmentConfig) || null,
+        multimodalEmbedding: null, // Will be updated asynchronously
+        multimodalModelHash: null,
+        properties: properties || '{}',
+        createdAt: attachmentCreatedAt.getTime(),
+      } as unknown as Record<string, unknown>,
+    ]);
+
+    logger.info('Attachment created in MySQL and LanceDB:', { attachmentId: fileId, uid, filename });
 
     // Generate multimodal embedding asynchronously for images and videos if enabled
     // This is non-blocking and happens in the background
@@ -282,15 +304,15 @@ export class AttachmentService {
         return;
       }
 
-      // Store embedding in LanceDB attachment_vectors table
-      const vectorTable = await this.lanceDatabaseService.openTable('attachment_vectors');
-
-      const vectorRecord: AttachmentVectorRecord = {
-        attachmentId,
-        multimodalEmbedding: embedding,
-      };
-
-      await vectorTable.add([vectorRecord as unknown as Record<string, unknown>]);
+      // Update embedding in LanceDB attachments table
+      const attachmentsTable = await this.lanceDatabaseService.openTable('attachments');
+      await attachmentsTable.update({
+        where: `attachmentId = '${attachmentId}'`,
+        values: {
+          multimodalEmbedding: embedding,
+          multimodalModelHash: modelHash,
+        },
+      });
 
       // Update multimodalModelHash in MySQL
       const db = getDatabase();
@@ -415,13 +437,13 @@ export class AttachmentService {
       .delete(attachments)
       .where(and(eq(attachments.attachmentId, attachmentId), eq(attachments.uid, uid)));
 
-    // Delete from LanceDB attachment_vectors table if exists
+    // Delete from LanceDB attachments table
     try {
-      const vectorTable = await this.lanceDatabaseService.openTable('attachment_vectors');
-      await vectorTable.delete(`attachmentId = '${attachmentId}'`);
+      const attachmentsTable = await this.lanceDatabaseService.openTable('attachments');
+      await attachmentsTable.delete(`attachmentId = '${attachmentId}'`);
     } catch (error) {
-      logger.warn('Failed to delete attachment vector (may not exist):', error);
-      // Non-critical - vector may not exist if embedding was never generated
+      logger.warn('Failed to delete attachment from LanceDB (may not exist):', error);
+      // Non-critical - record may not exist if creation failed
     }
 
     return true;

@@ -305,16 +305,8 @@ class DataMigration {
               updatedAt: memo.updatedAt ? new Date(memo.updatedAt) : new Date(),
             });
 
-            // Insert embedding to LanceDB memo_vectors table
-            if (memo.embedding && Array.isArray(memo.embedding)) {
-              const vectorsTable = await this.lanceDb.openTable('memo_vectors');
-              await vectorsTable.add([
-                {
-                  memoId: memo.memoId,
-                  embedding: memo.embedding,
-                },
-              ]);
-            }
+            // Note: LanceDB memos table already contains complete records (scalar + vector)
+            // No need to migrate - the table remains unchanged
           }
 
           this.updateStats('memos', 'migrated');
@@ -435,7 +427,9 @@ class DataMigration {
               createdAt: attachment.createdAt ? new Date(attachment.createdAt) : new Date(),
             });
 
-            // Insert embedding to LanceDB attachment_vectors table
+            // Note: LanceDB attachments table already contains complete records (scalar + vector)
+            // No need to migrate - the table remains unchanged
+            /*
             if (attachment.multimodalEmbedding && Array.isArray(attachment.multimodalEmbedding)) {
               const vectorsTable = await this.lanceDb.openTable('attachment_vectors');
               await vectorsTable.add([
@@ -445,6 +439,7 @@ class DataMigration {
                 },
               ]);
             }
+            */
           }
 
           this.updateStats('attachments', 'migrated');
