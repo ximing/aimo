@@ -1,0 +1,265 @@
+{
+  "project": "AIMO",
+  "branchName": "ralph/chrome-extension-v1",
+  "description": "Chrome Extension - Browser plugin to save selected text and images to AIMO notes with floating buttons and configurable settings",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Add source field to Memo DTO",
+      "description": "As a developer, I need to add source field to Memo DTO for storing source URL.",
+      "acceptanceCriteria": [
+        "Add source?: string field to MemoDto in packages/dto",
+        "Add source?: string field to CreateMemoDto",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Add source field to LanceDB schema",
+      "description": "As a developer, I need to add source field to LanceDB memo table schema.",
+      "acceptanceCriteria": [
+        "Add source field to MemoRecord interface in apps/server/src/models/db/schema.ts",
+        "Add source field to memoSchema using Arrow types",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Create migration for memo source field",
+      "description": "As a developer, I need to create a migration to add source column to existing memo table.",
+      "acceptanceCriteria": [
+        "Create migration script to add source column to memos table",
+        "Use new migration version number",
+        "Register migration in index.ts",
+        "Migration runs successfully on startup",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Update memo service to handle source field",
+      "description": "As a developer, I need to update MemoService to read and write source field.",
+      "acceptanceCriteria": [
+        "CreateMemoDto includes source field",
+        "Service saves source to database when provided",
+        "Service returns source when querying memos",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Display source URL icon on memo cards",
+      "description": "As a user, I want to see a source URL icon on memo cards when source exists.",
+      "acceptanceCriteria": [
+        "Memo card shows link icon when source field has value",
+        "Clicking icon opens source URL in new tab",
+        "Icon is visible in both light and dark themes",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Verify existing extension build setup",
+      "description": "As a developer, I need to verify the existing extension project structure builds correctly.",
+      "acceptanceCriteria": [
+        "Run vite build for extension",
+        "Verify manifest.json is in dist/",
+        "Verify popup, background, content scripts are built",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Implement extension login UI",
+      "description": "As a user, I want to login to the plugin using my AIMO account.",
+      "acceptanceCriteria": [
+        "Login page has server URL input",
+        "Login page has email and password inputs",
+        "Login page has token input option",
+        "Login calls backend /api/v1/auth/login API",
+        "Token saved to chrome.storage on success",
+        "Error message shown on failure",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 7,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Implement text selection floating button",
+      "description": "As a user, I want a floating button to appear when I select text in a webpage.",
+      "acceptanceCriteria": [
+        "Content script listens to mouseup event",
+        "When text is selected, floating button appears near selection",
+        "Button shows 'Save to AIMO' text",
+        "Button has proper styling for visibility on any background",
+        "Button is hidden when no text is selected",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 8,
+      "passes": true,
+      "notes": "Uses selectionchange event instead of mouseup (more robust)"
+    },
+    {
+      "id": "US-009",
+      "title": "Implement image hover floating button",
+      "description": "As a user, I want a floating button to appear when I hover over an image in a webpage.",
+      "acceptanceCriteria": [
+        "Content script detects image hover",
+        "Floating button appears near the image",
+        "Button shows 'Save image to AIMO' text",
+        "Button is hidden when mouse leaves image",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 9,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Create background script API handler",
+      "description": "As a developer, I need background script to handle API calls from content script.",
+      "acceptanceCriteria": [
+        "Background script handles messages from content script",
+        "Can make authenticated API calls to AIMO backend",
+        "Can upload attachments",
+        "Can create memos",
+        "Typecheck passes"
+      ],
+      "priority": 10,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Implement save text to memo",
+      "description": "As a user, I want to save selected text to AIMO as a new memo.",
+      "acceptanceCriteria": [
+        "Clicking floating button sends text to background script",
+        "Background script calls /api/v1/memos POST endpoint",
+        "Creates text type memo with selected content",
+        "Shows success message in content script",
+        "Handles errors and shows error message",
+        "Typecheck passes"
+      ],
+      "priority": 11,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Implement save image to memo",
+      "description": "As a user, I want to save an image to AIMO as a new memo with attachment.",
+      "acceptanceCriteria": [
+        "Clicking floating button downloads image to background",
+        "Background uploads image to /api/v1/attachments endpoint",
+        "Background creates memo with attachment ID",
+        "Shows upload progress indicator",
+        "Shows success/error message",
+        "Typecheck passes"
+      ],
+      "priority": 12,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-013",
+      "title": "Add category API to backend",
+      "description": "As a developer, I need a categories API for the plugin to fetch user categories.",
+      "acceptanceCriteria": [
+        "Add GET /api/v1/categories endpoint",
+        "Returns list of user's categories with id and name",
+        "Authenticated user only sees their own categories",
+        "Typecheck passes"
+      ],
+      "priority": 13,
+      "passes": true,
+      "notes": "Already exists in apps/server/src/controllers/v1/category.controller.ts"
+    },
+    {
+      "id": "US-014",
+      "title": "Implement plugin settings page - category",
+      "description": "As a user, I want to set the default category for memos saved from the plugin.",
+      "acceptanceCriteria": [
+        "Settings page fetches categories from API",
+        "Dropdown shows all available categories",
+        "User can select a default category",
+        "User can clear selection (no category)",
+        "Setting saved to chrome.storage.local",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 14,
+      "passes": true,
+      "notes": "Added Settings tab to ConfigPage with category dropdown. Categories fetched from GET /api/v1/categories API. Settings saved to chrome.storage.local using getSettings/setSettings functions."
+    },
+    {
+      "id": "US-015",
+      "title": "Implement plugin settings page - source URL toggle",
+      "description": "As a user, I want to toggle whether source URL is saved with memos.",
+      "acceptanceCriteria": [
+        "Settings page has 'Save source URL' toggle",
+        "Toggle defaults to enabled",
+        "When enabled, current page URL is saved with memo",
+        "Setting saved to chrome.storage.local",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 15,
+      "passes": true,
+      "notes": "Added toggle to Settings tab. Toggle defaults to enabled. Setting saved to chrome.storage.local using setSettings()."
+    },
+    {
+      "id": "US-016",
+      "title": "Integrate source URL into save flow",
+      "description": "As a developer, I need to integrate source URL saving into the save memo flow.",
+      "acceptanceCriteria": [
+        "Content script gets current page URL when saving",
+        "Background script checks source URL toggle setting",
+        "If enabled, includes source in create memo request",
+        "Source is saved to memo.source field",
+        "Typecheck passes"
+      ],
+      "priority": 16,
+      "passes": true,
+      "notes": "Content script already captures sourceUrl. Background script gets settings and checks saveSourceUrl toggle. Passes source to createMemo function. createMemo updated to accept source parameter. Build passes."
+    },
+    {
+      "id": "US-017",
+      "title": "Integrate category into save flow",
+      "description": "As a developer, I need to integrate category selection into the save memo flow.",
+      "acceptanceCriteria": [
+        "Background script reads default category from settings",
+        "When creating memo, includes categoryId if set",
+        "Category ID sent in create memo request",
+        "Typecheck passes"
+      ],
+      "priority": 17,
+      "passes": true,
+      "notes": "Background script gets defaultCategoryId from settings and passes to createMemo. createMemo updated to accept categoryId parameter. Build passes."
+    }
+  ]
+}

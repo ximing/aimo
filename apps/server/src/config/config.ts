@@ -80,6 +80,15 @@ export interface OcrConfig {
 // OCR 供应商类型
 export type OcrProviderType = 'zhipu';
 
+export interface MySQLConfig {
+  host: string;
+  port: number;
+  user: string;
+  password: string;
+  database: string;
+  connectionLimit?: number; // Connection pool size
+}
+
 export interface Config {
   port: number;
   cors: {
@@ -89,6 +98,7 @@ export interface Config {
   jwt: {
     secret: string;
   };
+  mysql: MySQLConfig;
   lancedb: {
     storageType: StorageType;
     path: string; // local: "./lancedb_data" or s3: "s3://bucket/path/to/database"
@@ -135,6 +145,14 @@ export const config: Config = {
   },
   jwt: {
     secret: process.env.JWT_SECRET || 'your-secret-key-change-in-production',
+  },
+  mysql: {
+    host: process.env.MYSQL_HOST || 'localhost',
+    port: Number(process.env.MYSQL_PORT) || 3306,
+    user: process.env.MYSQL_USER || 'root',
+    password: process.env.MYSQL_PASSWORD || '',
+    database: process.env.MYSQL_DATABASE || 'aimo',
+    connectionLimit: Number(process.env.MYSQL_CONNECTION_LIMIT) || 10,
   },
   lancedb: {
     storageType: (process.env.LANCEDB_STORAGE_TYPE || 'local') as StorageType,
