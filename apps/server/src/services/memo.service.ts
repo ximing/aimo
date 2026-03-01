@@ -101,7 +101,8 @@ export class MemoService {
         };
 
         if (s3Config.awsAccessKeyId) storageOptions.awsAccessKeyId = s3Config.awsAccessKeyId;
-        if (s3Config.awsSecretAccessKey) storageOptions.awsSecretAccessKey = s3Config.awsSecretAccessKey;
+        if (s3Config.awsSecretAccessKey)
+          storageOptions.awsSecretAccessKey = s3Config.awsSecretAccessKey;
         if (s3Config.region) storageOptions.awsRegion = s3Config.region;
         if (s3Config.endpoint) {
           storageOptions.awsEndpoint = `https://${s3Config.bucket}.oss-${s3Config.region}.aliyuncs.com`;
@@ -267,7 +268,7 @@ export class MemoService {
       // Insert embedding into LanceDB memo_vectors (outside transaction)
       const memoVectorsTable = await this.openMemoVectorsTable();
       const embeddingArray = Array.isArray(embedding) ? embedding : [...(embedding || [])];
-      
+
       await memoVectorsTable.add([
         {
           memoId,
@@ -306,11 +307,7 @@ export class MemoService {
         resolvedTagIds.length > 0 ? await this.tagService.getTagsByIds(resolvedTagIds, uid) : [];
 
       // Fetch the created record from MySQL
-      const results = await db
-        .select()
-        .from(memos)
-        .where(eq(memos.memoId, memoId))
-        .limit(1);
+      const results = await db.select().from(memos).where(eq(memos.memoId, memoId)).limit(1);
 
       const record = results[0]!;
 
@@ -687,7 +684,8 @@ export class MemoService {
         uid,
         content,
         type: (type === undefined ? existingMemo.type : type) as 'text' | 'audio' | 'video',
-        categoryId: categoryId === undefined ? (existingMemo.categoryId || undefined) : (categoryId || undefined),
+        categoryId:
+          categoryId === undefined ? existingMemo.categoryId || undefined : categoryId || undefined,
         attachments: finalAttachmentDtos,
         tagIds: finalTagIds,
         isPublic: isPublic === undefined ? existingMemo.isPublic : isPublic,
@@ -926,7 +924,10 @@ export class MemoService {
         conditions.push(lte(memos.createdAt, endDate));
       }
 
-      const memosFromDb = await db.select().from(memos).where(and(...conditions));
+      const memosFromDb = await db
+        .select()
+        .from(memos)
+        .where(and(...conditions));
 
       // Build result map from vector search results
       const memoMap = new Map<string, any>();
@@ -1280,11 +1281,7 @@ export class MemoService {
         .select()
         .from(memos)
         .where(
-          and(
-            eq(memos.uid, uid),
-            gte(memos.createdAt, startDate),
-            lte(memos.createdAt, endDate)
-          )
+          and(eq(memos.uid, uid), gte(memos.createdAt, startDate), lte(memos.createdAt, endDate))
         );
 
       // Group memos by date

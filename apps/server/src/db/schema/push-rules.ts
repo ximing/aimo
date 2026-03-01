@@ -17,9 +17,7 @@ export const pushRules = mysqlTable(
     contentType: varchar('content_type', { length: 50 }).notNull(),
     channels: text('channels'),
     enabled: int('enabled').notNull().default(1),
-    createdAt: timestamp('created_at', { mode: 'date', fsp: 3 })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp('created_at', { mode: 'date', fsp: 3 }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { mode: 'date', fsp: 3 })
       .notNull()
       .defaultNow()

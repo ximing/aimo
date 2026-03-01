@@ -14,9 +14,7 @@ export const dailyRecommendations = mysqlTable(
       .references(() => users.uid, { onDelete: 'cascade' }),
     date: varchar('date', { length: 10 }).notNull(),
     memoIds: json('memo_ids').$type<string[]>().notNull(),
-    createdAt: timestamp('created_at', { mode: 'date', fsp: 3 })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp('created_at', { mode: 'date', fsp: 3 }).notNull().defaultNow(),
   },
   (table) => ({
     uidIdx: index('uid_idx').on(table.uid),

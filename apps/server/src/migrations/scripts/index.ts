@@ -35,6 +35,7 @@ import {
   memoVectorsTableMigration,
   attachmentVectorsTableMigration,
 } from './017-add-vector-tables.js';
+import { backfillMemoVectorsMigration } from './018-backfill-memo-vectors.js';
 
 import type { Migration } from '../types.js';
 
@@ -107,6 +108,9 @@ export const ALL_MIGRATIONS: Migration[] = [
   // Version 17: Add vector-only tables for hybrid MySQL+LanceDB architecture
   memoVectorsTableMigration,
   attachmentVectorsTableMigration,
+
+  // Version 18: Backfill memo_vectors from legacy memos embeddings
+  backfillMemoVectorsMigration,
 
   // Add future migrations here
   // Example:

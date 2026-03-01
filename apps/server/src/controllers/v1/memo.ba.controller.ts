@@ -70,7 +70,10 @@ export class MemoBAController {
               createCategoryError instanceof Error &&
               createCategoryError.message.includes('already exists')
             ) {
-              const latestCategory = await this.categoryService.getCategoryByName(uid, categoryName);
+              const latestCategory = await this.categoryService.getCategoryByName(
+                uid,
+                categoryName
+              );
               if (!latestCategory) {
                 throw createCategoryError;
               }

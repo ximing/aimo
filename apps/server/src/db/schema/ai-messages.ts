@@ -24,9 +24,7 @@ export const aiMessages = mysqlTable(
     role: varchar('role', { length: 20 }).notNull(),
     content: text('content').notNull(),
     sources: json('sources').$type<AIMessageSource[]>(),
-    createdAt: timestamp('created_at', { mode: 'date', fsp: 3 })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp('created_at', { mode: 'date', fsp: 3 }).notNull().defaultNow(),
   },
   (table) => ({
     conversationIdIdx: index('conversation_id_idx').on(table.conversationId),

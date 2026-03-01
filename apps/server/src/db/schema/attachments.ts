@@ -24,9 +24,7 @@ export const attachments = mysqlTable(
     isPublicBucket: varchar('is_public_bucket', { length: 10 }),
     multimodalModelHash: varchar('multimodal_model_hash', { length: 255 }),
     properties: text('properties'),
-    createdAt: timestamp('created_at', { mode: 'date', fsp: 3 })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp('created_at', { mode: 'date', fsp: 3 }).notNull().defaultNow(),
   },
   (table) => ({
     uidIdx: index('uid_idx').on(table.uid),

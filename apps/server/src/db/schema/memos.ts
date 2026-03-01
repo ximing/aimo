@@ -22,9 +22,7 @@ export const memos = mysqlTable(
     attachments: json('attachments').$type<string[]>(),
     tagIds: json('tag_ids').$type<string[]>(),
     isPublic: boolean('is_public').default(false).notNull(),
-    createdAt: timestamp('created_at', { mode: 'date', fsp: 3 })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp('created_at', { mode: 'date', fsp: 3 }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { mode: 'date', fsp: 3 })
       .notNull()
       .defaultNow()

@@ -98,7 +98,28 @@ export const OnThisDayBanner = view(() => {
         <div className="flex items-center justify-center h-16">
           <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
         </div>
+      ) : memos.length === 1 ? (
+        // Single memo - full width
+        <div className="">
+          <button
+            onClick={() => handleMemoCardClick(memos[0].memoId)}
+            className="w-full p-3 bg-gray-50 dark:bg-dark-800/50 hover:bg-primary-50 dark:hover:bg-primary-950/20 border border-gray-100 dark:border-dark-700 hover:border-primary-200 dark:hover:border-primary-900/50 rounded-lg text-left transition-all duration-200 group"
+          >
+            {/* Year badge */}
+            <div className="flex items-center justify-between mb-2">
+              <span className="inline-flex items-center px-2 py-0.5 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 text-xs font-medium rounded-full">
+                {memos[0].year}年
+              </span>
+            </div>
+
+            {/* Content preview - max 2 lines */}
+            <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed">
+              {extractPlainText(memos[0].content)}
+            </p>
+          </button>
+        </div>
       ) : (
+        // Multiple memos - horizontal scroll
         <div
           ref={scrollContainerRef}
           onWheel={handleWheel}

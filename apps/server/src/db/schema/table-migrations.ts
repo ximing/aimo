@@ -7,9 +7,7 @@ import { mysqlTable, varchar, int, timestamp } from 'drizzle-orm/mysql-core';
 export const tableMigrations = mysqlTable('table_migrations', {
   tableName: varchar('table_name', { length: 191 }).primaryKey().notNull(),
   currentVersion: int('current_version').notNull(),
-  lastMigratedAt: timestamp('last_migrated_at', { mode: 'date', fsp: 3 })
-    .notNull()
-    .defaultNow(),
+  lastMigratedAt: timestamp('last_migrated_at', { mode: 'date', fsp: 3 }).notNull().defaultNow(),
 });
 
 export type TableMigration = typeof tableMigrations.$inferSelect;

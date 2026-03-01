@@ -64,15 +64,10 @@ export class CategoryService {
   async getCategoriesByUid(uid: string): Promise<CategoryDto[]> {
     try {
       const db = getDatabase();
-      const results = await db
-        .select()
-        .from(categories)
-        .where(eq(categories.uid, uid));
+      const results = await db.select().from(categories).where(eq(categories.uid, uid));
 
       // Sort by name alphabetically (case-insensitive)
-      results.sort((a, b) =>
-        a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
-      );
+      results.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
 
       return results.map((record) => this.toCategoryDto(record));
     } catch (error) {
@@ -92,12 +87,7 @@ export class CategoryService {
       const results = await db
         .select()
         .from(categories)
-        .where(
-          and(
-            eq(categories.uid, uid),
-            sql`LOWER(${categories.name}) = LOWER(${name})`
-          )
-        )
+        .where(and(eq(categories.uid, uid), sql`LOWER(${categories.name}) = LOWER(${name})`))
         .limit(1);
 
       if (results.length === 0) {
@@ -120,12 +110,7 @@ export class CategoryService {
       const results = await db
         .select()
         .from(categories)
-        .where(
-          and(
-            eq(categories.categoryId, categoryId),
-            eq(categories.uid, uid)
-          )
-        )
+        .where(and(eq(categories.categoryId, categoryId), eq(categories.uid, uid)))
         .limit(1);
 
       if (results.length === 0) {
@@ -176,10 +161,7 @@ export class CategoryService {
 
       // Perform update
       const db = getDatabase();
-      await db
-        .update(categories)
-        .set(updates)
-        .where(eq(categories.categoryId, categoryId));
+      await db.update(categories).set(updates).where(eq(categories.categoryId, categoryId));
 
       // Fetch updated category
       const results = await db
@@ -214,9 +196,7 @@ export class CategoryService {
 
       // Delete the category (MySQL will automatically set categoryId to null in memos)
       const db = getDatabase();
-      await db
-        .delete(categories)
-        .where(eq(categories.categoryId, categoryId));
+      await db.delete(categories).where(eq(categories.categoryId, categoryId));
 
       return true;
     } catch (error) {

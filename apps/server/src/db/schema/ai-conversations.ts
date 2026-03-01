@@ -12,9 +12,7 @@ export const aiConversations = mysqlTable(
       .notNull()
       .references(() => users.uid, { onDelete: 'cascade' }),
     title: varchar('title', { length: 255 }).notNull(),
-    createdAt: timestamp('created_at', { mode: 'date', fsp: 3 })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp('created_at', { mode: 'date', fsp: 3 }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { mode: 'date', fsp: 3 })
       .notNull()
       .defaultNow()

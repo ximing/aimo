@@ -14,9 +14,7 @@ export const tags = mysqlTable(
     name: varchar('name', { length: 100 }).notNull(),
     color: varchar('color', { length: 20 }),
     usageCount: int('usage_count').notNull().default(0),
-    createdAt: timestamp('created_at', { mode: 'date', fsp: 3 })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp('created_at', { mode: 'date', fsp: 3 }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { mode: 'date', fsp: 3 })
       .notNull()
       .defaultNow()

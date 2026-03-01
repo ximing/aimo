@@ -357,7 +357,8 @@ export class AttachmentService {
     const total = countResult[0]?.count ?? 0;
 
     // Get paginated results with sorting
-    const orderByClause = sortOrder === 'desc' ? desc(attachments.createdAt) : attachments.createdAt;
+    const orderByClause =
+      sortOrder === 'desc' ? desc(attachments.createdAt) : attachments.createdAt;
 
     const results = await db
       .select()

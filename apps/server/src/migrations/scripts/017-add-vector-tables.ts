@@ -4,10 +4,7 @@
  * Scalar data is now stored in MySQL (from US-001 to US-015)
  */
 
-import {
-  memoVectorsSchema,
-  attachmentVectorsSchema,
-} from '../../models/db/schema.js';
+import { memoVectorsSchema, attachmentVectorsSchema } from '../../models/db/schema.js';
 import { logger } from '../../utils/logger.js';
 
 import type { Migration } from '../types.js';
@@ -50,7 +47,8 @@ export const memoVectorsTableMigration: Migration = {
 export const attachmentVectorsTableMigration: Migration = {
   version: 17,
   tableName: 'attachment_vectors',
-  description: 'Create attachment_vectors table for storing only multimodal embeddings (scalar data in MySQL)',
+  description:
+    'Create attachment_vectors table for storing only multimodal embeddings (scalar data in MySQL)',
   up: async (connection: Connection) => {
     await createTableIfNotExists(connection, 'attachment_vectors', attachmentVectorsSchema);
   },

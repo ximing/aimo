@@ -209,9 +209,9 @@ export class OSSUnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
       const isPublic =
         metadata?.isPublicBucket === 'true'
           ? true
-          : (metadata?.isPublicBucket === 'false'
+          : metadata?.isPublicBucket === 'false'
             ? false
-            : this.isPublic);
+            : this.isPublic;
 
       // If bucket is public, return direct URL
       if (isPublic) {

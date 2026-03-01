@@ -88,7 +88,12 @@ export class TagService {
     const results = await db
       .select()
       .from(tags)
-      .where(and(sql`${tags.tagId} IN ${sql.raw(`(${tagIds.map((id) => `'${id}'`).join(',')})`)}`, eq(tags.uid, uid)));
+      .where(
+        and(
+          sql`${tags.tagId} IN ${sql.raw(`(${tagIds.map((id) => `'${id}'`).join(',')})`)}`,
+          eq(tags.uid, uid)
+        )
+      );
 
     // Convert records to DTOs, preserving order
     const tagMap = new Map<string, TagDto>();
@@ -153,11 +158,7 @@ export class TagService {
     await db.insert(tags).values(newTag);
 
     // Fetch the created tag to get auto-generated timestamps
-    const created = await db
-      .select()
-      .from(tags)
-      .where(eq(tags.tagId, newTag.tagId))
-      .limit(1);
+    const created = await db.select().from(tags).where(eq(tags.tagId, newTag.tagId)).limit(1);
 
     return this.convertToTagDto(created[0]);
   }

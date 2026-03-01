@@ -13,9 +13,7 @@ export const categories = mysqlTable(
       .references(() => users.uid, { onDelete: 'cascade' }),
     name: varchar('name', { length: 100 }).notNull(),
     color: varchar('color', { length: 20 }),
-    createdAt: timestamp('created_at', { mode: 'date', fsp: 3 })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp('created_at', { mode: 'date', fsp: 3 }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { mode: 'date', fsp: 3 })
       .notNull()
       .defaultNow()

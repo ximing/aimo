@@ -15,9 +15,7 @@ export const users = mysqlTable(
     nickname: varchar('nickname', { length: 100 }),
     avatar: varchar('avatar', { length: 500 }),
     status: int('status').notNull().default(1),
-    createdAt: timestamp('created_at', { mode: 'date', fsp: 3 })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp('created_at', { mode: 'date', fsp: 3 }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { mode: 'date', fsp: 3 })
       .notNull()
       .defaultNow()

@@ -18,9 +18,11 @@ Migrate all scalar (non-vector) data from LanceDB to MySQL using Drizzle ORM, wh
 ## User Stories
 
 ### US-001: Install and configure Drizzle ORM dependencies
+
 **Description:** As a developer, I need Drizzle ORM and MySQL client installed so I can define schemas and run migrations.
 
 **Acceptance Criteria:**
+
 - [ ] Install `drizzle-orm` and `drizzle-kit` packages
 - [ ] Install `mysql2` as MySQL client
 - [ ] Add Drizzle config file at `apps/server/drizzle.config.ts`
@@ -29,9 +31,11 @@ Migrate all scalar (non-vector) data from LanceDB to MySQL using Drizzle ORM, wh
 - [ ] Typecheck passes
 
 ### US-002: Define Drizzle schema for all scalar tables
+
 **Description:** As a developer, I need Drizzle schema definitions for all tables so MySQL can store relational data.
 
 **Acceptance Criteria:**
+
 - [ ] Create `apps/server/src/db/schema/` directory
 - [ ] Define schema for `users` table (all fields except embeddings)
 - [ ] Define schema for `memos` table (excluding `embedding` field)
@@ -50,9 +54,11 @@ Migrate all scalar (non-vector) data from LanceDB to MySQL using Drizzle ORM, wh
 - [ ] Typecheck passes
 
 ### US-003: Create database connection service with pooling
+
 **Description:** As a developer, I need a database connection service so services can query MySQL with connection pooling.
 
 **Acceptance Criteria:**
+
 - [ ] Create `apps/server/src/db/connection.ts` with Drizzle connection setup
 - [ ] Configure MySQL connection pool (min: 2, max: 10 connections)
 - [ ] Export `db` instance (Drizzle client) as singleton
@@ -62,9 +68,11 @@ Migrate all scalar (non-vector) data from LanceDB to MySQL using Drizzle ORM, wh
 - [ ] Typecheck passes
 
 ### US-004: Generate and run initial Drizzle migrations
+
 **Description:** As a developer, I need initial database migrations so MySQL schema matches Drizzle definitions.
 
 **Acceptance Criteria:**
+
 - [ ] Run `drizzle-kit generate` to create initial migration files in `apps/server/drizzle/`
 - [ ] Review generated SQL for correctness (tables, indexes, constraints)
 - [ ] Create migration runner script at `apps/server/src/db/migrate.ts`
@@ -74,9 +82,11 @@ Migrate all scalar (non-vector) data from LanceDB to MySQL using Drizzle ORM, wh
 - [ ] Typecheck passes
 
 ### US-005: Refactor UserService to use Drizzle
+
 **Description:** As a developer, I need UserService to query MySQL so user data is stored in relational database.
 
 **Acceptance Criteria:**
+
 - [ ] Replace LanceDB queries with Drizzle queries in `user.service.ts`
 - [ ] Implement `createUser()` with MySQL insert
 - [ ] Implement `getUserByUid()` with Drizzle query
@@ -88,9 +98,11 @@ Migrate all scalar (non-vector) data from LanceDB to MySQL using Drizzle ORM, wh
 - [ ] Typecheck passes
 
 ### US-006: Refactor CategoryService to use Drizzle
+
 **Description:** As a developer, I need CategoryService to query MySQL so category data benefits from relational constraints.
 
 **Acceptance Criteria:**
+
 - [ ] Replace LanceDB queries with Drizzle queries in `category.service.ts`
 - [ ] Implement `createCategory()` with MySQL insert
 - [ ] Implement `getCategoriesByUid()` with Drizzle query
@@ -103,9 +115,11 @@ Migrate all scalar (non-vector) data from LanceDB to MySQL using Drizzle ORM, wh
 - [ ] Typecheck passes
 
 ### US-007: Refactor TagService to use Drizzle
+
 **Description:** As a developer, I need TagService to query MySQL so tag usage counts are accurately maintained.
 
 **Acceptance Criteria:**
+
 - [ ] Replace LanceDB queries with Drizzle queries in `tag.service.ts`
 - [ ] Implement `createTag()` with MySQL insert
 - [ ] Implement `getTagsByUid()` with Drizzle query
@@ -119,9 +133,11 @@ Migrate all scalar (non-vector) data from LanceDB to MySQL using Drizzle ORM, wh
 - [ ] Typecheck passes
 
 ### US-008: Refactor MemoRelationService to use Drizzle
+
 **Description:** As a developer, I need MemoRelationService to query MySQL so memo relations leverage relational database features.
 
 **Acceptance Criteria:**
+
 - [ ] Replace LanceDB queries with Drizzle queries in `memo-relation.service.ts`
 - [ ] Implement `createRelation()` with MySQL insert
 - [ ] Implement `getRelatedMemos()` with Drizzle join query
@@ -134,9 +150,11 @@ Migrate all scalar (non-vector) data from LanceDB to MySQL using Drizzle ORM, wh
 - [ ] Typecheck passes
 
 ### US-009: Refactor AttachmentService to use Drizzle
+
 **Description:** As a developer, I need AttachmentService to query MySQL so attachment metadata is stored relationally.
 
 **Acceptance Criteria:**
+
 - [ ] Replace LanceDB scalar queries with Drizzle queries in `attachment.service.ts`
 - [ ] Implement `createAttachment()` with MySQL insert (excluding `multimodalEmbedding`)
 - [ ] Implement `getAttachmentById()` with Drizzle query
@@ -149,9 +167,11 @@ Migrate all scalar (non-vector) data from LanceDB to MySQL using Drizzle ORM, wh
 - [ ] Typecheck passes
 
 ### US-010: Create hybrid MemoService with MySQL + LanceDB
+
 **Description:** As a developer, I need MemoService to store scalar data in MySQL and vectors in LanceDB so data is properly separated.
 
 **Acceptance Criteria:**
+
 - [ ] Replace scalar field queries with Drizzle in `memo.service.ts`
 - [ ] Implement `createMemo()`: insert scalar fields to MySQL, embedding to LanceDB `memo_vectors` table
 - [ ] Implement `getMemoById()`: query MySQL for scalar data
@@ -166,9 +186,11 @@ Migrate all scalar (non-vector) data from LanceDB to MySQL using Drizzle ORM, wh
 - [ ] Typecheck passes
 
 ### US-011: Refactor SearchService for hybrid vector search
+
 **Description:** As a developer, I need SearchService to perform vector search in LanceDB then enrich with MySQL data.
 
 **Acceptance Criteria:**
+
 - [ ] Update `semanticSearch()` in `search.service.ts` to query LanceDB `memo_vectors` for top K memo IDs
 - [ ] Implement batch query to MySQL: fetch full memo records by IDs in single query
 - [ ] Preserve similarity scores from LanceDB in results
@@ -180,9 +202,11 @@ Migrate all scalar (non-vector) data from LanceDB to MySQL using Drizzle ORM, wh
 - [ ] Typecheck passes
 
 ### US-012: Refactor AIConversationService to use Drizzle
+
 **Description:** As a developer, I need AIConversationService to query MySQL so conversation history is stored relationally.
 
 **Acceptance Criteria:**
+
 - [ ] Replace LanceDB queries with Drizzle queries in `ai-conversation.service.ts`
 - [ ] Implement `createConversation()` with MySQL insert
 - [ ] Implement `getConversationsByUid()` with Drizzle query
@@ -195,9 +219,11 @@ Migrate all scalar (non-vector) data from LanceDB to MySQL using Drizzle ORM, wh
 - [ ] Typecheck passes
 
 ### US-013: Refactor AIMessageService to use Drizzle
+
 **Description:** As a developer, I need AIMessageService to query MySQL so messages are stored with proper foreign keys.
 
 **Acceptance Criteria:**
+
 - [ ] Create `ai-message.service.ts` if not exists, or refactor existing message handling
 - [ ] Replace LanceDB queries with Drizzle queries
 - [ ] Implement `createMessage()` with MySQL insert (store `sources` as JSON)
@@ -210,9 +236,11 @@ Migrate all scalar (non-vector) data from LanceDB to MySQL using Drizzle ORM, wh
 - [ ] Typecheck passes
 
 ### US-014: Refactor RecommendationService to use Drizzle
+
 **Description:** As a developer, I need RecommendationService to query MySQL so daily recommendations are cached relationally.
 
 **Acceptance Criteria:**
+
 - [ ] Replace LanceDB queries with Drizzle queries in `recommendation.service.ts`
 - [ ] Implement `createRecommendation()` with MySQL insert (store `memoIds` as JSON array)
 - [ ] Implement `getRecommendationByDate()` with Drizzle query
@@ -225,9 +253,11 @@ Migrate all scalar (non-vector) data from LanceDB to MySQL using Drizzle ORM, wh
 - [ ] Typecheck passes
 
 ### US-015: Refactor PushRuleService to use Drizzle
+
 **Description:** As a developer, I need PushRuleService to query MySQL so push rules are managed in relational database.
 
 **Acceptance Criteria:**
+
 - [ ] Replace LanceDB queries with Drizzle queries in `push-rule.service.ts`
 - [ ] Implement `createPushRule()` with MySQL insert
 - [ ] Implement `getPushRulesByUid()` with Drizzle query
@@ -241,9 +271,11 @@ Migrate all scalar (non-vector) data from LanceDB to MySQL using Drizzle ORM, wh
 - [ ] Typecheck passes
 
 ### US-016: Create LanceDB vector-only tables
+
 **Description:** As a developer, I need separate vector-only tables in LanceDB so embeddings are stored efficiently.
 
 **Acceptance Criteria:**
+
 - [ ] Create `memo_vectors` table schema in LanceDB with fields: `memoId` (string), `embedding` (vector)
 - [ ] Create `attachment_vectors` table schema in LanceDB with fields: `attachmentId` (string), `multimodalEmbedding` (vector)
 - [ ] Keep `embedding_cache` table in LanceDB (unchanged)
@@ -253,9 +285,11 @@ Migrate all scalar (non-vector) data from LanceDB to MySQL using Drizzle ORM, wh
 - [ ] Typecheck passes
 
 ### US-017: Update DTOs for client-facing data structures
+
 **Description:** As a developer, I need all client-facing data defined in `@aimo/dto` so contracts are explicit and versioned.
 
 **Acceptance Criteria:**
+
 - [ ] Review existing DTOs in `packages/dto/src/` for completeness
 - [ ] Add missing DTOs for any controller responses not yet defined
 - [ ] Ensure `MemoDto` includes all scalar fields returned by controllers
@@ -267,9 +301,11 @@ Migrate all scalar (non-vector) data from LanceDB to MySQL using Drizzle ORM, wh
 - [ ] Typecheck passes in both server and web packages
 
 ### US-018: Implement transaction support for multi-table operations
+
 **Description:** As a developer, I need transaction support so operations spanning multiple tables are atomic.
 
 **Acceptance Criteria:**
+
 - [ ] Create transaction helper in `apps/server/src/db/transaction.ts`
 - [ ] Wrap `createMemo()` + embedding insert in transaction
 - [ ] Wrap `deleteMemo()` + vector deletion in transaction
@@ -280,9 +316,11 @@ Migrate all scalar (non-vector) data from LanceDB to MySQL using Drizzle ORM, wh
 - [ ] Typecheck passes
 
 ### US-019: Create data migration script from LanceDB to MySQL
+
 **Description:** As a developer, I need a one-time migration script so existing LanceDB data is transferred to MySQL.
 
 **Acceptance Criteria:**
+
 - [ ] Create `apps/server/src/scripts/migrate-lancedb-to-mysql.ts`
 - [ ] Migrate `users` table: read from LanceDB, insert into MySQL
 - [ ] Migrate `categories` table with foreign key handling
@@ -300,9 +338,11 @@ Migrate all scalar (non-vector) data from LanceDB to MySQL using Drizzle ORM, wh
 - [ ] Typecheck passes
 
 ### US-020: Update LanceDbService for vector-only operations
+
 **Description:** As a developer, I need LanceDbService to only handle vector operations so responsibilities are clear.
 
 **Acceptance Criteria:**
+
 - [ ] Remove scalar table initialization from `lancedb.ts`
 - [ ] Add `memo_vectors` table initialization
 - [ ] Add `attachment_vectors` table initialization
@@ -313,9 +353,11 @@ Migrate all scalar (non-vector) data from LanceDB to MySQL using Drizzle ORM, wh
 - [ ] Typecheck passes
 
 ### US-021: Update environment configuration and documentation
+
 **Description:** As a developer, I need updated configuration so MySQL connection is properly documented.
 
 **Acceptance Criteria:**
+
 - [ ] Add MySQL config section to `apps/server/src/config/config.ts`
 - [ ] Update `.env.example` with MySQL variables: `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_DATABASE`
 - [ ] Update `apps/server/README.md` with MySQL setup instructions
@@ -326,9 +368,11 @@ Migrate all scalar (non-vector) data from LanceDB to MySQL using Drizzle ORM, wh
 - [ ] Typecheck passes
 
 ### US-022: Update graceful shutdown to close MySQL connections
+
 **Description:** As a developer, I need graceful shutdown to close MySQL connections so no connections leak on restart.
 
 **Acceptance Criteria:**
+
 - [ ] Add MySQL connection pool shutdown to `apps/server/src/index.ts` shutdown handler
 - [ ] Ensure MySQL closes before LanceDB in shutdown sequence
 - [ ] Log "MySQL connection pool closed" on successful shutdown
@@ -336,9 +380,11 @@ Migrate all scalar (non-vector) data from LanceDB to MySQL using Drizzle ORM, wh
 - [ ] Typecheck passes
 
 ### US-023: Performance optimization and indexing
+
 **Description:** As a developer, I need proper indexes so queries perform well at scale.
 
 **Acceptance Criteria:**
+
 - [ ] Add index on `memos.uid` for user-specific queries
 - [ ] Add index on `memos.categoryId` for category filtering
 - [ ] Add index on `memos.createdAt` for time-based sorting
@@ -385,6 +431,7 @@ Migrate all scalar (non-vector) data from LanceDB to MySQL using Drizzle ORM, wh
 ## Technical Considerations
 
 ### Database Schema Design
+
 - Use `VARCHAR(255)` for IDs (nanoid format)
 - Use `TEXT` for content fields
 - Use `JSON` for arrays (`attachments`, `tagIds`, `memoIds`, `sources`)
@@ -393,18 +440,21 @@ Migrate all scalar (non-vector) data from LanceDB to MySQL using Drizzle ORM, wh
 - Add `ON DELETE CASCADE` for foreign keys where appropriate
 
 ### Connection Pooling
+
 - MySQL pool: min 2, max 10 connections
 - Idle timeout: 10 minutes
 - Connection timeout: 5 seconds
 - Health check query: `SELECT 1`
 
 ### Transaction Strategy
+
 - Use Drizzle transactions for operations spanning multiple tables
 - Rollback on any error in transaction
 - Log transaction errors with full context
 - Keep transactions short (avoid long-running operations inside transactions)
 
 ### Migration Script Strategy
+
 - Batch size: 100 records per batch
 - Progress logging every 100 records
 - Error handling: log failed records, continue with next batch
@@ -412,18 +462,21 @@ Migrate all scalar (non-vector) data from LanceDB to MySQL using Drizzle ORM, wh
 - Idempotency: check if record exists before inserting
 
 ### Vector Search Optimization
+
 - LanceDB returns top K memo IDs with similarity scores
 - Single batch query to MySQL: `SELECT * FROM memos WHERE memoId IN (...)`
 - Preserve similarity scores from LanceDB in application layer
 - Re-sort results by similarity after MySQL join if needed
 
 ### Drizzle Configuration
+
 - Migration folder: `apps/server/drizzle/`
 - Schema folder: `apps/server/src/db/schema/`
 - Driver: `mysql2`
 - Migration mode: automatic on startup (production), manual in development
 
 ### LanceDB Vector Tables
+
 - `memo_vectors`: `memoId` (string), `embedding` (FixedSizeList<Float32>)
 - `attachment_vectors`: `attachmentId` (string), `multimodalEmbedding` (FixedSizeList<Float32>)
 - Index type: IVF (Inverted File Index) for fast similarity search

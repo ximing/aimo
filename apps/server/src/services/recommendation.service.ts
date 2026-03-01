@@ -51,7 +51,13 @@ export class RecommendationService {
   private async getCachedRecommendations(
     uid: string,
     date: string
-  ): Promise<{ recommendationId: string; uid: string; date: string; memoIds: string[]; createdAt: number } | null> {
+  ): Promise<{
+    recommendationId: string;
+    uid: string;
+    date: string;
+    memoIds: string[];
+    createdAt: number;
+  } | null> {
     try {
       const db = getDatabase();
       const results = await db

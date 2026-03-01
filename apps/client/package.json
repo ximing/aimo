@@ -18,7 +18,7 @@
     "build:all": "pnpm build && pnpm dist",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/",
-    "lint:fix": "eslint src/ --fix",
+    "lint:fix": "eslint src/ --fix --fix-type problem",
     "dist": "electron-builder",
     "dist:all": "electron-builder -mwl",
     "dist:mac": "electron-builder --mac",

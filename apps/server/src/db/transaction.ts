@@ -23,9 +23,7 @@ export type TransactionCallback<T> = (tx: any) => Promise<T>;
  * });
  * ```
  */
-export async function withTransaction<T>(
-  callback: TransactionCallback<T>
-): Promise<T> {
+export async function withTransaction<T>(callback: TransactionCallback<T>): Promise<T> {
   const db = getDatabase();
 
   try {

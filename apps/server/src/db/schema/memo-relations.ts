@@ -19,9 +19,7 @@ export const memoRelations = mysqlTable(
     targetMemoId: varchar('target_memo_id', { length: 191 })
       .notNull()
       .references(() => memos.memoId, { onDelete: 'cascade' }),
-    createdAt: timestamp('created_at', { mode: 'date', fsp: 3 })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp('created_at', { mode: 'date', fsp: 3 }).notNull().defaultNow(),
   },
   (table) => ({
     uidIdx: index('uid_idx').on(table.uid),

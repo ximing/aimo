@@ -123,7 +123,9 @@ export class AIConversationService {
       const result = await db
         .select()
         .from(aiConversations)
-        .where(and(eq(aiConversations.conversationId, conversationId), eq(aiConversations.uid, uid)))
+        .where(
+          and(eq(aiConversations.conversationId, conversationId), eq(aiConversations.uid, uid))
+        )
         .limit(1);
 
       if (result.length === 0) {
@@ -188,7 +190,9 @@ export class AIConversationService {
       const existing = await db
         .select()
         .from(aiConversations)
-        .where(and(eq(aiConversations.conversationId, conversationId), eq(aiConversations.uid, uid)))
+        .where(
+          and(eq(aiConversations.conversationId, conversationId), eq(aiConversations.uid, uid))
+        )
         .limit(1);
 
       if (existing.length === 0) {
@@ -228,7 +232,9 @@ export class AIConversationService {
       const existing = await db
         .select()
         .from(aiConversations)
-        .where(and(eq(aiConversations.conversationId, conversationId), eq(aiConversations.uid, uid)))
+        .where(
+          and(eq(aiConversations.conversationId, conversationId), eq(aiConversations.uid, uid))
+        )
         .limit(1);
 
       if (existing.length === 0) {
@@ -299,7 +305,9 @@ export class AIConversationService {
       const conversation = await db
         .select()
         .from(aiConversations)
-        .where(and(eq(aiConversations.conversationId, conversationId), eq(aiConversations.uid, uid)))
+        .where(
+          and(eq(aiConversations.conversationId, conversationId), eq(aiConversations.uid, uid))
+        )
         .limit(1);
 
       if (conversation.length === 0) {

@@ -590,7 +590,9 @@ class DataMigration {
           const existing = await this.db
             .select()
             .from(schema.dailyRecommendations)
-            .where(eq(schema.dailyRecommendations.recommendationId, recommendation.recommendationId))
+            .where(
+              eq(schema.dailyRecommendations.recommendationId, recommendation.recommendationId)
+            )
             .limit(1);
 
           if (existing.length > 0) {

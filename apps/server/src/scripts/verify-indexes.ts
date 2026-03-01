@@ -128,9 +128,10 @@ async function verifyIndexes() {
     logger.info('\n✅ Index verification complete!\n');
     logger.info('Summary:');
     logger.info('- All critical queries should show index usage in the "key" field');
-    logger.info('- "type" should be "ref", "eq_ref", or "range" (not "ALL" which means full table scan)');
+    logger.info(
+      '- "type" should be "ref", "eq_ref", or "range" (not "ALL" which means full table scan)'
+    );
     logger.info('- Lower "rows" count indicates better query performance');
-
   } catch (error) {
     logger.error('Failed to verify indexes:', error);
     process.exit(1);

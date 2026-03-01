@@ -257,10 +257,7 @@ export class LanceDbService {
   ): Promise<any[]> {
     try {
       const table = await this.openTable(tableName);
-      const results = await table
-        .vectorSearch(queryVector)
-        .limit(limit)
-        .toArray();
+      const results = await table.vectorSearch(queryVector).limit(limit).toArray();
 
       logger.debug(`Searched ${tableName} for ${limit} similar vectors`);
       return results;
@@ -277,18 +274,10 @@ export class LanceDbService {
    * @param idValue - Value of the ID to retrieve
    * @returns Vector record or null if not found
    */
-  async getVector(
-    tableName: string,
-    idField: string,
-    idValue: string
-  ): Promise<any | null> {
+  async getVector(tableName: string, idField: string, idValue: string): Promise<any | null> {
     try {
       const table = await this.openTable(tableName);
-      const results = await table
-        .query()
-        .where(`${idField} = '${idValue}'`)
-        .limit(1)
-        .toArray();
+      const results = await table.query().where(`${idField} = '${idValue}'`).limit(1).toArray();
 
       return results.length > 0 ? results[0] : null;
     } catch (error) {

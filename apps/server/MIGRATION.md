@@ -20,7 +20,9 @@ This guide documents the migration from LanceDB-only storage to a hybrid MySQL +
 ### Database Responsibilities
 
 #### MySQL (via Drizzle ORM)
+
 Stores all scalar/relational data:
+
 - User accounts and authentication
 - Memo content and metadata (excluding embeddings)
 - Categories, tags, and relations
@@ -29,7 +31,9 @@ Stores all scalar/relational data:
 - Daily recommendations and push rules
 
 #### LanceDB
+
 Stores only vector embeddings:
+
 - `memo_vectors`: Text embeddings for semantic search
 - `attachment_vectors`: Multimodal embeddings for images/videos
 - `embedding_cache`: Text embedding cache (unchanged)
@@ -38,11 +42,13 @@ Stores only vector embeddings:
 ### Data Flow
 
 #### Before (LanceDB-only)
+
 ```
 Client Request → Service → LanceDB (scalar + vector) → Response
 ```
 
 #### After (Hybrid)
+
 ```
 Client Request → Service → MySQL (scalar data)
                         ↓
@@ -73,18 +79,18 @@ Client Request → Service → MySQL (scalar data)
 
 Each service was refactored to use Drizzle ORM:
 
-| Service | Priority | Status | Notes |
-|---------|----------|--------|-------|
-| UserService | 5 | ✅ | Basic CRUD operations |
-| CategoryService | 6 | ✅ | Foreign key to users |
-| TagService | 7 | ✅ | Usage count tracking |
-| MemoRelationService | 8 | ✅ | Composite unique index |
-| AttachmentService | 11 | ✅ | Hybrid: MySQL + LanceDB vectors |
-| MemoService | 12 | ✅ | Hybrid: MySQL + LanceDB vectors |
-| SearchService | 13 | ✅ | Vector search + MySQL enrichment |
-| AIConversationService | 14 | ✅ | Includes message handling |
-| RecommendationService | 16 | ✅ | JSON array storage |
-| PushRuleService | 17 | ✅ | JSON channel storage |
+| Service               | Priority | Status | Notes                            |
+| --------------------- | -------- | ------ | -------------------------------- |
+| UserService           | 5        | ✅     | Basic CRUD operations            |
+| CategoryService       | 6        | ✅     | Foreign key to users             |
+| TagService            | 7        | ✅     | Usage count tracking             |
+| MemoRelationService   | 8        | ✅     | Composite unique index           |
+| AttachmentService     | 11       | ✅     | Hybrid: MySQL + LanceDB vectors  |
+| MemoService           | 12       | ✅     | Hybrid: MySQL + LanceDB vectors  |
+| SearchService         | 13       | ✅     | Vector search + MySQL enrichment |
+| AIConversationService | 14       | ✅     | Includes message handling        |
+| RecommendationService | 16       | ✅     | JSON array storage               |
+| PushRuleService       | 17       | ✅     | JSON channel storage             |
 
 ### Phase 3: Vector Separation (US-016, US-018, US-020)
 
@@ -123,6 +129,7 @@ Each service was refactored to use Drizzle ORM:
 ### Phase 5: Data Migration (US-019)
 
 One-time script to migrate existing LanceDB data to MySQL:
+
 - Read all records from LanceDB
 - Insert scalar fields to MySQL
 - Move embeddings to vector-only tables
@@ -132,45 +139,45 @@ One-time script to migrate existing LanceDB data to MySQL:
 
 ### Users Table
 
-| LanceDB Field | MySQL Field | Type | Notes |
-|--------------|-------------|------|-------|
-| uid | uid | VARCHAR(191) | Primary key |
-| email | email | VARCHAR(255) | Unique, nullable |
-| phone | phone | VARCHAR(50) | Unique, nullable |
-| password | password | VARCHAR(255) | Hashed |
-| nickname | nickname | VARCHAR(100) | - |
-| avatar | avatar | VARCHAR(500) | Nullable |
-| createdAt | created_at | TIMESTAMP(3) | Auto-generated |
-| updatedAt | updated_at | TIMESTAMP(3) | Auto-updated |
+| LanceDB Field | MySQL Field | Type         | Notes            |
+| ------------- | ----------- | ------------ | ---------------- |
+| uid           | uid         | VARCHAR(191) | Primary key      |
+| email         | email       | VARCHAR(255) | Unique, nullable |
+| phone         | phone       | VARCHAR(50)  | Unique, nullable |
+| password      | password    | VARCHAR(255) | Hashed           |
+| nickname      | nickname    | VARCHAR(100) | -                |
+| avatar        | avatar      | VARCHAR(500) | Nullable         |
+| createdAt     | created_at  | TIMESTAMP(3) | Auto-generated   |
+| updatedAt     | updated_at  | TIMESTAMP(3) | Auto-updated     |
 
 ### Memos Table
 
-| LanceDB Field | MySQL Field | LanceDB Vector Table | Notes |
-|--------------|-------------|---------------------|-------|
-| memoId | memo_id | memo_vectors.memoId | Primary key |
-| uid | uid | - | Foreign key → users.uid |
-| content | content | - | TEXT |
-| categoryId | category_id | - | Foreign key → categories.categoryId |
-| attachments | attachments | - | JSON array |
-| tagIds | tag_ids | - | JSON array |
-| isPublic | is_public | - | Boolean |
-| createdAt | created_at | - | TIMESTAMP(3) |
-| updatedAt | updated_at | - | TIMESTAMP(3) |
-| embedding | - | memo_vectors.embedding | Vector(1536) |
+| LanceDB Field | MySQL Field | LanceDB Vector Table   | Notes                               |
+| ------------- | ----------- | ---------------------- | ----------------------------------- |
+| memoId        | memo_id     | memo_vectors.memoId    | Primary key                         |
+| uid           | uid         | -                      | Foreign key → users.uid             |
+| content       | content     | -                      | TEXT                                |
+| categoryId    | category_id | -                      | Foreign key → categories.categoryId |
+| attachments   | attachments | -                      | JSON array                          |
+| tagIds        | tag_ids     | -                      | JSON array                          |
+| isPublic      | is_public   | -                      | Boolean                             |
+| createdAt     | created_at  | -                      | TIMESTAMP(3)                        |
+| updatedAt     | updated_at  | -                      | TIMESTAMP(3)                        |
+| embedding     | -           | memo_vectors.embedding | Vector(1536)                        |
 
 ### Attachments Table
 
-| LanceDB Field | MySQL Field | LanceDB Vector Table | Notes |
-|--------------|-------------|---------------------|-------|
-| attachmentId | attachment_id | attachment_vectors.attachmentId | Primary key |
-| uid | uid | - | Foreign key → users.uid |
-| filename | filename | - | VARCHAR(255) |
-| mimeType | mime_type | - | VARCHAR(100) |
-| size | size | - | BIGINT |
-| url | url | - | VARCHAR(1000) |
-| properties | properties | - | JSON |
-| createdAt | created_at | - | TIMESTAMP(3) |
-| multimodalEmbedding | - | attachment_vectors.multimodalEmbedding | Vector(1024) |
+| LanceDB Field       | MySQL Field   | LanceDB Vector Table                   | Notes                   |
+| ------------------- | ------------- | -------------------------------------- | ----------------------- |
+| attachmentId        | attachment_id | attachment_vectors.attachmentId        | Primary key             |
+| uid                 | uid           | -                                      | Foreign key → users.uid |
+| filename            | filename      | -                                      | VARCHAR(255)            |
+| mimeType            | mime_type     | -                                      | VARCHAR(100)            |
+| size                | size          | -                                      | BIGINT                  |
+| url                 | url           | -                                      | VARCHAR(1000)           |
+| properties          | properties    | -                                      | JSON                    |
+| createdAt           | created_at    | -                                      | TIMESTAMP(3)            |
+| multimodalEmbedding | -             | attachment_vectors.multimodalEmbedding | Vector(1024)            |
 
 ## Index Strategy
 
@@ -214,6 +221,7 @@ EXPLAIN SELECT * FROM memos WHERE uid = 'user123' ORDER BY created_at DESC LIMIT
 ```
 
 Look for:
+
 - `type: ref` or `type: range` (good)
 - `type: ALL` (bad - full table scan)
 - `key: memos_uid_idx` (index is being used)
@@ -229,21 +237,14 @@ import { memos } from '@/db/schema/index.js';
 
 // Single record query
 const db = getDatabase();
-const result = await db
-  .select()
-  .from(memos)
-  .where(eq(memos.memoId, memoId))
-  .limit(1);
+const result = await db.select().from(memos).where(eq(memos.memoId, memoId)).limit(1);
 const memo = result[0];
 
 // Multiple conditions
 const results = await db
   .select()
   .from(memos)
-  .where(and(
-    eq(memos.uid, uid),
-    eq(memos.categoryId, categoryId)
-  ));
+  .where(and(eq(memos.uid, uid), eq(memos.categoryId, categoryId)));
 
 // Insert
 await db.insert(memos).values(newMemo);
@@ -255,9 +256,7 @@ await db
   .where(eq(memos.memoId, memoId));
 
 // Delete
-await db
-  .delete(memos)
-  .where(eq(memos.memoId, memoId));
+await db.delete(memos).where(eq(memos.memoId, memoId));
 
 // Pagination with sorting
 const results = await db
@@ -303,18 +302,15 @@ const vectorResults = await lancedb
   .execute();
 
 // 2. Extract memo IDs
-const memoIds = vectorResults.map(r => r.memoId);
+const memoIds = vectorResults.map((r) => r.memoId);
 
 // 3. Batch query MySQL for full records
-const memos = await db
-  .select()
-  .from(memosTable)
-  .where(inArray(memosTable.memoId, memoIds));
+const memos = await db.select().from(memosTable).where(inArray(memosTable.memoId, memoIds));
 
 // 4. Enrich with similarity scores
-const enriched = memos.map(memo => ({
+const enriched = memos.map((memo) => ({
   ...memo,
-  relevanceScore: vectorResults.find(r => r.memoId === memo.memoId)?.score
+  relevanceScore: vectorResults.find((r) => r.memoId === memo.memoId)?.score,
 }));
 ```
 
@@ -327,15 +323,15 @@ Drizzle returns different types than DTOs expect:
 ```typescript
 // Drizzle: Date objects
 // DTO: number (milliseconds)
-createdAt: memo.createdAt.getTime()
+createdAt: memo.createdAt.getTime();
 
 // Drizzle: string | null
 // DTO: string | undefined
-avatar: user.avatar ?? undefined
+avatar: user.avatar ?? undefined;
 
 // Drizzle: JSON columns (already parsed)
 // DTO: native arrays/objects
-attachments: memo.attachments as string[]
+attachments: memo.attachments as string[];
 ```
 
 ## Troubleshooting
@@ -347,8 +343,9 @@ attachments: memo.attachments as string[]
 **Problem**: Drizzle nullable fields return `null`, but DTOs expect `undefined`
 
 **Solution**: Use nullish coalescing operator
+
 ```typescript
-avatar: user.avatar ?? undefined
+avatar: user.avatar ?? undefined;
 ```
 
 #### 2. Migration Generation Fails
@@ -356,6 +353,7 @@ avatar: user.avatar ?? undefined
 **Problem**: Drizzle can't find schema files
 
 **Solution**: Build before generating migrations
+
 ```bash
 pnpm build && pnpm migrate:generate
 ```
@@ -365,6 +363,7 @@ pnpm build && pnpm migrate:generate
 **Problem**: Trying to insert record with invalid foreign key
 
 **Solution**: Ensure referenced records exist first
+
 ```typescript
 // Create user first
 await db.insert(users).values(newUser);
@@ -378,6 +377,7 @@ await db.insert(memos).values({ ...newMemo, uid: newUser.uid });
 **Problem**: Too many concurrent queries
 
 **Solution**: Increase connection limit or optimize queries
+
 ```env
 MYSQL_CONNECTION_LIMIT=20
 ```
@@ -387,6 +387,7 @@ MYSQL_CONNECTION_LIMIT=20
 **Problem**: Vectors not synced between MySQL and LanceDB
 
 **Solution**: Ensure both are updated together
+
 ```typescript
 // Always update both
 await db.update(memos).set({ content }).where(eq(memos.memoId, memoId));
@@ -425,12 +426,14 @@ All tables use VARCHAR(191) primary keys to support utf8mb4 character set within
 ### Table-Specific Indexes
 
 #### memos table
+
 - **uid_idx** on `uid`: User-specific memo queries (most common query pattern)
 - **category_id_idx** on `category_id`: Filter memos by category
 - **created_at_idx** on `created_at`: Time-based sorting and filtering
 - **Usage**: Supports queries like "get all memos for user X" and "get recent memos"
 
 #### memo_relations table
+
 - **uid_idx** on `uid`: User-specific relation queries
 - **source_memo_id_idx** on `source_memo_id`: Find all relations from a memo (forward relations)
 - **target_memo_id_idx** on `target_memo_id`: Find all backlinks to a memo (reverse lookup)
@@ -438,25 +441,30 @@ All tables use VARCHAR(191) primary keys to support utf8mb4 character set within
 - **Usage**: Supports bi-directional memo graph traversal
 
 #### attachments table
+
 - **uid_idx** on `uid`: User-specific attachment queries
 - **Usage**: Supports "get all attachments for user X" with sorting by created_at
 
 #### ai_messages table
+
 - **conversation_id_idx** on `conversation_id`: Fetch all messages in a conversation
 - **Usage**: Supports conversation history retrieval with ORDER BY created_at
 
 #### daily_recommendations table
+
 - **uid_idx** on `uid`: User-specific recommendation queries
 - **uid_date_unique** (UNIQUE) on `(uid, date)`: Ensure one recommendation per user per day
 - **Usage**: Supports cache lookups by user and date
 
 #### categories, tags, ai_conversations, push_rules tables
+
 - **uid_idx** on `uid`: User-specific queries for all user-owned entities
 - **Usage**: Supports "get all X for user Y" queries
 
 ### Composite Index Benefits
 
 The composite unique index on `memo_relations(source_memo_id, target_memo_id)` provides:
+
 1. Uniqueness constraint (prevents duplicate relations)
 2. Index on source_memo_id (left-most prefix)
 3. Index on (source_memo_id, target_memo_id) combination
@@ -472,6 +480,7 @@ pnpm verify:indexes
 ```
 
 This script uses `EXPLAIN` to analyze critical queries and verify index usage. Look for:
+
 - **key**: The index being used (should not be NULL)
 - **type**: Should be "ref", "eq_ref", or "range" (not "ALL" which means full table scan)
 - **rows**: Lower is better (estimated rows scanned)
@@ -479,6 +488,7 @@ This script uses `EXPLAIN` to analyze critical queries and verify index usage. L
 ### Index Maintenance
 
 MySQL automatically maintains indexes. No manual maintenance required for:
+
 - Index updates on INSERT/UPDATE/DELETE
 - Query optimizer statistics
 - Index cardinality estimation
@@ -504,6 +514,7 @@ WHERE object_schema = 'aimo';
 ### When to Add More Indexes
 
 Consider adding indexes if you see:
+
 1. Slow queries in production logs
 2. EXPLAIN shows "type: ALL" (full table scan)
 3. High "rows" count in EXPLAIN output
@@ -532,6 +543,7 @@ pnpm migrate:data --dry-run
 ```
 
 This will:
+
 - Count records in each LanceDB table
 - Check for existing records in MySQL
 - Show what would be migrated
@@ -592,20 +604,25 @@ The script migrates tables in dependency order:
 ### Safety Features
 
 #### Idempotent
+
 The script checks for existing records before inserting. Running it multiple times is safe - it will skip already migrated records.
 
 #### Progress Logging
+
 Shows progress every 100 records:
+
 ```
 Progress: 1000/5000 (20%) - Failed: 0, Skipped: 50
 ```
 
 #### Error Handling
+
 - Failed records are logged with details
 - Migration continues for other records
 - Summary shows failed count at the end
 
 #### Retry Logic
+
 Automatically retries failed operations (default: 3 attempts) with exponential backoff.
 
 ### Migration Summary
@@ -641,19 +658,25 @@ Total Skipped:  50
 ### Troubleshooting
 
 #### Foreign Key Errors
+
 If you see foreign key constraint violations:
+
 1. Ensure parent tables are migrated first (users before memos)
 2. Check that referenced records exist in MySQL
 3. Verify foreign key constraints in schema
 
 #### Connection Timeouts
+
 For large datasets:
+
 1. Increase batch size: `--batch-size=500`
 2. Run table-by-table: `--table=users`
 3. Check MySQL connection limit: `MYSQL_CONNECTION_LIMIT=20`
 
 #### Duplicate Key Errors
+
 The script skips existing records. If you see duplicate errors:
+
 1. Check primary key values in both databases
 2. Ensure UUIDs are unique
 3. Review migration logs for data inconsistencies
@@ -663,6 +686,7 @@ The script skips existing records. If you see duplicate errors:
 After migration:
 
 1. **Check Record Counts**
+
    ```sql
    SELECT COUNT(*) FROM users;
    SELECT COUNT(*) FROM memos;
@@ -670,6 +694,7 @@ After migration:
    ```
 
 2. **Verify Foreign Keys**
+
    ```sql
    -- Should return 0 (no orphaned records)
    SELECT COUNT(*) FROM memos WHERE uid NOT IN (SELECT uid FROM users);
