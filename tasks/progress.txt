@@ -417,3 +417,25 @@
 - Always fetch after insert to get auto-generated timestamps (createdAt, updatedAt)
 - Cascade delete via foreign key is cleaner than manual deletion in multiple tables
 ---
+## 2026-03-01 - US-013
+- Verified AIMessageService does not exist as a separate service
+- Message handling is integrated into AIConversationService (refactored in US-012)
+- All acceptance criteria already met in US-012:
+  - Message handling refactored to use Drizzle ORM
+  - addMessage() implemented with MySQL insert, sources stored as JSON
+  - getMessages() implemented with Drizzle query
+  - Foreign key constraint ai_messages.conversationId → ai_conversations.conversationId already in schema
+  - Sources array stored as JSON column in MySQL (json('sources').$type<AIMessageSource[]>())
+  - LanceDB references removed from message handling
+  - All controller endpoints work unchanged (verified in explore.controller.ts)
+- Typecheck passes successfully
+
+**Files reviewed:**
+- apps/server/src/services/ai-conversation.service.ts (contains message handling)
+- apps/server/src/db/schema/ai-messages.ts (schema definition)
+
+**Learnings for future iterations:**
+- Not all services need to be separate - related functionality can be grouped (conversations + messages)
+- This architecture decision was made early in the codebase design
+- The acceptance criteria "Create ai-message.service.ts if not exists, or refactor existing message handling" allows for this flexibility
+---
