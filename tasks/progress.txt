@@ -306,3 +306,50 @@
 - Drizzle nullable fields (string | null) need ?? undefined conversion for DTOs
 - Date timestamps from Drizzle converted to milliseconds with .getTime() for compatibility
 ---
+
+## 2026-03-01 - US-010
+- Refactored MemoService (1567 lines) to use hybrid MySQL+LanceDB architecture
+- Added missing isPublic field to memos schema (boolean, default false)
+- Generated migration 0001_breezy_tomorrow_man.sql for isPublic field
+- Migrated all core CRUD operations to Drizzle ORM:
+  - createMemo(): Insert scalar fields to MySQL, embeddings to LanceDB memo_vectors table
+  - getMemoById(): Query MySQL with eq() and and() operators
+  - getMemos(): Full MySQL query with filters (search, categoryId, tags, date range), pagination, sorting
+  - updateMemo(): Update MySQL scalar fields, regenerate embedding in LanceDB memo_vectors if content changed
+  - deleteMemo(): Delete from both MySQL (via transaction) and LanceDB memo_vectors
+  - updateTags(): Drizzle update with tag usage count tracking
+  - getAllMemosByUid(), getMemoCount(), getMemoByOffset(), getMemosByIds(): All migrated to Drizzle
+  - getActivityStats(), getOnThisDayMemos(): MySQL queries with date filtering
+  - getPublicMemos(), getRandomPublicMemo(), getPublicMemoById(): MySQL queries with isPublic filter
+- Kept vector search methods using LanceDB (vectorSearch, findRelatedMemos) - hybrid approach
+- Used withTransaction() for multi-table operations (memo creation with relations)
+- Removed convertArrowAttachments() helper - Drizzle returns native arrays for JSON fields
+- Updated constructor to create local LanceDB instance for vector operations only
+- Converted Drizzle Date timestamps to milliseconds with .getTime() for DTO compatibility
+- Foreign key constraints (memos.uid → users.uid, memos.categoryId → categories.categoryId) already in schema
+- Attachments and tagIds stored as JSON arrays in MySQL (already in schema)
+- Typecheck passes successfully
+
+**Files changed:**
+- apps/server/src/db/schema/memos.ts (added isPublic field)
+- apps/server/drizzle/0001_breezy_tomorrow_man.sql (migration for isPublic)
+- apps/server/src/services/memo.service.ts (1729 insertions, 635 deletions - full hybrid refactor)
+
+**Learnings for future iterations:**
+- **MemoService is very complex (1567 lines, 23 methods)** - largest service in the codebase
+- Hybrid architecture pattern: scalar data in MySQL, vectors in LanceDB, join on primary keys
+- Pattern for createMemo: withTransaction() for MySQL insert, then separate LanceDB vector insert
+- Pattern for updateMemo: Drizzle update for scalars, LanceDB update for vectors if content changed
+- Pattern for deleteMemo: withTransaction() for MySQL delete + relation cleanup, then LanceDB vector delete
+- Drizzle JSON fields: Use `(memo.attachments as string[]) || []` to safely access arrays
+- Date conversions: Drizzle returns Date objects, convert to milliseconds with .getTime() for DTOs
+- For complex queries with JSON array filtering (tags), use Drizzle for main query then filter in JavaScript
+- Vector search methods (vectorSearch, findRelatedMemos) keep LanceDB for semantic search
+- Transaction pattern: Use withTransaction() for operations that span multiple MySQL tables
+- LanceDB memo_vectors table structure: { memoId: string, embedding: number[] }
+- Always initialize LanceDB connection in constructor with error handling
+- Use sql template literal for complex expressions: sql`count(*)`
+- For date range filtering: Use gte() and lte() with timestamp conversion
+- Pattern for pagination: .orderBy().limit().offset()
+- Pattern for multiple IDs: inArray(memos.memoId, memoIds)
+---
