@@ -5,8 +5,8 @@ import { Service } from 'typedi';
 import { config } from '../../config/config.js';
 import { ErrorCode } from '../../constants/error-codes.js';
 import { UserService } from '../../services/user.service.js';
-import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 import { logger } from '../../utils/logger.js';
+import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 
 import type { RegisterDto, LoginDto } from '@aimo/dto';
 import type { Response } from 'express';

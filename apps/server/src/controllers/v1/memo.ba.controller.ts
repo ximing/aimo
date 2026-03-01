@@ -6,8 +6,8 @@ import { baAuthInterceptor } from '../../middlewares/ba-auth.interceptor.js';
 import { CategoryService } from '../../services/category.service.js';
 import { MemoService } from '../../services/memo.service.js';
 import { UserService } from '../../services/user.service.js';
-import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 import { logger } from '../../utils/logger.js';
+import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 
 import type { CreateMemoDto } from '@aimo/dto';
 

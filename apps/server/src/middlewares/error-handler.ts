@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { HttpError } from 'routing-controllers';
+
 import { logger } from '../utils/logger.js';
 
 export function errorHandler(error: Error, request: Request, res: Response, next: NextFunction) {

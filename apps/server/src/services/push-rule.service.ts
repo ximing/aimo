@@ -4,6 +4,7 @@ import { OBJECT_TYPE } from '../models/constant/type.js';
 import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
 import { generateTypeId } from '../utils/id.js';
 import { logger } from '../utils/logger.js';
+
 import { ChannelFactory } from './channels/channel.factory.js';
 
 import type { PushRuleRecord } from '../models/db/schema.js';
@@ -127,7 +128,7 @@ export class PushRuleService {
           data.channels === undefined
             ? JSON.stringify(rule.channels)
             : JSON.stringify(data.channels),
-        enabled: data.enabled === undefined ? (rule.enabled ? 1 : 0) : data.enabled ? 1 : 0,
+        enabled: data.enabled === undefined ? (rule.enabled ? 1 : 0) : (data.enabled ? 1 : 0),
         createdAt: rule.createdAt,
         updatedAt: now,
       };

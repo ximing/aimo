@@ -4,8 +4,8 @@ import { Service } from 'typedi';
 import { ErrorCode } from '../../constants/error-codes.js';
 import { MemoService } from '../../services/memo.service.js';
 import { RecommendationService } from '../../services/recommendation.service.js';
-import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 import { logger } from '../../utils/logger.js';
+import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 
 import type { UserInfoDto } from '@aimo/dto';
 

@@ -8,8 +8,8 @@ import { Service } from 'typedi';
 
 import { ErrorCode } from '../../constants/error-codes.js';
 import { OcrService } from '../../services/ocr/ocr.service.js';
-import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 import { logger } from '../../utils/logger.js';
+import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 
 import type { OcrProviderType, OcrOptions, OcrResult } from '../../services/ocr/interfaces.js';
 

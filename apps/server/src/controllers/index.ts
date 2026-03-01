@@ -5,6 +5,7 @@ import { AttachmentBAController } from './v1/attachment.ba.controller.js';
 import { AttachmentV1Controller } from './v1/attachment.controller.js';
 import { AuthV1Controller } from './v1/auth.controller.js';
 import { CategoryV1Controller } from './v1/category.controller.js';
+import { DebugBAController } from './v1/debug.ba.controller.js';
 import { ExploreController } from './v1/explore.controller.js';
 import { InsightsController } from './v1/insights.controller.js';
 import { MemoBAController } from './v1/memo.ba.controller.js';
@@ -24,6 +25,7 @@ export const controllers = [
   AuthV1Controller,
   UserV1Controller,
   CategoryV1Controller,
+  DebugBAController,
   TagV1Controller,
   AttachmentBAController,
   AttachmentV1Controller,

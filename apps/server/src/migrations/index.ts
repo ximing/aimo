@@ -10,8 +10,9 @@
  * 5. Updates metadata after each successful migration
  */
 
-import { MigrationExecutor } from './executor.js';
 import { logger } from '../utils/logger.js';
+
+import { MigrationExecutor } from './executor.js';
 import {
   ALL_MIGRATIONS,
   getMigrationsFromVersion,

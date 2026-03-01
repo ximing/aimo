@@ -3,9 +3,9 @@
  * Creates a separate tags table for storing tag metadata (name, color, usage count)
  */
 
+import { tagsSchema } from '../../models/db/schema.js';
 import { logger } from '../../utils/logger.js';
 
-import { tagsSchema } from '../../models/db/schema.js';
 
 import type { Migration } from '../types.js';
 import type { Connection } from '@lancedb/lancedb';

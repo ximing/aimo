@@ -6,8 +6,8 @@ import { config } from '../../config/config.js';
 import { ErrorCode } from '../../constants/error-codes.js';
 import { AvatarService } from '../../services/avatar.service.js';
 import { UserService } from '../../services/user.service.js';
-import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 import { logger } from '../../utils/logger.js';
+import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 
 import type { UserInfoDto, UpdateUserDto, ChangePasswordDto } from '@aimo/dto';
 import type { Request } from 'express';

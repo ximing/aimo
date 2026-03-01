@@ -24,8 +24,8 @@ import { Service } from 'typedi';
 import { config } from '../../config/config.js';
 import { ErrorCode } from '../../constants/error-codes.js';
 import { AttachmentService } from '../../services/attachment.service.js';
-import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 import { logger } from '../../utils/logger.js';
+import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 
 import type { UserInfoDto, UpdateAttachmentPropertiesDto } from '@aimo/dto';
 import type { Request, Response } from 'express';

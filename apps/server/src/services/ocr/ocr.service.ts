@@ -1,8 +1,9 @@
 import { Service } from 'typedi';
 
 import { config } from '../../config/config.js';
-import { OcrProviderType, OcrOptions, OcrResult } from './interfaces.js';
+
 import { ZhipuOcrAdapter } from './adapters/zhipu-ocr.adapter.js';
+import { OcrProviderType, OcrOptions, OcrResult } from './interfaces.js';
 
 /**
  * OCR 服务
@@ -90,6 +91,6 @@ export class OcrService {
    * 获取所有可用的供应商
    */
   getAvailableProviders(): OcrProviderType[] {
-    return Array.from(this.adapters.keys());
+    return [...this.adapters.keys()];
   }
 }

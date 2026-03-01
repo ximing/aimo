@@ -12,8 +12,8 @@ import { Service } from 'typedi';
 
 import { ErrorCode } from '../../constants/error-codes.js';
 import { CategoryService } from '../../services/category.service.js';
-import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 import { logger } from '../../utils/logger.js';
+import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 
 import type { CreateCategoryDto, UpdateCategoryDto, UserInfoDto } from '@aimo/dto';
 

@@ -122,7 +122,7 @@ export class RecommendationService {
    */
   private generateRandomOffsets(max: number, count: number): number[] {
     if (max <= count) {
-      return Array.from({ length: max }, (_, i) => i);
+      return Array.from({ length: max }, (_, index) => index);
     }
 
     const offsets = new Set<number>();
@@ -130,7 +130,7 @@ export class RecommendationService {
       const randomOffset = Math.floor(Math.random() * max);
       offsets.add(randomOffset);
     }
-    return Array.from(offsets);
+    return [...offsets];
   }
 
   /**

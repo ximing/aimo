@@ -3,8 +3,8 @@ import { Service } from 'typedi';
 
 import { ErrorCode } from '../../constants/error-codes.js';
 import { GitHubReleaseService } from '../../services/github-release.service.js';
-import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 import { logger } from '../../utils/logger.js';
+import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 
 import type { UserInfoDto } from '@aimo/dto';
 

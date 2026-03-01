@@ -1,6 +1,6 @@
 import { Inject, Service } from 'typedi';
 
-import { LanceDbService } from '../../sources/lancedb.js';
+import { LanceDbService as LanceDatabaseService } from '../../sources/lancedb.js';
 import { RecommendationService } from '../recommendation.service.js';
 
 import type { ContentGenerator, PushContent } from './content-generator.interface.js';
@@ -11,7 +11,7 @@ export class DailyContentGenerator implements ContentGenerator {
   @Inject()
   private recommendationService!: RecommendationService;
 
-  constructor(private lanceDb: LanceDbService) {}
+  constructor(private lanceDatabase: LanceDatabaseService) {}
 
   /**
    * Generate content based on content type
@@ -20,12 +20,15 @@ export class DailyContentGenerator implements ContentGenerator {
     contentType: string,
     uid: string  ): Promise<PushContent> {
     switch (contentType) {
-      case 'daily_pick':
+      case 'daily_pick': {
         return this.generateDailyPick(uid);
-      case 'daily_memos':
+      }
+      case 'daily_memos': {
         return this.generateDailyMemos(uid);
-      default:
+      }
+      default: {
         throw new Error(`Unsupported content type: ${contentType}`);
+      }
     }
   }
 
@@ -62,13 +65,13 @@ export class DailyContentGenerator implements ContentGenerator {
       })
       .join('');
 
-    const msg = `
+    const message = `
       <div style="font-size: 14px; line-height: 1.6;">
         ${memoItems}
       </div>
     `;
 
-    return { title, msg, isHtml: true };
+    return { title, msg: message, isHtml: true };
   }
 
   /**
@@ -120,13 +123,13 @@ export class DailyContentGenerator implements ContentGenerator {
       })
       .join('');
 
-    const msg = `
+    const message = `
       <div style="font-size: 14px; line-height: 1.6;">
         ${memoItems}
       </div>
     `;
 
-    return { title, msg, isHtml: true };
+    return { title, msg: message, isHtml: true };
   }
 
   /**
@@ -141,6 +144,6 @@ export class DailyContentGenerator implements ContentGenerator {
       "'": '&#x27;',
       '/': '&#x2F;',
     };
-    return text.replace(/[&<>"'\/]/g, (char) => htmlEscapes[char] || char);
+    return text.replaceAll(/[&<>"'\/]/g, (char) => htmlEscapes[char] || char);
   }
 }

@@ -3,9 +3,10 @@
  * Ensures tagIds column is List<Utf8> instead of Null
  */
 
+import { Type } from 'apache-arrow';
+
 import type { Migration } from '../types.js';
 import type { Connection } from '@lancedb/lancedb';
-import { Type } from 'apache-arrow';
 
 const TAG_IDS_DEFAULT_SQL = "arrow_cast(NULL, 'List(Utf8)')";
 

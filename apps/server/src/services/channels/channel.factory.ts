@@ -1,8 +1,8 @@
 import { Service } from 'typedi';
 
-import { PushChannel } from './push-channel.interface.js';
-import { MeowChannel, type MeowChannelConfig } from './meow.channel.js';
 import { FeishuChannel, type FeishuChannelConfig } from './feishu.channel.js';
+import { MeowChannel, type MeowChannelConfig } from './meow.channel.js';
+import { PushChannel } from './push-channel.interface.js';
 
 export type ChannelType = 'meow' | 'feishu';
 
@@ -30,15 +30,16 @@ export class ChannelFactory {
    */
   getChannel(config: ChannelConfig): PushChannel {
     switch (config.type) {
-      case 'meow':
+      case 'meow': {
         const meowConfig: MeowChannelConfig = {
           nickname: config.nickname,
           msgType: config.msgType,
           htmlHeight: config.htmlHeight,
         };
         return new MeowChannel(meowConfig);
+      }
 
-      case 'feishu':
+      case 'feishu': {
         if (!config.webhookUrl) {
           throw new Error('Feishu webhook URL is required');
         }
@@ -47,9 +48,11 @@ export class ChannelFactory {
           secret: config.secret,
         };
         return new FeishuChannel(feishuConfig);
+      }
 
-      default:
+      default: {
         throw new Error(`Unsupported channel type: ${(config as any).type}`);
+      }
     }
   }
 }

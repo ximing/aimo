@@ -1,7 +1,8 @@
 import OSS from 'ali-oss';
 
-import { BaseUnifiedStorageAdapter, type StorageMetadata } from './base.adapter.js';
 import { logger } from '../../utils/logger.js';
+
+import { BaseUnifiedStorageAdapter, type StorageMetadata } from './base.adapter.js';
 
 export interface OSSUnifiedStorageAdapterConfig {
   bucket: string;
@@ -208,9 +209,9 @@ export class OSSUnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
       const isPublic =
         metadata?.isPublicBucket === 'true'
           ? true
-          : metadata?.isPublicBucket === 'false'
+          : (metadata?.isPublicBucket === 'false'
             ? false
-            : this.isPublic;
+            : this.isPublic);
 
       // If bucket is public, return direct URL
       if (isPublic) {

@@ -8,9 +8,9 @@
 
 import { nanoid } from 'nanoid';
 
+import type { TagRecord } from '../../models/db/schema.js';
 import type { Migration } from '../types.js';
 import type { Connection } from '@lancedb/lancedb';
-import type { TagRecord } from '../../models/db/schema.js';
 
 /**
  * Generate a unique tag ID

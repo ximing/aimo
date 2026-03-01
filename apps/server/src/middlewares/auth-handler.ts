@@ -18,6 +18,7 @@ const AUTH_EXCLUDED_PATHS = [
   '/api/v1/memos/public',
   '/api/v1/memos/ba',
   '/api/v1/attachments/ba',
+  '/api/v1/debug/ba',
 ];
 
 /**
@@ -95,7 +96,9 @@ export const authHandler = async (request: Request, res: Response, next: NextFun
     }
 
     // Log other errors and return a generic error response
-    logger.error('Authentication error:', { error: error instanceof Error ? error.message : String(error) });
+    logger.error('Authentication error:', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return res.status(500).json({
       success: false,
       message: 'Authentication failed',

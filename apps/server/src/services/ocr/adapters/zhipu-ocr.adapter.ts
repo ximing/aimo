@@ -75,9 +75,8 @@ export class ZhipuOcrAdapter implements IOcrAdapter {
     const results: OcrResult[] = [];
 
     // 智谱 API 目前只支持单文件处理，需要逐个调用
-    for (let i = 0; i < fileList.length; i++) {
-      const file = fileList[i];
-      const result = await this.parseSingleFile(file, i, options);
+    for (const [index, file] of fileList.entries()) {
+      const result = await this.parseSingleFile(file, index, options);
       results.push(result);
     }
 
@@ -127,7 +126,7 @@ export class ZhipuOcrAdapter implements IOcrAdapter {
         contentType: 'json',
         dataType: 'json',
         data: requestBody,
-        timeout: 120000, // 2 分钟超时
+        timeout: 120_000, // 2 分钟超时
       });
 
       const statusCode =

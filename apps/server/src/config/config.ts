@@ -1,6 +1,7 @@
+import { logger } from '../utils/logger.js';
+
 import { loadEnv as loadEnvironment } from './env.js';
 
-import { logger } from '../utils/logger.js';
 
 // 先加载环境变量
 loadEnvironment();

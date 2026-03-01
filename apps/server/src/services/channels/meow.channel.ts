@@ -24,14 +24,14 @@ export class MeowChannel implements PushChannel {
    */
   async send(options: PushChannelOptions): Promise<void> {
     try {
-      const msgType = this.config.msgType || 'text';
+      const messageType = this.config.msgType || 'text';
       const response = await fetch(`${this.apiUrl}/${this.config.nickname}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          msgType: msgType.toLocaleLowerCase(),
+          msgType: messageType.toLocaleLowerCase(),
           title: options.title,
           msg: options.msg,
           url: options.url,

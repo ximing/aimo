@@ -12,8 +12,8 @@ import { Service } from 'typedi';
 
 import { ErrorCode } from '../../constants/error-codes.js';
 import { PushRuleService } from '../../services/push-rule.service.js';
-import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 import { logger } from '../../utils/logger.js';
+import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 
 import type { CreatePushRuleDto, UpdatePushRuleDto, UserInfoDto } from '@aimo/dto';
 

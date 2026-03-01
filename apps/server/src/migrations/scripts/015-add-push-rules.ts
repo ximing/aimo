@@ -3,9 +3,9 @@
  * Creates the push_rules table for storing user push notification configurations
  */
 
+import { pushRulesSchema } from '../../models/db/schema.js';
 import { logger } from '../../utils/logger.js';
 
-import { pushRulesSchema } from '../../models/db/schema.js';
 
 import type { Migration } from '../types.js';
 import type { Connection } from '@lancedb/lancedb';

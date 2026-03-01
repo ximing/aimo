@@ -1,4 +1,4 @@
-import * as crypto from 'crypto';
+import * as crypto from 'node:crypto';
 
 import { Service } from 'typedi';
 
@@ -36,12 +36,12 @@ export class FeishuChannel implements PushChannel {
    */
   private stripHtml(html: string): string {
     return html
-      .replace(/<[^>]*>/g, '\n')
-      .replace(/\n{2,}/g, '\n')
-      .replace(/&nbsp;/g, ' ')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&amp;/g, '&')
+      .replaceAll(/<[^>]*>/g, '\n')
+      .replaceAll(/\n{2,}/g, '\n')
+      .replaceAll('&nbsp;', ' ')
+      .replaceAll('&lt;', '<')
+      .replaceAll('&gt;', '>')
+      .replaceAll('&amp;', '&')
       .trim();
   }
 
@@ -57,13 +57,13 @@ export class FeishuChannel implements PushChannel {
       const timestamp = Math.floor(Date.now() / 1000);
 
       // Strip HTML tags for plain text display
-      const plainMsg = this.stripHtml(options.msg);
+      const plainMessage = this.stripHtml(options.msg);
 
       // Build request body
       const body: Record<string, unknown> = {
         msg_type: 'text',
         content: {
-          text: `${options.title}\n${plainMsg}`,
+          text: `${options.title}\n${plainMessage}`,
         },
       };
 

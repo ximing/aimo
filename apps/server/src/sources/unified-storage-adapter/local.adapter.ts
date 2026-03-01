@@ -1,8 +1,9 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import { BaseUnifiedStorageAdapter, type StorageMetadata } from './base.adapter.js';
 import { logger } from '../../utils/logger.js';
+
+import { BaseUnifiedStorageAdapter, type StorageMetadata } from './base.adapter.js';
 
 /**
  * Local file system storage adapter for attachments

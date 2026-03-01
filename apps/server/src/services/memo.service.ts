@@ -3,12 +3,12 @@ import { Service } from 'typedi';
 import { OBJECT_TYPE } from '../models/constant/type.js';
 import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
 import { generateTypeId } from '../utils/id.js';
+import { logger } from '../utils/logger.js';
 
 import { AttachmentService } from './attachment.service.js';
 import { EmbeddingService } from './embedding.service.js';
 import { MemoRelationService } from './memo-relation.service.js';
 import { TagService } from './tag.service.js';
-import { logger } from '../utils/logger.js';
 
 import type { Memo, NewMemo } from '../models/db/memo.schema.js';
 import type {
@@ -120,7 +120,7 @@ export class MemoService {
       }
 
       // Fetch all tags in one batch
-      const tagDtos = await this.tagService.getTagsByIds(Array.from(allTagIds), uid);
+      const tagDtos = await this.tagService.getTagsByIds([...allTagIds], uid);
       const tagMap = new Map<string, TagDto>();
       for (const tag of tagDtos) {
         tagMap.set(tag.tagId, tag);
@@ -661,7 +661,7 @@ export class MemoService {
         categoryId: categoryId === undefined ? existingMemo.categoryId : categoryId || undefined,
         attachments: finalAttachmentDtos,
         tagIds: finalTagIds,
-        isPublic: isPublic !== undefined ? isPublic : (existingMemo.isPublic ?? false),
+        isPublic: isPublic === undefined ? (existingMemo.isPublic ?? false) : isPublic,
         createdAt: existingMemo.createdAt,
         updatedAt: now,
       };
@@ -1393,7 +1393,7 @@ export class MemoService {
 
       // Query memos that are public for this user
       const whereClause = `uid = '${uid}' AND isPublic = true`;
-      let allResults = await memosTable.query().where(whereClause).toArray();
+      const allResults = await memosTable.query().where(whereClause).toArray();
 
       const total = allResults.length;
 

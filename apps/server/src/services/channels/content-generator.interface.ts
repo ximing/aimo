@@ -19,5 +19,5 @@ export interface ContentGenerator {
    * @param msgType - The message type ('text' or 'html'), defaults to 'text'
    * @returns Generated push content with title and message
    */
-  generate(contentType: string, uid: string, msgType?: 'text' | 'html'): Promise<PushContent>;
+  generate(contentType: string, uid: string, messageType?: 'text' | 'html'): Promise<PushContent>;
 }

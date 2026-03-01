@@ -12,8 +12,8 @@ import { Service } from 'typedi';
 
 import { ErrorCode } from '../../constants/error-codes.js';
 import { TagService } from '../../services/tag.service.js';
-import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 import { logger } from '../../utils/logger.js';
+import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 
 import type { CreateTagDto, UpdateTagDto, UserInfoDto } from '@aimo/dto';
 

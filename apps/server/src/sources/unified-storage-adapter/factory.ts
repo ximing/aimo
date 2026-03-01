@@ -1,3 +1,5 @@
+import { logger } from '../../utils/logger.js';
+
 import { LocalUnifiedStorageAdapter } from './local.adapter.js';
 import { OSSUnifiedStorageAdapter } from './oss.adapter.js';
 import { S3UnifiedStorageAdapter } from './s3.adapter.js';
@@ -10,7 +12,6 @@ import type {
   OSSStorageConfig,
   AttachmentStorageType,
 } from '../../config/config.js';
-import { logger } from '../../utils/logger.js';
 
 /**
  * Factory for creating unified storage adapters based on configuration

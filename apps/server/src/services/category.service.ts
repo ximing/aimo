@@ -180,9 +180,9 @@ export class CategoryService {
         color:
           data.color === null
             ? undefined
-            : data.color === undefined
+            : (data.color === undefined
               ? category.color
-              : data.color.trim(),
+              : data.color.trim()),
         createdAt: category.createdAt,
         updatedAt: Date.now(),
       };

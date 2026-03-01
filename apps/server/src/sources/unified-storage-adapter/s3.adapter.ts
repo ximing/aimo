@@ -8,8 +8,9 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
-import { BaseUnifiedStorageAdapter, type StorageMetadata } from './base.adapter.js';
 import { logger } from '../../utils/logger.js';
+
+import { BaseUnifiedStorageAdapter, type StorageMetadata } from './base.adapter.js';
 
 export interface S3UnifiedStorageAdapterConfig {
   bucket: string;
@@ -255,9 +256,9 @@ export class S3UnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
       const isPublic =
         metadata?.isPublicBucket === 'true'
           ? true
-          : metadata?.isPublicBucket === 'false'
+          : (metadata?.isPublicBucket === 'false'
             ? false
-            : this.isPublic;
+            : this.isPublic);
 
       // If bucket is public, return direct URL
       if (isPublic) {

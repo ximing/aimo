@@ -3,8 +3,6 @@
  * This is the initial schema setup for all core tables
  */
 
-import { logger } from '../../utils/logger.js';
-
 import {
   usersSchema,
   memosSchema,
@@ -15,6 +13,8 @@ import {
   multimodalEmbeddingCacheSchema,
   dailyRecommendationsSchema,
 } from '../../models/db/schema.js';
+import { logger } from '../../utils/logger.js';
+
 
 import type { Migration } from '../types.js';
 import type { Connection } from '@lancedb/lancedb';

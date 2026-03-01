@@ -5,9 +5,10 @@ import { config } from '../config/config.js';
 import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
 import { logger } from '../utils/logger.js';
 
-import { PushRuleService } from './push-rule.service.js';
-import { DailyContentGenerator } from './channels/daily-content.generator.js';
 import { ChannelFactory } from './channels/channel.factory.js';
+import { DailyContentGenerator } from './channels/daily-content.generator.js';
+import { PushRuleService } from './push-rule.service.js';
+
 import type { PushRuleDto } from '@aimo/dto';
 
 /**

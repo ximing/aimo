@@ -3,8 +3,8 @@ import { Service } from 'typedi';
 
 import { ErrorCode } from '../../constants/error-codes.js';
 import { AIService } from '../../services/ai.service.js';
-import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 import { logger } from '../../utils/logger.js';
+import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 
 import type { GenerateTagsRequestDto, UserInfoDto, AIToolConfigDto } from '@aimo/dto';
 

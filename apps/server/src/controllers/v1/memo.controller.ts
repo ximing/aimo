@@ -12,12 +12,12 @@ import {
 import { Service } from 'typedi';
 
 import { ErrorCode } from '../../constants/error-codes.js';
-import { MemoRelationService } from '../../services/memo-relation.service.js';
 import { AvatarService } from '../../services/avatar.service.js';
+import { MemoRelationService } from '../../services/memo-relation.service.js';
 import { MemoService } from '../../services/memo.service.js';
 import { UserService } from '../../services/user.service.js';
-import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 import { logger } from '../../utils/logger.js';
+import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 
 import type { CreateMemoDto, UpdateMemoDto, UserInfoDto } from '@aimo/dto';
 

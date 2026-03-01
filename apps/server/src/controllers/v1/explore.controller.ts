@@ -14,8 +14,8 @@ import { Service } from 'typedi';
 import { ErrorCode } from '../../constants/error-codes.js';
 import { AIConversationService } from '../../services/ai-conversation.service.js';
 import { ExploreService } from '../../services/explore.service.js';
-import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 import { logger } from '../../utils/logger.js';
+import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 
 import type {
   AddMessageDto,
