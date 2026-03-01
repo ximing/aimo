@@ -52,7 +52,9 @@ RUN HUSKY=0 pnpm install --prod --frozen-lockfile --prefer-offline
 
 # Copy built files from builder stage
 COPY --from=builder /app/apps/server/dist/ ./apps/server/dist/
+COPY --from=builder /app/apps/server/drizzle.config.ts ./apps/server/drizzle.config.ts
 COPY --from=builder /app/apps/server/public/ ./apps/server/public/
+COPY --from=builder /app/apps/server/drizzle/ ./apps/server/drizzle/
 COPY --from=builder /app/packages/dto/dist/ ./packages/dto/dist/
 COPY --from=builder /app/packages/logger/lib/ ./packages/logger/lib/
 
