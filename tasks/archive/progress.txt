@@ -1,784 +1,205 @@
-## 2026-02-20 - US-006 (AI Explore Page)
-- Implement relationship graph exploration feature
-- Backend changes:
-  - Added RelationGraphDto, RelationGraphNodeDto, RelationGraphEdgeDto types to packages/dto
-  - Implemented getRelationshipGraph() in ExploreService to build relationship graphs
-  - Detects thematic, temporal, outgoing, and incoming relationships between memos
-  - Added GET /api/v1/explore/relations/:memoId endpoint
-- Frontend changes:
-  - Created RelationshipGraph component with SVG visualization
-  - Interactive nodes with hover effects and click-to-view functionality
-  - Expandable/collapsible graph view
-  - Edge labels showing relationship types (引用, 被引用, 主题关联, 时间关联)
-  - Color-coded nodes: blue (center), emerald (related), amber (backlinks)
-  - Added "查看关系图谱" button to source citations
-  - "探索相关" button to continue exploration from graph
-  - Added explore service methods for loading/clearing relationship graphs
-- Typecheck passes, lint passes (no new errors)
-- **Files changed:**
-  - `packages/dto/src/explore.ts` - Added relationship graph DTO types
-  - `apps/server/src/services/explore.service.ts` - Added getRelationshipGraph method
-  - `apps/server/src/controllers/v1/explore.controller.ts` - Added /relations endpoint
-  - `apps/web/src/api/explore.ts` - Added getRelations API call
-  - `apps/web/src/services/explore.service.ts` - Added relationship graph state management
-  - `apps/web/src/pages/ai-explore/components/relationship-graph.tsx` - New graph component
-  - `apps/web/src/pages/ai-explore/components/index.ts` - Export new component
-  - `apps/web/src/pages/ai-explore/ai-explore.tsx` - Integrated graph modal and buttons
-- **Learnings for future iterations:**
-  - SVG-based graph visualization: use viewBox for responsive scaling
-  - Circle layout for nodes: angle = (index / total) * 2 * PI - PI/2 for top-start positioning
-  - Edge path calculation using Math.atan2 for angle between nodes
-  - Use stroke-dasharray for different edge styles (dashed for thematic/temporal)
-  - Implement custom attachment preview modal instead of relying on global service
-  - Import paths: check actual file locations with glob before assuming paths
-  - DTO rebuild required before type changes propagate to dependent packages
+# Ralph Progress: Drizzle Migration
+
+Branch: ralph/drizzle-migration
+
+## Status
+- US-011: COMPLETED
+- US-010: COMPLETED
+- US-009: COMPLETED
+- US-008: COMPLETED
+- US-007: COMPLETED
+- US-006: COMPLETED
+- US-005: COMPLETED
+- US-004: COMPLETED
+- US-003: COMPLETED
+
+## Notes
+
+## 2026-03-01 - US-009
+- Created migration script `src/migrations/lancedb-to-drizzle.migration.ts`
+- Checks if LanceDB has data and Drizzle is empty before migration
+- Exports LanceDB backup to `./backups/lancedb-backup-[timestamp].json` before migration
+- Migrates tables: users, memos, memo_relations, attachments
+- Processes data in batches of 100 records with progress logging
+- Records migration completion in `_migrations` table with hash to prevent re-run
+- Integrated into app.ts after Drizzle migrations run
+- Typecheck passes, lint passes (warnings only)
+- **Learnings:**
+  - LanceDB table data queried via `db.openTable().query().toArray()`
+  - Migration uses MIGRATION_HASH constant for tracking in _migrations table
+  - Batch processing with logging shows progress (e.g., 'Migrated 1/100...')
+  - SQLite requires direct .prepare().run() instead of Drizzle query builder
+  - Timestamp conversion: LanceDB uses milliseconds, Drizzle uses Date objects or Unix timestamps for SQLite
+  - Attachments use createdAt for updatedAt since LanceDB schema doesn't have updatedAt
+
 ---
 
-## 2026-02-19 - US-005 (AI Explore Page)
-- Implement multi-turn conversation and context memory
-- Frontend implementation in explore.service.ts:
-  - localStorage persistence with loadFromStorage() and saveToStorage()
-  - Conversation context accumulation (trimmed to ~4000 chars)
-  - 10-round limit enforcement (MAX_MESSAGES = 20)
-  - UI shows current round number (第 X/10 轮)
-  - Warning when limit reached with link to create new conversation
-  - New conversation button with confirm dialog
-- Backend improvements to ExploreService.generationNode:
-  - Better context formatting: "Previous Conversation History:" section
-  - Added "This is a follow-up question" indicator for context awareness
-  - Updated system message to emphasize multi-turn response handling
-- Typecheck passes, lint passes (no new errors)
-- **Files changed:**
-  - `apps/web/src/services/explore.service.ts` - Already implemented in US-003/004
-  - `apps/web/src/pages/ai-explore/ai-explore.tsx` - Already implemented in US-003/004
-  - `apps/server/src/services/explore.service.ts` - Improved prompt handling for conversation context
-- **Learnings for future iterations:**
-  - Use `\n\nUser: ${query}\nAssistant: ${answer}` format for accumulating conversation context
-  - Trim context at ~4000 chars to stay within token limits while preserving recent history
-  - Round tracking: Math.ceil(messages.length / 2) gives current round number
-  - Disable input and show clear messaging when conversation limit is reached
-  - Include "Previous Conversation History" section in LLM prompts for follow-up questions
+## 2026-03-01 - US-011
+- Graceful shutdown already implemented in app.ts (not index.ts as originally specified)
+- Shutdown handler closes Drizzle connections first, then LanceDB connections
+- Order: Stop accepting requests → Close scheduler → Close Drizzle → Close LanceDB
+- Logs shutdown steps for debugging
+- Handles both SIGTERM and SIGINT signals
+
 ---
 
-## 2026-02-19 - US-001 (AI Explore Page)
-- Implement LangChain DeepAgents backend architecture
-- Install langchain, @langchain/core, @langchain/openai, @langchain/langgraph dependencies
-- Create ExploreService as Agent coordinator with StateGraph workflow
-- Implement retrieval Agent using LanceDB vector search to find relevant memos
-- Implement analysis Agent for evaluating retrieved content and identifying key insights
-- Implement generation Agent for creating final answers with source citations
-- Define AgentState interface and ExploreStateAnnotation for state passing between agents
-- Create /api/v1/explore endpoint for AI exploration queries
-- Create /api/v1/explore/quick-search endpoint for fast vector search without LLM processing
-- Add Explore DTO types (ExploreQueryDto, ExploreResponseDto, ExploreSourceDto, etc.) to packages/dto
-- Typecheck passes, lint passes (no errors, pre-existing warnings only)
-- **Files changed:**
-  - `apps/server/src/services/explore.service.ts` - New ExploreService with LangChain agents
-  - `apps/server/src/controllers/v1/explore.controller.ts` - New controller with /explore endpoints
-  - `packages/dto/src/explore.ts` - New DTO types for explore feature
-  - `packages/dto/src/index.ts` - Export explore types
-- **Learnings for future iterations:**
-  - LangGraph API uses Annotation.Root to define state schema for StateGraph
-  - Use type assertions (`as any`) when adding edges to avoid strict type issues with node names
-  - StateGraph nodes return Partial<State> to update specific fields
-  - Agent workflow pattern: retrieval -> analysis -> generation, connected via edges
-  - Use `START` constant from @langchain/langgraph for entry point
-  - The `workflow.compile()` creates a runnable that can be invoked with initial state
-  - LanceDB vector search already handles embedding generation and relevance scoring
-  - Minimum relevance score threshold (0.5) filters out low-quality matches
+## 2026-03-01 - US-008
+- Refactored UserService to use UserRepository instead of LanceDB
+- Refactored AttachmentService to use AttachmentRepository instead of LanceDB
+- Added findByEmailWithPassword(), findByUidWithPassword(), updatePassword() methods to UserRepository for authentication
+- Added AttachmentFullRecord interface and findByIdFull() method to AttachmentRepository for URL generation
+- UserService: createUser(), findUserByEmail(), findUserByUid(), updateUser(), deleteUser(), changePassword() all use repository
+- AttachmentService: createAttachment(), getAttachment(), getAttachmentsByUser(), updateAttachmentProperties(), deleteAttachment(), getAttachmentsByIds(), getAttachmentBuffer() all use repository
+- File upload/storage logic unchanged (only metadata storage migrated to Drizzle)
+- JWT authentication flow unchanged
+- Typecheck passes, lint passes (warnings present but no errors)
+- **Learnings:**
+  - Password/salt needed for authentication - add findByEmailWithPassword() and findByUidWithPassword() methods to repository
+  - URL generation requires storage metadata (storageType, bucket, endpoint, etc.) - use findByIdFull() for full record
+  - Service methods maintain same signatures - repository returns DTOs which are compatible
+  - LanceDB removed from service constructors - file storage still uses storage adapters
+
 ---
 
-## 2026-02-19 - US-005 (Chrome Extension)
-- Create ConfigPage.tsx component with server URL, username, password form
-- Implement form validation: URL format validation with automatic https:// prefix, non-empty checks for all fields
-- Login API integration: call login() from aimo.ts API client on form submit
-- Error handling in Chinese: map API errors to user-friendly Chinese messages
-- Settings icon in header: gear icon to reopen config page from main view
-- Support light/dark theme using prefers-color-scheme media query
-- Create MainPage.tsx as placeholder for content list (will be expanded in US-006)
-- Update App.tsx with state management: loading -> config -> main flow
-- Load saved config on mount to determine initial view
-- Typecheck and lint pass
-- **Files changed:**
-  - `apps/extension/src/popup/ConfigPage.tsx` - New config/login form component
-  - `apps/extension/src/popup/MainPage.tsx` - New main page component with settings icon
-  - `apps/extension/src/popup/App.tsx` - Updated with state management between config and main views
-- **Learnings for future iterations:**
-  - Use window.matchMedia('(prefers-color-scheme: dark)') for theme detection
-  - Style objects can be typed as React.CSSProperties for type safety
-  - Popup dimensions: 320px width works well for Chrome extension popups
-  - State machine pattern for view management: 'loading' | 'config' | 'main'
-  - Settings icon should use inline SVG for crisp rendering at small sizes
-  - Form validation: clear individual field errors on change, show general errors at top
-  - Test connection button provides better UX before attempting login
-  - Use chrome.storage.local.get(['aimo_config']) to preload saved URL in config form
+## 2026-03-01 - US-006
+- Refactored MemoService to use hybrid storage (Drizzle + LanceDB)
+- createMemo() writes to both Drizzle (scalar) and LanceDB (vector + id)
+- updateMemo() updates both Drizzle and LanceDB
+- deleteMemo() removes from both stores
+- getMemoById() fetches from Drizzle only
+- getMemos() fetches from Drizzle with pagination/filters
+- Vector search flow: LanceDB returns IDs → MemoRepository.findByIds() fetches details
+- Typecheck passes, lint passes (warnings present but no errors)
+- **Learnings:**
+  - Use explicit object construction instead of spread for DTO return types to avoid type conflicts
+  - Convert null to undefined for optional parameters (repository expects string | undefined)
+  - UpdateMemoDto requires content field - pass empty string for partial updates
+
+## 2026-03-01 - US-005
+- Added DATABASE_URL env var support to config.ts with parseMySQLUrl() and parsePostgreSQLUrl() functions
+- Added environment validation on startup with validateRequiredEnvVars() function
+- Validates: JWT_SECRET, OPENAI_API_KEY, and database connection parameters
+- Throws descriptive error messages for missing required vars
+- Updated .env.example files (root and apps/server) with DATABASE_URL, DATABASE_TYPE, DATABASE_POOL_SIZE
+- Updated CLAUDE.md with:
+  - Hybrid storage architecture description (Drizzle + LanceDB)
+  - Database configuration section with connection string examples
+  - Updated Key Technologies to list Drizzle ORM
+  - Added Repository Layer Pattern section
+  - Added Database CLI Commands section
+  - Updated Storage Adapters to include database/ directory
+- Typecheck passes, lint passes (warnings only)
+- **Learnings:**
+  - DATABASE_URL parsing requires separate type-safe functions for each DB type
+  - Connection string format: mysql://user:pass@host:port/db or postgresql://user:pass@host:port/db
+  - Validate env vars at config load time before other initialization
 ---
 
-## 2026-02-19 - US-002 (Chrome Extension)
-- Create storage module in src/storage/index.ts
-- Implement chrome.storage.local wrappers for config: getConfig(), setConfig(url, token, username?), clearConfig()
-- Implement chrome.storage.session wrappers for pending items: getPendingItems(), addPendingItem(item), removePendingItem(id), clearPendingItems()
-- Add additional helper functions: updatePendingItem() for attachment updates, getPendingItemsCount() for badge updates
-- Create StorageError class for consistent error handling with operation context
-- Use existing TypeScript types from src/types/index.ts (Config, PendingItem)
-- Config stored in chrome.storage.local (persists across sessions)
-- Pending items stored in chrome.storage.session (cleared when browser closes)
-- Typecheck and lint pass
-- **Files changed:**
-  - `apps/extension/src/storage/index.ts` - New storage module with all storage operations
-- **Learnings for future iterations:**
-  - Use chrome.storage.local for persistent data (config), chrome.storage.session for temporary data (pending items)
-  - All storage operations should have try-catch with custom error class for better debugging
-  - Generate unique IDs using timestamp + random string combination
-  - Use Omit<PendingItem, 'id' | 'createdAt'> for function parameters that create new items
-  - chrome.storage.session is available in Manifest V3 for data that should not persist
-  - StorageError class helps identify which operation failed during debugging
+## 2026-03-01 - US-004
+- Created repository layer in apps/server/src/repositories/
+- MemoRepository: create(), findById(), findByUserId(), findByIds(), update(), delete(), search()
+- UserRepository: create(), findByEmail(), findByUid(), update(), delete()
+- AttachmentRepository: create(), findById(), findByIdAndUid(), findByUserId(), findByIds(), updateProperties(), delete()
+- MemoRelationRepository: create(), findBySourceMemoId(), findByTargetMemoId(), delete(), deleteBySourceMemoId(), deleteByTargetMemoId(), replaceRelations()
+- Added isPublic field to memos schema for MySQL, PostgreSQL, and SQLite
+- All repositories use @Service() decorator for TypeDI
+- All methods return DTOs from @aimo/dto package
+- Typecheck passes
+- **Learnings:**
+  - Drizzle union types require `as any` casting for database client operations
+  - isPublic stored as integer (0/1) in DB, converted to boolean in DTOs
+  - UseMemoSearchOptions interface includes tags, startDate, endDate for filtering
 ---
 
-## 2026-02-19 - US-001 (Chrome Extension)
-- Create Chrome extension project structure in apps/extension/
-- Configure manifest.json (Manifest V3) with storage and activeTab permissions
-- Configure Vite build with multi-entry support for popup, content, and background scripts
-- Configure TypeScript with @types/chrome for Chrome API type definitions
-- Create src/popup/index.html as popup entry with React
-- Create src/content/index.ts as content script entry
-- Create src/background/index.ts as service worker entry
-- Add shared TypeScript types in src/types/index.ts (Config, PendingItem, ExtractedContent, etc.)
-- Add ESLint configuration following project patterns
-- Typecheck and lint pass
-- **Files changed:**
-  - `apps/extension/package.json` - New extension project configuration
-  - `apps/extension/tsconfig.json` - TypeScript project references
-  - `apps/extension/tsconfig.app.json` - TypeScript app config with chrome types
-  - `apps/extension/tsconfig.node.json` - TypeScript node config
-  - `apps/extension/vite.config.ts` - Vite multi-entry build configuration
-  - `apps/extension/eslint.config.js` - ESLint configuration
-  - `apps/extension/public/manifest.json` - Chrome extension manifest
-  - `apps/extension/src/popup/index.html` - Popup HTML entry
-  - `apps/extension/src/popup/index.tsx` - Popup React entry
-  - `apps/extension/src/popup/App.tsx` - Main popup component
-  - `apps/extension/src/content/index.ts` - Content script
-  - `apps/extension/src/background/index.ts` - Service worker
-  - `apps/extension/src/types/index.ts` - Shared TypeScript types
-- **Learnings for future iterations:**
-  - Chrome extension Vite config needs multiple inputs: popup (HTML+TS), content (TS), background (TS)
-  - Use rollupOptions.output.entryFileNames to maintain directory structure for content/background scripts
-  - Add @types/chrome to devDependencies for Chrome API type definitions
-  - Include "chrome" in tsconfig types array
-  - Extension publicDir contains manifest.json and icons, copied to dist on build
-  - Service worker uses "type": "module" in manifest background config
----
+## 2026-03-01 - US-003
+- Configured drizzle-kit in apps/server/drizzle.config.ts
+- Added db scripts to package.json: db:generate, db:push, db:migrate, db:studio
+- Generated initial migration SQL in src/sources/database/migrations/
+- Implemented DrizzleAdapter.runMigrations() method:
+  - Reads SQL migration files from migrations directory
+  - Queries _migrations table for executed migrations (by hash)
+  - Executes pending migrations with database-type-specific syntax
+  - Records each migration in _migrations table with hash and timestamp
+- Integrated migration execution into app.ts startup sequence (after Drizzle init)
+- Added graceful shutdown cleanup for Drizzle connections
+- Typecheck passes, lint passes (warnings present but no errors)
+- **Learnings:**
+  - drizzle-kit must use .cjs extension with tsx (tsx node_modules/drizzle-kit/bin.cjs)
+  - Use process.env directly in drizzle.config.ts instead of importing config
+  - Migration hashes computed from file content for change detection
+  - MySQL/PostgreSQL: use .execute(), SQLite: use .run() for raw SQL execution
 
-## 2026-02-19 - US-008 (Electron Client)
-- Implement window state management using electron-store
-- Add WindowState interface with x, y, width, height, isMaximized properties
-- Create windowStore with electron-store for persistence (stored in userData)
-- Implement saveWindowState() to save bounds and maximized state on window close
-- Add display validation using screen.getAllDisplays() to ensure window is on valid monitor
-- Restore saved bounds when creating window, fallback to defaults if display invalid
-- Restore maximized state after window creation if previously maximized
-- Save state both when hiding to tray (close button) and when actually quitting
-- Typecheck and lint pass
-- **Files changed:**
-  - `apps/client/src/main/index.ts` - Added window state management with electron-store
-- **Learnings for future iterations:**
-  - electron-store automatically stores data in `app.getPath('userData')`/window-state.json
-  - Always validate saved window bounds against available displays - monitors may be disconnected
-  - Use `mainWindow.getBounds()` to get current position and size
-  - Check `mainWindow.isMaximized()` before saving bounds - maximized bounds aren't useful for restoration
-  - Import `screen` from electron to access display information
-  - Store TypeScript interface helps ensure type safety for stored data
----
-
-## 2026-02-19 - US-007 (Electron Client)
-- Implement local file drag-and-drop support
-- Add will-navigate handler to prevent page navigation on file drop
-- Add drag-enter, drag-over, drop event handlers to webContents
-- Filter dropped items to only include files using fs.statSync().isFile()
-- Send file paths to renderer via IPC 'files-dropped' event
-- Expose onFileDrop() and removeFileDropListener() in preload script with callbackMap
-- Create isElectron.ts utility with isElectron(), getPlatform(), isMacOS(), isWindows(), isLinux()
-- Add onFileDrop helper function for registering file drop callbacks
-- Browser runs without errors when window.electronAPI is undefined
-- Typecheck and lint pass
-- **Files changed:**
-  - `apps/client/src/main/index.ts` - Added drag/drop event handlers and will-navigate handler
-  - `apps/client/src/preload/index.ts` - Added onFileDrop and removeFileDropListener APIs
-  - `apps/web/src/electron/isElectron.ts` - New utility for Electron detection
-- **Learnings for future iterations:**
-  - Drag events on webContents are not fully typed in Electron - use @ts-expect-error
-  - Use fs.statSync(filePath).isFile() to filter out directories from drop
-  - Prevent file drop navigation with will-navigate handler checking for 'file://' URLs
-  - IPC pattern for file drops: main webContents.on('drop') -> webContents.send() -> renderer onFileDrop()
-  - Use separate callbackMap for different IPC events (messageCallbackMap, fileDropCallbackMap)
-  - Browser compatibility: Always check isElectron() before accessing window.electronAPI
----
-
-## 2026-02-19 - US-005 (Electron Client)
-- Implement system-level global shortcuts
-- Register CommandOrControl+Shift+A to toggle window visibility
-- Add toggleWindowVisibility() helper function for reuse
-- Add registerGlobalShortcuts() called on app ready
-- Add will-quit handler to call globalShortcut.unregisterAll()
-- Typecheck and lint pass
-- **Files changed:**
-  - `apps/client/src/main/index.ts` - Added globalShortcut import, toggleWindowVisibility(), registerGlobalShortcuts(), and will-quit handler
-- **Learnings for future iterations:**
-  - Use `globalShortcut.register()` with accelerator string like 'CommandOrControl+Shift+A'
-  - Always unregister shortcuts on app quit to avoid conflicts
-  - The toggle pattern: visible -> hide(), hidden -> show() + focus()
-  - can check registration success with the boolean returned from register()
----
-
-## 2026-02-19 - US-006 (Electron Client)
-- Implement native application menu
-- Add createApplicationMenu() function with platform-specific menus:
-  - Edit menu: Undo, Redo, Cut, Copy, Paste, Select All
-  - View menu: Reload, Toggle DevTools, Zoom controls, Fullscreen
-  - Window menu: Minimize, Close, Show Main Window
-  - macOS: App menu first with About, Hide, Hide Others, Quit
-  - Windows/Linux: File menu with Quit option
-  - Help menu with GitHub link
-- Use MenuItemConstructorOptions type for menu items
-- Use 'role' for standard actions to get native behavior and accelerators
-- macOS role values: 'hide', 'hideOthers', 'unhide', 'front', 'togglefullscreen'
-- Call Menu.setApplicationMenu(menu) to apply the menu
-- Typecheck and lint pass
-- **Files changed:**
-  - `apps/client/src/main/index.ts` - Added createApplicationMenu() and Menu import
-- **Learnings for future iterations:**
-  - Use `role: 'hideOthers'` (camelCase) not 'hideothers' - TypeScript will catch this
-  - Standard roles like 'undo', 'redo', 'cut', 'copy', 'paste' automatically get native accelerators
-  - macOS requires app menu as first item with app name
-  - Windows/Linux should have File menu with Quit option
-  - Menu builds from template array of MenuItemConstructorOptions
----
-
-## 2026-02-19 - US-009 (Electron Client)
-- Implement auto-update mechanism using electron-updater
-- Import autoUpdater from electron-updater and configure to use GitHub Releases (default)
-- Add setupAutoUpdater() function that calls checkForUpdatesAndNotify()
-- Add checkForUpdates() function for manual update checking from menu
-- Check for updates 3 seconds after app startup using setTimeout
-- Add "检查更新" menu item to Help menu for manual update checking
-- Add autoUpdater event handlers:
-  - update-available: Logs when update is available (notification handled automatically)
-  - update-downloaded: Logs when update is downloaded (will install on quit)
-  - error: Logs any updater errors
-- Typecheck and lint pass
-- **Files changed:**
-  - `apps/client/src/main/index.ts` - Added auto-updater integration
-- **Learnings for future iterations:**
-  - electron-updater uses GitHub Releases by default (reads from package.json repository.url)
-  - checkForUpdatesAndNotify() handles both checking and showing system notifications
-  - Updates are downloaded automatically in the background when available
-  - Updates are installed when the app is quit and restarted
-  - Manual checking can be triggered by calling checkForUpdatesAndNotify() again
-  - Error handling is important as network issues can cause update checks to fail
----
-
-## 2026-02-19 - US-010 (Electron Client)
-- Configure cross-platform Electron packaging with electron-builder
-- Verified electron-builder.yml configuration for all platforms:
-  - macOS: target dmg and zip with x64/arm64 architectures, category: public.app-category.productivity
-  - Windows: target nsis and portable with x64 architecture
-  - Linux: target AppImage and deb with x64 architecture, category: Office
-- Created build directory with icon files for all platforms:
-  - icon.icns for macOS (generated using @fiahfy/icns)
-  - icon.ico for Windows (generated using png-to-ico)
-  - icon.png for Linux (512x512 PNG)
-- Created create-icons.js script to regenerate icons from SVG source
-- Added icon generation devDependencies: png-to-ico, @fiahfy/icns
-- Package.json includes dist scripts: dist, dist:all, dist:mac, dist:win, dist:linux
-- Typecheck and lint pass
-- **Files changed:**
-  - `apps/client/build/` - New directory with icon files (icon.icns, icon.ico, icon.png, icon.svg)
-  - `apps/client/build/create-icons.js` - Script to regenerate icons from SVG
-  - `apps/client/package.json` - Added icon generation dependencies
-- **Learnings for future iterations:**
-  - Use `png-to-ico` package to generate Windows .ico files from PNGs (supports multi-resolution)
-  - Use `@fiahfy/icns` for macOS .icns generation (IcnsImage constructor: (osType, bytes, imageBuffer))
-  - Icon sizes needed: 16x16, 32x32, 48x48, 64x64, 128x128, 256x256, 512x512
-  - macOS icns osTypes: icp4(16), icp5(32), icp6(64), ic07(128), ic08(256), ic09(512)
-  - electron-builder.yml configures all platform targets in one file
-  - Keep icon source as SVG for easy regeneration at different sizes
----
-
-## 2026-02-19 - US-003 (Chrome Extension)
-- Create AIMO API client module in src/api/aimo.ts
-- Implement login(email, password) method that authenticates with POST /api/v1/auth/login
-- Implement createMemo(content, sourceUrl, attachmentIds?) that creates memos with source attribution
-- Implement uploadAttachment(file, filename) with multipart/form-data for image uploads
-- Add automatic Authorization: Bearer token header injection for all authenticated requests
-- Add ApiError class for consistent error handling with status, code, and Chinese messages
-- Add helper functions: testConnection(), downloadImage(), isLoggedIn(), logout()
-- Update types/index.ts with Attachment, Memo, UserInfo, ApiResponse types aligned with backend DTOs
-- Handle token expiration (401) by clearing config and prompting re-login
-- Format content with source URL appended as markdown link
-- Typecheck and lint pass
-- **Files changed:**
-  - `apps/extension/src/api/aimo.ts` - New API client module with login, createMemo, uploadAttachment
-  - `apps/extension/src/types/index.ts` - Added Attachment, Memo, UserInfo, ApiError types
-- **Learnings for future iterations:**
-  - Backend login uses `email` not `username` for the field name
-  - Backend API returns `{ success: boolean, data?: T, message?: string }` wrapped responses
-  - Use `FormData` for file uploads and let browser set Content-Type with boundary
-  - Always include credentials: 'omit' for cross-origin image downloads to avoid cookie issues
-  - Map specific backend error messages to Chinese for better UX
-  - Extension manifest needs `<all_urls>` host permission for fetching images from any site
-  - Token expiry handling: catch 401, clear config, redirect to login
-  - Source URL is appended to memo content as markdown: `[来源](url)`
----
-
-## 2026-02-19 - US-004 (Chrome Extension)
-- Implement floating toolbar in content script with shadow DOM for style isolation
-- Add selectionchange listener with debouncing (100ms) for text selection
-- Add image click listener to capture images, filtering out small icons (< 50px)
-- Implement toolbar positioning at bottom-right of selection with viewport boundary checks
-- Add auto-hide on click outside (with delayed handler) and scroll events
-- Create save button that stores content to session storage via background script messaging
-- Support light/dark theme using prefers-color-scheme media query
-- Add smooth fade in/out animations with CSS keyframes
-- Update background script to handle SAVE_CONTENT message and update badge count
-- Implement badge updates on extension icon showing pending items count
-- **Files changed:**
-  - `apps/extension/src/content/index.ts` - Complete floating toolbar implementation
-  - `apps/extension/src/background/index.ts` - Message handlers and badge updates
-- **Learnings for future iterations:**
-  - Shadow DOM provides complete style isolation from host page styles
-  - Use `attachShadow({ mode: 'closed' })` to prevent external access to shadow root
-  - Debounce selectionchange events to avoid excessive updates while dragging
-  - Position toolbar with `position: absolute` and calculate coordinates from `getBoundingClientRect()`
-  - Use `window.scrollY` to adjust position for scrolled pages
-  - Always check viewport boundaries to prevent toolbar from going off-screen
-  - Theme detection: `window.matchMedia('(prefers-color-scheme: dark)')`
-  - Badge API: `chrome.action.setBadgeText()` and `chrome.action.setBadgeBackgroundColor()`
-  - Clear badge by setting text to empty string: `setBadgeText({ text: '' })`
-  - Use `chrome.runtime.sendMessage()` for communication between content script and background
-  - Chrome extension popup cannot be programmatically opened - user must click the icon
-  - Filter small images (icons) by checking `img.width` and `img.height`
-  - Use `event.preventDefault()` and `event.stopPropagation()` when handling image clicks
----
-
-## 2026-02-19 - US-006 (Chrome Extension)
-- Create ContentItem.tsx component with text editing and image preview functionality
-- Create ContentList.tsx component for managing pending items list
-- Update MainPage.tsx to integrate ContentList, remove inline implementation
-- ContentItem features:
-  - Text content editing with expand/collapse (multi-line textarea)
-  - Image thumbnail preview with error handling
-  - Single item deletion with delete button
-  - Type icons (📝 for text, 🖼️ for image)
-  - Content summary (first 80 chars) and source page title
-- ContentList features:
-  - Load pending items from session storage on mount
-  - Listen for storage changes to auto-update list
-  - Empty state with hint box showing operation guidance
-  - Footer with "Save to AIMO" and "Clear All" buttons
-- Define icon components as standalone functions (not inside render) to avoid lint errors
-- Use useCallback for loadPendingItems to fix react-hooks/exhaustive-deps warning
-- Initialize dark mode state using lazy initialization to avoid setState in effect
-- Typecheck and lint pass
-- **Files changed:**
-  - `apps/extension/src/popup/ContentItem.tsx` - New component for individual content item display and editing
-  - `apps/extension/src/popup/ContentList.tsx` - New component for content list management
-  - `apps/extension/src/popup/MainPage.tsx` - Refactored to use ContentList component
-- **Learnings for future iterations:**
-  - Icon components must be defined outside of render functions to avoid "Cannot create components during render" lint error
-  - Use `useState(() => initialValue)` pattern for state that depends on window/media queries to avoid setState in effect
-  - Wrap storage loading functions with useCallback when used in useEffect dependency arrays
-  - Image onError handler can hide broken images: `(e.target as HTMLImageElement).style.display = 'none'`
-  - ContentItem should handle its own edit state (expanded/collapsed) internally
-  - Use confirm() for destructive actions like clear all
----
-
-## 2026-02-19 - US-007 (Chrome Extension)
-- Implement image download and upload functionality
-- Add background-image CSS extraction in content script with extractImageUrl() and hasVisibleImage() helpers
-- Support image extraction from <img> tags and elements with background-image style
-- Add downloadAndUploadImage() function to API client with progress callback support
-- Add UploadStatus type ('pending' | 'uploading' | 'uploaded' | 'error') and related fields to PendingItem
-- Update ContentItem with upload progress UI including progress bar, status text, retry button, and uploaded badge
-- Update ContentList with handleUpload() and handleRetryUpload() functions for managing upload state
-- Implement simulated progress updates during upload (capped at 90% until complete, then 100%)
-- Typecheck and lint pass
-- **Files changed:**
-  - `apps/extension/src/content/index.ts` - Added background-image extraction support
-  - `apps/extension/src/types/index.ts` - Added UploadStatus type and upload-related fields to PendingItem
-  - `apps/extension/src/api/aimo.ts` - Added downloadAndUploadImage() and progress support to uploadAttachment()
-  - `apps/extension/src/popup/ContentItem.tsx` - Added upload UI components (progress bar, retry button, status badges)
-  - `apps/extension/src/popup/ContentList.tsx` - Added upload handlers and state management
-- **Learnings for future iterations:**
-  - Use window.getComputedStyle(element).backgroundImage to extract CSS background images
-  - Parse background-image URL with regex: /url\(["']?([^"')]+)["']?\)/
-  - Handle relative URLs by resolving against window.location (protocol-relative //, root-relative /, relative paths)
-  - fetch() doesn't support real upload progress - use setInterval for simulated progress
-  - Use uploadingItems Set to prevent duplicate upload attempts for the same item
-  - Update both storage and local state for real-time UI updates during upload
-  - Icon components must be defined outside of render functions (DeleteIcon, UploadIcon, RetryIcon, CheckIcon)
-  - Upload flow: pending -> uploading (with progress) -> uploaded (with attachmentId) OR error (with message)
----
-
-## 2026-02-19 - US-008 (Chrome Extension)
-- Implement save to AIMO functionality in ContentList component
-- Add handleSaveToAIMO() function that iterates through all pending items:
-  - For images, ensures they are uploaded first (downloads and uploads if no attachmentId)
-  - Calls createMemo API for each item with content, sourceUrl, and optional attachmentIds
-  - Tracks and updates save progress (completed/total)
-  - Removes successfully saved items from storage
-  - Keeps failed items in the list with error status for retry
-- Add progress tracking UI with progress bar showing x/n completed
-- Add success message that auto-hides after 3 seconds when all items saved
-- Add error message display for partial or complete failures
-- Update footer buttons: disable during save, show '保存中...' text
-- Notify background script to update badge after save completes
-- Typecheck and lint pass
-- **Files changed:**
-  - `apps/extension/src/popup/ContentList.tsx` - Added save functionality, progress tracking, and status messages
-- **Learnings for future iterations:**
-  - Use Set to track uploading items to prevent duplicate uploads
-  - Update both storage and local state for real-time UI feedback
-  - Simulate progress for image downloads/uploads before calling createMemo
-  - Use chrome.runtime.sendMessage({ type: 'UPDATE_BADGE' }) to refresh badge count
-  - Auto-hide success messages with setTimeout for better UX
-  - Progress bar styling: transition width with ease for smooth animation
----
-
-## 2026-02-19 - US-009 (Chrome Extension)
-- Implement setBadge(count) function in background script for badge management
-- Add CLEAR_ALL_ITEMS and SET_BADGE message handlers to background script
-- Badge updates automatically on storage changes (chrome.storage.onChanged listener)
-- Show config error message on login page when not configured (initialErrorMessage prop)
-- Handle TOKEN_EXPIRED (401) by redirecting to login page via onAuthError callback
-- Handle CONFIG_MISSING and TOKEN_MISSING errors with user feedback
-- Add retry button for network errors in save flow with errorMessageContent styles
-- Add notification system in content script for error feedback (showNotification function)
-- ContentList passes auth errors up to App via onAuthError callback prop
-- Typecheck and lint pass
-- **Files changed:**
-  - `apps/extension/src/background/index.ts` - Added setBadge(), CLEAR_ALL_ITEMS, SET_BADGE handlers
-  - `apps/extension/src/content/index.ts` - Added showNotification() for user feedback
-  - `apps/extension/src/popup/App.tsx` - Added configErrorMessage state and onAuthError handler
-  - `apps/extension/src/popup/ConfigPage.tsx` - Added initialErrorMessage prop support
-  - `apps/extension/src/popup/ContentList.tsx` - Added retry button and auth error handling
-  - `apps/extension/src/popup/MainPage.tsx` - Added onAuthError prop forwarding
-- **Learnings for future iterations:**
-  - Use callbacks (onAuthError) to communicate auth errors from child to parent components
-  - Content script can show notifications using DOM elements with CSS animations
-  - Badge updates should be centralized in background script via message passing
-  - Error codes (TOKEN_EXPIRED, CONFIG_MISSING) enable specific UI handling
-  - Always provide retry functionality for network-related errors
----
-
-## 2026-02-19 - US-002 (AI Explore Page)
-- Implement Relationship Analysis Agent and Attachment Understanding Agent
-- Relationship Analysis Agent features:
-  - Queries note relations (forward relations and backlinks) using MemoRelationService
-  - Analyzes temporal patterns across related memos
-  - Uses parallel fetching for all relation queries (Promise.all)
-  - Generates LLM-enhanced insights about knowledge graph connections
-  - Limits related memos to 20 for performance
-- Attachment Understanding Agent features:
-  - Analyzes images and PDFs from retrieved memos
-  - Extracts context from parent memo content
-  - Generates key insights based on filename patterns (charts, screenshots, etc.)
-  - Uses LLM to analyze attachment relevance to query
-  - Limits to 5 attachments per analysis for performance
-- Summary Agent updates:
-  - Integrates relation analysis and attachment analysis into final answer generation
-  - Passes relation context and attachment insights to generation prompt
-  - System message updated to consider relationships and attachments
-- Workflow architecture:
-  - Parallel execution: relationAnalysis and attachmentAnalysis nodes run concurrently after analysis
-  - Both branches converge to generation node
-  - Total non-LLM execution time < 5 seconds (measured with Date.now() logging)
-- Typecheck passes, lint passes (no new errors, 3 minor unused var warnings in new code)
-- **Files changed:**
-  - `apps/server/src/services/explore.service.ts` - Added relationAnalysisNode, attachmentAnalysisNode, updated generationNode and workflow
-- **Learnings for future iterations:**
-  - Use Promise.all for parallel relation queries to minimize latency
-  - Set performance budgets: limit related memos (20) and attachments (5) analyzed
-  - LangGraph parallel pattern: single node -> multiple parallel nodes -> converging node
-  - Use type assertions (`as any`) when adding edges to avoid strict type issues
-  - Log execution time with Date.now() deltas at start/end of each agent node
-  - Store timing logs with console.log to verify performance requirements
-  - Include timing information in progress reports for performance-critical features
----
-
-## 2026-02-19 - US-003 (AI Explore Page)
-- Implement AI exploration chat interface
-- Create API client for explore endpoints (`apps/web/src/api/explore.ts`)
-- Create ExploreService for chat state management with localStorage persistence
-- Implement AIExplorePage with full chat UI:
-  - Scrollable message history with auto-scroll to bottom
-  - Multi-line text input with Enter to send, Shift+Enter for new line
-  - Visual distinction: user messages (primary-600 bg) vs AI messages (white/dark-800 bg with border)
-  - Markdown rendering using react-markdown for AI responses
-  - Empty state with helpful prompt suggestions (4 preset questions)
-  - Source citations displayed as clickable buttons below AI responses
-  - Suggested follow-up questions as clickable chips
-  - Loading state with spinner indicator
-  - Error handling with red alert styling
-- Implement conversation management:
-  - 10-round limit (20 messages max) with warning when reached
-  - New conversation button with confirmation dialog
-  - Conversation persisted to localStorage
-  - Context accumulation for follow-up questions (trimmed to ~4000 chars)
-- Header shows current round number and AI branding
-- Typecheck passes, lint passes (no new errors)
-- **Files changed:**
-  - `apps/web/src/api/explore.ts` - New API client for explore endpoints
-  - `apps/web/src/services/explore.service.ts` - New ExploreService for chat state management
-  - `apps/web/src/pages/ai-explore/ai-explore.tsx` - Complete chat UI implementation
-  - `apps/web/package.json` - Added react-markdown dependency
-- **Learnings for future iterations:**
-  - Use `type` keyword for type-only imports in TypeScript (verbatimModuleSyntax)
-  - react-markdown renders Markdown content safely in React
-  - Auto-resize textarea: use `rows={Math.min(5, Math.max(1, inputValue.split('\n').length))}`
-  - Scroll to bottom pattern: `messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })`
-  - Conversation persistence: save to localStorage on every message update
-  - Context management: accumulate conversation history, trim when too long
-  - Empty state UX: show suggested questions to help users get started
-  - Source citations: show as [1], [2] with relevance percentage and preview
----
-
-## 2026-02-19 - US-004 (AI Explore Page)
-- Implement smart retrieval with source citations for AI explore page
-- Update ExploreSourceDto type to include title field for better source display
-- Update backend ExploreService to generate titles from content (first line or first 50 chars)
-- Create SourceCard component (`apps/web/src/pages/ai-explore/components/source-card.tsx`) with:
-  - Generated title display with line-clamp-2 for long titles
-  - Content preview (200 chars from source.content)
-  - Relevance score with color indicator (green ≥80%, primary ≥60%, amber ≥50%, gray <50%)
-  - Created date with formatted display
-  - Hover effect with external link icon
-  - Click to open memo detail modal
-- Create MarkdownWithCitations component (`apps/web/src/pages/ai-explore/components/markdown-with-citations.tsx`) for:
-  - Parsing citation patterns [1], [2], etc. in AI responses using regex /\[(\d+)\]/g
-  - Rendering citations as clickable badge buttons that link to sources
-  - Custom paragraph and list item renderers to process inline citations
-  - Support for all standard markdown elements (headings, lists, code, blockquotes)
-- Create MemoDetailModal component (`apps/web/src/pages/ai-explore/components/memo-detail-modal.tsx`) for:
-  - Displaying full memo content with markdown rendering
-  - Showing attachments with preview/download functionality
-  - Using existing AttachmentPreviewModal for image/video preview
-  - Displaying creation and update timestamps
-- Update AIExplorePage (`apps/web/src/pages/ai-explore/ai-explore.tsx`) to:
-  - Use new components instead of inline source rendering
-  - Manage selectedMemoId and isDetailModalOpen state for modal
-  - Handle source click to open memo detail modal
-  - Show "未找到相关笔记" message when no sources found
-  - Grid layout for source cards (2 columns on desktop, 1 on mobile)
-- Typecheck passes, lint passes (no new errors, only pre-existing warnings)
-- **Files changed:**
-  - `packages/dto/src/explore.ts` - Added title field to ExploreSourceDto
-  - `apps/server/src/services/explore.service.ts` - Generate title from memo content
-  - `apps/web/src/pages/ai-explore/components/source-card.tsx` - New component
-  - `apps/web/src/pages/ai-explore/components/markdown-with-citations.tsx` - New component
-  - `apps/web/src/pages/ai-explore/components/memo-detail-modal.tsx` - New component
-  - `apps/web/src/pages/ai-explore/components/index.ts` - Component exports
-  - `apps/web/src/pages/ai-explore/ai-explore.tsx` - Updated to use new components
-- **Learnings for future iterations:**
-  - Use regex /\[(\d+)\]/g to parse citation patterns in markdown content
-  - ReactMarkdown components prop allows custom renderers for p, li, etc. to process children
-  - processCitations function recursively handles React children (strings vs arrays)
-  - line-clamp-2 Tailwind class for truncating multi-line text
-  - Relevance score color coding: green (≥80%), primary (≥60%), amber (≥50%), gray (<50%)
-  - Grid layout for cards: grid-cols-1 sm:grid-cols-2 for responsive design
-  - External link icon shows on hover with opacity transition
-  - AttachmentPreviewModal is reusable for image/video preview across the app
 ---
 
 ## Codebase Patterns
-- Use `electron-store` for persisting user preferences and window state to `app.getPath('userData')`
-- Always validate saved window bounds against available displays using `screen.getAllDisplays()`
-- Save window state on 'close' event before hiding or quitting
-- Store both bounds (x, y, width, height) and isMaximized state separately
-- When restoring, only apply bounds if the display is still valid (prevents off-screen windows)
-
-- Use `routing-controllers` decorators (@Get, @Post, etc.) for API endpoints
-- All services use TypeDI `@Service()` decorator for dependency injection
-- Controllers return `ResponseUtil.success()` or `ResponseUtil.error()` for consistent responses
-- LanceDB queries use `.where()` with SQL-like syntax for filtering
-- User isolation: Every database operation must filter by `uid` for security
-- Relations are stored in a separate `memo_relations` table with source/target memo IDs
-- DTO types are defined in `packages/dto/src/` and shared between frontend/backend
-- When adding controller endpoints, inject new services via constructor (TypeDI handles this automatically)
-- Modal components use `@headlessui/react` Dialog and Transition for consistent UX
-- Use `extractPlainText()` to strip markdown syntax for content previews
-- File attachments: images/videos open preview modal, other files trigger download
-- Responsive design: Use Tailwind responsive prefixes (sm:, md:, lg:) for adaptive layouts
-- **Electron client:** Use `vite-plugin-electron` for main/preload build, contextBridge for API exposure
-- **Electron patterns:** Store callbacks in Map for proper IPC listener removal, use `external: ['electron']` in rollupOptions
-- **Electron web loading:** Dev mode loads from VITE_DEV_SERVER_URL (http://localhost:5173), production loads from `../server/public` (built by apps/web)
-- **Electron tray:** Use `isQuiting` flag to distinguish between close-to-tray and actual quit
-
-## 2026-02-19 - US-004 (Electron Client)
-- Implement system tray functionality
-- Close-to-tray behavior: intercept window 'close' event, prevent default and hide window
-- Create Tray instance with context menu ("显示主窗口", "退出应用")
-- Tray click toggles window visibility (show/hide)
-- macOS dock activate restores hidden window
-- Use `isQuiting` flag to handle quit vs hide-on-close distinction
-- Typecheck and lint pass
-- **Files changed:**
-  - `apps/client/src/main/index.ts` - Added Tray, Menu imports, createTray function, close-to-tray handler
-- **Learnings for future iterations:**
-  - Use a module-level `isQuiting` variable to control close behavior (don't extend App interface - causes type errors)
-  - Tray context menu built with `Menu.buildFromTemplate()`
-  - On macOS, `app.on('activate')` handles dock icon clicks to restore window
-  - Remove `window-all-closed` quit logic to keep app running in background with tray
+- Drizzle ORM integration uses drivers: drizzle-orm/mysql2, drizzle-orm/node-postgres, drizzle-orm/better-sqlite3
+- Database type selected via DATABASE_TYPE env var (mysql|postgresql|sqlite, default: mysql)
+- Config interfaces for each database type defined in apps/server/src/config/config.ts
+- DrizzleAdapter is decorated with @Service() for TypeDI injection
+- Connection pooling configured for each DB type: mysql2 pools, pg pools, better-sqlite3 direct
 ---
 
-
-## 2026-02-19 - US-002 (Electron Client)
-- Update main process to load web app from correct paths
-- Development mode: loads from VITE_DEV_SERVER_URL (http://localhost:5173 via vite-plugin-electron)
-- Production mode: loads from `../server/public` (built web app output)
-- Update electron-builder.yml to include `../../server/public` in packaged files
-- Add `build:all` script to build web app, then client, then package
-- Add eslint-disable comments for intentional environment variable usage
-- Window configured with 1200x800 size, contextIsolation: true, nodeIntegration: false
-- Typecheck and lint pass
-- **Files changed:**
-  - `apps/client/src/main/index.ts` - Updated RENDERER_DIST path, added comments
-  - `apps/client/electron-builder.yml` - Added server/public to files list
-  - `apps/client/package.json` - Added build:all script
-  - `turbo.json` - Added globalEnv for NODE_ENV
-- **Learnings for future iterations:**
-  - Web app builds to `../server/public` (not `dist` in apps/web)
-  - Electron client must reference the correct build output path
-  - Use `../../server/public` from apps/client perspective (goes to apps/server/public)
-  - electron-builder files pattern uses relative paths from app directory
-  - `build:all` script chains: web build → client build → electron-builder dist
+## 2026-03-01 - US-002
+- Created schema files in apps/server/src/sources/database/schema/
+- users.ts: User account information (MySQL, PostgreSQL, SQLite)
+- memos.ts: Memo scalar data excluding embeddings (stored in LanceDB)
+- memo-relations.ts: Directed relations between memos
+- attachments.ts: File attachment metadata
+- _migrations.ts: Migration tracking table
+- Each schema includes appropriate column types:
+  - MySQL: mysqlTable with serial, varchar, text, timestamp, int, json
+  - PostgreSQL: pgTable with serial, varchar, text, timestamp, integer, json
+  - SQLite: sqliteTable with integer primary keys and text for strings
+- Indexes defined for frequently queried fields (userId, createdAt, tags)
+- Typecheck passes
+- **Learnings:**
+  - Timestamp mode: use 'date' for MySQL/PostgreSQL, 'timestamp' is invalid
+  - SQLite stores timestamps as integers (Unix timestamps)
+  - PostgreSQL serial is imported as pgSerial from drizzle-orm/pg-core
+  - MySQL uses 'int' not 'integer' for integer columns
 ---
 
-## 2026-02-19 - US-001 (Electron Client)
-- Initialize Electron project structure in apps/client
-- Create main process (src/main/index.ts) with BrowserWindow configuration (1200x800)
-- Create preload script (src/preload/index.ts) exposing electronAPI via contextBridge
-- Configure Vite with vite-plugin-electron for main and preload builds
-- Configure TypeScript with ES2022 target and strict mode
-- Add pnpm dev:client and build:client commands to root package.json
-- Configure electron-builder.yml for cross-platform packaging (mac/win/linux)
-- Add ESLint config extending @aimo/eslint-config
-- Typecheck and lint pass
-- **Files changed:**
-  - `apps/client/package.json` - New Electron project configuration
-  - `apps/client/tsconfig.json` - TypeScript configuration
-  - `apps/client/vite.config.ts` - Vite with vite-plugin-electron
-  - `apps/client/electron-builder.yml` - Electron builder configuration
-  - `apps/client/eslint.config.mjs` - ESLint configuration
-  - `apps/client/src/main/index.ts` - Main process entry
-  - `apps/client/src/preload/index.ts` - Preload script with contextBridge
-  - `package.json` (root) - Added dev:client and build:client scripts
+## 2026-03-01 - US-001
+- Created DrizzleAdapter class in apps/server/src/sources/database/drizzle-adapter.ts
+- Implemented connection factory for MySQL, PostgreSQL, and SQLite
+- Database type selected via config.database.type from DATABASE_TYPE env var
+- Connection configs: MySQL uses mysql2/promise pools, PostgreSQL uses pg pools, SQLite uses better-sqlite3
+- Graceful connection error handling with logger.error for failures
+- Exported DatabaseClient and DatabaseType types from index.ts
+- Typecheck passes
 - **Learnings for future iterations:**
-  - vite-plugin-electron simplifies Electron + Vite integration significantly
-  - Use callbackMap to store wrapped IPC callbacks for proper listener removal
-  - Preload script must use `contextIsolation: true` and `nodeIntegration: false` for security
-  - APP_ROOT path calculation: `path.join(__dirname, '../..')` from dist/main/index.js
-  - electron-builder config supports dmg/zip for mac, nsis/portable for win, AppImage/deb for linux
-  - The `postinstall` electron-builder hook can fail in pnpm monorepos - better to run manually when needed
+  - Drizzle drivers: use drizzle-orm/mysql2 (not mysql-core), drizzle-orm/node-postgres, drizzle-orm/better-sqlite3
+  - Store pool/connection references separately (mysqlPool, pgPool, sqliteDb) instead of accessing via Drizzle types
+  - DrizzleAdapter decorated with @Service() for TypeDI
+  - Config interfaces: DatabaseType, MySQLConfig, PostgreSQLConfig, SQLiteConfig in config.ts
 ---
 
-## 2026-02-18 - US-001
-- 实现首页布局整体居中
-- 添加外层居中容器包裹侧边栏和 memo 区域
-- 侧边栏宽度保持 300px，memo 区域最大宽度保持 640px
-- 响应式行为保持不变（窄屏时侧边栏收起）
-- **Files changed:**
-  - `apps/web/src/pages/home/home.tsx`
-- **Learnings for future iterations:**
-  - 布局结构：外层 `justify-center` 容器 + 内层 flex 容器实现整体居中
-  - 响应式处理：通过 `isCompact || isCollapsed` 条件控制宽度为 `w-full` 或保持 `gap-6`
-  - 注意 JSX 标签闭合，编辑时容易遗漏闭合标签
-## 2026-02-18 - US-002
-- 验证响应式交互保持不变
-- US-001 的实现已保留所有响应式逻辑：
-  - `isCompact` 状态通过 `HEATMAP_COMPACT_QUERY` 媒体查询控制
-  - 窄屏时侧边栏自动收起 (`isCollapsed = true`)
-  - 侧边栏在 `isCompact` 模式下作为绝对定位浮层显示
-  - 展开/收起按钮交互保持不变
-- **Files changed:**
-  - 无新文件修改（已在 US-001 中实现）
-- **Learnings for future iterations:**
-  - 响应式逻辑通过 `window.matchMedia()` 和 React state 结合实现
-  - 媒体查询 `(max-width: 1100px)` 作为断点控制侧边栏行为
+## 2026-03-01 - US-007
+- Verified hybrid search implementation already exists in MemoService.vectorSearch()
+- LanceDB performs vector similarity search and returns IDs
+- MemoRepository.findByIds() fetches scalar details from Drizzle
+- Supports combined queries with categoryId, startDate, endDate filters
+- Returns MemoListItemWithScoreDto with relevance scores
+- Typecheck passes, lint passes (warnings only)
+- **Learnings:**
+  - SearchService functionality integrated into MemoService (not a separate service)
+  - Vector search handles pre-filtering (uid, categoryId) in LanceDB
+  - Date range filters applied in JavaScript after LanceDB query (LanceDB timestamp comparison limitations)
+  - Relevance score normalized from L2 distance (1 - distance/2, clamped 0-1)
 ---
 
-## 2026-02-18 - US-002 (On This Day)
-- 实现前端「历史的今天」横幅组件
-- 添加 getOnThisDayMemos API 客户端方法
-- 创建 OnThisDayBanner 组件：
-  - 横向滚动布局，支持触摸滑动和鼠标滚轮
-  - 显示时钟图标 + "历史的今天"标题
-  - 每个卡片显示年份标签（蓝色badge）和内容预览（最多2行）
-  - 无记录时自动隐藏整个区块
-  - 最多显示5条，超出显示"查看更多"入口
-- 集成到首页热力图下方、搜索栏上方
-- 点击卡片可滚动到对应 memo 并高亮显示
-- **Files changed:**
-  - `apps/web/src/api/memo.ts` - 添加 getOnThisDayMemos API
-  - `apps/web/src/pages/home/components/on-this-day-banner.tsx` - 新建横幅组件
-  - `apps/web/src/pages/home/home.tsx` - 集成横幅到首页
-- **Learnings for future iterations:**
-  - 横向滚动实现：flex + overflow-x-auto + scrollbar-hide
-  - 鼠标滚轮转横向滚动：onWheel 事件中修改 scrollLeft
-  - 内容预览使用 line-clamp-2 限制行数
-  - 使用 extractPlainText 函数去除 markdown 语法
-  - 无记录时返回 null 自动隐藏组件
+## 2026-03-01 - US-010
+- Created health controller `src/controllers/v1/health.controller.ts`
+- Added `GET /health/db` endpoint that checks both Drizzle and LanceDB connections
+- Added `healthCheck()` method to `LanceDbService` (DrizzleAdapter already had one)
+- Drizzle healthCheck runs `SELECT 1` query appropriate for each DB type (mysql/pg/sqlite)
+- LanceDB healthCheck opens memos table and counts rows
+- Returns JSON: `{ drizzle: 'ok', lancedb: 'ok' }` on success
+- Returns `{ drizzle: 'failed', lancedb: 'failed' }` with 503 status if either fails
+- Added HealthController to controllers/index.ts for auto-registration
+- Typecheck passes, lint passes (warnings only)
+- **Learnings:**
+  - DrizzleAdapter.healthCheck() already existed - uses mysqlPool.query/pgPool.query/sqliteDb.prepare
+  - LanceDB health check requires opening a table and performing a simple operation
+  - Health endpoint should be registered early (before static controller) to avoid route conflicts
 ---
-
-## 2026-02-18 - US-004 (On This Day)
-- 实现响应式适配
-- 更新卡片宽度响应式类：w-[160px] sm:w-[180px] md:w-[200px]
-- 更新"查看更多"按钮宽度：w-[80px] sm:w-[90px] md:w-[100px]
-- 更新详情弹窗内边距：px-4 sm:px-6
-- 弹窗添加 mx-4 sm:mx-6 防止贴边
-- **Files changed:**
-  - `apps/web/src/pages/home/components/on-this-day-banner.tsx` - 响应式卡片宽度
-  - `apps/web/src/pages/home/components/memo-detail-modal.tsx` - 响应式内边距
-- **Learnings for future iterations:**
-  - 使用 Tailwind 响应式前缀实现渐进增强
-  - 移动端优先：基础样式为移动端，sm/md 为更大屏幕
-  - 弹窗需要水平边距防止在小屏幕上贴边
----
-
-## 2026-02-18 - US-003 (On This Day)
-- 实现点击卡片查看 memo 详情功能
-- 创建 MemoDetailModal 组件：
-  - 使用 @headlessui/react Dialog 实现弹窗
-  - 显示年份标签、完整内容、创建时间
-  - 支持附件预览（图片/视频）和下载（文档）
-  - 加载状态、错误处理
-- 更新 OnThisDayBanner：
-  - 点击卡片打开详情弹窗
-  - 管理弹窗开关状态
-- **Files changed:**
-  - `apps/web/src/pages/home/components/memo-detail-modal.tsx` - 新建详情弹窗组件
-  - `apps/web/src/pages/home/components/on-this-day-banner.tsx` - 集成弹窗交互
-  - `apps/web/src/pages/home/home.tsx` - 移除未使用的 onMemoClick prop
-- **Learnings for future iterations:**
-  - 复用 AttachmentPreviewModal 组件处理附件预览
-  - 使用 extractPlainText 统一处理 markdown 内容展示
-  - 弹窗组件模式：isOpen/onClose props + 内部状态管理
-  - 图片/视频点击预览，文档点击下载的交互模式
----
-
-## 2026-02-18 - US-001 (On This Day)
-- 实现后端 API 获取历史的今天 memos
-- 创建 GET /api/v1/memos/on-this-day 端点
-- 添加 OnThisDayMemoDto 和 OnThisDayResponseDto DTO 类型
-- 实现 getOnThisDayMemos() 服务方法，筛选往年同月同日的 memos
-- 排除当年记录，按年份倒序排列，最多返回 10 条
-- **Files changed:**
-  - `packages/dto/src/memo.ts` - 新增 DTO 类型
-  - `apps/server/src/services/memo.service.ts` - 添加 getOnThisDayMemos 方法
-  - `apps/server/src/controllers/v1/memo.controller.ts` - 添加 /on-this-day 端点
-- **Learnings for future iterations:**
-  - LanceDB 日期过滤：由于 Timestamp 类型无法直接与整数比较，需要在 JavaScript 中过滤日期
-  - 使用 `new Date(createdAt)` 将时间戳转换为 Date 对象进行月份/日期比较
-  - 注意 `getMonth()` 返回 0-11，`getDate()` 返回 1-31
-  - DTO 变更后需要先 build dto 包，再运行 server typecheck
----
-
