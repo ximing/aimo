@@ -551,3 +551,71 @@
 - LanceDbService is now purely focused on vector operations (embeddings and similarity search)
 - All scalar data queries should use Drizzle ORM with MySQL (from US-001 to US-015)
 ---
+## 2026-03-01 - US-021
+- Created comprehensive documentation for MySQL configuration and migration
+- Created apps/server/README.md with MySQL setup instructions, Drizzle commands, and troubleshooting
+- Created apps/server/MIGRATION.md with detailed migration guide covering:
+  - Architecture changes (LanceDB-only → MySQL + LanceDB hybrid)
+  - Migration process across all phases (US-001 to US-024)
+  - Schema mapping between LanceDB and MySQL
+  - Index strategy and performance considerations
+  - Common Drizzle query patterns and transaction helpers
+  - Troubleshooting guide for common issues
+- Updated docker-compose.yml to include MySQL 8.0 service:
+  - Added MySQL service with health checks
+  - Configured utf8mb4 character set and collation
+  - Added volume mapping for MySQL data persistence
+  - Added depends_on with health check condition for app service
+  - Added MySQL environment variables to app service
+- Updated README.md and README_EN.md to mention MySQL requirement:
+  - Added MySQL to environment requirements
+  - Updated quick start guide with MySQL setup steps
+  - Added hybrid database architecture explanation
+  - Documented MySQL connection environment variables
+- MySQL config section already exists in apps/server/src/config/config.ts (completed in US-001)
+- .env.example already includes MySQL variables (completed in US-001)
+- Typecheck passes successfully
+
+**Files changed:**
+- apps/server/README.md (created - 229 lines)
+- apps/server/MIGRATION.md (created - 573 lines)
+- docker-compose.yml (added MySQL service and environment variables)
+- README.md (updated environment requirements and quick start)
+- README_EN.md (updated environment requirements and quick start)
+
+**Learnings for future iterations:**
+- Documentation should be comprehensive but focused - README for setup, MIGRATION.md for deep technical details
+- Docker Compose health checks are critical for service dependencies - app should wait for MySQL to be healthy
+- Always document the "why" behind architectural decisions, not just the "how"
+- Include troubleshooting sections based on common issues encountered during development
+- Code examples in documentation should be copy-pasteable and reflect actual project patterns
+- Update both Chinese and English READMEs to maintain consistency
+---
+
+## 2026-03-01 - US-023
+- Verified graceful shutdown implementation for MySQL connections
+- Confirmed shutdown sequence is correct: Scheduler → MySQL → LanceDB
+- MySQL connection pool shutdown implemented in apps/server/src/db/connection.ts:
+  - closeDatabase() function properly closes pool with pool.end()
+  - Logs "MySQL connection pool closed successfully" on successful closure
+  - Handles errors and throws to prevent silent failures
+- Shutdown handler in apps/server/src/app.ts:
+  - Stops scheduler service first (lines 129-132)
+  - Closes MySQL connection pool second (line 135)
+  - Closes LanceDB connections last (line 138)
+  - Proper error handling with process.exit(0) on success, process.exit(1) on error
+- Typecheck passes successfully
+- Code review confirms all acceptance criteria met (implementation was completed in US-003)
+
+**Files reviewed:**
+- apps/server/src/app.ts (shutdown handler implementation)
+- apps/server/src/db/connection.ts (closeDatabase function)
+
+**Learnings for future iterations:**
+- Graceful shutdown sequence was already implemented correctly in US-003
+- The shutdown order (Scheduler → MySQL → LanceDB) ensures clean resource cleanup
+- MySQL connection pool uses pool.end() which waits for active connections to finish before closing
+- Proper logging at each shutdown step helps with debugging production issues
+- Signal handlers (SIGTERM, SIGINT) ensure graceful shutdown on both container stop and Ctrl+C
+- The closeDatabase() function is idempotent - safe to call multiple times (checks if pool exists)
+---

@@ -384,7 +384,7 @@
         "Typecheck passes"
       ],
       "priority": 20,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -399,8 +399,8 @@
         "Typecheck passes"
       ],
       "priority": 21,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed in US-003 - graceful shutdown already implemented with proper sequence"
     },
     {
       "id": "US-024",
