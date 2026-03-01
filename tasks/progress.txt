@@ -619,3 +619,43 @@
 - Signal handlers (SIGTERM, SIGINT) ensure graceful shutdown on both container stop and Ctrl+C
 - The closeDatabase() function is idempotent - safe to call multiple times (checks if pool exists)
 ---
+## 2026-03-01 - US-024
+- Verified all required indexes are already in place from US-002 schema definitions
+- Created index verification script at apps/server/src/scripts/verify-indexes.ts
+- Script uses EXPLAIN to verify index usage on 10 critical query patterns:
+  1. Query memos by user ID (uid_idx)
+  2. Query memos by category (category_id_idx)
+  3. Query memos sorted by creation date (created_at_idx)
+  4. Query memo relations by source (source_memo_id_idx)
+  5. Query memo relations by source+target (source_target_unique)
+  6. Query attachments by user (uid_idx)
+  7. Query AI messages by conversation (conversation_id_idx)
+  8. Query daily recommendations by user+date (uid_date_unique)
+  9. Join memos with categories (uses indexes on both tables)
+  10. Complex query with multiple conditions
+- Added pnpm verify:indexes script to package.json for easy execution
+- Documented comprehensive index strategy in apps/server/MIGRATION.md:
+  - Primary indexes on all tables (VARCHAR(191) for utf8mb4 compatibility)
+  - Table-specific indexes with usage patterns
+  - Composite index benefits (memo_relations source+target)
+  - Index verification instructions using EXPLAIN
+  - Performance monitoring queries
+  - Guidelines for when to add more indexes
+- All indexes were created in initial migration 0000_tough_rhino.sql (lines 140-154)
+- Typecheck passes successfully
+
+**Files changed:**
+- apps/server/src/scripts/verify-indexes.ts (created - 132 lines)
+- apps/server/package.json (added verify:indexes script)
+- apps/server/MIGRATION.md (added comprehensive Index Strategy section - 93 lines)
+
+**Learnings for future iterations:**
+- All indexes were already properly defined in US-002 when schemas were created
+- The initial migration (0000_tough_rhino.sql) includes all necessary indexes
+- Index verification with EXPLAIN is important to confirm query optimizer is using indexes correctly
+- Key EXPLAIN fields to check: "key" (index used), "type" (access method), "rows" (estimated scan)
+- Composite unique indexes provide both uniqueness constraint and index benefits
+- MySQL automatically maintains indexes - no manual maintenance needed
+- Every index has overhead on writes, so only add indexes that improve query performance significantly
+- The verify-indexes script can be run anytime to validate index usage: pnpm verify:indexes
+---

@@ -414,6 +414,103 @@ await lancedb.insertVector('memo_vectors', { memoId, embedding });
 - Keep vector tables small (only ID + embedding)
 - Use appropriate similarity threshold
 
+## Index Strategy
+
+All tables have been optimized with proper indexes for common query patterns. This section documents the indexing strategy for optimal query performance.
+
+### Primary Indexes
+
+All tables use VARCHAR(191) primary keys to support utf8mb4 character set within MySQL's index length limits.
+
+### Table-Specific Indexes
+
+#### memos table
+- **uid_idx** on `uid`: User-specific memo queries (most common query pattern)
+- **category_id_idx** on `category_id`: Filter memos by category
+- **created_at_idx** on `created_at`: Time-based sorting and filtering
+- **Usage**: Supports queries like "get all memos for user X" and "get recent memos"
+
+#### memo_relations table
+- **uid_idx** on `uid`: User-specific relation queries
+- **source_memo_id_idx** on `source_memo_id`: Find all relations from a memo (forward relations)
+- **target_memo_id_idx** on `target_memo_id`: Find all backlinks to a memo (reverse lookup)
+- **source_target_unique** (UNIQUE) on `(source_memo_id, target_memo_id)`: Prevent duplicate relations
+- **Usage**: Supports bi-directional memo graph traversal
+
+#### attachments table
+- **uid_idx** on `uid`: User-specific attachment queries
+- **Usage**: Supports "get all attachments for user X" with sorting by created_at
+
+#### ai_messages table
+- **conversation_id_idx** on `conversation_id`: Fetch all messages in a conversation
+- **Usage**: Supports conversation history retrieval with ORDER BY created_at
+
+#### daily_recommendations table
+- **uid_idx** on `uid`: User-specific recommendation queries
+- **uid_date_unique** (UNIQUE) on `(uid, date)`: Ensure one recommendation per user per day
+- **Usage**: Supports cache lookups by user and date
+
+#### categories, tags, ai_conversations, push_rules tables
+- **uid_idx** on `uid`: User-specific queries for all user-owned entities
+- **Usage**: Supports "get all X for user Y" queries
+
+### Composite Index Benefits
+
+The composite unique index on `memo_relations(source_memo_id, target_memo_id)` provides:
+1. Uniqueness constraint (prevents duplicate relations)
+2. Index on source_memo_id (left-most prefix)
+3. Index on (source_memo_id, target_memo_id) combination
+
+This means queries filtering by source_memo_id OR both fields will use this index efficiently.
+
+### Index Verification
+
+Run the index verification script to confirm indexes are being used:
+
+```bash
+pnpm verify:indexes
+```
+
+This script uses `EXPLAIN` to analyze critical queries and verify index usage. Look for:
+- **key**: The index being used (should not be NULL)
+- **type**: Should be "ref", "eq_ref", or "range" (not "ALL" which means full table scan)
+- **rows**: Lower is better (estimated rows scanned)
+
+### Index Maintenance
+
+MySQL automatically maintains indexes. No manual maintenance required for:
+- Index updates on INSERT/UPDATE/DELETE
+- Query optimizer statistics
+- Index cardinality estimation
+
+### Performance Monitoring
+
+Monitor query performance with:
+
+```sql
+-- Show slow queries (requires slow query log enabled)
+SELECT * FROM mysql.slow_log ORDER BY start_time DESC LIMIT 10;
+
+-- Show index usage statistics
+SELECT * FROM sys.schema_index_statistics
+WHERE table_schema = 'aimo'
+ORDER BY rows_selected DESC;
+
+-- Show unused indexes
+SELECT * FROM sys.schema_unused_indexes
+WHERE object_schema = 'aimo';
+```
+
+### When to Add More Indexes
+
+Consider adding indexes if you see:
+1. Slow queries in production logs
+2. EXPLAIN shows "type: ALL" (full table scan)
+3. High "rows" count in EXPLAIN output
+4. New query patterns not covered by existing indexes
+
+**Note**: Every index has overhead on INSERT/UPDATE/DELETE operations. Only add indexes that significantly improve query performance.
+
 ## Rollback Strategy
 
 If migration causes issues:

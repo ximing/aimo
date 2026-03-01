@@ -419,8 +419,8 @@
         "Typecheck passes"
       ],
       "priority": 22,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Indexes were already added in US-002 schema definitions. Verified and documented."
     },
     {
       "id": "US-019",

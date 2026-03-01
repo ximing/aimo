@@ -16,7 +16,8 @@
     "lint:fix": "eslint src/ --fix",
     "migrate": "node --loader ts-node/esm ./src/db/migrate.ts",
     "migrate:generate": "drizzle-kit generate",
-    "migrate:studio": "drizzle-kit studio"
+    "migrate:studio": "drizzle-kit studio",
+    "verify:indexes": "tsx src/scripts/verify-indexes.ts"
   },
   "type": "module",
   "dependencies": {
