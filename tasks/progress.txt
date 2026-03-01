@@ -3,11 +3,26 @@
 Branch: ralph/drizzle-migration
 
 ## Status
+- US-006: COMPLETED
 - US-005: COMPLETED
 - US-004: COMPLETED
 - US-003: COMPLETED
 
 ## Notes
+
+## 2026-03-01 - US-006
+- Refactored MemoService to use hybrid storage (Drizzle + LanceDB)
+- createMemo() writes to both Drizzle (scalar) and LanceDB (vector + id)
+- updateMemo() updates both Drizzle and LanceDB
+- deleteMemo() removes from both stores
+- getMemoById() fetches from Drizzle only
+- getMemos() fetches from Drizzle with pagination/filters
+- Vector search flow: LanceDB returns IDs → MemoRepository.findByIds() fetches details
+- Typecheck passes, lint passes (warnings present but no errors)
+- **Learnings:**
+  - Use explicit object construction instead of spread for DTO return types to avoid type conflicts
+  - Convert null to undefined for optional parameters (repository expects string | undefined)
+  - UpdateMemoDto requires content field - pass empty string for partial updates
 
 ## 2026-03-01 - US-005
 - Added DATABASE_URL env var support to config.ts with parseMySQLUrl() and parsePostgreSQLUrl() functions
