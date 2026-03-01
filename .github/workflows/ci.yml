@@ -8,12 +8,13 @@ on:
 
 jobs:
   lint:
+    name: Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v4
         with:
           version: 10.22.0
 
@@ -29,14 +30,14 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-  build:
+  typecheck:
+    name: Typecheck
     runs-on: ubuntu-latest
-    needs: lint
     steps:
       - uses: actions/checkout@v4
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v4
         with:
           version: 10.22.0
 
@@ -49,41 +50,72 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build Logger
-        run: pnpm --filter @aimo/logger build
-
-      - name: Build DTO
+      - name: Build DTO (required for typecheck)
         run: pnpm --filter @aimo/dto build
 
-      - name: Build Web
-        run: pnpm --filter @aimo/web build
+      - name: Typecheck server
+        run: cd apps/server && pnpm typecheck
 
-      - name: Build Server
-        run: pnpm --filter @aimo/server build
+      - name: Typecheck web
+        run: cd apps/web && pnpm typecheck
+
+  build:
+    name: Build All Packages
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck, test]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.22.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build all packages
+        run: pnpm build
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: build-artifacts
           path: |
-            apps/server/dist
-            apps/server/public
+            apps/*/dist/
+            packages/*/dist/
           retention-days: 7
 
   docker-build-test:
+    name: Test Docker Builds
     runs-on: ubuntu-latest
     needs: build
     if: github.event_name == 'pull_request'
+    strategy:
+      matrix:
+        dockerfile:
+          - name: Main Application
+            file: Dockerfile
+          - name: Migration
+            file: Dockerfile.migrate
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build Docker image (test)
+      - name: Build ${{ matrix.dockerfile.name }} Docker image (test)
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: ./${{ matrix.dockerfile.file }}
           push: false
+          tags: test:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max

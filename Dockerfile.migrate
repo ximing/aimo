@@ -1,0 +1,75 @@
+# Migration Dockerfile
+# This image includes all dependencies needed for running migrations
+
+FROM node:20-slim AS builder
+
+# Install pnpm
+RUN npm install -g pnpm@10.22.0
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY config ./config
+COPY packages ./packages
+COPY apps/server/package.json ./apps/server/
+COPY packages/dto/package.json ./packages/dto/
+COPY packages/logger/package.json ./packages/logger/
+
+# Install ALL dependencies (including devDependencies for migrations)
+RUN pnpm install --frozen-lockfile
+
+# Copy source code
+COPY apps/server ./apps/server
+COPY packages/dto ./packages/dto
+COPY packages/logger ./packages/logger
+
+# Build logger package
+RUN pnpm --filter @aimo/logger build
+
+# Build DTO package
+RUN pnpm --filter @aimo/dto build
+
+# Build server
+RUN pnpm --filter @aimo/server build
+
+# Production stage with migration tools
+FROM node:20-slim
+
+WORKDIR /app
+
+# Install pnpm
+RUN npm install -g pnpm@10.22.0
+
+# Copy package files
+COPY --from=builder /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
+COPY --from=builder /app/apps/server/package.json ./apps/server/
+COPY --from=builder /app/packages/dto/package.json ./packages/dto/
+COPY --from=builder /app/packages/logger/package.json ./packages/logger/
+
+# Install ALL dependencies (including devDependencies for drizzle-kit, tsx)
+RUN HUSKY=0 pnpm install --frozen-lockfile --prefer-offline
+
+# Copy built files
+COPY --from=builder /app/apps/server/dist/ ./apps/server/dist/
+COPY --from=builder /app/packages/dto/dist/ ./packages/dto/dist/
+COPY --from=builder /app/packages/logger/lib/ ./packages/logger/lib/
+
+# Copy source files needed for migrations
+COPY --from=builder /app/apps/server/src/db ./apps/server/src/db
+COPY --from=builder /app/apps/server/src/scripts ./apps/server/src/scripts
+COPY --from=builder /app/apps/server/src/config ./apps/server/src/config
+COPY --from=builder /app/apps/server/src/sources ./apps/server/src/sources
+COPY --from=builder /app/apps/server/src/models ./apps/server/src/models
+COPY --from=builder /app/apps/server/src/utils ./apps/server/src/utils
+COPY --from=builder /app/apps/server/src/migrations ./apps/server/src/migrations
+COPY --from=builder /app/apps/server/drizzle.config.ts ./apps/server/
+
+# Copy drizzle config
+COPY --from=builder /app/apps/server/drizzle ./apps/server/drizzle
+
+ENV NODE_ENV=production
+
+# Default command (can be overridden)
+CMD ["node", "apps/server/dist/scripts/docker-migrate.js", "migrate"]

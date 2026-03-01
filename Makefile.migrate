@@ -1,0 +1,111 @@
+# Makefile for AIMO Database Migrations
+# Usage: make -f Makefile.migrate <target>
+
+.PHONY: help migrate-mysql-up migrate-mysql-down migrate-schema migrate-data migrate-all migrate-clean
+
+# Default target
+help:
+	@echo "AIMO Database Migration Commands"
+	@echo ""
+	@echo "Usage: make -f Makefile.migrate <target>"
+	@echo ""
+	@echo "Targets:"
+	@echo "  migrate-mysql-up    - Start MySQL service"
+	@echo "  migrate-mysql-down  - Stop MySQL service"
+	@echo "  migrate-schema      - Run Drizzle schema migrations"
+	@echo "  migrate-data        - Migrate data from LanceDB to MySQL"
+	@echo "  migrate-all         - Run all migrations (schema + data)"
+	@echo "  migrate-clean       - Clean up migration containers"
+	@echo ""
+	@echo "Complete Flow:"
+	@echo "  1. make -f Makefile.migrate migrate-mysql-up"
+	@echo "  2. make -f Makefile.migrate migrate-schema"
+	@echo "  3. make -f Makefile.migrate migrate-data"
+	@echo "  4. make -f Makefile.migrate migrate-clean"
+
+# Start MySQL service
+migrate-mysql-up:
+	@echo "🚀 Starting MySQL service..."
+	docker-compose -f docker-compose.migrate.yml up -d mysql
+	@echo "⏳ Waiting for MySQL to be ready..."
+	@sleep 10
+	@echo "✅ MySQL is ready"
+
+# Stop MySQL service
+migrate-mysql-down:
+	@echo "🛑 Stopping MySQL service..."
+	docker-compose -f docker-compose.migrate.yml down
+	@echo "✅ MySQL stopped"
+
+# Run Drizzle schema migrations
+migrate-schema:
+	@echo "📦 Running Drizzle schema migrations..."
+	docker-compose -f docker-compose.migrate.yml run --rm migrate \
+		node apps/server/dist/scripts/docker-migrate.js migrate
+	@echo "✅ Schema migrations completed"
+
+# Migrate data from LanceDB to MySQL
+migrate-data:
+	@echo "📊 Migrating data from LanceDB to MySQL..."
+	@echo "⚠️  This is a one-time operation. Press Ctrl+C to cancel, or wait 5 seconds to continue..."
+	@sleep 5
+	docker-compose -f docker-compose.migrate.yml run --rm migrate \
+		node apps/server/dist/scripts/docker-migrate.js migrate-data
+	@echo "✅ Data migration completed"
+
+# Run data migration in dry-run mode
+migrate-data-dry-run:
+	@echo "🔍 Running data migration in dry-run mode..."
+	docker-compose -f docker-compose.migrate.yml run --rm migrate \
+		tsx apps/server/src/scripts/migrate-lancedb-to-mysql.ts --dry-run
+	@echo "✅ Dry-run completed"
+
+# Run all migrations
+migrate-all: migrate-mysql-up migrate-schema migrate-data
+	@echo "✅ All migrations completed successfully!"
+	@echo ""
+	@echo "Next steps:"
+	@echo "  1. Verify data: make -f Makefile.migrate verify"
+	@echo "  2. Start application: docker-compose up -d"
+
+# Verify migrations
+verify:
+	@echo "🔍 Verifying migrations..."
+	@echo ""
+	@echo "Checking MySQL tables..."
+	docker exec aimo-mysql mysql -uaimo -paimo_password aimo -e "SHOW TABLES;"
+	@echo ""
+	@echo "Checking record counts..."
+	docker exec aimo-mysql mysql -uaimo -paimo_password aimo -e "\
+		SELECT 'users' as table_name, COUNT(*) as count FROM users UNION ALL \
+		SELECT 'memos', COUNT(*) FROM memos UNION ALL \
+		SELECT 'categories', COUNT(*) FROM categories UNION ALL \
+		SELECT 'tags', COUNT(*) FROM tags UNION ALL \
+		SELECT 'attachments', COUNT(*) FROM attachments;"
+
+# Clean up migration containers
+migrate-clean:
+	@echo "🧹 Cleaning up migration containers..."
+	docker-compose -f docker-compose.migrate.yml down -v
+	@echo "✅ Cleanup completed"
+
+# Build migration image
+build-migrate:
+	@echo "🔨 Building migration Docker image..."
+	docker build -f Dockerfile.migrate -t aimo-migrate:latest .
+	@echo "✅ Migration image built"
+
+# Interactive MySQL shell
+mysql-shell:
+	@echo "🐚 Opening MySQL shell..."
+	docker exec -it aimo-mysql mysql -uaimo -paimo_password aimo
+
+# View MySQL logs
+mysql-logs:
+	@echo "📋 Viewing MySQL logs..."
+	docker-compose -f docker-compose.migrate.yml logs -f mysql
+
+# View migration logs
+migrate-logs:
+	@echo "📋 Viewing migration logs..."
+	docker-compose -f docker-compose.migrate.yml logs migrate
