@@ -78,7 +78,7 @@ export class DailyContentGenerator implements ContentGenerator {
    * Generate daily_memos: get all memos created today
    */
   private async generateDailyMemos(uid: string): Promise<PushContent> {
-    const memosTable = await this.lanceDb.openTable('memos');
+    const memosTable = await this.lanceDatabase.openTable('memos');
 
     // Get start and end of today
     const now = new Date();
