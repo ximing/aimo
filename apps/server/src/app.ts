@@ -17,6 +17,7 @@ import { initIOC } from './ioc.js';
 import { authHandler } from './middlewares/auth-handler.js';
 import { errorHandler } from './middlewares/error-handler.js';
 import { SchedulerService } from './services/scheduler.service.js';
+import { DrizzleAdapter } from './sources/database/drizzle-adapter.js';
 import { LanceDbService as LanceDatabaseService } from './sources/lancedb.js';
 import { logger } from './utils/logger.js';
 
@@ -29,6 +30,11 @@ useContainer(Container);
 export async function createApp() {
   await initIOC();
   await Container.get(LanceDatabaseService).init();
+
+  // Initialize Drizzle and run migrations
+  const drizzleAdapter = Container.get(DrizzleAdapter);
+  await drizzleAdapter.init();
+  await drizzleAdapter.runMigrations();
 
   // Initialize scheduler service for periodic tasks
   try {
@@ -111,7 +117,8 @@ export async function createApp() {
           await schedulerService.stop();
         }
 
-        // Close LanceDB connections and release resources
+        // Close Drizzle connections first, then LanceDB
+        await Container.get(DrizzleAdapter).close();
         await Container.get(LanceDatabaseService).close();
         logger.info('All resources cleaned up');
         process.exit(0);

@@ -13,7 +13,11 @@
     "clean": "rm -rf dist",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/",
-    "lint:fix": "eslint src/ --fix"
+    "lint:fix": "eslint src/ --fix",
+    "db:generate": "tsx node_modules/drizzle-kit/bin.cjs generate",
+    "db:push": "tsx node_modules/drizzle-kit/bin.cjs push",
+    "db:migrate": "tsx node_modules/drizzle-kit/bin.cjs migrate",
+    "db:studio": "tsx node_modules/drizzle-kit/bin.cjs studio"
   },
   "type": "module",
   "dependencies": {

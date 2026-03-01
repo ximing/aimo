@@ -8,6 +8,9 @@ import mysql from 'mysql2/promise';
 import pg from 'pg';
 import Database from 'better-sqlite3';
 import { Service } from 'typedi';
+import { readFileSync, readdirSync } from 'fs';
+import { join, basename } from 'path';
+import { fileURLToPath } from 'url';
 
 import { config } from '../../config/config.js';
 import { logger } from '../../utils/logger.js';
@@ -171,10 +174,134 @@ export class DrizzleAdapter {
 
   /**
    * Run migrations - to be called by migration system
+   * Reads migration files from src/sources/database/migrations/
+   * and tracks executed migrations in the _migrations table
    */
   async runMigrations(): Promise<void> {
-    // Migration logic will be implemented in US-003
-    logger.info('Running migrations...');
+    if (!this.initialized) {
+      throw new Error('Drizzle not initialized. Call init() first.');
+    }
+
+    try {
+      logger.info('Running Drizzle migrations...');
+
+      // Get migrations directory
+      const migrationsDir = join(fileURLToPath(import.meta.url), '..', '..', '..', 'migrations');
+      const migrationFiles = readdirSync(migrationsDir)
+        .filter((f) => f.endsWith('.sql'))
+        .sort();
+
+      if (migrationFiles.length === 0) {
+        logger.info('No migration files found');
+        return;
+      }
+
+      // Get executed migrations from _migrations table
+      const { getMigrationsTable, mysqlMigrations, pgMigrations, sqliteMigrations } = await import('./schema/index.js');
+
+      // Query to get executed migration hashes based on db type
+      let executedMigrations: string[] = [];
+      try {
+        if (this.dbType === 'mysql') {
+          const result = await (this.db as MySql2Database).select().from(mysqlMigrations);
+          executedMigrations = result.map((r) => r.hash);
+        } else if (this.dbType === 'postgresql') {
+          const result = await (this.db as NodePgDatabase).select().from(pgMigrations);
+          executedMigrations = result.map((r) => r.hash);
+        } else {
+          const sqliteDb = this.sqliteDb;
+          if (sqliteDb) {
+            const result = sqliteDb.prepare('SELECT hash FROM _migrations').all() as { hash: string }[];
+            executedMigrations = result.map((r) => r.hash);
+          }
+        }
+      } catch {
+        // Table might not exist yet, that's okay - we'll create it
+        logger.info('_migrations table does not exist yet, it will be created by migrations');
+      }
+
+      // Run pending migrations
+      let executedCount = 0;
+      for (const migrationFile of migrationFiles) {
+        const migrationPath = join(migrationsDir, migrationFile);
+        const migrationHash = this.hashFile(migrationPath);
+
+        // Skip if already executed
+        if (executedMigrations.includes(migrationHash)) {
+          continue;
+        }
+
+        logger.info(`Executing migration: ${migrationFile}`);
+        const sql = readFileSync(migrationPath, 'utf-8');
+
+        // Split by statement-breakpoint and execute each statement
+        const statements = sql.split('--> statement-breakpoint').map((s) => s.trim()).filter(Boolean);
+
+        for (const statement of statements) {
+          if (this.dbType === 'mysql') {
+            await (this.db as MySql2Database).execute(statement);
+          } else if (this.dbType === 'postgresql') {
+            await (this.db as NodePgDatabase).execute(statement);
+          } else {
+            // SQLite - use raw
+            const sqliteDb = this.sqliteDb;
+            if (sqliteDb) {
+              sqliteDb.exec(statement);
+            }
+          }
+        }
+
+        // Record migration in _migrations table
+        const now = Date.now();
+        if (this.dbType === 'mysql') {
+          await (this.db as MySql2Database).insert(mysqlMigrations).values({
+            hash: migrationHash,
+            createdAt: new Date(now),
+          });
+        } else if (this.dbType === 'postgresql') {
+          await (this.db as NodePgDatabase).insert(pgMigrations).values({
+            hash: migrationHash,
+            createdAt: new Date(now),
+          });
+        } else {
+          const sqliteDb = this.sqliteDb;
+          if (sqliteDb) {
+            sqliteDb.prepare('INSERT INTO _migrations (hash, created_at) VALUES (?, ?)').run(migrationHash, now);
+          }
+        }
+
+        executedCount++;
+        logger.info(`Migration completed: ${migrationFile}`);
+      }
+
+      if (executedCount === 0) {
+        logger.info('All migrations already executed');
+      } else {
+        logger.info(`Executed ${executedCount} migration(s)`);
+      }
+    } catch (error) {
+      logger.error('Migration failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate a simple hash from file content for tracking
+   */
+  private hashFile(filePath: string): string {
+    const content = readFileSync(filePath, 'utf-8');
+    // Simple hash based on file name and first 100 chars of content
+    const fileName = basename(filePath);
+    const hashInput = `${fileName}:${content.substring(0, 100)}`;
+
+    // Simple hash function
+    let hash = 0;
+    for (let i = 0; i < hashInput.length; i++) {
+      const char = hashInput.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    return `${fileName}-${Math.abs(hash).toString(16)}`;
   }
 
   /**
