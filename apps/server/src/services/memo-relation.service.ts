@@ -1,7 +1,9 @@
+import { and, eq } from 'drizzle-orm';
 import { Service } from 'typedi';
 
+import { getDatabase } from '../db/connection.js';
+import { memoRelations } from '../db/schema/index.js';
 import { OBJECT_TYPE } from '../models/constant/type.js';
-import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
 import { generateTypeId } from '../utils/id.js';
 import { logger } from '../utils/logger.js';
 
@@ -9,8 +11,6 @@ import type { MemoRelationRecord } from '../models/db/schema.js';
 
 @Service()
 export class MemoRelationService {
-  constructor(private lanceDatabase: LanceDatabaseService) {}
-
   /**
    * Create a relation from sourceMemoId to targetMemoId
    */
@@ -25,20 +25,29 @@ export class MemoRelationService {
       }
 
       const relationId = generateTypeId(OBJECT_TYPE.RELATION);
-      const now = Date.now();
 
-      const relation: MemoRelationRecord = {
+      const db = getDatabase();
+      await db.insert(memoRelations).values({
         relationId,
         uid,
         sourceMemoId,
         targetMemoId,
-        createdAt: now,
+      });
+
+      // Fetch the created relation to get auto-generated timestamp
+      const [relation] = await db
+        .select()
+        .from(memoRelations)
+        .where(eq(memoRelations.relationId, relationId))
+        .limit(1);
+
+      return {
+        relationId: relation.relationId,
+        uid: relation.uid,
+        sourceMemoId: relation.sourceMemoId,
+        targetMemoId: relation.targetMemoId,
+        createdAt: relation.createdAt.getTime(),
       };
-
-      const table = await this.lanceDatabase.openTable('memo_relations');
-      await table.add([relation as unknown as Record<string, unknown>]);
-
-      return relation;
     } catch (error) {
       logger.error('Failed to create relation:', error);
       throw error;
@@ -50,14 +59,13 @@ export class MemoRelationService {
    */
   async getRelatedMemos(uid: string, sourceMemoId: string): Promise<string[]> {
     try {
-      const table = await this.lanceDatabase.openTable('memo_relations');
+      const db = getDatabase();
+      const results = await db
+        .select()
+        .from(memoRelations)
+        .where(and(eq(memoRelations.uid, uid), eq(memoRelations.sourceMemoId, sourceMemoId)));
 
-      const results = await table
-        .query()
-        .where(`uid = '${uid}' AND sourceMemoId = '${sourceMemoId}'`)
-        .toArray();
-
-      return results.map((record: any) => record.targetMemoId);
+      return results.map((record) => record.targetMemoId);
     } catch (error) {
       logger.error('Failed to get related memos:', error);
       throw error;
@@ -69,11 +77,16 @@ export class MemoRelationService {
    */
   async deleteRelation(uid: string, sourceMemoId: string, targetMemoId: string): Promise<boolean> {
     try {
-      const table = await this.lanceDatabase.openTable('memo_relations');
-
-      await table.delete(
-        `uid = '${uid}' AND sourceMemoId = '${sourceMemoId}' AND targetMemoId = '${targetMemoId}'`
-      );
+      const db = getDatabase();
+      await db
+        .delete(memoRelations)
+        .where(
+          and(
+            eq(memoRelations.uid, uid),
+            eq(memoRelations.sourceMemoId, sourceMemoId),
+            eq(memoRelations.targetMemoId, targetMemoId)
+          )
+        );
 
       return true;
     } catch (error) {
@@ -87,9 +100,10 @@ export class MemoRelationService {
    */
   async deleteRelationsBySourceMemo(uid: string, sourceMemoId: string): Promise<void> {
     try {
-      const table = await this.lanceDatabase.openTable('memo_relations');
-
-      await table.delete(`uid = '${uid}' AND sourceMemoId = '${sourceMemoId}'`);
+      const db = getDatabase();
+      await db
+        .delete(memoRelations)
+        .where(and(eq(memoRelations.uid, uid), eq(memoRelations.sourceMemoId, sourceMemoId)));
     } catch (error) {
       logger.error('Failed to delete relations by source memo:', error);
       throw error;
@@ -101,9 +115,10 @@ export class MemoRelationService {
    */
   async deleteRelationsByTargetMemo(uid: string, targetMemoId: string): Promise<void> {
     try {
-      const table = await this.lanceDatabase.openTable('memo_relations');
-
-      await table.delete(`uid = '${uid}' AND targetMemoId = '${targetMemoId}'`);
+      const db = getDatabase();
+      await db
+        .delete(memoRelations)
+        .where(and(eq(memoRelations.uid, uid), eq(memoRelations.targetMemoId, targetMemoId)));
     } catch (error) {
       logger.error('Failed to delete relations by target memo:', error);
       throw error;
@@ -140,14 +155,13 @@ export class MemoRelationService {
    */
   async getBacklinks(uid: string, targetMemoId: string): Promise<string[]> {
     try {
-      const table = await this.lanceDatabase.openTable('memo_relations');
+      const db = getDatabase();
+      const results = await db
+        .select()
+        .from(memoRelations)
+        .where(and(eq(memoRelations.uid, uid), eq(memoRelations.targetMemoId, targetMemoId)));
 
-      const results = await table
-        .query()
-        .where(`uid = '${uid}' AND targetMemoId = '${targetMemoId}'`)
-        .toArray();
-
-      return results.map((record: any) => record.sourceMemoId);
+      return results.map((record) => record.sourceMemoId);
     } catch (error) {
       logger.error('Failed to get backlinks:', error);
       throw error;
