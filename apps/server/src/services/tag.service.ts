@@ -3,29 +3,31 @@
  * Business logic for tag management
  */
 
+import { eq, and, sql } from 'drizzle-orm';
 import { Service } from 'typedi';
 
-import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
+import { getDatabase } from '../db/connection.js';
+import { tags } from '../db/schema/index.js';
 import { generateTagId } from '../utils/id.js';
 
-import type { TagRecord } from '../models/db/schema.js';
+import type { Tag } from '../db/schema/tags.js';
 import type { TagDto, CreateTagDto, UpdateTagDto } from '@aimo/dto';
 
 @Service()
 export class TagService {
-  constructor(private lanceDatabaseService: LanceDatabaseService) {}
+  constructor() {}
 
   /**
-   * Convert a TagRecord to TagDto
+   * Convert a Tag record to TagDto
    */
-  private convertToTagDto(record: TagRecord): TagDto {
+  private convertToTagDto(record: Tag): TagDto {
     return {
       tagId: record.tagId,
       name: record.name,
-      color: record.color,
+      color: record.color ?? undefined,
       usageCount: record.usageCount,
-      createdAt: record.createdAt,
-      updatedAt: record.updatedAt,
+      createdAt: record.createdAt.getTime(),
+      updatedAt: record.updatedAt.getTime(),
     };
   }
 
@@ -48,28 +50,28 @@ export class TagService {
    * Get all tags for a user
    */
   async getTagsByUser(uid: string): Promise<TagDto[]> {
-    const table = await this.lanceDatabaseService.openTable('tags');
-    const results = await table.query().where(`uid = '${uid}'`).toArray();
+    const db = getDatabase();
+    const results = await db.select().from(tags).where(eq(tags.uid, uid));
 
-    return results.map((record) => this.convertToTagDto(record as unknown as TagRecord));
+    return results.map((record) => this.convertToTagDto(record));
   }
 
   /**
    * Get a single tag by ID
    */
   async getTagById(tagId: string, uid: string): Promise<TagDto | null> {
-    const table = await this.lanceDatabaseService.openTable('tags');
-    const results = await table
-      .query()
-      .where(`tagId = '${tagId}' AND uid = '${uid}'`)
-      .limit(1)
-      .toArray();
+    const db = getDatabase();
+    const results = await db
+      .select()
+      .from(tags)
+      .where(and(eq(tags.tagId, tagId), eq(tags.uid, uid)))
+      .limit(1);
 
     if (results.length === 0) {
       return null;
     }
 
-    return this.convertToTagDto(results[0] as unknown as TagRecord);
+    return this.convertToTagDto(results[0]);
   }
 
   /**
@@ -80,19 +82,18 @@ export class TagService {
       return [];
     }
 
-    const table = await this.lanceDatabaseService.openTable('tags');
+    const db = getDatabase();
 
-    // Fetch all tags in a single query
-    const whereConditions = tagIds.map((id) => `tagId = '${id}'`).join(' OR ');
-    const query = `(${whereConditions}) AND uid = '${uid}'`;
-
-    const results = await table.query().where(query).toArray();
+    // Use sql.inArray for IN clause
+    const results = await db
+      .select()
+      .from(tags)
+      .where(and(sql`${tags.tagId} IN ${sql.raw(`(${tagIds.map((id) => `'${id}'`).join(',')})`)}`, eq(tags.uid, uid)));
 
     // Convert records to DTOs, preserving order
     const tagMap = new Map<string, TagDto>();
     for (const record of results) {
-      const r = record as unknown as TagRecord;
-      tagMap.set(r.tagId, this.convertToTagDto(r));
+      tagMap.set(record.tagId, this.convertToTagDto(record));
     }
 
     // Return in the original order of tagIds
@@ -103,21 +104,21 @@ export class TagService {
    * Find a tag by name (case-insensitive) for a user
    */
   async findTagByName(name: string, uid: string): Promise<TagDto | null> {
-    const table = await this.lanceDatabaseService.openTable('tags');
+    const db = getDatabase();
     const normalizedName = this.normalizeTagName(name);
 
-    // LanceDB doesn't support case-insensitive search directly,
-    // so we fetch all user tags and filter in memory
-    const results = await table.query().where(`uid = '${uid}'`).toArray();
+    // Use case-insensitive comparison in MySQL
+    const results = await db
+      .select()
+      .from(tags)
+      .where(and(sql`LOWER(${tags.name}) = LOWER(${normalizedName})`, eq(tags.uid, uid)))
+      .limit(1);
 
-    for (const record of results) {
-      const r = record as unknown as TagRecord;
-      if (this.normalizeTagName(r.name) === normalizedName) {
-        return this.convertToTagDto(r);
-      }
+    if (results.length === 0) {
+      return null;
     }
 
-    return null;
+    return this.convertToTagDto(results[0]);
   }
 
   /**
@@ -139,62 +140,61 @@ export class TagService {
    * Create a new tag
    */
   async createTag(dto: CreateTagDto, uid: string): Promise<TagDto> {
-    const now = Date.now();
+    const db = getDatabase();
 
-    const record: TagRecord = {
-      tagId: this.generateTagId(),
+    const newTag = {
+      tagId: generateTagId(),
       uid,
       name: dto.name.trim(),
       color: dto.color,
       usageCount: 0,
-      createdAt: now,
-      updatedAt: now,
     };
 
-    const table = await this.lanceDatabaseService.openTable('tags');
-    await table.add([record as unknown as Record<string, unknown>]);
+    await db.insert(tags).values(newTag);
 
-    return this.convertToTagDto(record);
+    // Fetch the created tag to get auto-generated timestamps
+    const created = await db
+      .select()
+      .from(tags)
+      .where(eq(tags.tagId, newTag.tagId))
+      .limit(1);
+
+    return this.convertToTagDto(created[0]);
   }
 
   /**
    * Update a tag
    */
   async updateTag(tagId: string, dto: UpdateTagDto, uid: string): Promise<TagDto | null> {
-    const table = await this.lanceDatabaseService.openTable('tags');
+    const db = getDatabase();
 
     // Check if tag exists and belongs to user
-    const results = await table
-      .query()
-      .where(`tagId = '${tagId}' AND uid = '${uid}'`)
-      .limit(1)
-      .toArray();
+    const existing = await db
+      .select()
+      .from(tags)
+      .where(and(eq(tags.tagId, tagId), eq(tags.uid, uid)))
+      .limit(1);
 
-    if (results.length === 0) {
+    if (existing.length === 0) {
       return null;
     }
 
-    const existingRecord = results[0] as unknown as TagRecord;
-    const now = Date.now();
-
-    // Build update values - fetch existing record and merge changes
-    const updatedRecord = {
-      ...results[0],
-      updatedAt: now,
-    };
+    // Build update object with only changed fields
+    const updates: Partial<Tag> = {};
 
     if (dto.name !== undefined) {
-      updatedRecord.name = dto.name.trim();
+      updates.name = dto.name.trim();
     }
 
     if (dto.color !== undefined) {
-      updatedRecord.color = dto.color;
+      updates.color = dto.color;
     }
 
-    await table.update({
-      where: `tagId = '${tagId}' AND uid = '${uid}'`,
-      values: updatedRecord,
-    });
+    // Perform update
+    await db
+      .update(tags)
+      .set(updates)
+      .where(and(eq(tags.tagId, tagId), eq(tags.uid, uid)));
 
     // Return updated tag
     return this.getTagById(tagId, uid);
@@ -205,16 +205,16 @@ export class TagService {
    * Returns true if deleted, false if not found
    */
   async deleteTag(tagId: string, uid: string): Promise<boolean> {
-    const table = await this.lanceDatabaseService.openTable('tags');
+    const db = getDatabase();
 
     // Check if tag exists and belongs to user
-    const results = await table
-      .query()
-      .where(`tagId = '${tagId}' AND uid = '${uid}'`)
-      .limit(1)
-      .toArray();
+    const existing = await db
+      .select()
+      .from(tags)
+      .where(and(eq(tags.tagId, tagId), eq(tags.uid, uid)))
+      .limit(1);
 
-    if (results.length === 0) {
+    if (existing.length === 0) {
       return false;
     }
 
@@ -222,72 +222,51 @@ export class TagService {
     await this.removeTagFromAllMemos(tagId, uid);
 
     // Delete the tag
-    await table.delete(`tagId = '${tagId}' AND uid = '${uid}'`);
+    await db.delete(tags).where(and(eq(tags.tagId, tagId), eq(tags.uid, uid)));
 
     return true;
   }
 
   /**
-   * Increment usage count for a tag
+   * Increment usage count for a tag (atomic operation)
    */
   async incrementUsageCount(tagId: string, uid: string): Promise<void> {
-    const table = await this.lanceDatabaseService.openTable('tags');
+    const db = getDatabase();
 
-    const results = await table
-      .query()
-      .where(`tagId = '${tagId}' AND uid = '${uid}'`)
-      .limit(1)
-      .toArray();
-
-    if (results.length === 0) {
-      return;
-    }
-
-    const record = results[0] as unknown as TagRecord;
-    const newCount = (record.usageCount || 0) + 1;
-
-    await table.update({
-      where: `tagId = '${tagId}' AND uid = '${uid}'`,
-      values: {
-        usageCount: newCount,
-        updatedAt: Date.now(),
-      },
-    });
+    // Use SQL increment for atomic update
+    await db
+      .update(tags)
+      .set({
+        usageCount: sql`${tags.usageCount} + 1`,
+      })
+      .where(and(eq(tags.tagId, tagId), eq(tags.uid, uid)));
   }
 
   /**
-   * Decrement usage count for a tag
+   * Decrement usage count for a tag (atomic operation, prevents negative values)
    */
   async decrementUsageCount(tagId: string, uid: string): Promise<void> {
-    const table = await this.lanceDatabaseService.openTable('tags');
+    const db = getDatabase();
 
-    const results = await table
-      .query()
-      .where(`tagId = '${tagId}' AND uid = '${uid}'`)
-      .limit(1)
-      .toArray();
-
-    if (results.length === 0) {
-      return;
-    }
-
-    const record = results[0] as unknown as TagRecord;
-    const newCount = Math.max(0, (record.usageCount || 0) - 1);
-
-    await table.update({
-      where: `tagId = '${tagId}' AND uid = '${uid}'`,
-      values: {
-        usageCount: newCount,
-        updatedAt: Date.now(),
-      },
-    });
+    // Use SQL decrement with GREATEST to prevent negative values
+    await db
+      .update(tags)
+      .set({
+        usageCount: sql`GREATEST(0, ${tags.usageCount} - 1)`,
+      })
+      .where(and(eq(tags.tagId, tagId), eq(tags.uid, uid)));
   }
 
   /**
    * Remove a tag from all memos that reference it
+   * TODO: Update this method when MemoService is migrated to MySQL (US-010)
+   * For now, memos are still in LanceDB, so we need to use LanceDB API
    */
   private async removeTagFromAllMemos(tagId: string, uid: string): Promise<void> {
-    const memosTable = await this.lanceDatabaseService.openTable('memos');
+    // Import LanceDB service dynamically to avoid circular dependency
+    const { LanceDbService } = await import('../sources/lancedb.js');
+    const lanceDbService = new LanceDbService();
+    const memosTable = await lanceDbService.openTable('memos');
 
     // Find all memos that have this tagId in their tagIds array
     // LanceDB doesn't support array contains query, so we fetch all and filter
