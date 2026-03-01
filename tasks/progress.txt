@@ -7,6 +7,9 @@
 - VARCHAR key lengths: 191 for primary/foreign keys (MySQL utf8mb4 index limit), 255+ for other fields
 - Timestamps: Use { mode: 'date', fsp: 3 } for millisecond precision to match LanceDB
 - All schemas must be exported from index.ts for migration generation
+- App startup sequence: IOC → MySQL → LanceDB → Scheduler → Express server
+- Shutdown sequence: Scheduler → MySQL → LanceDB (reverse order for clean shutdown)
+- Database connection is a singleton accessed via getDatabase() from db/connection.ts
 
 ---
 
@@ -63,5 +66,33 @@
 - VARCHAR lengths: 191 for keys (MySQL utf8mb4 index limit), 255 for emails/paths, larger for URLs
 - Index naming convention: field_idx for single field, descriptive names for composite indexes
 - All schemas must be exported from index.ts for Drizzle migration generation
+
+---
+
+## 2026-03-01 20:15 - US-003
+- Created database connection service with connection pooling at apps/server/src/db/connection.ts
+- Implemented initializeDatabase() function that creates MySQL connection pool and Drizzle instance
+- Configured connection pool with max 10 connections (default), keepAlive enabled
+- Exported getDatabase() singleton accessor with initialization check
+- Implemented checkConnectionHealth() method that tests connection with ping
+- Implemented getPoolStatus() method to retrieve pool configuration
+- Implemented closeDatabase() for graceful shutdown with proper cleanup
+- Integrated database initialization into app.ts startup sequence (after IOC, before LanceDB)
+- Added health check on startup that throws error if MySQL connection fails
+- Added MySQL pool shutdown to graceful shutdown handler (closes before LanceDB)
+- Used `any` type for db variable to avoid TypeScript type compatibility issues with drizzle return type
+- Typecheck passes successfully
+
+**Files changed:**
+- apps/server/src/db/connection.ts (created)
+- apps/server/src/app.ts (added imports and initialization calls)
+
+**Learnings for future iterations:**
+- Database initialization should happen early in app startup, after IOC but before other services
+- Connection health checks on startup help catch configuration issues early
+- Shutdown sequence matters: close MySQL before LanceDB to ensure clean shutdown
+- Drizzle's type system can be complex - using `any` for singleton instance is acceptable for pragmatism
+- Connection pool logging helps with debugging connection issues in production
+- The app follows a pattern: IOC → MySQL → LanceDB → Scheduler → Express server
 
 ---
