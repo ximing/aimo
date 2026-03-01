@@ -14,6 +14,7 @@ import { Container } from 'typedi';
 import { config } from './config/config.js';
 import { controllers } from './controllers/index.js';
 import { initializeDatabase, checkConnectionHealth, closeDatabase } from './db/connection.js';
+import { runMigrations } from './db/migrate.js';
 import { initIOC } from './ioc.js';
 import { authHandler } from './middlewares/auth-handler.js';
 import { errorHandler } from './middlewares/error-handler.js';
@@ -37,6 +38,14 @@ export async function createApp() {
   const isHealthy = await checkConnectionHealth();
   if (!isHealthy) {
     throw new Error('MySQL connection health check failed');
+  }
+
+  // Run database migrations
+  try {
+    await runMigrations();
+  } catch (error) {
+    logger.error('Failed to run database migrations:', error);
+    throw error;
   }
 
   await Container.get(LanceDatabaseService).init();

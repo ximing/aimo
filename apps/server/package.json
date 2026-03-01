@@ -13,7 +13,10 @@
     "clean": "rm -rf dist",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/",
-    "lint:fix": "eslint src/ --fix"
+    "lint:fix": "eslint src/ --fix",
+    "migrate": "node --loader ts-node/esm ./src/db/migrate.ts",
+    "migrate:generate": "drizzle-kit generate",
+    "migrate:studio": "drizzle-kit studio"
   },
   "type": "module",
   "dependencies": {
