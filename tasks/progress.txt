@@ -155,3 +155,24 @@
 - Pattern: db.update(table).set(updates).where(eq(table.pk, id)) for updates
 
 ---
+
+## 2026-03-01 - US-006
+- Refactored CategoryService to use Drizzle ORM instead of LanceDB
+- Replaced all LanceDB queries with Drizzle queries using eq(), and(), and sql operators
+- Implemented all required methods: createCategory(), getCategoriesByUid(), getCategoryById(), getCategoryByName(), updateCategory(), deleteCategory()
+- Removed clearCategoryFromMemos() method - foreign key constraint (onDelete: 'set null') handles this automatically
+- Updated toCategoryDto() to convert Drizzle Date objects to timestamps and null to undefined
+- Removed LanceDB dependency from CategoryService constructor
+- Typecheck passes successfully
+
+**Files changed:**
+- apps/server/src/services/category.service.ts (refactored to use Drizzle)
+
+**Learnings for future iterations:**
+- Foreign key constraints with onDelete: 'set null' automatically handle cascading updates - no manual clearing needed
+- Use sql`LOWER(${field}) = LOWER(${value})` for case-insensitive string comparisons in MySQL
+- Drizzle timestamps are Date objects - convert to milliseconds with .getTime() for DTOs
+- Pattern for updates: build partial object with only changed fields, then use db.update().set().where()
+- Always fetch after insert/update to get auto-generated/updated timestamps from database
+- The and() operator is useful for combining multiple WHERE conditions
+---
