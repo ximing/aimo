@@ -70,7 +70,7 @@ jobs:
             type=raw,value=${{ inputs.tag }},enable=${{ inputs.tag != '' }}
 
       - name: Build and push Docker image
-        id: build
+        id: build-push
         uses: docker/build-push-action@v5
         with:
           context: .

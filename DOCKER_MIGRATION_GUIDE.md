@@ -46,17 +46,17 @@ OPENAI_API_KEY=sk-xxx
 
 ```bash
 # Start MySQL service
-docker-compose -f docker-compose.migrate.yml up -d mysql
+docker compose -f docker-compose.migrate.yml up -d mysql
 
 # Wait for MySQL to be ready (check health)
-docker-compose -f docker-compose.migrate.yml ps
+docker compose -f docker-compose.migrate.yml ps
 ```
 
 #### Step 2: Run Drizzle Migrations
 
 ```bash
 # Run pending migrations to create MySQL schema
-docker-compose -f docker-compose.migrate.yml run --rm migrate \
+docker compose -f docker-compose.migrate.yml run --rm migrate \
   node apps/server/dist/scripts/docker-migrate.js migrate
 ```
 
@@ -64,7 +64,7 @@ docker-compose -f docker-compose.migrate.yml run --rm migrate \
 
 ```bash
 # Migrate existing data from LanceDB to MySQL
-docker-compose -f docker-compose.migrate.yml run --rm migrate \
+docker compose -f docker-compose.migrate.yml run --rm migrate \
   node apps/server/dist/scripts/docker-migrate.js migrate-data
 ```
 
@@ -72,7 +72,7 @@ docker-compose -f docker-compose.migrate.yml run --rm migrate \
 
 ```bash
 # Stop and remove migration containers
-docker-compose -f docker-compose.migrate.yml down
+docker compose -f docker-compose.migrate.yml down
 ```
 
 ### Method 2: Using Docker Commands Directly
@@ -163,7 +163,7 @@ Generates new Drizzle migration files based on schema changes.
 
 ```bash
 # Not typically needed in production
-docker-compose -f docker-compose.migrate.yml run --rm migrate \
+docker compose -f docker-compose.migrate.yml run --rm migrate \
   node apps/server/dist/scripts/docker-migrate.js generate
 ```
 
@@ -179,7 +179,7 @@ docker-compose -f docker-compose.migrate.yml run --rm migrate \
 Runs pending Drizzle migrations to create/update MySQL schema.
 
 ```bash
-docker-compose -f docker-compose.migrate.yml run --rm migrate \
+docker compose -f docker-compose.migrate.yml run --rm migrate \
   node apps/server/dist/scripts/docker-migrate.js migrate
 ```
 
@@ -198,7 +198,7 @@ docker-compose -f docker-compose.migrate.yml run --rm migrate \
 One-time migration of existing data from LanceDB to MySQL.
 
 ```bash
-docker-compose -f docker-compose.migrate.yml run --rm migrate \
+docker compose -f docker-compose.migrate.yml run --rm migrate \
   node apps/server/dist/scripts/docker-migrate.js migrate-data
 ```
 
@@ -229,21 +229,21 @@ cp .env.example .env
 # Edit .env with your values
 
 # 3. Start MySQL
-docker-compose -f docker-compose.migrate.yml up -d mysql
+docker compose -f docker-compose.migrate.yml up -d mysql
 
 # 4. Wait for MySQL to be ready
 sleep 10
 
 # 5. Run schema migrations
-docker-compose -f docker-compose.migrate.yml run --rm migrate \
+docker compose -f docker-compose.migrate.yml run --rm migrate \
   node apps/server/dist/scripts/docker-migrate.js migrate
 
 # 6. Migrate existing data (if any)
-docker-compose -f docker-compose.migrate.yml run --rm migrate \
+docker compose -f docker-compose.migrate.yml run --rm migrate \
   node apps/server/dist/scripts/docker-migrate.js migrate-data
 
 # 7. Start application
-docker-compose up -d
+docker compose up -d
 
 # 8. Verify
 curl http://localhost:3000/health
@@ -255,10 +255,10 @@ curl http://localhost:3000/health
 
 ```bash
 # Check MySQL is running
-docker-compose -f docker-compose.migrate.yml ps
+docker compose -f docker-compose.migrate.yml ps
 
 # Check MySQL logs
-docker-compose -f docker-compose.migrate.yml logs mysql
+docker compose -f docker-compose.migrate.yml logs mysql
 
 # Test connection
 docker exec aimo-mysql mysql -uaimo -paimo_password -e "SELECT 1"
@@ -268,7 +268,7 @@ docker exec aimo-mysql mysql -uaimo -paimo_password -e "SELECT 1"
 
 ```bash
 # Check migration logs
-docker-compose -f docker-compose.migrate.yml logs migrate
+docker compose -f docker-compose.migrate.yml logs migrate
 
 # Manually connect to MySQL to check state
 docker exec -it aimo-mysql mysql -uaimo -paimo_password aimo
@@ -285,14 +285,14 @@ CREATE DATABASE aimo;
 
 ```bash
 # Run in dry-run mode first
-docker-compose -f docker-compose.migrate.yml run --rm migrate \
+docker compose -f docker-compose.migrate.yml run --rm migrate \
   tsx apps/server/src/scripts/migrate-lancedb-to-mysql.ts --dry-run
 
 # Check specific table
 docker exec -it aimo-mysql mysql -uaimo -paimo_password -e "SELECT COUNT(*) FROM aimo.memos"
 
 # View migration stats
-docker-compose -f docker-compose.migrate.yml run --rm migrate \
+docker compose -f docker-compose.migrate.yml run --rm migrate \
   tsx apps/server/src/scripts/migrate-lancedb-to-mysql.ts --table=memos
 ```
 
@@ -314,7 +314,7 @@ If migration fails:
 
 ```bash
 # 1. Stop application
-docker-compose down
+docker compose down
 
 # 2. Restore MySQL backup (if needed)
 docker exec -i aimo-mysql mysql -uaimo -paimo_password aimo < backup.sql
@@ -325,7 +325,7 @@ cp -r lancedb_data.backup lancedb_data
 
 # 4. Restart with previous version
 git checkout <previous-version>
-docker-compose up -d
+docker compose up -d
 ```
 
 ## Notes
@@ -339,6 +339,6 @@ docker-compose up -d
 ## Support
 
 For issues or questions:
-- Check logs: `docker-compose logs`
+- Check logs: `docker compose logs`
 - Review migration docs: `apps/server/MIGRATION.md`
 - Open issue: https://github.com/ximing/aimo/issues

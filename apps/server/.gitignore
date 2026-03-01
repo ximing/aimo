@@ -26,3 +26,5 @@ Thumbs.db
 # Build outputs
 *.tsbuildinfo
 logs
+
+lancedb_data_prod

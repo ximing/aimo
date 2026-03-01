@@ -24,9 +24,7 @@ services:
 
   # Migration runner service
   migrate:
-    build:
-      context: .
-      dockerfile: Dockerfile.migrate
+    image: ghcr.io/ximing/aimo-migrate:master
     container_name: aimo-migrate
     depends_on:
       mysql:
