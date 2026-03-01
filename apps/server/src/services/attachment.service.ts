@@ -6,17 +6,21 @@
 import dayjs from 'dayjs';
 import { nanoid } from 'nanoid';
 import { Service } from 'typedi';
+import { eq, and, desc, sql } from 'drizzle-orm';
 
 import { config } from '../config/config.js';
+import { getDatabase } from '../db/connection.js';
+import { attachments } from '../db/schema/attachments.js';
 import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
 import { UnifiedStorageAdapterFactory } from '../sources/unified-storage-adapter/index.js';
 import { logger } from '../utils/logger.js';
 
 import { MultimodalEmbeddingService } from './multimodal-embedding.service.js';
 
-import type { AttachmentRecord } from '../models/db/schema.js';
+import type { AttachmentVectorRecord } from '../models/db/schema.js';
 import type { UnifiedStorageAdapter } from '../sources/unified-storage-adapter/index.js';
 import type { AttachmentDto } from '@aimo/dto';
+import type { Attachment } from '../db/schema/attachments.js';
 
 export interface CreateAttachmentOptions {
   uid: string;
@@ -39,13 +43,13 @@ export interface GetAttachmentsOptions {
 @Service()
 export class AttachmentService {
   private storageAdapter: UnifiedStorageAdapter;
+  private lanceDatabaseService: LanceDatabaseService;
 
-  constructor(
-    private lanceDatabaseService: LanceDatabaseService,
-    private multimodalEmbeddingService: MultimodalEmbeddingService
-  ) {
+  constructor(private multimodalEmbeddingService: MultimodalEmbeddingService) {
     // Create storage adapter for attachments
     this.storageAdapter = UnifiedStorageAdapterFactory.createAttachmentAdapter(config.attachment);
+    // Keep LanceDB service for vector operations only
+    this.lanceDatabaseService = new LanceDatabaseService();
   }
 
   /**
@@ -67,10 +71,13 @@ export class AttachmentService {
     await this.storageAdapter.uploadFile(path, buffer);
 
     // Prepare attachment record with storage metadata
-    const attachmentCreatedAt = createdAt || Date.now();
+    const attachmentCreatedAt = createdAt ? new Date(createdAt) : new Date();
     const attachmentConfig = config.attachment;
 
-    const record: AttachmentRecord = {
+    const db = getDatabase();
+
+    // Insert scalar fields into MySQL
+    await db.insert(attachments).values({
       attachmentId: fileId,
       uid,
       filename,
@@ -85,12 +92,18 @@ export class AttachmentService {
       isPublicBucket: this.getStorageMetadata('isPublicBucket', attachmentConfig),
       properties: properties || '{}', // Use provided properties or default to empty object
       createdAt: attachmentCreatedAt,
-    };
+    });
 
-    // Save to database
-    const table = await this.lanceDatabaseService.openTable('attachments');
-    const result = await table.add([record as unknown as Record<string, unknown>]);
-    logger.info('Attachment created:', result);
+    // Fetch the created record to get auto-generated timestamps
+    const results = await db
+      .select()
+      .from(attachments)
+      .where(eq(attachments.attachmentId, fileId))
+      .limit(1);
+
+    const record = results[0]!;
+
+    logger.info('Attachment created:', { attachmentId: fileId, uid, filename });
 
     // Generate multimodal embedding asynchronously for images and videos if enabled
     // This is non-blocking and happens in the background
@@ -133,7 +146,7 @@ export class AttachmentService {
       url: accessUrl,
       type: mimeType,
       size,
-      createdAt: attachmentCreatedAt,
+      createdAt: record.createdAt.getTime(),
       properties: returnProperties,
     };
   }
@@ -142,7 +155,7 @@ export class AttachmentService {
    * Convert attachment record to DTO with generated access URL
    * Handles both regular and Arrow-based property data
    */
-  private convertToAttachmentDto(record: AttachmentRecord, accessUrl: string): AttachmentDto {
+  private convertToAttachmentDto(record: Attachment, accessUrl: string): AttachmentDto {
     let properties: Record<string, unknown> = {};
 
     // Handle properties field - could be string (JSON) or already parsed object
@@ -167,7 +180,7 @@ export class AttachmentService {
       url: accessUrl,
       type: record.type,
       size: record.size,
-      createdAt: record.createdAt,
+      createdAt: record.createdAt.getTime(),
       coverUrl,
       properties: Object.keys(properties).length > 0 ? properties : undefined,
     };
@@ -185,20 +198,20 @@ export class AttachmentService {
     uid: string,
     properties: Record<string, unknown>
   ): Promise<AttachmentDto | null> {
-    const table = await this.lanceDatabaseService.openTable('attachments');
+    const db = getDatabase();
 
     // Find attachment
-    const results = await table
-      .query()
-      .where(`attachmentId = '${attachmentId}' AND uid = '${uid}'`)
-      .limit(1)
-      .toArray();
+    const results = await db
+      .select()
+      .from(attachments)
+      .where(and(eq(attachments.attachmentId, attachmentId), eq(attachments.uid, uid)))
+      .limit(1);
 
     if (!results || results.length === 0) {
       return null;
     }
 
-    const existingRecord = results[0] as unknown as AttachmentRecord;
+    const existingRecord = results[0];
 
     // Merge existing properties with new ones
     let existingProperties: Record<string, unknown> = {};
@@ -216,16 +229,20 @@ export class AttachmentService {
     const mergedProperties = { ...existingProperties, ...properties };
     const propertiesJson = JSON.stringify(mergedProperties);
 
-    // Update in place to avoid losing records when a rewrite fails.
-    await table.update({
-      where: `attachmentId = '${attachmentId}' AND uid = '${uid}'`,
-      values: { properties: propertiesJson },
-    });
+    // Update in MySQL
+    await db
+      .update(attachments)
+      .set({ properties: propertiesJson })
+      .where(and(eq(attachments.attachmentId, attachmentId), eq(attachments.uid, uid)));
 
-    const updatedRecord: AttachmentRecord = {
-      ...existingRecord,
-      properties: propertiesJson,
-    };
+    // Fetch updated record
+    const updatedResults = await db
+      .select()
+      .from(attachments)
+      .where(and(eq(attachments.attachmentId, attachmentId), eq(attachments.uid, uid)))
+      .limit(1);
+
+    const updatedRecord = updatedResults[0]!;
 
     // Generate access URL and return DTO
     const accessUrl = await this.generateAccessUrl(updatedRecord);
@@ -235,6 +252,7 @@ export class AttachmentService {
   /**
    * Generate multimodal embedding asynchronously and update attachment record
    * This method is called in the background without blocking
+   * Stores embedding in LanceDB attachment_vectors table
    */
   private async generateAndUpdateMultimodalEmbedding(
     attachmentId: string,
@@ -256,42 +274,30 @@ export class AttachmentService {
       // Get model hash from service
       const modelHash = (this.multimodalEmbeddingService as any).modelHash;
 
-      // Update the attachment record with the embedding
-      const table = await this.lanceDatabaseService.openTable('attachments');
-
-      // Get the existing record
-      const results = await table
-        .query()
-        .where(`attachmentId = '${attachmentId}'`)
-        .limit(1)
-        .toArray();
-
-      if (results.length === 0) {
-        logger.warn(`Attachment record not found: ${attachmentId}`);
-        return;
-      }
-
-      const existingRecord = results[0] as AttachmentRecord;
-      const schema = await table.schema();
-      const embeddingField = schema.fields.find((field) => field.name === 'multimodalEmbedding');
-      const expectedDimension = (
-        embeddingField?.type as { listSize?: number } | undefined
-      )?.listSize;
-
-      if (typeof expectedDimension === 'number' && embedding.length !== expectedDimension) {
+      // Validate embedding dimensions (should be 1024 for multimodal)
+      if (embedding.length !== 1024) {
         logger.warn(
-          `Skip multimodal embedding update for ${attachmentId}: got ${embedding.length} dims, expected ${expectedDimension}`
+          `Skip multimodal embedding update for ${attachmentId}: got ${embedding.length} dims, expected 1024`
         );
         return;
       }
 
-      await table.update({
-        where: `attachmentId = '${attachmentId}' AND uid = '${existingRecord.uid}'`,
-        values: {
-          multimodalEmbedding: embedding,
-          multimodalModelHash: modelHash,
-        },
-      });
+      // Store embedding in LanceDB attachment_vectors table
+      const vectorTable = await this.lanceDatabaseService.openTable('attachment_vectors');
+
+      const vectorRecord: AttachmentVectorRecord = {
+        attachmentId,
+        multimodalEmbedding: embedding,
+      };
+
+      await vectorTable.add([vectorRecord as unknown as Record<string, unknown>]);
+
+      // Update multimodalModelHash in MySQL
+      const db = getDatabase();
+      await db
+        .update(attachments)
+        .set({ multimodalModelHash: modelHash })
+        .where(eq(attachments.attachmentId, attachmentId));
 
       logger.info(
         `Successfully generated and stored multimodal embedding for ${modalityType}: ${filename}`
@@ -310,19 +316,19 @@ export class AttachmentService {
    * Get attachment by ID
    */
   async getAttachment(attachmentId: string, uid: string): Promise<AttachmentDto | null> {
-    const table = await this.lanceDatabaseService.openTable('attachments');
+    const db = getDatabase();
 
-    const results = await table
-      .query()
-      .where(`attachmentId = '${attachmentId}' AND uid = '${uid}'`)
-      .limit(1)
-      .toArray();
+    const results = await db
+      .select()
+      .from(attachments)
+      .where(and(eq(attachments.attachmentId, attachmentId), eq(attachments.uid, uid)))
+      .limit(1);
 
     if (!results || results.length === 0) {
       return null;
     }
 
-    const record = results[0] as unknown as AttachmentRecord;
+    const record = results[0];
     const accessUrl = await this.generateAccessUrl(record);
 
     return this.convertToAttachmentDto(record, accessUrl);
@@ -340,28 +346,31 @@ export class AttachmentService {
     const { uid, page = 1, limit = 20, sortBy = 'createdAt', sortOrder = 'desc' } = options;
     const offset = (page - 1) * limit;
 
-    const table = await this.lanceDatabaseService.openTable('attachments');
+    const db = getDatabase();
 
-    // Get all matching records (LanceDB doesn't support orderBy, sorting done in JavaScript)
-    let results = await table.query().where(`uid = '${uid}'`).toArray();
-    const total = results.length;
+    // Get total count
+    const countResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(attachments)
+      .where(eq(attachments.uid, uid));
 
-    // Sort by createdAt in JavaScript (LanceDB doesn't support orderBy directly)
-    results = results.sort((a: any, b: any) => {
-      const aValue = a.createdAt;
-      const bValue = b.createdAt;
-      const comparison = aValue - bValue;
-      return sortOrder === 'asc' ? comparison : -comparison;
-    });
+    const total = countResult[0]?.count ?? 0;
 
-    // Get paginated results
-    const paginatedResults = results.slice(offset, offset + limit);
+    // Get paginated results with sorting
+    const orderByClause = sortOrder === 'desc' ? desc(attachments.createdAt) : attachments.createdAt;
+
+    const results = await db
+      .select()
+      .from(attachments)
+      .where(eq(attachments.uid, uid))
+      .orderBy(orderByClause)
+      .limit(limit)
+      .offset(offset);
 
     const items = await Promise.all(
-      paginatedResults.map(async (record) => {
-        const r = record as unknown as AttachmentRecord;
-        const accessUrl = await this.generateAccessUrl(r);
-        return this.convertToAttachmentDto(r, accessUrl);
+      results.map(async (record) => {
+        const accessUrl = await this.generateAccessUrl(record);
+        return this.convertToAttachmentDto(record, accessUrl);
       })
     );
 
@@ -377,20 +386,20 @@ export class AttachmentService {
    * Delete attachment
    */
   async deleteAttachment(attachmentId: string, uid: string): Promise<boolean> {
-    const table = await this.lanceDatabaseService.openTable('attachments');
+    const db = getDatabase();
 
     // Find attachment
-    const results = await table
-      .query()
-      .where(`attachmentId = '${attachmentId}' AND uid = '${uid}'`)
-      .limit(1)
-      .toArray();
+    const results = await db
+      .select()
+      .from(attachments)
+      .where(and(eq(attachments.attachmentId, attachmentId), eq(attachments.uid, uid)))
+      .limit(1);
 
     if (!results || results.length === 0) {
       return false;
     }
 
-    const record = results[0] as unknown as AttachmentRecord;
+    const record = results[0];
 
     // Delete from storage
     try {
@@ -400,8 +409,19 @@ export class AttachmentService {
       // Continue with database deletion even if storage deletion fails
     }
 
-    // Delete from database
-    await table.delete(`attachmentId = '${attachmentId}' AND uid = '${uid}'`);
+    // Delete from MySQL
+    await db
+      .delete(attachments)
+      .where(and(eq(attachments.attachmentId, attachmentId), eq(attachments.uid, uid)));
+
+    // Delete from LanceDB attachment_vectors table if exists
+    try {
+      const vectorTable = await this.lanceDatabaseService.openTable('attachment_vectors');
+      await vectorTable.delete(`attachmentId = '${attachmentId}'`);
+    } catch (error) {
+      logger.warn('Failed to delete attachment vector (may not exist):', error);
+      // Non-critical - vector may not exist if embedding was never generated
+    }
 
     return true;
   }
@@ -417,20 +437,24 @@ export class AttachmentService {
       return [];
     }
 
-    const table = await this.lanceDatabaseService.openTable('attachments');
+    const db = getDatabase();
 
-    // Fetch all attachments in a single query
-    const whereConditions = attachmentIds.map((id) => `attachmentId = '${id}'`).join(' OR ');
-    const query = `(${whereConditions}) AND uid = '${uid}'`;
-
-    const results = await table.query().where(query).toArray();
+    // Fetch all attachments in a single query using IN clause
+    const results = await db
+      .select()
+      .from(attachments)
+      .where(
+        and(
+          sql`${attachments.attachmentId} IN ${sql.raw(`(${attachmentIds.map((id) => `'${id}'`).join(',')})`)}`,
+          eq(attachments.uid, uid)
+        )
+      );
 
     // Convert records to DTOs with generated URLs, preserving order
     const attachmentMap = new Map<string, AttachmentDto>();
     for (const record of results) {
-      const r = record as unknown as AttachmentRecord;
-      const accessUrl = await this.generateAccessUrl(r);
-      attachmentMap.set(r.attachmentId, this.convertToAttachmentDto(r, accessUrl));
+      const accessUrl = await this.generateAccessUrl(record);
+      attachmentMap.set(record.attachmentId, this.convertToAttachmentDto(record, accessUrl));
     }
 
     // Return in the original order of attachmentIds
@@ -456,19 +480,20 @@ export class AttachmentService {
       return null;
     }
 
+    const db = getDatabase();
+
     // Get the record to access storage info
-    const table = await this.lanceDatabaseService.openTable('attachments');
-    const results = await table
-      .query()
-      .where(`attachmentId = '${attachmentId}' AND uid = '${uid}'`)
-      .limit(1)
-      .toArray();
+    const results = await db
+      .select()
+      .from(attachments)
+      .where(and(eq(attachments.attachmentId, attachmentId), eq(attachments.uid, uid)))
+      .limit(1);
 
     if (!results || results.length === 0) {
       return null;
     }
 
-    const record = results[0] as unknown as AttachmentRecord;
+    const record = results[0];
 
     // Get file buffer from storage
     const buffer = await this.storageAdapter.downloadFile(record.path);
@@ -489,16 +514,16 @@ export class AttachmentService {
    * Dynamically generates presigned URLs for S3/OSS private buckets
    * Returns direct URLs for public buckets or local paths
    */
-  private async generateAccessUrl(record: AttachmentRecord): Promise<string> {
+  private async generateAccessUrl(record: Attachment): Promise<string> {
     const storageType = record.storageType;
 
     // Build metadata from attachment record
     const metadata = {
-      bucket: record.bucket,
-      prefix: record.prefix,
-      endpoint: record.endpoint,
-      region: record.region,
-      isPublicBucket: record.isPublicBucket,
+      bucket: record.bucket ?? undefined,
+      prefix: record.prefix ?? undefined,
+      endpoint: record.endpoint ?? undefined,
+      region: record.region ?? undefined,
+      isPublicBucket: record.isPublicBucket ?? undefined,
     };
 
     if (storageType === 'local') {
