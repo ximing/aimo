@@ -1,16 +1,14 @@
 import * as bcrypt from 'bcrypt';
 import { Service } from 'typedi';
 
-import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
 import { generateUid } from '../utils/id.js';
 import { logger } from '../utils/logger.js';
 
 import { CategoryService } from './category.service.js';
 
-import type { User, NewUser } from '../models/db/user.schema.js';
-
-// Type for LanceDB table records
-type UserRecord = Record<string, any>;
+import { UserRepository } from '../repositories/user.repository.js';
+import type { UserProfileDto, UpdateUserDto } from '@aimo/dto';
+import type { NewUser } from '../models/db/user.schema.js';
 
 // Default category name for new users
 const DEFAULT_CATEGORY_NAME = '日记';
@@ -18,37 +16,40 @@ const DEFAULT_CATEGORY_NAME = '日记';
 @Service()
 export class UserService {
   constructor(
-    private lanceDatabase: LanceDatabaseService,
+    private userRepository: UserRepository,
     private categoryService: CategoryService
   ) {}
 
-  async createUser(userData: NewUser): Promise<User> {
+  async createUser(userData: NewUser): Promise<UserProfileDto> {
     try {
       // Check if user with email already exists
       if (userData.email) {
-        const existingUser = await this.findUserByEmail(userData.email);
+        const existingUser = await this.userRepository.findByEmail(userData.email);
         if (existingUser) {
           throw new Error('User with this email already exists');
         }
       }
 
-      // Create new user record
-      const now = Date.now();
-      const user: User = {
+      // Hash password if provided
+      let hashedPassword = userData.password;
+      let salt = userData.salt;
+      if (userData.password && !userData.salt) {
+        const hashResult = await this.hashPassword(userData.password);
+        hashedPassword = hashResult.hashedPassword;
+        salt = hashResult.salt;
+      }
+
+      // Create new user via repository
+      const user = await this.userRepository.create({
         uid: userData.uid || generateUid(),
         email: userData.email,
         phone: userData.phone,
-        password: userData.password,
-        salt: userData.salt,
+        password: hashedPassword,
+        salt: salt || '',
         nickname: userData.nickname,
         avatar: userData.avatar,
         status: userData.status ?? 1,
-        createdAt: userData.createdAt || now,
-        updatedAt: userData.updatedAt || now,
-      };
-
-      const usersTable = await this.lanceDatabase.openTable('users');
-      await usersTable.add([user as unknown as Record<string, unknown>]);
+      });
 
       // Create default category for new user
       try {
@@ -70,13 +71,9 @@ export class UserService {
   /**
    * Find user by email
    */
-  async findUserByEmail(email: string): Promise<User | null> {
+  async findUserByEmail(email: string): Promise<ReturnType<typeof this.userRepository.findByEmailWithPassword> | null> {
     try {
-      const usersTable = await this.lanceDatabase.openTable('users');
-
-      const results = await usersTable.query().where(`email = '${email}'`).limit(1).toArray();
-
-      return results.length > 0 ? (results[0] as User) : null;
+      return await this.userRepository.findByEmailWithPassword(email);
     } catch (error) {
       logger.error('Error finding user by email:', error);
       throw error;
@@ -86,13 +83,9 @@ export class UserService {
   /**
    * Find user by UID
    */
-  async findUserByUid(uid: string): Promise<User | null> {
+  async findUserByUid(uid: string): Promise<UserProfileDto | null> {
     try {
-      const usersTable = await this.lanceDatabase.openTable('users');
-
-      const results = await usersTable.query().where(`uid = '${uid}'`).limit(1).toArray();
-
-      return results.length > 0 ? (results[0] as User) : null;
+      return await this.userRepository.findByUid(uid);
     } catch (error) {
       logger.error('Error finding user by UID:', error);
       throw error;
@@ -128,42 +121,18 @@ export class UserService {
   /**
    * Update user information
    */
-  async updateUser(uid: string, updates: Partial<User>): Promise<User | null> {
+  async updateUser(uid: string, updates: Partial<UpdateUserDto>): Promise<UserProfileDto | null> {
     try {
-      const usersTable = await this.lanceDatabase.openTable('users');
-
-      // Find existing user
-      const existingUsers = await usersTable.query().where(`uid = '${uid}'`).limit(1).toArray();
-
-      if (existingUsers.length === 0) {
-        throw new Error('User not found');
+      // Build update data
+      const updateData: UpdateUserDto = {};
+      if (updates.nickname !== undefined) {
+        updateData.nickname = updates.nickname;
+      }
+      if (updates.avatar !== undefined) {
+        updateData.avatar = updates.avatar;
       }
 
-      const existingUser = existingUsers[0] as User;
-      const now = Date.now();
-      const updatedUser: UserRecord = {
-        ...existingUser,
-        ...updates,
-        uid: existingUser.uid, // Don't allow changing UID
-        updatedAt: now,
-      };
-
-      const updateValues: Record<string, any> = { updatedAt: now };
-      for (const [key, value] of Object.entries(updates)) {
-        if (key === 'uid') {
-          continue;
-        }
-        if (value !== undefined) {
-          updateValues[key] = value;
-        }
-      }
-
-      await usersTable.update({
-        where: `uid = '${uid}'`,
-        values: updateValues,
-      });
-
-      return updatedUser as User;
+      return await this.userRepository.update(uid, updateData);
     } catch (error) {
       logger.error('Error updating user:', error);
       throw error;
@@ -175,25 +144,7 @@ export class UserService {
    */
   async deleteUser(uid: string): Promise<boolean> {
     try {
-      const usersTable = await this.lanceDatabase.openTable('users');
-
-      // Check if user exists
-      const existing = await usersTable.query().where(`uid = '${uid}'`).limit(1).toArray();
-
-      if (existing.length === 0) {
-        throw new Error('User not found');
-      }
-
-      // Mark as inactive instead of hard delete
-      await usersTable.update({
-        where: `uid = '${uid}'`,
-        values: {
-          status: 0,
-          updatedAt: Date.now(),
-        },
-      });
-
-      return true;
+      return await this.userRepository.delete(uid);
     } catch (error) {
       logger.error('Error deleting user:', error);
       throw error;
@@ -209,8 +160,8 @@ export class UserService {
     newPassword: string
   ): Promise<{ success: boolean; message: string }> {
     try {
-      // Find user by UID
-      const user = await this.findUserByUid(uid);
+      // Find user by UID with password
+      const user = await this.userRepository.findByUidWithPassword(uid);
       if (!user) {
         return { success: false, message: '用户不存在' };
       }
@@ -225,10 +176,7 @@ export class UserService {
       const { hashedPassword, salt } = await this.hashPassword(newPassword);
 
       // Update password
-      await this.updateUser(uid, {
-        password: hashedPassword,
-        salt: salt,
-      });
+      await this.userRepository.updatePassword(uid, hashedPassword, salt);
 
       return { success: true, message: '密码修改成功' };
     } catch (error) {

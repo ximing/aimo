@@ -10,6 +10,20 @@ import type { UsersSelect, UsersInsert } from '../sources/database/schema/users.
 
 import type { UserInfoDto, UpdateUserDto, UserProfileDto } from '@aimo/dto';
 
+// Extended type for authentication (includes password)
+export interface UserAuthDto {
+  uid: string;
+  email?: string;
+  phone?: string;
+  password: string;
+  salt: string;
+  nickname?: string;
+  avatar?: string;
+  status: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
 export interface CreateUserData {
   uid: string;
   email?: string;
@@ -61,6 +75,40 @@ export class UserRepository {
   }
 
   /**
+   * Find user by email with password (for authentication)
+   */
+  async findByEmailWithPassword(email: string): Promise<UserAuthDto | null> {
+    const db = this.drizzleAdapter.getDb() as any;
+    const table = this.getTable();
+
+    const { eq } = await import('drizzle-orm');
+
+    const results = await db
+      .select()
+      .from(table)
+      .where(eq(table.email, email))
+      .limit(1);
+
+    if (results.length === 0) {
+      return null;
+    }
+
+    const row = results[0];
+    return {
+      uid: row.uid,
+      email: row.email || undefined,
+      phone: row.phone || undefined,
+      password: row.password,
+      salt: row.salt,
+      nickname: row.nickname || undefined,
+      avatar: row.avatar || undefined,
+      status: row.status,
+      createdAt: row.createdAt ? new Date(row.createdAt).getTime() : Date.now(),
+      updatedAt: row.updatedAt ? new Date(row.updatedAt).getTime() : Date.now(),
+    };
+  }
+
+  /**
    * Find user by email
    */
   async findByEmail(email: string): Promise<UserProfileDto | null> {
@@ -83,6 +131,40 @@ export class UserRepository {
   }
 
   /**
+   * Find user by UID with password (for password change)
+   */
+  async findByUidWithPassword(uid: string): Promise<UserAuthDto | null> {
+    const db = this.drizzleAdapter.getDb() as any;
+    const table = this.getTable();
+
+    const { eq } = await import('drizzle-orm');
+
+    const results = await db
+      .select()
+      .from(table)
+      .where(eq(table.uid, uid))
+      .limit(1);
+
+    if (results.length === 0) {
+      return null;
+    }
+
+    const row = results[0];
+    return {
+      uid: row.uid,
+      email: row.email || undefined,
+      phone: row.phone || undefined,
+      password: row.password,
+      salt: row.salt,
+      nickname: row.nickname || undefined,
+      avatar: row.avatar || undefined,
+      status: row.status,
+      createdAt: row.createdAt ? new Date(row.createdAt).getTime() : Date.now(),
+      updatedAt: row.updatedAt ? new Date(row.updatedAt).getTime() : Date.now(),
+    };
+  }
+
+  /**
    * Find user by UID
    */
   async findByUid(uid: string): Promise<UserProfileDto | null> {
@@ -102,6 +184,23 @@ export class UserRepository {
     }
 
     return this.mapToProfileDto(results[0]);
+  }
+
+  /**
+   * Update user password
+   */
+  async updatePassword(uid: string, password: string, salt: string): Promise<boolean> {
+    const db = this.drizzleAdapter.getDb() as any;
+    const table = this.getTable();
+
+    const { eq } = await import('drizzle-orm');
+
+    await db
+      .update(table)
+      .set({ password, salt, updatedAt: new Date() })
+      .where(eq(table.uid, uid));
+
+    return true;
   }
 
   /**

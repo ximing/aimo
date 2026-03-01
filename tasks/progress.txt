@@ -3,6 +3,7 @@
 Branch: ralph/drizzle-migration
 
 ## Status
+- US-008: COMPLETED
 - US-007: COMPLETED
 - US-006: COMPLETED
 - US-005: COMPLETED
@@ -10,6 +11,24 @@ Branch: ralph/drizzle-migration
 - US-003: COMPLETED
 
 ## Notes
+
+## 2026-03-01 - US-008
+- Refactored UserService to use UserRepository instead of LanceDB
+- Refactored AttachmentService to use AttachmentRepository instead of LanceDB
+- Added findByEmailWithPassword(), findByUidWithPassword(), updatePassword() methods to UserRepository for authentication
+- Added AttachmentFullRecord interface and findByIdFull() method to AttachmentRepository for URL generation
+- UserService: createUser(), findUserByEmail(), findUserByUid(), updateUser(), deleteUser(), changePassword() all use repository
+- AttachmentService: createAttachment(), getAttachment(), getAttachmentsByUser(), updateAttachmentProperties(), deleteAttachment(), getAttachmentsByIds(), getAttachmentBuffer() all use repository
+- File upload/storage logic unchanged (only metadata storage migrated to Drizzle)
+- JWT authentication flow unchanged
+- Typecheck passes, lint passes (warnings present but no errors)
+- **Learnings:**
+  - Password/salt needed for authentication - add findByEmailWithPassword() and findByUidWithPassword() methods to repository
+  - URL generation requires storage metadata (storageType, bucket, endpoint, etc.) - use findByIdFull() for full record
+  - Service methods maintain same signatures - repository returns DTOs which are compatible
+  - LanceDB removed from service constructors - file storage still uses storage adapters
+
+---
 
 ## 2026-03-01 - US-006
 - Refactored MemoService to use hybrid storage (Drizzle + LanceDB)

@@ -36,6 +36,24 @@ export interface AttachmentSearchOptions {
   sortOrder?: 'asc' | 'desc';
 }
 
+// Full attachment record with storage metadata (for URL generation)
+export interface AttachmentFullRecord {
+  attachmentId: string;
+  uid: string;
+  filename: string;
+  type: string;
+  size: number;
+  storageType: string;
+  path: string;
+  bucket?: string;
+  prefix?: string;
+  endpoint?: string;
+  region?: string;
+  isPublicBucket?: string;
+  properties?: Record<string, unknown>;
+  createdAt: number;
+}
+
 @Service()
 export class AttachmentRepository {
   constructor(private drizzleAdapter: DrizzleAdapter) {}
@@ -78,6 +96,28 @@ export class AttachmentRepository {
     await db.insert(table).values(insertData);
 
     return this.mapToDto(insertData as AttachmentsSelect);
+  }
+
+  /**
+   * Find attachment by ID (full record with storage metadata)
+   */
+  async findByIdFull(attachmentId: string): Promise<AttachmentFullRecord | null> {
+    const db = this.drizzleAdapter.getDb() as any;
+    const table = this.getTable();
+
+    const { eq } = await import('drizzle-orm');
+
+    const results = await db
+      .select()
+      .from(table)
+      .where(eq(table.attachmentId, attachmentId))
+      .limit(1);
+
+    if (results.length === 0) {
+      return null;
+    }
+
+    return this.mapToFullRecord(results[0]);
   }
 
   /**
@@ -271,6 +311,41 @@ export class AttachmentRepository {
       size: row.size,
       createdAt: row.createdAt ? new Date(row.createdAt).getTime() : Date.now(),
       properties: Object.keys(properties).length > 0 ? properties : undefined,
+    };
+  }
+
+  /**
+   * Map database row to full record with storage metadata
+   */
+  private mapToFullRecord(row: AttachmentsSelect): AttachmentFullRecord {
+    let properties: Record<string, unknown> = {};
+    if (row.properties) {
+      try {
+        if (typeof row.properties === 'string') {
+          properties = JSON.parse(row.properties);
+        } else {
+          properties = row.properties as Record<string, unknown>;
+        }
+      } catch {
+        properties = {};
+      }
+    }
+
+    return {
+      attachmentId: row.attachmentId,
+      uid: row.uid,
+      filename: row.filename,
+      type: row.type,
+      size: row.size,
+      storageType: row.storageType,
+      path: row.path,
+      bucket: row.bucket || undefined,
+      prefix: row.prefix || undefined,
+      endpoint: row.endpoint || undefined,
+      region: row.region || undefined,
+      isPublicBucket: row.isPublicBucket || undefined,
+      properties: Object.keys(properties).length > 0 ? properties : undefined,
+      createdAt: row.createdAt ? new Date(row.createdAt).getTime() : Date.now(),
     };
   }
 }
