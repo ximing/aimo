@@ -32,6 +32,8 @@ export interface GetAttachmentsOptions {
   uid: string;
   page?: number;
   limit?: number;
+  sortBy?: 'createdAt'; // Sort field
+  sortOrder?: 'asc' | 'desc'; // Sort direction, defaults to 'desc' (newest first)
 }
 
 @Service()
@@ -115,6 +117,16 @@ export class AttachmentService {
     // Generate access URL for immediate return
     const accessUrl = await this.generateAccessUrl(record);
 
+    // Parse properties for return
+    let returnProperties: Record<string, unknown> | undefined;
+    if (properties) {
+      try {
+        returnProperties = JSON.parse(properties);
+      } catch {
+        returnProperties = undefined;
+      }
+    }
+
     return {
       attachmentId: record.attachmentId,
       filename,
@@ -122,7 +134,7 @@ export class AttachmentService {
       type: mimeType,
       size,
       createdAt: attachmentCreatedAt,
-      properties: {},
+      properties: returnProperties,
     };
   }
 
@@ -325,19 +337,24 @@ export class AttachmentService {
     page: number;
     limit: number;
   }> {
-    const { uid, page = 1, limit = 20 } = options;
+    const { uid, page = 1, limit = 20, sortBy = 'createdAt', sortOrder = 'desc' } = options;
     const offset = (page - 1) * limit;
 
     const table = await this.lanceDatabaseService.openTable('attachments');
 
-    // Get total count
-    const allResults = await table.query().where(`uid = '${uid}'`).toArray();
-    const total = allResults.length;
+    // Get all matching records (LanceDB doesn't support orderBy, sorting done in JavaScript)
+    let results = await table.query().where(`uid = '${uid}'`).toArray();
+    const total = results.length;
+
+    // Sort by createdAt in JavaScript (LanceDB doesn't support orderBy directly)
+    results = results.sort((a: any, b: any) => {
+      const aValue = a.createdAt;
+      const bValue = b.createdAt;
+      const comparison = aValue - bValue;
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
 
     // Get paginated results
-    const results = await table.query().where(`uid = '${uid}'`).limit(limit).toArray();
-
-    // Skip manually (LanceDB doesn't have native offset)
     const paginatedResults = results.slice(offset, offset + limit);
 
     const items = await Promise.all(
