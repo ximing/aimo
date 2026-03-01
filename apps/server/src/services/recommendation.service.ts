@@ -1,29 +1,28 @@
 import { ChatOpenAI } from '@langchain/openai';
+import { eq, and } from 'drizzle-orm';
 import { Service } from 'typedi';
 
 import { config } from '../config/config.js';
+import { getDatabase } from '../db/connection.js';
+import { dailyRecommendations } from '../db/schema/index.js';
 import { OBJECT_TYPE } from '../models/constant/type.js';
-import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
 import { generateTypeId } from '../utils/id.js';
 import { logger } from '../utils/logger.js';
 
 import { MemoService } from './memo.service.js';
 
-import type { DailyRecommendationRecord } from '../models/db/schema.js';
 import type { MemoListItemDto } from '@aimo/dto';
 
 /**
  * Service for generating daily memo recommendations using AI
  * Caches recommendations per user per day for consistent results
+ * Uses Drizzle ORM with MySQL for relational data storage
  */
 @Service()
 export class RecommendationService {
   private model: ChatOpenAI;
 
-  constructor(
-    private memoService: MemoService,
-    private lanceDatabase: LanceDatabaseService
-  ) {
+  constructor(private memoService: MemoService) {
     // Initialize LangChain ChatOpenAI
     this.model = new ChatOpenAI({
       modelName: config.openai.model || 'gpt-4o-mini',
@@ -52,14 +51,14 @@ export class RecommendationService {
   private async getCachedRecommendations(
     uid: string,
     date: string
-  ): Promise<DailyRecommendationRecord | null> {
+  ): Promise<{ recommendationId: string; uid: string; date: string; memoIds: string[]; createdAt: number } | null> {
     try {
-      const table = await this.lanceDatabase.openTable('daily_recommendations');
-      const results = await table
-        .query()
-        .where(`uid = '${uid}' AND date = '${date}'`)
-        .limit(1)
-        .toArray();
+      const db = getDatabase();
+      const results = await db
+        .select()
+        .from(dailyRecommendations)
+        .where(and(eq(dailyRecommendations.uid, uid), eq(dailyRecommendations.date, date)))
+        .limit(1);
 
       if (results.length === 0) {
         return null;
@@ -67,11 +66,11 @@ export class RecommendationService {
 
       const record = results[0];
       return {
-        recommendationId: record.recommendationId as string,
-        uid: record.uid as string,
-        date: record.date as string,
-        memoIds: this.convertArrowList(record.memoIds),
-        createdAt: record.createdAt as number,
+        recommendationId: record.recommendationId,
+        uid: record.uid,
+        date: record.date,
+        memoIds: record.memoIds || [],
+        createdAt: record.createdAt.getTime(),
       };
     } catch (error) {
       logger.error('Error checking cached recommendations:', error);
@@ -80,37 +79,19 @@ export class RecommendationService {
   }
 
   /**
-   * Convert Arrow list to plain array
-   */
-  private convertArrowList(arrowList: any): string[] {
-    if (!arrowList) {
-      return [];
-    }
-    if (Array.isArray(arrowList)) {
-      return arrowList;
-    }
-    if (arrowList.toArray) {
-      return arrowList.toArray();
-    }
-    return [];
-  }
-
-  /**
    * Save recommendations to cache
    */
   private async cacheRecommendations(uid: string, date: string, memoIds: string[]): Promise<void> {
     try {
-      const table = await this.lanceDatabase.openTable('daily_recommendations');
+      const db = getDatabase();
       const recommendationId = generateTypeId(OBJECT_TYPE.RECOMMENDATION);
-      const record: DailyRecommendationRecord = {
+
+      await db.insert(dailyRecommendations).values({
         recommendationId,
         uid,
         date,
         memoIds,
-        createdAt: Date.now(),
-      };
-
-      await table.add([record as unknown as Record<string, unknown>]);
+      });
     } catch (error) {
       logger.error('Error caching recommendations:', error);
       // Don't throw - caching failure shouldn't break the feature

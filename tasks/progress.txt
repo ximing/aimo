@@ -439,3 +439,27 @@
 - This architecture decision was made early in the codebase design
 - The acceptance criteria "Create ai-message.service.ts if not exists, or refactor existing message handling" allows for this flexibility
 ---
+## 2026-03-01 - US-014
+- Refactored RecommendationService to use Drizzle ORM instead of LanceDB
+- Replaced all LanceDB queries with Drizzle queries using eq() and and() operators
+- Implemented all required methods:
+  - cacheRecommendations(): Insert to MySQL with memoIds as JSON array
+  - getCachedRecommendations(): Query with and() for uid + date filtering
+- Removed LanceDB dependency from RecommendationService constructor
+- Removed convertArrowList() helper - no longer needed with MySQL JSON columns
+- Foreign key constraint (daily_recommendations.uid → users.uid) and unique constraint on (uid, date) already defined in schema (from US-002)
+- memoIds stored as JSON column in MySQL (json('memo_ids').$type<string[]>())
+- Converted Drizzle Date timestamp to milliseconds for compatibility
+- Verified controller endpoint works unchanged (insights.controller.ts uses generateDailyRecommendations())
+- Typecheck passes successfully
+
+**Files changed:**
+- apps/server/src/services/recommendation.service.ts (refactored to use Drizzle)
+
+**Learnings for future iterations:**
+- MySQL JSON columns work seamlessly with arrays - no Arrow conversion needed
+- Unique constraint on (uid, date) ensures only one recommendation per user per day
+- The cacheRecommendations() method doesn't throw on error - caching failure shouldn't break the feature
+- Pattern: use and(eq(table.field1, value1), eq(table.field2, value2)) for multi-column WHERE clauses
+- JSON columns in Drizzle: json('column_name').$type<Type[]>() for type safety
+---
