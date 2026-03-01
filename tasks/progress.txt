@@ -1,15 +1,18 @@
 ## Codebase Patterns
 - MySQL configuration follows existing pattern in config.ts with typed interfaces
 - Environment variables use sensible defaults (localhost:3306, root user, aimo database)
-- Drizzle config references config.ts for MySQL credentials to maintain single source of truth
+- **Drizzle config must use env vars directly (not import config.ts) to avoid module resolution issues**
+- **Drizzle config schema path must point to dist/ folder (compiled JS), not src/ (TS source)**
 - Connection pooling configured with max 10 connections by default
 - Drizzle schemas: Use mysqlTable() with foreign keys via .references(), JSON columns via .$type<T>()
 - VARCHAR key lengths: 191 for primary/foreign keys (MySQL utf8mb4 index limit), 255+ for other fields
 - Timestamps: Use { mode: 'date', fsp: 3 } for millisecond precision to match LanceDB
 - All schemas must be exported from index.ts for migration generation
-- App startup sequence: IOC → MySQL → LanceDB → Scheduler → Express server
+- **Always build before generating migrations: pnpm build && pnpm migrate:generate**
+- **App startup sequence: IOC → MySQL → Migrations → LanceDB → Scheduler → Express server**
 - Shutdown sequence: Scheduler → MySQL → LanceDB (reverse order for clean shutdown)
 - Database connection is a singleton accessed via getDatabase() from db/connection.ts
+- Migration runner uses temporary connection separate from main pool
 
 ---
 
