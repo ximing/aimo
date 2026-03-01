@@ -1,15 +1,19 @@
 {
   "project": "AIMO",
-  "branchName": "ralph/chrome-extension-v1",
-  "description": "Chrome Extension - Browser plugin to save selected text and images to AIMO notes with floating buttons and configurable settings",
+  "branchName": "ralph/drizzle-migration",
+  "description": "Migrate to Drizzle ORM with hybrid storage - scalar data in relational DB, vectors in LanceDB",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Add source field to Memo DTO",
-      "description": "As a developer, I need to add source field to Memo DTO for storing source URL.",
+      "title": "Create Drizzle database abstraction layer",
+      "description": "As a developer, I need a unified database interface that supports MySQL, PostgreSQL, and SQLite so the application works across different deployment environments.",
       "acceptanceCriteria": [
-        "Add source?: string field to MemoDto in packages/dto",
-        "Add source?: string field to CreateMemoDto",
+        "Create `src/sources/database/` directory structure",
+        "Implement `DrizzleAdapter` with connection factory for MySQL/PostgreSQL/SQLite",
+        "Database type selected via `DATABASE_TYPE` env var (mysql|postgresql|sqlite, default: mysql)",
+        "Connection string parsed from existing env pattern (e.g., `DATABASE_URL` or service-specific vars)",
+        "Connection pooling configured appropriately for each DB type",
+        "Graceful connection error handling with clear error messages",
         "Typecheck passes"
       ],
       "priority": 1,
@@ -18,248 +22,185 @@
     },
     {
       "id": "US-002",
-      "title": "Add source field to LanceDB schema",
-      "description": "As a developer, I need to add source field to LanceDB memo table schema.",
+      "title": "Define Drizzle schema for scalar data",
+      "description": "As a developer, I need Drizzle table schemas that mirror current LanceDB scalar fields so data structure remains consistent.",
       "acceptanceCriteria": [
-        "Add source field to MemoRecord interface in apps/server/src/models/db/schema.ts",
-        "Add source field to memoSchema using Arrow types",
+        "Create schema files in `src/sources/database/schema/` for: memos.ts, users.ts, memo_relations.ts, attachments.ts, _migrations.ts",
+        "Schemas exclude embedding vectors (remain in LanceDB)",
+        "Use appropriate Drizzle column types for each DB (e.g., `text()` vs `varchar()`)",
+        "Define indexes for frequently queried fields (userId, createdAt, tags)",
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-003",
-      "title": "Create migration for memo source field",
-      "description": "As a developer, I need to create a migration to add source column to existing memo table.",
+      "title": "Implement database migration system",
+      "description": "As a developer, I need Drizzle migrations to manage schema changes across all supported databases.",
       "acceptanceCriteria": [
-        "Create migration script to add source column to memos table",
-        "Use new migration version number",
-        "Register migration in index.ts",
-        "Migration runs successfully on startup",
+        "Configure `drizzle-kit` in `apps/server/drizzle.config.ts`",
+        "Generate initial migration for all schemas",
+        "Migration files created in `src/sources/database/migrations/`",
+        "Migrations run automatically on app startup via `DrizzleAdapter.runMigrations()`",
+        "Migration state tracked in `_migrations` table (reuse existing pattern)",
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-004",
-      "title": "Update memo service to handle source field",
-      "description": "As a developer, I need to update MemoService to read and write source field.",
+      "title": "Create repository layer for scalar operations",
+      "description": "As a developer, I need repository classes that encapsulate Drizzle queries so services don't directly interact with the ORM.",
       "acceptanceCriteria": [
-        "CreateMemoDto includes source field",
-        "Service saves source to database when provided",
-        "Service returns source when querying memos",
+        "Create `src/repositories/` directory",
+        "Implement `MemoRepository` with methods: create(), findById(), findByUserId(), update(), delete(), findByIds() (batch fetch), search() (scalar filters)",
+        "Implement `MemoRelationRepository` (existing relation operations)",
+        "Implement `UserRepository` (existing user operations)",
+        "Implement `AttachmentRepository` (existing attachment operations)",
+        "All methods return DTOs from `@aimo/dto`",
+        "Repositories decorated with `@Service()` for TypeDI injection",
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-005",
-      "title": "Display source URL icon on memo cards",
-      "description": "As a user, I want to see a source URL icon on memo cards when source exists.",
+      "title": "Update environment configuration",
+      "description": "As a deployment engineer, I need updated environment variables to configure the relational database connection.",
       "acceptanceCriteria": [
-        "Memo card shows link icon when source field has value",
-        "Clicking icon opens source URL in new tab",
-        "Icon is visible in both light and dark themes",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "Update `.env.example` with new variables: DATABASE_TYPE=mysql, DATABASE_URL, optional DATABASE_POOL_SIZE",
+        "Update `README.md` and `CLAUDE.md` with database setup instructions",
+        "Document migration from LanceDB-only setup",
+        "Keep existing `LANCEDB_*` variables (still used for vectors)",
+        "Validate required env vars on startup with helpful error messages",
+        "Typecheck passes"
       ],
       "priority": 5,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-006",
-      "title": "Verify existing extension build setup",
-      "description": "As a developer, I need to verify the existing extension project structure builds correctly.",
+      "title": "Refactor MemoService to use hybrid storage",
+      "description": "As a developer, I need MemoService to query LanceDB for vector IDs then fetch details from Drizzle so vector search works with relational data.",
       "acceptanceCriteria": [
-        "Run vite build for extension",
-        "Verify manifest.json is in dist/",
-        "Verify popup, background, content scripts are built",
+        "`MemoService.create()` writes to both Drizzle (scalar) and LanceDB (vector + id)",
+        "`MemoService.update()` updates both Drizzle and LanceDB",
+        "`MemoService.delete()` removes from both stores",
+        "`MemoService.findById()` fetches from Drizzle only",
+        "`MemoService.listMemos()` fetches from Drizzle with pagination/filters",
+        "Vector search flow: LanceDB returns IDs → `MemoRepository.findByIds()` fetches details",
+        "Existing controller methods unchanged (same signatures and responses)",
         "Typecheck passes"
       ],
       "priority": 6,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-007",
-      "title": "Implement extension login UI",
-      "description": "As a user, I want to login to the plugin using my AIMO account.",
+      "title": "Refactor SearchService for hybrid queries",
+      "description": "As a developer, I need SearchService to coordinate between LanceDB (vector search) and Drizzle (scalar filters) so complex queries work efficiently.",
       "acceptanceCriteria": [
-        "Login page has server URL input",
-        "Login page has email and password inputs",
-        "Login page has token input option",
-        "Login calls backend /api/v1/auth/login API",
-        "Token saved to chrome.storage on success",
-        "Error message shown on failure",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "`SearchService.semanticSearch()` queries LanceDB for vector similarity, returns IDs",
+        "Fetch memo details via `MemoRepository.findByIds()` with scalar filters applied",
+        "Full-text search remains in LanceDB, scalar enrichment from Drizzle",
+        "Support combined queries (e.g., semantic search + tag filter + date range)",
+        "Maintain existing search response format (DTOs unchanged)",
+        "Typecheck passes"
       ],
       "priority": 7,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-008",
-      "title": "Implement text selection floating button",
-      "description": "As a user, I want a floating button to appear when I select text in a webpage.",
+      "title": "Refactor UserService and AttachmentService",
+      "description": "As a developer, I need UserService and AttachmentService to use Drizzle repositories so all scalar data lives in the relational DB.",
       "acceptanceCriteria": [
-        "Content script listens to mouseup event",
-        "When text is selected, floating button appears near selection",
-        "Button shows 'Save to AIMO' text",
-        "Button has proper styling for visibility on any background",
-        "Button is hidden when no text is selected",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "`UserService` uses `UserRepository` instead of LanceDB",
+        "`AttachmentService` uses `AttachmentRepository` instead of LanceDB",
+        "All existing service methods work identically (same inputs/outputs)",
+        "JWT authentication flow unchanged",
+        "File upload/storage logic unchanged (only metadata storage migrated)",
+        "Typecheck passes"
       ],
       "priority": 8,
-      "passes": true,
-      "notes": "Uses selectionchange event instead of mouseup (more robust)"
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-009",
-      "title": "Implement image hover floating button",
-      "description": "As a user, I want a floating button to appear when I hover over an image in a webpage.",
+      "title": "Implement LanceDB data migration script",
+      "description": "As a system administrator, I want historical LanceDB data automatically migrated to Drizzle on first startup so no data is lost.",
       "acceptanceCriteria": [
-        "Content script detects image hover",
-        "Floating button appears near the image",
-        "Button shows 'Save image to AIMO' text",
-        "Button is hidden when mouse leaves image",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "Create `src/migrations/lancedb-to-drizzle.migration.ts`",
+        "On startup, check if LanceDB data exists and Drizzle is empty",
+        "Before migration, export full LanceDB backup to `./backups/lancedb-backup-[timestamp].json`",
+        "Migrate all tables: memos, users, memo_relations, attachments",
+        "Migration is transactional (rollback on failure)",
+        "Migration failure causes startup to abort with clear error message",
+        "Log migration progress (e.g., 'Migrated 1000/5000 memos...')",
+        "Mark migration complete in `_migrations` table to prevent re-run",
+        "Typecheck passes"
       ],
       "priority": 9,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-010",
-      "title": "Create background script API handler",
-      "description": "As a developer, I need background script to handle API calls from content script.",
+      "title": "Add database health checks",
+      "description": "As a DevOps engineer, I need health check endpoints to verify database connectivity for monitoring and deployment validation.",
       "acceptanceCriteria": [
-        "Background script handles messages from content script",
-        "Can make authenticated API calls to AIMO backend",
-        "Can upload attachments",
-        "Can create memos",
+        "Add `GET /health/db` endpoint in existing health controller",
+        "Check Drizzle connection (simple query like `SELECT 1`)",
+        "Check LanceDB connection (existing check)",
+        "Return JSON: `{ drizzle: 'ok', lancedb: 'ok' }` or error details",
+        "200 status if both healthy, 503 if either fails",
         "Typecheck passes"
       ],
       "priority": 10,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-011",
-      "title": "Implement save text to memo",
-      "description": "As a user, I want to save selected text to AIMO as a new memo.",
+      "title": "Graceful shutdown for Drizzle connections",
+      "description": "As a system administrator, I need database connections properly closed on shutdown so no connections leak.",
       "acceptanceCriteria": [
-        "Clicking floating button sends text to background script",
-        "Background script calls /api/v1/memos POST endpoint",
-        "Creates text type memo with selected content",
-        "Shows success message in content script",
-        "Handles errors and shows error message",
+        "Add Drizzle connection cleanup to `src/index.ts` shutdown handler",
+        "Close connection pool before process exit",
+        "Shutdown order: Stop accepting requests → Close Drizzle → Close LanceDB",
+        "Log shutdown steps for debugging",
         "Typecheck passes"
       ],
       "priority": 11,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-012",
-      "title": "Implement save image to memo",
-      "description": "As a user, I want to save an image to AIMO as a new memo with attachment.",
+      "title": "Update test suite for hybrid storage",
+      "description": "As a developer, I need tests updated to cover Drizzle repositories and hybrid queries so regressions are caught.",
       "acceptanceCriteria": [
-        "Clicking floating button downloads image to background",
-        "Background uploads image to /api/v1/attachments endpoint",
-        "Background creates memo with attachment ID",
-        "Shows upload progress indicator",
-        "Shows success/error message",
+        "Update existing service tests to use in-memory SQLite for Drizzle",
+        "Mock LanceDB interactions in service tests",
+        "Add repository unit tests for CRUD operations",
+        "Add integration tests for hybrid search (LanceDB IDs → Drizzle details)",
+        "All existing tests pass with new implementation",
+        "Test coverage maintained or improved",
         "Typecheck passes"
       ],
       "priority": 12,
-      "passes": true,
+      "passes": false,
       "notes": ""
-    },
-    {
-      "id": "US-013",
-      "title": "Add category API to backend",
-      "description": "As a developer, I need a categories API for the plugin to fetch user categories.",
-      "acceptanceCriteria": [
-        "Add GET /api/v1/categories endpoint",
-        "Returns list of user's categories with id and name",
-        "Authenticated user only sees their own categories",
-        "Typecheck passes"
-      ],
-      "priority": 13,
-      "passes": true,
-      "notes": "Already exists in apps/server/src/controllers/v1/category.controller.ts"
-    },
-    {
-      "id": "US-014",
-      "title": "Implement plugin settings page - category",
-      "description": "As a user, I want to set the default category for memos saved from the plugin.",
-      "acceptanceCriteria": [
-        "Settings page fetches categories from API",
-        "Dropdown shows all available categories",
-        "User can select a default category",
-        "User can clear selection (no category)",
-        "Setting saved to chrome.storage.local",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 14,
-      "passes": true,
-      "notes": "Added Settings tab to ConfigPage with category dropdown. Categories fetched from GET /api/v1/categories API. Settings saved to chrome.storage.local using getSettings/setSettings functions."
-    },
-    {
-      "id": "US-015",
-      "title": "Implement plugin settings page - source URL toggle",
-      "description": "As a user, I want to toggle whether source URL is saved with memos.",
-      "acceptanceCriteria": [
-        "Settings page has 'Save source URL' toggle",
-        "Toggle defaults to enabled",
-        "When enabled, current page URL is saved with memo",
-        "Setting saved to chrome.storage.local",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 15,
-      "passes": true,
-      "notes": "Added toggle to Settings tab. Toggle defaults to enabled. Setting saved to chrome.storage.local using setSettings()."
-    },
-    {
-      "id": "US-016",
-      "title": "Integrate source URL into save flow",
-      "description": "As a developer, I need to integrate source URL saving into the save memo flow.",
-      "acceptanceCriteria": [
-        "Content script gets current page URL when saving",
-        "Background script checks source URL toggle setting",
-        "If enabled, includes source in create memo request",
-        "Source is saved to memo.source field",
-        "Typecheck passes"
-      ],
-      "priority": 16,
-      "passes": true,
-      "notes": "Content script already captures sourceUrl. Background script gets settings and checks saveSourceUrl toggle. Passes source to createMemo function. createMemo updated to accept source parameter. Build passes."
-    },
-    {
-      "id": "US-017",
-      "title": "Integrate category into save flow",
-      "description": "As a developer, I need to integrate category selection into the save memo flow.",
-      "acceptanceCriteria": [
-        "Background script reads default category from settings",
-        "When creating memo, includes categoryId if set",
-        "Category ID sent in create memo request",
-        "Typecheck passes"
-      ],
-      "priority": 17,
-      "passes": true,
-      "notes": "Background script gets defaultCategoryId from settings and passes to createMemo. createMemo updated to accept categoryId parameter. Build passes."
     }
   ]
 }

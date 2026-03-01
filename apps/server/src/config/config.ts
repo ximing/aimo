@@ -10,6 +10,7 @@ loadEnvironment();
 logger.info('Current Environment:', process.env.NODE_ENV);
 
 export type StorageType = 'local' | 's3';
+export type DatabaseType = 'mysql' | 'postgresql' | 'sqlite';
 export type AttachmentStorageType = 'local' | 's3' | 'oss';
 
 // 通用 S3 存储配置（支持 AWS S3、MinIO、Aliyun OSS 作为 S3-compatible 等）
@@ -80,6 +81,36 @@ export interface OcrConfig {
 // OCR 供应商类型
 export type OcrProviderType = 'zhipu';
 
+// Database configuration interfaces
+export interface MySQLConfig {
+  host: string;
+  port: number;
+  username: string;
+  password: string;
+  database: string;
+  poolSize?: number;
+}
+
+export interface PostgreSQLConfig {
+  host: string;
+  port: number;
+  username: string;
+  password: string;
+  database: string;
+  poolSize?: number;
+}
+
+export interface SQLiteConfig {
+  path: string;
+}
+
+export interface DatabaseConfig {
+  type: DatabaseType;
+  mysql?: MySQLConfig;
+  postgresql?: PostgreSQLConfig;
+  sqlite?: SQLiteConfig;
+}
+
 export interface Config {
   port: number;
   cors: {
@@ -102,6 +133,7 @@ export interface Config {
       endpoint?: string; // S3 endpoint URL (e.g., http://minio:9000)
     };
   };
+  database: DatabaseConfig;
   attachment: AttachmentConfig;
   scheduler?: {
     dbOptimizationCron: string; // Cron expression for database optimization (default: '0 2 * * *' - daily at 2 AM)
@@ -152,6 +184,37 @@ export const config: Config = {
             awsSecretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
             region: process.env.AWS_REGION || 'us-east-1',
             endpoint: process.env.LANCEDB_S3_ENDPOINT,
+          }
+        : undefined,
+  },
+  database: {
+    type: (process.env.DATABASE_TYPE || 'mysql') as DatabaseType,
+    mysql:
+      process.env.DATABASE_TYPE === 'mysql' || !process.env.DATABASE_TYPE
+        ? {
+            host: process.env.DATABASE_MYSQL_HOST || 'localhost',
+            port: Number(process.env.DATABASE_MYSQL_PORT) || 3306,
+            username: process.env.DATABASE_MYSQL_USERNAME || 'root',
+            password: process.env.DATABASE_MYSQL_PASSWORD || '',
+            database: process.env.DATABASE_MYSQL_DATABASE || 'aimo',
+            poolSize: Number(process.env.DATABASE_POOL_SIZE) || 10,
+          }
+        : undefined,
+    postgresql:
+      process.env.DATABASE_TYPE === 'postgresql'
+        ? {
+            host: process.env.DATABASE_POSTGRES_HOST || 'localhost',
+            port: Number(process.env.DATABASE_POSTGRES_PORT) || 5432,
+            username: process.env.DATABASE_POSTGRES_USERNAME || 'postgres',
+            password: process.env.DATABASE_POSTGRES_PASSWORD || '',
+            database: process.env.DATABASE_POSTGRES_DATABASE || 'aimo',
+            poolSize: Number(process.env.DATABASE_POOL_SIZE) || 10,
+          }
+        : undefined,
+    sqlite:
+      process.env.DATABASE_TYPE === 'sqlite'
+        ? {
+            path: process.env.DATABASE_SQLITE_PATH || './aimo.db',
           }
         : undefined,
   },
