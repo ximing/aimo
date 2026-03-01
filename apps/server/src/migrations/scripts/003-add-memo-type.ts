@@ -4,6 +4,8 @@
  * Sets all existing memos to 'text' type for backward compatibility
  */
 
+import { logger } from '../../utils/logger.js';
+
 import type { Migration } from '../types.js';
 import type { Connection } from '@lancedb/lancedb';
 
@@ -29,14 +31,14 @@ export const addMemoTypeMigration: Migration = {
       ];
 
       await memosTable.addColumns(newColumns);
-      console.log('Successfully added type column to memos table with default value "text"');
+      logger.info('Successfully added type column to memos table with default value "text"');
     } catch (error: any) {
       // Check if the column already exists
       if (error.message?.includes('already exists') || error.message?.includes('duplicate')) {
-        console.log('Type column already exists in memos table, skipping migration');
+        logger.info('Type column already exists in memos table, skipping migration');
         return;
       }
-      console.error('Error running migration v3:', error);
+      logger.error('Error running migration v3:', error);
       throw error;
     }
   },

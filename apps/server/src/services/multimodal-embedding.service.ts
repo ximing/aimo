@@ -5,6 +5,7 @@ import urllib from 'urllib';
 
 import { config } from '../config/config.js';
 import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
+import { logger } from '../utils/logger.js';
 
 /**
  * Multimodal content types
@@ -117,13 +118,13 @@ export class MultimodalEmbeddingService {
 
       const fallback = MODEL_DEFAULT_DIMENSIONS[config.multimodal.model];
       if (typeof fallback === 'number') {
-        console.warn(
+        logger.warn(
           `Configured dimension ${config.multimodal.dimension} is not supported by model ${config.multimodal.model}, using ${fallback}`
         );
         return fallback;
       }
 
-      console.warn(
+      logger.warn(
         `Configured dimension ${config.multimodal.dimension} is not supported by model ${config.multimodal.model}`
       );
     }
@@ -143,13 +144,13 @@ export class MultimodalEmbeddingService {
 
     const fallback = MODEL_DEFAULT_DIMENSIONS[config.multimodal.model];
     if (typeof fallback === 'number' && allowedDimensions.includes(fallback)) {
-      console.warn(
+      logger.warn(
         `Configured dimension ${config.multimodal.dimension} is not supported by model ${config.multimodal.model}, using ${fallback}`
       );
       return fallback;
     }
 
-    console.warn(
+    logger.warn(
       `Configured dimension ${config.multimodal.dimension} is not supported by model ${config.multimodal.model}`
     );
     return undefined;
@@ -282,7 +283,7 @@ export class MultimodalEmbeddingService {
       }
       return null;
     } catch (error) {
-      console.warn('Warning: Cache query failed, will regenerate embedding:', error);
+      logger.warn('Warning: Cache query failed, will regenerate embedding:', error);
       return null;
     }
   }
@@ -308,7 +309,7 @@ export class MultimodalEmbeddingService {
         } as Record<string, unknown>,
       ]);
     } catch (error) {
-      console.warn('Warning: Failed to save multimodal embedding to cache:', error);
+      logger.warn('Warning: Failed to save multimodal embedding to cache:', error);
     }
   }
 
@@ -410,12 +411,12 @@ export class MultimodalEmbeddingService {
       );
 
       if (cachedEmbedding) {
-        console.log(`Cache hit for multimodal embedding (${finalModalityType})`);
+        logger.debug(`Cache hit for multimodal embedding (${finalModalityType})`);
         return cachedEmbedding;
       }
 
       // Cache miss, generate embedding
-      console.log(
+      logger.debug(
         `Cache miss for multimodal embedding (${finalModalityType}), generating new one...`
       );
 
@@ -434,7 +435,7 @@ export class MultimodalEmbeddingService {
 
       return embedding;
     } catch (error) {
-      console.error('Error generating multimodal embedding:', error);
+      logger.error('Error generating multimodal embedding:', error);
       throw new Error(
         `Failed to generate multimodal embedding: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
@@ -487,13 +488,13 @@ export class MultimodalEmbeddingService {
 
       // If all cached, return immediately
       if (indexesToGenerate.length === 0) {
-        console.log(`Cache hit for all ${contents.length} multimodal embeddings`);
+        logger.debug(`Cache hit for all ${contents.length} multimodal embeddings`);
         return cachedResults as number[][];
       }
 
       // Generate embeddings for cache misses
       const contentsToGenerate = indexesToGenerate.map((index) => contentWithHashes[index].content);
-      console.log(
+      logger.debug(
         `Cache miss for ${indexesToGenerate.length} out of ${contents.length} multimodal embeddings, generating...`
       );
 
@@ -524,7 +525,7 @@ export class MultimodalEmbeddingService {
 
       return cachedResults as number[][];
     } catch (error) {
-      console.error('Error generating multimodal embeddings:', error);
+      logger.error('Error generating multimodal embeddings:', error);
       throw new Error(
         `Failed to generate multimodal embeddings: ${error instanceof Error ? error.message : 'Unknown error'}`
       );

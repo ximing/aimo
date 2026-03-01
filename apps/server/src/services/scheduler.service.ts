@@ -3,6 +3,7 @@ import { Service, Inject } from 'typedi';
 
 import { config } from '../config/config.js';
 import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
+import { logger } from '../utils/logger.js';
 
 import { PushRuleService } from './push-rule.service.js';
 import { DailyContentGenerator } from './channels/daily-content.generator.js';
@@ -30,11 +31,11 @@ export class SchedulerService {
    */
   async init(): Promise<void> {
     if (this.isInitialized) {
-      console.warn('SchedulerService already initialized');
+      logger.warn('SchedulerService already initialized');
       return;
     }
 
-    console.log('Initializing scheduler service...');
+    logger.info('Initializing scheduler service...');
 
     // 注册数据库优化任务
     this.registerDatabaseOptimizationTask();
@@ -43,7 +44,7 @@ export class SchedulerService {
     this.registerPushNotificationTask();
 
     this.isInitialized = true;
-    console.log('Scheduler service initialized successfully');
+    logger.info('Scheduler service initialized successfully');
   }
 
   /**
@@ -57,15 +58,15 @@ export class SchedulerService {
       cronExpression,
       async () => {
         try {
-          console.log('Starting scheduled LanceDB optimization...');
+          logger.info('Starting scheduled LanceDB optimization...');
           const startTime = Date.now();
 
           await this.lanceDatabaseService.optimizeAllTables();
 
           const duration = Date.now() - startTime;
-          console.log(`Scheduled LanceDB optimization completed in ${duration}ms`);
+          logger.info(`Scheduled LanceDB optimization completed in ${duration}ms`);
         } catch (error) {
-          console.error('Error during scheduled LanceDB optimization:', error);
+          logger.error('Error during scheduled LanceDB optimization:', error);
         }
       },
       {
@@ -74,7 +75,7 @@ export class SchedulerService {
     );
 
     this.tasks.push(task);
-    console.log(
+    logger.info(
       `Database optimization task scheduled: ${cronExpression} (${config.locale.timezone})`
     );
   }
@@ -91,7 +92,7 @@ export class SchedulerService {
         try {
           await this.processPushNotifications();
         } catch (error) {
-          console.error('Error processing push notifications:', error);
+          logger.error('Error processing push notifications:', error);
         }
       },
       {
@@ -100,7 +101,7 @@ export class SchedulerService {
     );
 
     this.tasks.push(task);
-    console.log('Push notification task scheduled: every hour');
+    logger.info('Push notification task scheduled: every hour');
   }
 
   /**
@@ -123,13 +124,13 @@ export class SchedulerService {
       return;
     }
 
-    console.log(`Processing ${matchingRules.length} push rules for hour ${currentHour}`);
+    logger.info(`Processing ${matchingRules.length} push rules for hour ${currentHour}`);
 
     for (const rule of matchingRules) {
       try {
         await this.sendPushForRule(rule);
       } catch (error) {
-        console.error(`Failed to send push for rule ${rule.id}:`, error);
+        logger.error(`Failed to send push for rule ${rule.id}:`, error);
         // Skip failed pushes and continue
       }
     }
@@ -156,9 +157,9 @@ export class SchedulerService {
           title: content.title,
           msg: content.msg,
         });
-        console.log(`Push sent for rule ${rule.id} via channel ${channelConfig.type}`);
+        logger.info(`Push sent for rule ${rule.id} via channel ${channelConfig.type}`);
       } catch (error) {
-        console.error(
+        logger.error(
           `Failed to send push for rule ${rule.id} via channel ${channelConfig.type}:`,
           error
         );
@@ -171,7 +172,7 @@ export class SchedulerService {
    * 停止所有定时任务
    */
   async stop(): Promise<void> {
-    console.log('Stopping scheduler service...');
+    logger.info('Stopping scheduler service...');
 
     for (const task of this.tasks) {
       task.stop();
@@ -180,7 +181,7 @@ export class SchedulerService {
     this.tasks = [];
     this.isInitialized = false;
 
-    console.log('Scheduler service stopped');
+    logger.info('Scheduler service stopped');
   }
 
   /**

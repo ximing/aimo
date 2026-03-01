@@ -3,6 +3,7 @@ import { Service } from 'typedi';
 
 import { config } from '../config/config.js';
 import { MigrationManager } from '../migrations/index.js';
+import { logger } from '../utils/logger.js';
 
 import type { Connection, Table } from '@lancedb/lancedb';
 
@@ -19,7 +20,7 @@ export class LanceDbService {
       const storageType = config.lancedb.storageType;
       const path = config.lancedb.path;
 
-      console.log(`Initializing LanceDB with storage type: ${storageType}, path: ${path}`);
+      logger.info(`Initializing LanceDB with storage type: ${storageType}, path: ${path}`);
 
       if (storageType === 's3') {
         // S3 Storage
@@ -63,14 +64,14 @@ export class LanceDbService {
           .filter(Boolean)
           .join(', ');
 
-        console.log(logMessage);
+        logger.info(logMessage);
 
         this.db = await lancedb.connect(path, {
           storageOptions,
         });
       } else {
         // Local Storage (default)
-        console.log(`Connecting to local database at: ${path}`);
+        logger.info(`Connecting to local database at: ${path}`);
         this.db = await lancedb.connect(path);
       }
 
@@ -80,9 +81,9 @@ export class LanceDbService {
       // Run migrations (includes table creation and index creation)
       await this.runMigrations();
 
-      console.log('LanceDB initialized successfully');
+      logger.info('LanceDB initialized successfully');
     } catch (error) {
-      console.error('Failed to initialize LanceDB:', error);
+      logger.error('Failed to initialize LanceDB:', error);
       throw error;
     }
   }
@@ -93,20 +94,20 @@ export class LanceDbService {
    */
   private async runMigrations(): Promise<void> {
     try {
-      console.log('Running database migrations...');
+      logger.info('Running database migrations...');
       const migrationManager = new MigrationManager({ verbose: true });
       await migrationManager.initialize(this.db);
 
       // Validate migration state
       const validation = await migrationManager.validate(this.db);
       if (!validation.valid) {
-        console.error('Migration validation failed:', validation.errors);
+        logger.error('Migration validation failed:', validation.errors);
         throw new Error(`Database schema is not up to date: ${validation.errors.join(', ')}`);
       }
 
-      console.log('All migrations completed successfully');
+      logger.info('All migrations completed successfully');
     } catch (error) {
-      console.error('Migration execution failed:', error);
+      logger.error('Migration execution failed:', error);
       throw error;
     }
   }
@@ -163,7 +164,7 @@ export class LanceDbService {
       const retentionDays = cleanupOlderThanDays ?? config.lancedb.versionRetentionDays;
       const cleanupDate = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
 
-      console.log(
+      logger.info(
         `Optimizing table: ${tableName} (cleaning versions older than ${retentionDays} days)...`
       );
 
@@ -171,11 +172,11 @@ export class LanceDbService {
         cleanupOlderThan: cleanupDate,
       });
 
-      console.log(
+      logger.info(
         `Table ${tableName} optimized successfully (versions older than ${retentionDays} days cleaned)`
       );
     } catch (error) {
-      console.warn(`Warning: Failed to optimize table ${tableName}:`, error);
+      logger.warn(`Warning: Failed to optimize table ${tableName}:`, error);
       // Don't throw - allow operations to continue even if optimization fails
     }
   }
@@ -196,18 +197,18 @@ export class LanceDbService {
       'embedding_cache',
       'multimodal_embedding_cache',
     ];
-    console.log(`Starting optimization for all tables...`);
+    logger.info(`Starting optimization for all tables...`);
 
     for (const tableName of tables) {
       try {
         await this.optimizeTable(tableName, cleanupOlderThanDays);
       } catch (error) {
-        console.warn(`Warning: Failed to optimize ${tableName}:`, error);
+        logger.warn(`Warning: Failed to optimize ${tableName}:`, error);
         // Continue with other tables even if one fails
       }
     }
 
-    console.log(`All tables optimization completed`);
+    logger.info(`All tables optimization completed`);
   }
 
   /**
@@ -219,14 +220,14 @@ export class LanceDbService {
       for (const [tableName, table] of this.tableCache.entries()) {
         try {
           table.close();
-          console.log(`Closed table: ${tableName}`);
+          logger.info(`Closed table: ${tableName}`);
         } catch (error) {
-          console.warn(`Error closing table ${tableName}:`, error);
+          logger.warn(`Error closing table ${tableName}:`, error);
         }
       }
       this.tableCache.clear();
     } catch (error) {
-      console.error('Error closing tables:', error);
+      logger.error('Error closing tables:', error);
       throw error;
     }
   }
@@ -240,9 +241,9 @@ export class LanceDbService {
       await this.closeAllTables();
       this.db.close();
       this.initialized = false;
-      console.log('LanceDB connection closed');
+      logger.info('LanceDB connection closed');
     } catch (error) {
-      console.error('Error closing LanceDB:', error);
+      logger.error('Error closing LanceDB:', error);
       throw error;
     }
   }

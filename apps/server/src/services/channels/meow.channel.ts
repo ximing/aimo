@@ -1,5 +1,7 @@
 import { Service } from 'typedi';
 
+import { logger } from '../../utils/logger.js';
+
 import type { PushChannel, PushChannelOptions } from './push-channel.interface.js';
 
 export interface MeowChannelConfig {
@@ -41,9 +43,9 @@ export class MeowChannel implements PushChannel {
         throw new Error(`MeoW channel error: ${response.status} - ${errorText}`);
       }
 
-      console.log(`MeoW notification sent successfully: ${options.title}`);
+      logger.info(`MeoW notification sent successfully: ${options.title}`);
     } catch (error) {
-      console.error('Failed to send MeoW notification:', error);
+      logger.error('Failed to send MeoW notification:', error);
       throw error;
     }
   }

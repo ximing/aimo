@@ -8,6 +8,7 @@ import { AttachmentService } from './attachment.service.js';
 import { EmbeddingService } from './embedding.service.js';
 import { MemoRelationService } from './memo-relation.service.js';
 import { TagService } from './tag.service.js';
+import { logger } from '../utils/logger.js';
 
 import type { Memo, NewMemo } from '../models/db/memo.schema.js';
 import type {
@@ -144,7 +145,7 @@ export class MemoService {
         };
       });
     } catch (error) {
-      console.error('Error enriching tags:', error);
+      logger.error('Error enriching tags:', error);
       // Return items with empty tags if enrichment fails
       return items.map((item) => ({
         ...item,
@@ -181,10 +182,10 @@ export class MemoService {
           // Quick validation that attachments belong to this user
           const attachmentDtos = await this.attachmentService.getAttachmentsByIds(attachments, uid);
           if (attachmentDtos.length !== attachments.length) {
-            console.warn(`Some attachments not found or don't belong to user ${uid}`);
+            logger.warn(`Some attachments not found or don't belong to user ${uid}`);
           }
         } catch (error) {
-          console.warn(`Failed to validate attachments for user ${uid}:`, error);
+          logger.warn(`Failed to validate attachments for user ${uid}:`, error);
         }
       }
 
@@ -239,7 +240,7 @@ export class MemoService {
         try {
           await this.memoRelationService.replaceRelations(uid, memoId, relationIds);
         } catch (error) {
-          console.warn('Failed to create memo relations:', error);
+          logger.warn('Failed to create memo relations:', error);
           // Don't throw - allow memo creation even if relations fail
         }
       }
@@ -249,7 +250,7 @@ export class MemoService {
         try {
           await this.tagService.incrementUsageCount(tagId, uid);
         } catch (error) {
-          console.warn(`Failed to increment usage count for tag ${tagId}:`, error);
+          logger.warn(`Failed to increment usage count for tag ${tagId}:`, error);
         }
       }
 
@@ -273,7 +274,7 @@ export class MemoService {
         tags: tagDtos,
       };
     } catch (error) {
-      console.error('Error creating memo:', error);
+      logger.error('Error creating memo:', error);
       throw error;
     }
   }
@@ -403,7 +404,7 @@ export class MemoService {
         },
       };
     } catch (error) {
-      console.error('Error getting memos:', error);
+      logger.error('Error getting memos:', error);
       throw error;
     }
   }
@@ -457,7 +458,7 @@ export class MemoService {
         ...enrichedItems[0],
       } as MemoWithAttachmentsDto;
     } catch (error) {
-      console.error('Error getting memo by ID:', error);
+      logger.error('Error getting memo by ID:', error);
       throw error;
     }
   }
@@ -504,10 +505,10 @@ export class MemoService {
         try {
           const attachmentDtos = await this.attachmentService.getAttachmentsByIds(attachments, uid);
           if (attachmentDtos.length !== attachments.length) {
-            console.warn(`Some attachments not found or don't belong to user ${uid}`);
+            logger.warn(`Some attachments not found or don't belong to user ${uid}`);
           }
         } catch (error) {
-          console.warn(`Failed to validate attachments for user ${uid}:`, error);
+          logger.warn(`Failed to validate attachments for user ${uid}:`, error);
         }
       }
 
@@ -562,7 +563,7 @@ export class MemoService {
         try {
           await this.memoRelationService.replaceRelations(uid, memoId, relationIds);
         } catch (error) {
-          console.warn('Failed to update memo relations:', error);
+          logger.warn('Failed to update memo relations:', error);
           // Don't throw - allow memo update even if relations fail
         }
       }
@@ -614,7 +615,7 @@ export class MemoService {
             try {
               await this.tagService.incrementUsageCount(tagId, uid);
             } catch (error) {
-              console.warn(`Failed to increment usage count for tag ${tagId}:`, error);
+              logger.warn(`Failed to increment usage count for tag ${tagId}:`, error);
             }
           }
 
@@ -623,13 +624,13 @@ export class MemoService {
             try {
               await this.tagService.decrementUsageCount(tagId, uid);
             } catch (error) {
-              console.warn(`Failed to decrement usage count for tag ${tagId}:`, error);
+              logger.warn(`Failed to decrement usage count for tag ${tagId}:`, error);
             }
           }
 
           finalTagIds = resolvedTagIds;
         } catch (error) {
-          console.warn('Failed to update memo tags:', error);
+          logger.warn('Failed to update memo tags:', error);
           // Don't throw - allow memo update even if tags fail
         }
       }
@@ -665,7 +666,7 @@ export class MemoService {
         ...enrichedItems[0],
       } as MemoWithAttachmentsDto;
     } catch (error) {
-      console.error('Error updating memo:', error);
+      logger.error('Error updating memo:', error);
       throw error;
     }
   }
@@ -752,7 +753,7 @@ export class MemoService {
         try {
           await this.tagService.incrementUsageCount(tagId, uid);
         } catch (error) {
-          console.warn(`Failed to increment usage count for tag ${tagId}:`, error);
+          logger.warn(`Failed to increment usage count for tag ${tagId}:`, error);
         }
       }
 
@@ -761,7 +762,7 @@ export class MemoService {
         try {
           await this.tagService.decrementUsageCount(tagId, uid);
         } catch (error) {
-          console.warn(`Failed to decrement usage count for tag ${tagId}:`, error);
+          logger.warn(`Failed to decrement usage count for tag ${tagId}:`, error);
         }
       }
 
@@ -798,7 +799,7 @@ export class MemoService {
         ...enrichedItems[0],
       } as MemoWithAttachmentsDto;
     } catch (error) {
-      console.error('Error updating memo tags:', error);
+      logger.error('Error updating memo tags:', error);
       throw error;
     }
   }
@@ -831,7 +832,7 @@ export class MemoService {
         await this.memoRelationService.deleteRelationsBySourceMemo(uid, memoId);
         await this.memoRelationService.deleteRelationsByTargetMemo(uid, memoId);
       } catch (error) {
-        console.warn('Failed to delete memo relations during memo deletion:', error);
+        logger.warn('Failed to delete memo relations during memo deletion:', error);
         // Don't throw - allow memo deletion even if relation cleanup fails
       }
 
@@ -840,13 +841,13 @@ export class MemoService {
         try {
           await this.tagService.decrementUsageCount(tagId, uid);
         } catch (error) {
-          console.warn(`Failed to decrement usage count for tag ${tagId}:`, error);
+          logger.warn(`Failed to decrement usage count for tag ${tagId}:`, error);
         }
       }
 
       return true;
     } catch (error) {
-      console.error('Error deleting memo:', error);
+      logger.error('Error deleting memo:', error);
       throw error;
     }
   }
@@ -961,7 +962,7 @@ export class MemoService {
         },
       };
     } catch (error) {
-      console.error('Error performing vector search:', error);
+      logger.error('Error performing vector search:', error);
       throw error;
     }
   }
@@ -992,7 +993,7 @@ export class MemoService {
 
       return memos as Memo[];
     } catch (error) {
-      console.error('Error getting all memos:', error);
+      logger.error('Error getting all memos:', error);
       throw error;
     }
   }
@@ -1007,7 +1008,7 @@ export class MemoService {
       const count = await memosTable.countRows(`uid = '${uid}'`);
       return count;
     } catch (error) {
-      console.error('Error getting memo count:', error);
+      logger.error('Error getting memo count:', error);
       throw error;
     }
   }
@@ -1042,7 +1043,7 @@ export class MemoService {
         attachments: attachmentDtos,
       } as Memo;
     } catch (error) {
-      console.error('Error getting memo by offset:', error);
+      logger.error('Error getting memo by offset:', error);
       return null;
     }
   }
@@ -1127,7 +1128,7 @@ export class MemoService {
         },
       };
     } catch (error) {
-      console.error('Error finding related memos:', error);
+      logger.error('Error finding related memos:', error);
       throw error;
     }
   }
@@ -1178,7 +1179,7 @@ export class MemoService {
 
       return itemsWithTags;
     } catch (error) {
-      console.error('Error getting memos by IDs:', error);
+      logger.error('Error getting memos by IDs:', error);
       throw error;
     }
   }
@@ -1230,14 +1231,14 @@ export class MemoService {
             relations: relations.length > 0 ? relations : undefined,
           });
         } catch (error) {
-          console.warn(`Failed to enrich memo ${item.memoId} with relations:`, error);
+          logger.warn(`Failed to enrich memo ${item.memoId} with relations:`, error);
           enrichedItems.push(item);
         }
       }
 
       return enrichedItems;
     } catch (error) {
-      console.error('Error enriching memos with relations:', error);
+      logger.error('Error enriching memos with relations:', error);
       // Return original items if enrichment fails
       return items;
     }
@@ -1304,7 +1305,7 @@ export class MemoService {
         endDate: formatDateKeyUTC(endTimestamp),
       };
     } catch (error) {
-      console.error('Error getting activity stats:', error);
+      logger.error('Error getting activity stats:', error);
       throw error;
     }
   }
@@ -1362,7 +1363,7 @@ export class MemoService {
         todayMonthDay,
       };
     } catch (error) {
-      console.error('Error getting on this day memos:', error);
+      logger.error('Error getting on this day memos:', error);
       throw error;
     }
   }
@@ -1435,7 +1436,7 @@ export class MemoService {
         },
       };
     } catch (error) {
-      console.error('Error getting public memos:', error);
+      logger.error('Error getting public memos:', error);
       throw error;
     }
   }
@@ -1499,7 +1500,7 @@ export class MemoService {
       const [enrichedMemo] = await this.enrichTags(uid, [memoItem]);
       return enrichedMemo;
     } catch (error) {
-      console.error('Error getting random public memo:', error);
+      logger.error('Error getting random public memo:', error);
       throw error;
     }
   }
@@ -1551,7 +1552,7 @@ export class MemoService {
 
       return enrichedMemo as MemoWithAttachmentsDto;
     } catch (error) {
-      console.error('Error getting public memo by ID:', error);
+      logger.error('Error getting public memo by ID:', error);
       throw error;
     }
   }

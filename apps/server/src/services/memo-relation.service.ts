@@ -3,6 +3,7 @@ import { Service } from 'typedi';
 import { OBJECT_TYPE } from '../models/constant/type.js';
 import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
 import { generateTypeId } from '../utils/id.js';
+import { logger } from '../utils/logger.js';
 
 import type { MemoRelationRecord } from '../models/db/schema.js';
 
@@ -39,7 +40,7 @@ export class MemoRelationService {
 
       return relation;
     } catch (error) {
-      console.error('Failed to create relation:', error);
+      logger.error('Failed to create relation:', error);
       throw error;
     }
   }
@@ -58,7 +59,7 @@ export class MemoRelationService {
 
       return results.map((record: any) => record.targetMemoId);
     } catch (error) {
-      console.error('Failed to get related memos:', error);
+      logger.error('Failed to get related memos:', error);
       throw error;
     }
   }
@@ -76,7 +77,7 @@ export class MemoRelationService {
 
       return true;
     } catch (error) {
-      console.error('Failed to delete relation:', error);
+      logger.error('Failed to delete relation:', error);
       throw error;
     }
   }
@@ -90,7 +91,7 @@ export class MemoRelationService {
 
       await table.delete(`uid = '${uid}' AND sourceMemoId = '${sourceMemoId}'`);
     } catch (error) {
-      console.error('Failed to delete relations by source memo:', error);
+      logger.error('Failed to delete relations by source memo:', error);
       throw error;
     }
   }
@@ -104,7 +105,7 @@ export class MemoRelationService {
 
       await table.delete(`uid = '${uid}' AND targetMemoId = '${targetMemoId}'`);
     } catch (error) {
-      console.error('Failed to delete relations by target memo:', error);
+      logger.error('Failed to delete relations by target memo:', error);
       throw error;
     }
   }
@@ -128,7 +129,7 @@ export class MemoRelationService {
         }
       }
     } catch (error) {
-      console.error('Failed to replace relations:', error);
+      logger.error('Failed to replace relations:', error);
       throw error;
     }
   }
@@ -148,7 +149,7 @@ export class MemoRelationService {
 
       return results.map((record: any) => record.sourceMemoId);
     } catch (error) {
-      console.error('Failed to get backlinks:', error);
+      logger.error('Failed to get backlinks:', error);
       throw error;
     }
   }

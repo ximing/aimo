@@ -9,6 +9,7 @@ import { Service } from 'typedi';
 import { ErrorCode } from '../../constants/error-codes.js';
 import { ASRService } from '../../services/asr.service.js';
 import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
+import { logger } from '../../utils/logger.js';
 
 import type {
   ASRTranscribeRequestDto,
@@ -43,7 +44,7 @@ export class ASRV1Controller {
       const result = await this.asrService.submitTranscription(request);
       return ResponseUtility.success(result);
     } catch (error) {
-      console.error('ASR transcription error:', error);
+      logger.error('ASR transcription error:', error);
       return ResponseUtility.error(
         ErrorCode.SYSTEM_ERROR,
         error instanceof Error ? error.message : 'Transcription failed'
@@ -69,7 +70,7 @@ export class ASRV1Controller {
       const result = await this.asrService.queryTaskStatus(taskId);
       return ResponseUtility.success(result);
     } catch (error) {
-      console.error('ASR task status error:', error);
+      logger.error('ASR task status error:', error);
       return ResponseUtility.error(
         ErrorCode.SYSTEM_ERROR,
         error instanceof Error ? error.message : 'Failed to query task status'
@@ -100,7 +101,7 @@ export class ASRV1Controller {
       const result = await this.asrService.getTranscriptionResult(taskId);
       return ResponseUtility.success(result);
     } catch (error) {
-      console.error('ASR wait error:', error);
+      logger.error('ASR wait error:', error);
       return ResponseUtility.error(
         ErrorCode.SYSTEM_ERROR,
         error instanceof Error ? error.message : 'Failed to wait for transcription'
@@ -126,7 +127,7 @@ export class ASRV1Controller {
       const result = await this.asrService.getTranscriptionResult(taskId);
       return ResponseUtility.success(result);
     } catch (error) {
-      console.error('ASR result error:', error);
+      logger.error('ASR result error:', error);
       return ResponseUtility.error(
         ErrorCode.SYSTEM_ERROR,
         error instanceof Error ? error.message : 'Failed to get transcription result'
@@ -154,7 +155,7 @@ export class ASRV1Controller {
       const result = await this.asrService.transcribe(request);
       return ResponseUtility.success(result);
     } catch (error) {
-      console.error('ASR transcribe and wait error:', error);
+      logger.error('ASR transcribe and wait error:', error);
       return ResponseUtility.error(
         ErrorCode.SYSTEM_ERROR,
         error instanceof Error ? error.message : 'Transcription failed'

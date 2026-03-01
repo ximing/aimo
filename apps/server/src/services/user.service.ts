@@ -3,6 +3,7 @@ import { Service } from 'typedi';
 
 import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
 import { generateUid } from '../utils/id.js';
+import { logger } from '../utils/logger.js';
 
 import { CategoryService } from './category.service.js';
 
@@ -56,12 +57,12 @@ export class UserService {
         });
       } catch (error) {
         // Log error but don't fail user creation if category creation fails
-        console.warn('Failed to create default category for user:', error);
+        logger.warn('Failed to create default category for user:', error);
       }
 
       return user;
     } catch (error) {
-      console.error('Error creating user:', error);
+      logger.error('Error creating user:', error);
       throw error;
     }
   }
@@ -77,7 +78,7 @@ export class UserService {
 
       return results.length > 0 ? (results[0] as User) : null;
     } catch (error) {
-      console.error('Error finding user by email:', error);
+      logger.error('Error finding user by email:', error);
       throw error;
     }
   }
@@ -93,7 +94,7 @@ export class UserService {
 
       return results.length > 0 ? (results[0] as User) : null;
     } catch (error) {
-      console.error('Error finding user by UID:', error);
+      logger.error('Error finding user by UID:', error);
       throw error;
     }
   }
@@ -105,7 +106,7 @@ export class UserService {
     try {
       return await bcrypt.compare(plainPassword, hashedPassword);
     } catch (error) {
-      console.error('Error verifying password:', error);
+      logger.error('Error verifying password:', error);
       return false;
     }
   }
@@ -119,7 +120,7 @@ export class UserService {
       const hashedPassword = await bcrypt.hash(password, salt);
       return { hashedPassword, salt };
     } catch (error) {
-      console.error('Error hashing password:', error);
+      logger.error('Error hashing password:', error);
       throw error;
     }
   }
@@ -164,7 +165,7 @@ export class UserService {
 
       return updatedUser as User;
     } catch (error) {
-      console.error('Error updating user:', error);
+      logger.error('Error updating user:', error);
       throw error;
     }
   }
@@ -194,7 +195,7 @@ export class UserService {
 
       return true;
     } catch (error) {
-      console.error('Error deleting user:', error);
+      logger.error('Error deleting user:', error);
       throw error;
     }
   }
@@ -231,7 +232,7 @@ export class UserService {
 
       return { success: true, message: '密码修改成功' };
     } catch (error) {
-      console.error('Error changing password:', error);
+      logger.error('Error changing password:', error);
       return { success: false, message: '密码修改失败' };
     }
   }

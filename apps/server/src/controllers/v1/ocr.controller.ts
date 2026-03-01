@@ -9,6 +9,7 @@ import { Service } from 'typedi';
 import { ErrorCode } from '../../constants/error-codes.js';
 import { OcrService } from '../../services/ocr/ocr.service.js';
 import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
+import { logger } from '../../utils/logger.js';
 
 import type { OcrProviderType, OcrOptions, OcrResult } from '../../services/ocr/interfaces.js';
 
@@ -71,7 +72,7 @@ export class OcrV1Controller {
       const texts = await this.ocrService.parseText(request.files, request.provider);
       return ResponseUtility.success({ texts });
     } catch (error) {
-      console.error('OCR parse error:', error);
+      logger.error('OCR parse error:', error);
       return ResponseUtility.error(
         ErrorCode.SYSTEM_ERROR,
         error instanceof Error ? error.message : 'OCR parsing failed'
@@ -108,7 +109,7 @@ export class OcrV1Controller {
       );
       return ResponseUtility.success({ results });
     } catch (error) {
-      console.error('OCR parse-full error:', error);
+      logger.error('OCR parse-full error:', error);
       return ResponseUtility.error(
         ErrorCode.SYSTEM_ERROR,
         error instanceof Error ? error.message : 'OCR parsing failed'
@@ -132,7 +133,7 @@ export class OcrV1Controller {
       };
       return ResponseUtility.success(status);
     } catch (error) {
-      console.error('OCR status error:', error);
+      logger.error('OCR status error:', error);
       return ResponseUtility.error(
         ErrorCode.SYSTEM_ERROR,
         error instanceof Error ? error.message : 'Failed to get OCR status'
@@ -152,7 +153,7 @@ export class OcrV1Controller {
       const providers = this.ocrService.getAvailableProviders();
       return ResponseUtility.success({ providers });
     } catch (error) {
-      console.error('OCR providers error:', error);
+      logger.error('OCR providers error:', error);
       return ResponseUtility.error(
         ErrorCode.SYSTEM_ERROR,
         error instanceof Error ? error.message : 'Failed to get OCR providers'

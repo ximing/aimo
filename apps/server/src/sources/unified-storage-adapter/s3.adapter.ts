@@ -9,6 +9,7 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 import { BaseUnifiedStorageAdapter, type StorageMetadata } from './base.adapter.js';
+import { logger } from '../../utils/logger.js';
 
 export interface S3UnifiedStorageAdapterConfig {
   bucket: string;
@@ -81,7 +82,7 @@ export class S3UnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
     }
 
     this.s3Client = new S3Client(clientConfig);
-    console.log(
+    logger.info(
       `S3 adapter initialized with bucket: ${this.bucket}, prefix: ${this.prefix}, ` +
         `endpoint: ${this.endpoint || 'AWS S3'}, region: ${this.region}, isPublic: ${this.isPublic}`
     );
@@ -102,9 +103,9 @@ export class S3UnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
       });
 
       await this.s3Client.send(command);
-      console.log(`File uploaded to S3: s3://${this.bucket}/${fullKey}`);
+      logger.debug(`File uploaded to S3: s3://${this.bucket}/${fullKey}`);
     } catch (error) {
-      console.error(`Failed to upload file to S3: ${key}`, error);
+      logger.error(`Failed to upload file to S3: ${key}`, error);
       throw error;
     }
   }
@@ -130,10 +131,10 @@ export class S3UnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
         chunks.push(chunk);
       }
 
-      console.log(`File downloaded from S3: s3://${this.bucket}/${fullKey}`);
+      logger.debug(`File downloaded from S3: s3://${this.bucket}/${fullKey}`);
       return Buffer.concat(chunks);
     } catch (error) {
-      console.error(`Failed to download file from S3: ${key}`, error);
+      logger.error(`Failed to download file from S3: ${key}`, error);
       throw error;
     }
   }
@@ -148,9 +149,9 @@ export class S3UnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
       });
 
       await this.s3Client.send(command);
-      console.log(`File deleted from S3: s3://${this.bucket}/${fullKey}`);
+      logger.debug(`File deleted from S3: s3://${this.bucket}/${fullKey}`);
     } catch (error) {
-      console.error(`Failed to delete file from S3: ${key}`, error);
+      logger.error(`Failed to delete file from S3: ${key}`, error);
       throw error;
     }
   }
@@ -187,7 +188,7 @@ export class S3UnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
 
       return files;
     } catch (error) {
-      console.error(`Failed to list files from S3 with prefix ${prefix}:`, error);
+      logger.error(`Failed to list files from S3 with prefix ${prefix}:`, error);
       return [];
     }
   }
@@ -207,7 +208,7 @@ export class S3UnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
       if (error.name === 'NotFound') {
         return false;
       }
-      console.error(`Failed to check file existence in S3: ${key}`, error);
+      logger.error(`Failed to check file existence in S3: ${key}`, error);
       return false;
     }
   }
@@ -228,7 +229,7 @@ export class S3UnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
         lastModified: response.LastModified || new Date(),
       };
     } catch (error) {
-      console.error(`Failed to get file metadata from S3: ${key}`, error);
+      logger.error(`Failed to get file metadata from S3: ${key}`, error);
       return null;
     }
   }
@@ -283,7 +284,7 @@ export class S3UnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
       // console.log(`Generated presigned URL for key: ${fullKey} (expires in ${expiresIn}s)`);
       return presignedUrl;
     } catch (error) {
-      console.error(`Failed to generate access URL for S3 key: ${key}`, error);
+      logger.error(`Failed to generate access URL for S3 key: ${key}`, error);
       throw error;
     }
   }

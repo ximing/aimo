@@ -3,6 +3,8 @@
  * Handles execution of individual migrations and updates metadata
  */
 
+import { logger } from '../utils/logger.js';
+
 import type { Migration, MigrationExecutionResult } from './types.js';
 import type { TableMigrationRecord } from '../models/db/schema.js';
 import type { Connection, Table } from '@lancedb/lancedb';
@@ -23,7 +25,7 @@ export const MigrationExecutor = {
     const { tableName, version } = migration;
 
     try {
-      console.log(
+      logger.info(
         `Executing migration: ${tableName} v${version} - ${migration.description || 'No description'}`
       );
 
@@ -54,7 +56,7 @@ export const MigrationExecutor = {
       // Insert/upsert the record
       await metadataTable.add([metadata as unknown as Record<string, unknown>]);
 
-      console.log(`Migration completed: ${tableName} v${version}`);
+      logger.info(`Migration completed: ${tableName} v${version}`);
 
       return {
         tableName,
@@ -64,7 +66,7 @@ export const MigrationExecutor = {
         executedAt: now,
       };
     } catch (error) {
-      console.error(`Failed to execute migration: ${tableName} v${version}`, error);
+      logger.error(`Failed to execute migration: ${tableName} v${version}`, error);
       throw new Error(`Migration failed for ${tableName} v${version}: ${(error as Error).message}`);
     }
   },
@@ -105,7 +107,7 @@ export const MigrationExecutor = {
         executedAt: Date.now(),
       };
     } catch (error) {
-      console.error(`Failed during batch migration for ${tableName}`, error);
+      logger.error(`Failed during batch migration for ${tableName}`, error);
       throw error;
     }
   },
@@ -130,7 +132,7 @@ export const MigrationExecutor = {
       const record = results[0];
       return record.currentVersion;
     } catch (error) {
-      console.warn(`Could not get current version for ${tableName}:`, error);
+      logger.warn(`Could not get current version for ${tableName}:`, error);
       return 0;
     }
   },
@@ -143,17 +145,17 @@ export const MigrationExecutor = {
       const tableNames = await connection.tableNames();
 
       if (!tableNames.includes('table_migrations')) {
-        console.log('Creating table_migrations metadata table...');
+        logger.info('Creating table_migrations metadata table...');
 
         const { tableMigrationsSchema } = await import('../models/db/schema.js');
         await connection.createEmptyTable('table_migrations', tableMigrationsSchema);
 
-        console.log('Table migrations metadata table created successfully');
+        logger.info('Table migrations metadata table created successfully');
       }
 
       return await connection.openTable('table_migrations');
     } catch (error) {
-      console.error('Failed to ensure metadata table exists:', error);
+      logger.error('Failed to ensure metadata table exists:', error);
       throw error;
     }
   },

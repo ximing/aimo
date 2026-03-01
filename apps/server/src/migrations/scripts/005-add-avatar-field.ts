@@ -3,6 +3,8 @@
  * Adds avatar field for user profile pictures using LanceDB's addColumns()
  */
 
+import { logger } from '../../utils/logger.js';
+
 import type { Migration } from '../types.js';
 import type { Connection } from '@lancedb/lancedb';
 
@@ -28,7 +30,7 @@ export const addAvatarToUsersMigration: Migration = {
       ];
 
       await usersTable.addColumns(newColumns);
-      console.log('Successfully added avatar column to users table');
+      logger.info('Successfully added avatar column to users table');
     } catch (error: any) {
       // Check if the column already exists or is already compatible
       if (
@@ -36,10 +38,10 @@ export const addAvatarToUsersMigration: Migration = {
         error.message?.includes('duplicate') ||
         error.message?.includes('Type conflicts between avatar')
       ) {
-        console.log('Avatar column already exists in users table, skipping migration');
+        logger.info('Avatar column already exists in users table, skipping migration');
         return;
       }
-      console.error('Error running migration v5:', error);
+      logger.error('Error running migration v5:', error);
       throw error;
     }
   },

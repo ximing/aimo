@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import glob from 'glob';
 
 import { config } from './config/config.js';
+import { logger } from './utils/logger.js';
 
 const __dirname = parse(fileURLToPath(import.meta.url)).dir;
 const isProduction = config.env !== 'development';
@@ -21,13 +22,13 @@ export async function initIOC() {
     `${__dirname}/services/**/*.${isProduction ? 'js' : 'ts'}`,
   ]) {
     const filePaths = findFileNamesFromGlob(globString);
-    console.log('isProduction', isProduction, filePaths);
+    logger.info('IOC: Loading files', { isProduction, count: filePaths.length });
     for (const fileName of filePaths) {
       try {
         const module = await import(fileName);
-        console.log(module.name, module);
+        logger.debug(module.name, { module });
       } catch (error: any) {
-        console.error(`Failed to import ${fileName}: ${error.message}`);
+        logger.error(`Failed to import ${fileName}: ${error.message}`);
       }
     }
   }

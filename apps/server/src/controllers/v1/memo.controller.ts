@@ -17,6 +17,7 @@ import { AvatarService } from '../../services/avatar.service.js';
 import { MemoService } from '../../services/memo.service.js';
 import { UserService } from '../../services/user.service.js';
 import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
+import { logger } from '../../utils/logger.js';
 
 import type { CreateMemoDto, UpdateMemoDto, UserInfoDto } from '@aimo/dto';
 
@@ -82,7 +83,7 @@ export class MemoV1Controller {
 
       return ResponseUtility.success(result);
     } catch (error) {
-      console.error('Get memos error:', error);
+      logger.error('Get memos error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
@@ -138,7 +139,7 @@ export class MemoV1Controller {
 
       return ResponseUtility.success(result);
     } catch (error) {
-      console.error('Vector search error:', error);
+      logger.error('Vector search error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
@@ -173,7 +174,7 @@ export class MemoV1Controller {
         memo,
       });
     } catch (error) {
-      console.error('Create memo error:', error);
+      logger.error('Create memo error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
@@ -192,7 +193,7 @@ export class MemoV1Controller {
 
       return ResponseUtility.success(memo);
     } catch (error) {
-      console.error('Get memo error:', error);
+      logger.error('Get memo error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
@@ -233,7 +234,7 @@ export class MemoV1Controller {
         memo,
       });
     } catch (error) {
-      console.error('Update memo error:', error);
+      logger.error('Update memo error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
@@ -278,7 +279,7 @@ export class MemoV1Controller {
         memo,
       });
     } catch (error: any) {
-      console.error('Update memo tags error:', error);
+      logger.error('Update memo tags error:', error);
       if (error.message === 'Memo not found') {
         return ResponseUtility.error(ErrorCode.NOT_FOUND);
       }
@@ -300,7 +301,7 @@ export class MemoV1Controller {
 
       return ResponseUtility.success({ message: 'Memo deleted successfully' });
     } catch (error) {
-      console.error('Delete memo error:', error);
+      logger.error('Delete memo error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
@@ -321,7 +322,7 @@ export class MemoV1Controller {
 
       return ResponseUtility.success(result);
     } catch (error) {
-      console.error('Find related memos error:', error);
+      logger.error('Find related memos error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
@@ -366,7 +367,7 @@ export class MemoV1Controller {
         },
       });
     } catch (error) {
-      console.error('Get backlinks error:', error);
+      logger.error('Get backlinks error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
@@ -392,7 +393,7 @@ export class MemoV1Controller {
 
       return ResponseUtility.success(result);
     } catch (error) {
-      console.error('Get public memos error:', error);
+      logger.error('Get public memos error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
@@ -416,7 +417,7 @@ export class MemoV1Controller {
 
       return ResponseUtility.success(memo);
     } catch (error) {
-      console.error('Get random public memo error:', error);
+      logger.error('Get random public memo error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
@@ -457,7 +458,7 @@ export class MemoV1Controller {
         user: userInfo,
       });
     } catch (error) {
-      console.error('Get public memo error:', error);
+      logger.error('Get public memo error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }

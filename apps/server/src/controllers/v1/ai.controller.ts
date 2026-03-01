@@ -4,6 +4,7 @@ import { Service } from 'typedi';
 import { ErrorCode } from '../../constants/error-codes.js';
 import { AIService } from '../../services/ai.service.js';
 import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
+import { logger } from '../../utils/logger.js';
 
 import type { GenerateTagsRequestDto, UserInfoDto, AIToolConfigDto } from '@aimo/dto';
 
@@ -41,7 +42,7 @@ export class AIV1Controller {
         tags,
       });
     } catch (error) {
-      console.error('Generate tags error:', error);
+      logger.error('Generate tags error:', error);
       return ResponseUtility.error(
         ErrorCode.SYSTEM_ERROR,
         error instanceof Error ? error.message : 'Failed to generate tags'

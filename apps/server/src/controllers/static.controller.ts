@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url';
 import { Controller, Get, Res } from 'routing-controllers';
 import { Service } from 'typedi';
 
+import { logger } from '../utils/logger.js';
+
 import type { Response } from 'express';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -37,7 +39,7 @@ export class StaticController {
         .status(404)
         .send('Not Found: index.html not found. Make sure web application is built.');
     } catch (error) {
-      console.error('Error serving index.html:', error);
+      logger.error('Error serving index.html:', error);
       return res.status(500).send('Internal Server Error');
     }
   }

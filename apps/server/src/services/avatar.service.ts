@@ -9,6 +9,7 @@ import { Service } from 'typedi';
 
 import { config } from '../config/config.js';
 import { UnifiedStorageAdapterFactory } from '../sources/unified-storage-adapter/index.js';
+import { logger } from '../utils/logger.js';
 
 import type { UnifiedStorageAdapter } from '../sources/unified-storage-adapter/index.js';
 
@@ -183,7 +184,7 @@ export class AvatarService {
       }
     } catch (error) {
       // 删除失败不应阻止头像更新
-      console.warn('Failed to delete old avatar:', error);
+      logger.warn('Failed to delete old avatar:', error);
     }
   }
 

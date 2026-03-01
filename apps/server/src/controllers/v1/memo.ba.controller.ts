@@ -7,6 +7,7 @@ import { CategoryService } from '../../services/category.service.js';
 import { MemoService } from '../../services/memo.service.js';
 import { UserService } from '../../services/user.service.js';
 import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
+import { logger } from '../../utils/logger.js';
 
 import type { CreateMemoDto } from '@aimo/dto';
 
@@ -80,7 +81,7 @@ export class MemoBAController {
           }
         }
       }
-
+      logger.info('ba create memo', memoData);
       const memo = await this.memoService.createMemo(
         uid,
         memoData.content,
@@ -100,7 +101,7 @@ export class MemoBAController {
         memo,
       });
     } catch (error) {
-      console.error('Create memo by BA error:', error);
+      logger.error('Create memo by BA error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }

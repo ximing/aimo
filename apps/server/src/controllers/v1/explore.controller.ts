@@ -15,6 +15,7 @@ import { ErrorCode } from '../../constants/error-codes.js';
 import { AIConversationService } from '../../services/ai-conversation.service.js';
 import { ExploreService } from '../../services/explore.service.js';
 import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
+import { logger } from '../../utils/logger.js';
 
 import type {
   AddMessageDto,
@@ -56,7 +57,7 @@ export class ExploreController {
 
       return ResponseUtility.success(result);
     } catch (error) {
-      console.error('Explore error:', error);
+      logger.error('Explore error:', error);
       return ResponseUtility.error(
         ErrorCode.SYSTEM_ERROR,
         error instanceof Error ? error.message : 'Exploration failed'
@@ -90,7 +91,7 @@ export class ExploreController {
         total: results.length,
       });
     } catch (error) {
-      console.error('Quick search error:', error);
+      logger.error('Quick search error:', error);
       return ResponseUtility.error(ErrorCode.SYSTEM_ERROR, 'Search failed');
     }
   }
@@ -123,7 +124,7 @@ export class ExploreController {
 
       return ResponseUtility.success(result);
     } catch (error) {
-      console.error('Get relations error:', error);
+      logger.error('Get relations error:', error);
       return ResponseUtility.error(
         ErrorCode.SYSTEM_ERROR,
         error instanceof Error ? error.message : 'Failed to get relationships'
@@ -151,7 +152,7 @@ export class ExploreController {
         total: conversations.length,
       });
     } catch (error) {
-      console.error('Get conversations error:', error);
+      logger.error('Get conversations error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR, 'Failed to get conversations');
     }
   }
@@ -182,7 +183,7 @@ export class ExploreController {
 
       return ResponseUtility.success(conversation);
     } catch (error) {
-      console.error('Get conversation error:', error);
+      logger.error('Get conversation error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR, 'Failed to get conversation');
     }
   }
@@ -205,7 +206,7 @@ export class ExploreController {
         conversation,
       });
     } catch (error) {
-      console.error('Create conversation error:', error);
+      logger.error('Create conversation error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR, 'Failed to create conversation');
     }
   }
@@ -248,7 +249,7 @@ export class ExploreController {
         conversation,
       });
     } catch (error) {
-      console.error('Update conversation error:', error);
+      logger.error('Update conversation error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR, 'Failed to update conversation');
     }
   }
@@ -278,7 +279,7 @@ export class ExploreController {
         message: 'Conversation deleted successfully',
       });
     } catch (error) {
-      console.error('Delete conversation error:', error);
+      logger.error('Delete conversation error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR, 'Failed to delete conversation');
     }
   }
@@ -324,7 +325,7 @@ export class ExploreController {
         data: message,
       });
     } catch (error) {
-      console.error('Add message error:', error);
+      logger.error('Add message error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR, 'Failed to add message');
     }
   }

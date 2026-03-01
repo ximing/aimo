@@ -12,6 +12,8 @@
 
 import * as lancedb from '@lancedb/lancedb';
 
+import { logger } from '../../utils/logger.js';
+
 import type { Migration } from '../types.js';
 import type { Connection } from '@lancedb/lancedb';
 
@@ -32,13 +34,13 @@ async function createIndexIfNotExists(
         : { config: lancedb.Index.btree() };
 
     await table.createIndex(columnName, indexConfig);
-    console.log(`Created ${indexType} index on ${tableName}.${columnName}`);
+    logger.info(`Created ${indexType} index on ${tableName}.${columnName}`);
   } catch (error: any) {
     // Index already exists or other error
     if (error.message?.includes('already exists') || error.message?.includes('duplicate')) {
-      console.debug(`Index already exists on ${tableName}.${columnName}`);
+      logger.debug(`Index already exists on ${tableName}.${columnName}`);
     } else {
-      console.warn(`Failed to create index on ${tableName}.${columnName}:`, error.message);
+      logger.warn(`Failed to create index on ${tableName}.${columnName}:`, error.message);
     }
   }
 }
@@ -141,7 +143,7 @@ export const createIndexesMigration: Migration = {
   description: 'Create scalar indexes (BTREE and BITMAP) for query optimization on all tables',
   up: async (connection: Connection) => {
     try {
-      console.log('Starting index creation migration...');
+      logger.info('Starting index creation migration...');
 
       // List of all tables that need indexes
       const tablesToIndex = [
@@ -161,16 +163,16 @@ export const createIndexesMigration: Migration = {
       // Create indexes for each existing table
       for (const tableName of tablesToIndex) {
         if (existingTables.includes(tableName)) {
-          console.log(`Creating indexes for table: ${tableName}`);
+          logger.info(`Creating indexes for table: ${tableName}`);
           await createIndexesForTable(connection, tableName);
         } else {
-          console.debug(`Table ${tableName} does not exist, skipping index creation`);
+          logger.debug(`Table ${tableName} does not exist, skipping index creation`);
         }
       }
 
-      console.log('Index creation migration completed successfully');
+      logger.info('Index creation migration completed successfully');
     } catch (error) {
-      console.error('Index creation migration failed:', error);
+      logger.error('Index creation migration failed:', error);
       throw error;
     }
   },

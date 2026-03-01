@@ -10,6 +10,7 @@ import { Service } from 'typedi';
 import { config } from '../config/config.js';
 import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
 import { UnifiedStorageAdapterFactory } from '../sources/unified-storage-adapter/index.js';
+import { logger } from '../utils/logger.js';
 
 import { MultimodalEmbeddingService } from './multimodal-embedding.service.js';
 
@@ -102,7 +103,7 @@ export class AttachmentService {
           isImage ? 'image' : 'video',
           filename
         ).catch((error) => {
-          console.error(
+          logger.error(
             `Background multimodal embedding generation failed for ${filename}:`,
             error
           );
@@ -227,7 +228,7 @@ export class AttachmentService {
     filename: string
   ): Promise<void> {
     try {
-      console.log(
+      logger.info(
         `Starting background multimodal embedding generation for ${modalityType}: ${filename}`
       );
 
@@ -251,7 +252,7 @@ export class AttachmentService {
         .toArray();
 
       if (results.length === 0) {
-        console.warn(`Attachment record not found: ${attachmentId}`);
+        logger.warn(`Attachment record not found: ${attachmentId}`);
         return;
       }
 
@@ -268,11 +269,11 @@ export class AttachmentService {
       await table.delete(`attachmentId = '${attachmentId}'`);
       await table.add([updatedRecord as unknown as Record<string, unknown>]);
 
-      console.log(
+      logger.info(
         `Successfully generated and stored multimodal embedding for ${modalityType}: ${filename}`
       );
     } catch (error) {
-      console.warn(
+      logger.warn(
         `Failed to generate multimodal embedding for ${filename}: ${
           error instanceof Error ? error.message : 'Unknown error'
         }`
@@ -366,7 +367,7 @@ export class AttachmentService {
     try {
       await this.storageAdapter.deleteFile(record.path);
     } catch (error) {
-      console.error('Failed to delete file from storage:', error);
+      logger.error('Failed to delete file from storage:', error);
       // Continue with database deletion even if storage deletion fails
     }
 

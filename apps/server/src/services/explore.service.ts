@@ -5,6 +5,7 @@ import { Service } from 'typedi';
 
 import { config } from '../config/config.js';
 import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
+import { logger } from '../utils/logger.js';
 
 import { AttachmentService } from './attachment.service.js';
 import { EmbeddingService } from './embedding.service.js';
@@ -212,7 +213,7 @@ export class ExploreService {
         relevanceScores,
       };
     } catch (error) {
-      console.error('Retrieval agent error:', error);
+      logger.error('Retrieval agent error:', error);
       return {
         error: `Retrieval failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
       };
@@ -273,7 +274,7 @@ Provide a concise analysis focusing on how these notes can answer the user's que
         analysis: analysisText,
       };
     } catch (error) {
-      console.error('Analysis agent error:', error);
+      logger.error('Analysis agent error:', error);
       return {
         analysis: 'Analysis could not be completed due to an error.',
       };
@@ -326,7 +327,7 @@ Provide a concise analysis focusing on how these notes can answer the user's que
               for (const id of backlinks) allRelatedIds.add(id);
             }
           } catch (error) {
-            console.warn(`Failed to fetch relations for memo ${memo.memoId}:`, error);
+            logger.warn(`Failed to fetch relations for memo ${memo.memoId}:`, error);
           }
         })
       );
@@ -338,7 +339,7 @@ Provide a concise analysis focusing on how these notes can answer the user's que
         try {
           relatedMemos = await this.memoService.getMemosByIds(relatedMemoIds, uid);
         } catch (error) {
-          console.warn('Failed to fetch related memos:', error);
+          logger.warn('Failed to fetch related memos:', error);
         }
       }
 
@@ -416,12 +417,12 @@ Provide a brief analysis (2-3 sentences):`;
             enhancedAnalysis = `${analysis}\n\n${llmAnalysis}`;
           }
         } catch (error) {
-          console.warn('LLM relation analysis failed:', error);
+          logger.warn('LLM relation analysis failed:', error);
         }
       }
 
       const elapsed = Date.now() - startTime;
-      console.log(`Relation analysis completed in ${elapsed}ms`);
+      logger.debug(`Relation analysis completed in ${elapsed}ms`);
 
       return {
         relationAnalysis: {
@@ -431,7 +432,7 @@ Provide a brief analysis (2-3 sentences):`;
         },
       };
     } catch (error) {
-      console.error('Relation analysis agent error:', error);
+      logger.error('Relation analysis agent error:', error);
       return {
         relationAnalysis: {
           relatedMemoIds: [],
@@ -532,7 +533,7 @@ Provide a brief analysis (2-3 sentences):`;
             );
           }
         } catch (error) {
-          console.warn(`Failed to analyze attachment ${attachment.attachmentId}:`, error);
+          logger.warn(`Failed to analyze attachment ${attachment.attachmentId}:`, error);
           attachmentSummaries[attachment.attachmentId] = `Unable to analyze ${attachment.filename}`;
         }
       }
@@ -575,12 +576,12 @@ Provide 1-2 brief insights:`;
             keyInsights.push(...parsedInsights);
           }
         } catch (error) {
-          console.warn('LLM attachment analysis failed:', error);
+          logger.warn('LLM attachment analysis failed:', error);
         }
       }
 
       const elapsed = Date.now() - startTime;
-      console.log(`Attachment analysis completed in ${elapsed}ms`);
+      logger.debug(`Attachment analysis completed in ${elapsed}ms`);
 
       return {
         attachmentAnalysis: {
@@ -590,7 +591,7 @@ Provide 1-2 brief insights:`;
         },
       };
     } catch (error) {
-      console.error('Attachment analysis agent error:', error);
+      logger.error('Attachment analysis agent error:', error);
       return {
         attachmentAnalysis: {
           attachmentSummaries: {},
@@ -698,7 +699,7 @@ Provide your answer:`;
         suggestedQuestions,
       };
     } catch (error) {
-      console.error('Generation agent error:', error);
+      logger.error('Generation agent error:', error);
       return {
         answer: 'An error occurred while generating the response.',
         sources: [],
@@ -735,7 +736,7 @@ Provide exactly 3 short, relevant follow-up questions (one per line, no numberin
         .filter((q) => q.length > 0 && !/^\d+[.)]/.test(q))
         .slice(0, 3);
     } catch (error) {
-      console.warn('Failed to generate suggested questions:', error);
+      logger.warn('Failed to generate suggested questions:', error);
       return [];
     }
   }
@@ -766,7 +767,7 @@ Provide exactly 3 short, relevant follow-up questions (one per line, no numberin
 
       // Handle errors
       if (result.error) {
-        console.error('Explore workflow error:', result.error);
+        logger.error('Explore workflow error:', result.error);
       }
 
       // Return the response
@@ -777,7 +778,7 @@ Provide exactly 3 short, relevant follow-up questions (one per line, no numberin
         suggestedQuestions: result.suggestedQuestions,
       };
     } catch (error) {
-      console.error('Explore service error:', error);
+      logger.error('Explore service error:', error);
       throw new Error(
         `Exploration failed: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
@@ -803,7 +804,7 @@ Provide exactly 3 short, relevant follow-up questions (one per line, no numberin
 
       return result.items.filter((memo) => (memo.relevanceScore || 0) >= MIN_RELEVANCE_SCORE);
     } catch (error) {
-      console.error('Quick search error:', error);
+      logger.error('Quick search error:', error);
       return [];
     }
   }
@@ -973,7 +974,7 @@ Provide exactly 3 short, relevant follow-up questions (one per line, no numberin
         suggestedExplorations,
       };
     } catch (error) {
-      console.error('Get relationship graph error:', error);
+      logger.error('Get relationship graph error:', error);
       throw new Error(
         `Failed to get relationship graph: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
@@ -1037,7 +1038,7 @@ Provide exactly 3 short, relevant follow-up questions (one per line, no numberin
         }))
         .filter((conn) => conn.similarity >= 0.6); // Only high similarity connections
     } catch (error) {
-      console.warn('Thematic connection search failed:', error);
+      logger.warn('Thematic connection search failed:', error);
       return [];
     }
   }

@@ -3,6 +3,8 @@
  * Adds isPublic field for controlling memo visibility (public/private)
  */
 
+import { logger } from '../../utils/logger.js';
+
 import type { Migration } from '../types.js';
 import type { Connection } from '@lancedb/lancedb';
 
@@ -27,7 +29,7 @@ export const addIsPublicToMemosMigration: Migration = {
       ];
 
       await memosTable.addColumns(newColumns);
-      console.log('Successfully added isPublic column to memos table');
+      logger.info('Successfully added isPublic column to memos table');
     } catch (error: any) {
       // Check if the column already exists or is already compatible
       if (
@@ -35,10 +37,10 @@ export const addIsPublicToMemosMigration: Migration = {
         error.message?.includes('duplicate') ||
         error.message?.includes('Type conflicts between')
       ) {
-        console.log('isPublic column already exists in memos table, skipping migration');
+        logger.info('isPublic column already exists in memos table, skipping migration');
         return;
       }
-      console.error('Error running migration v8:', error);
+      logger.error('Error running migration v8:', error);
       throw error;
     }
   },

@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import { BaseUnifiedStorageAdapter, type StorageMetadata } from './base.adapter.js';
+import { logger } from '../../utils/logger.js';
 
 /**
  * Local file system storage adapter for attachments
@@ -16,7 +17,7 @@ export class LocalUnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
     try {
       await fs.mkdir(this.basePath, { recursive: true });
     } catch (error) {
-      console.error(`Failed to create base path: ${this.basePath}`, error);
+      logger.error(`Failed to create base path: ${this.basePath}`, error);
     }
   }
 
@@ -30,9 +31,9 @@ export class LocalUnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
 
       // Write file
       await fs.writeFile(filePath, buffer);
-      console.log(`File uploaded to local storage: ${filePath}`);
+      logger.debug(`File uploaded to local storage: ${filePath}`);
     } catch (error) {
-      console.error(`Failed to upload file to local storage: ${key}`, error);
+      logger.error(`Failed to upload file to local storage: ${key}`, error);
       throw error;
     }
   }
@@ -41,10 +42,10 @@ export class LocalUnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
     try {
       const filePath = path.join(this.basePath, key);
       const buffer = await fs.readFile(filePath);
-      console.log(`File downloaded from local storage: ${filePath}`);
+      logger.debug(`File downloaded from local storage: ${filePath}`);
       return buffer;
     } catch (error) {
-      console.error(`Failed to download file from local storage: ${key}`, error);
+      logger.error(`Failed to download file from local storage: ${key}`, error);
       throw error;
     }
   }
@@ -53,9 +54,9 @@ export class LocalUnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
     try {
       const filePath = path.join(this.basePath, key);
       await fs.unlink(filePath);
-      console.log(`File deleted from local storage: ${filePath}`);
+      logger.debug(`File deleted from local storage: ${filePath}`);
     } catch (error) {
-      console.error(`Failed to delete file from local storage: ${key}`, error);
+      logger.error(`Failed to delete file from local storage: ${key}`, error);
       // Don't throw if file doesn't exist
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
         throw error;
@@ -86,7 +87,7 @@ export class LocalUnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
 
       return files;
     } catch (error) {
-      console.error(`Failed to list files from local storage with prefix ${prefix}:`, error);
+      logger.error(`Failed to list files from local storage with prefix ${prefix}:`, error);
       return [];
     }
   }
@@ -113,7 +114,7 @@ export class LocalUnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
         lastModified: stat.mtime,
       };
     } catch (error) {
-      console.error(`Failed to get file metadata from local storage: ${key}`, error);
+      logger.error(`Failed to get file metadata from local storage: ${key}`, error);
       return null;
     }
   }

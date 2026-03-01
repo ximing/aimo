@@ -3,6 +3,8 @@
  * 为已有存量用户添加默认的"日记"分类
  */
 
+import { logger } from '../../utils/logger.js';
+
 import { OBJECT_TYPE } from '../../models/constant/type.js';
 import { generateTypeId } from '../../utils/id.js';
 
@@ -24,7 +26,7 @@ export const addDiaryCategoryMigration: Migration = {
 
     // Get all existing users
     const users = await usersTable.query().toArray();
-    console.log(`Found ${users.length} existing users`);
+    logger.info(`Found ${users.length} existing users`);
 
     const diaryCategoryName = '日记';
     let createdCount = 0;
@@ -60,7 +62,7 @@ export const addDiaryCategoryMigration: Migration = {
       createdCount++;
     }
 
-    console.log(
+    logger.info(
       `Migration complete: created ${createdCount} "日记" categories, skipped ${skippedCount} users who already have one`
     );
   },

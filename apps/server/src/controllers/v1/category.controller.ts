@@ -13,6 +13,7 @@ import { Service } from 'typedi';
 import { ErrorCode } from '../../constants/error-codes.js';
 import { CategoryService } from '../../services/category.service.js';
 import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
+import { logger } from '../../utils/logger.js';
 
 import type { CreateCategoryDto, UpdateCategoryDto, UserInfoDto } from '@aimo/dto';
 
@@ -35,7 +36,7 @@ export class CategoryV1Controller {
         categories,
       });
     } catch (error) {
-      console.error('Get categories error:', error);
+      logger.error('Get categories error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
@@ -57,7 +58,7 @@ export class CategoryV1Controller {
         category,
       });
     } catch (error) {
-      console.error('Get category error:', error);
+      logger.error('Get category error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
@@ -80,7 +81,7 @@ export class CategoryV1Controller {
         category,
       });
     } catch (error) {
-      console.error('Create category error:', error);
+      logger.error('Create category error:', error);
       if (error instanceof Error && error.message.includes('already exists')) {
         return ResponseUtility.error(ErrorCode.CATEGORY_ALREADY_EXISTS);
       }
@@ -113,7 +114,7 @@ export class CategoryV1Controller {
         category,
       });
     } catch (error) {
-      console.error('Update category error:', error);
+      logger.error('Update category error:', error);
       if (error instanceof Error && error.message.includes('already exists')) {
         return ResponseUtility.error(ErrorCode.CATEGORY_ALREADY_EXISTS);
       }
@@ -137,7 +138,7 @@ export class CategoryV1Controller {
         message: 'Category deleted successfully',
       });
     } catch (error) {
-      console.error('Delete category error:', error);
+      logger.error('Delete category error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }

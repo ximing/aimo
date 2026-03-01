@@ -3,6 +3,8 @@
  * Adds properties field for storing attachment metadata (duration, width, height, etc.)
  */
 
+import { logger } from '../../utils/logger.js';
+
 import type { Migration } from '../types.js';
 import type { Connection } from '@lancedb/lancedb';
 
@@ -29,7 +31,7 @@ export const addPropertiesToAttachmentsMigration: Migration = {
       ];
 
       await attachmentsTable.addColumns(newColumns);
-      console.log('Successfully added properties column to attachments table');
+      logger.info('Successfully added properties column to attachments table');
     } catch (error: any) {
       // Check if the column already exists or is already compatible
       if (
@@ -37,10 +39,10 @@ export const addPropertiesToAttachmentsMigration: Migration = {
         error.message?.includes('duplicate') ||
         error.message?.includes('Type conflicts between properties')
       ) {
-        console.log('Properties column already exists in attachments table, skipping migration');
+        logger.info('Properties column already exists in attachments table, skipping migration');
         return;
       }
-      console.error('Error running migration v7:', error);
+      logger.error('Error running migration v7:', error);
       throw error;
     }
   },

@@ -2,6 +2,7 @@ import { ChatOpenAI } from '@langchain/openai';
 import { Service } from 'typedi';
 
 import { config } from '../config/config.js';
+import { logger } from '../utils/logger.js';
 
 /**
  * Service for AI-powered features
@@ -93,7 +94,7 @@ Respond with a JSON array of 3-8 tag strings.`;
       // Parse JSON response
       return this.parseTagsFromResponse(responseContent);
     } catch (error) {
-      console.error('Error generating tags with AI:', error);
+      logger.error('Error generating tags with AI:', error);
       throw new Error('Failed to generate tags');
     }
   }
@@ -120,7 +121,7 @@ Respond with a JSON array of 3-8 tag strings.`;
           .slice(0, 8); // Ensure max 8 tags
       }
     } catch (parseError) {
-      console.warn('Failed to parse AI response as JSON:', parseError, 'Response:', content);
+      logger.warn('Failed to parse AI response as JSON:', parseError, 'Response:', content);
     }
 
     // Fallback: try to extract tags using regex patterns

@@ -3,6 +3,8 @@ import { fileURLToPath } from 'node:url';
 
 import dotenv from 'dotenv';
 
+import { logger } from '../utils/logger.js';
+
 // 获取当前环境
 const environment = process.env.NODE_ENV || 'development';
 
@@ -15,28 +17,28 @@ const projectRoot = path.resolve(__dirname, '../..');
 const loadEnvironment = () => {
   // 基础配置文件
   const baseEnvironmentPath = path.resolve(projectRoot, '.env');
-  console.log('Base env path:', baseEnvironmentPath);
+  logger.debug('Base env path:', baseEnvironmentPath);
   // 环境特定的配置文件
   const environmentPath = path.resolve(projectRoot, `.env.${environment}`);
 
-  console.log('Loading environment variables...');
-  console.log('Base env path:', baseEnvironmentPath);
-  console.log('Environment specific path:', environmentPath);
+  logger.info('Loading environment variables...');
+  logger.debug('Base env path:', baseEnvironmentPath);
+  logger.debug('Environment specific path:', environmentPath);
 
   // 先加载基础配置
   const baseResult = dotenv.config({ path: baseEnvironmentPath });
   if (baseResult.error) {
-    console.log('No base .env file found');
+    logger.debug('No base .env file found');
   } else {
-    console.log('Base .env file loaded');
+    logger.debug('Base .env file loaded');
   }
 
   // 再加载环境特定配置（会覆盖基础配置中的同名变量）
   const environmentResult = dotenv.config({ path: environmentPath });
   if (environmentResult.error) {
-    console.log(`No ${environment} specific .env file found`);
+    logger.debug(`No ${environment} specific .env file found`);
   } else {
-    console.log(`${environment} specific .env file loaded`);
+    logger.debug(`${environment} specific .env file loaded`);
   }
 };
 

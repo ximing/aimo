@@ -3,6 +3,8 @@
  * Adds the 'tagIds' field to store references to tags in the tags table
  */
 
+import { logger } from '../../utils/logger.js';
+
 import type { Migration } from '../types.js';
 import type { Connection } from '@lancedb/lancedb';
 
@@ -28,7 +30,7 @@ export const addTagIdsToMemosMigration: Migration = {
       ];
 
       await memosTable.addColumns(newColumns);
-      console.log('Successfully added tagIds column to memos table');
+      logger.info('Successfully added tagIds column to memos table');
     } catch (error: any) {
       // Check if the column already exists
       if (
@@ -36,10 +38,10 @@ export const addTagIdsToMemosMigration: Migration = {
         error.message?.includes('duplicate') ||
         error.message?.includes('Type conflicts between')
       ) {
-        console.log('TagIds column already exists in memos table, skipping migration');
+        logger.info('TagIds column already exists in memos table, skipping migration');
         return;
       }
-      console.error('Error running migration v11:', error);
+      logger.error('Error running migration v11:', error);
       throw error;
     }
   },

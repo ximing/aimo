@@ -4,6 +4,7 @@ import { Container } from 'typedi';
 
 import { config } from '../config/config.js';
 import { UserService } from '../services/user.service.js';
+import { logger } from '../utils/logger.js';
 
 import type { UserInfoDto } from '@aimo/dto';
 
@@ -94,7 +95,7 @@ export const authHandler = async (request: Request, res: Response, next: NextFun
     }
 
     // Log other errors and return a generic error response
-    console.error('Authentication error:', error);
+    logger.error('Authentication error:', { error: error instanceof Error ? error.message : String(error) });
     return res.status(500).json({
       success: false,
       message: 'Authentication failed',

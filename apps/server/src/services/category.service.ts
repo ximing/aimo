@@ -3,6 +3,7 @@ import { Service } from 'typedi';
 import { OBJECT_TYPE } from '../models/constant/type.js';
 import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
 import { generateTypeId } from '../utils/id.js';
+import { logger } from '../utils/logger.js';
 
 import type { CategoryRecord } from '../models/db/schema.js';
 import type { CategoryDto, CreateCategoryDto, UpdateCategoryDto } from '@aimo/dto';
@@ -32,9 +33,9 @@ export class CategoryService {
         });
       }
 
-      console.log(`Cleared category ${categoryId} from ${results.length} memos`);
+      logger.info(`Cleared category ${categoryId} from ${results.length} memos`);
     } catch (error) {
-      console.error('Failed to clear category from memos:', error);
+      logger.error('Failed to clear category from memos:', error);
       // Don't throw - allow category deletion even if memo update fails
     }
   }
@@ -73,7 +74,7 @@ export class CategoryService {
 
       return this.toCategoryDto(category);
     } catch (error) {
-      console.error('Failed to create category:', error);
+      logger.error('Failed to create category:', error);
       throw error;
     }
   }
@@ -94,7 +95,7 @@ export class CategoryService {
 
       return results.map((record) => this.toCategoryDto(record as CategoryRecord));
     } catch (error) {
-      console.error('Failed to get categories:', error);
+      logger.error('Failed to get categories:', error);
       throw error;
     }
   }
@@ -116,7 +117,7 @@ export class CategoryService {
 
       return matchingCategory ? this.toCategoryDto(matchingCategory as CategoryRecord) : null;
     } catch (error) {
-      console.error('Failed to get category by name:', error);
+      logger.error('Failed to get category by name:', error);
       throw error;
     }
   }
@@ -140,7 +141,7 @@ export class CategoryService {
 
       return this.toCategoryDto(results[0] as CategoryRecord);
     } catch (error) {
-      console.error('Failed to get category:', error);
+      logger.error('Failed to get category:', error);
       throw error;
     }
   }
@@ -195,7 +196,7 @@ export class CategoryService {
 
       return this.toCategoryDto(updatedRecord);
     } catch (error) {
-      console.error('Failed to update category:', error);
+      logger.error('Failed to update category:', error);
       throw error;
     }
   }
@@ -222,7 +223,7 @@ export class CategoryService {
 
       return true;
     } catch (error) {
-      console.error('Failed to delete category:', error);
+      logger.error('Failed to delete category:', error);
       throw error;
     }
   }

@@ -6,6 +6,7 @@ import { Service } from 'typedi';
 
 import { config } from '../config/config.js';
 import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
+import { logger } from '../utils/logger.js';
 
 @Service()
 export class EmbeddingService {
@@ -63,7 +64,7 @@ export class EmbeddingService {
       return null;
     } catch (error) {
       // Cache query failure should not break embedding generation
-      console.warn('Warning: Cache query failed, will regenerate embedding:', error);
+      logger.warn('Warning: Cache query failed, will regenerate embedding:', error);
       return null;
     }
   }
@@ -88,7 +89,7 @@ export class EmbeddingService {
       ]);
     } catch (error) {
       // Cache save failure should not break embedding generation
-      console.warn('Warning: Failed to save embedding to cache:', error);
+      logger.warn('Warning: Failed to save embedding to cache:', error);
     }
   }
 
@@ -114,12 +115,12 @@ export class EmbeddingService {
       // Try to get from cache
       const cachedEmbedding = await this.queryCacheByHash(this.modelHash, contentHash);
       if (cachedEmbedding) {
-        console.log('Cache hit for embedding');
+        logger.debug('Cache hit for embedding');
         return cachedEmbedding;
       }
 
       // Cache miss, generate embedding
-      console.log('Cache miss for embedding, generating new one...');
+        logger.debug('Cache miss for embedding, generating new one...');
       const result = await embed({
         model: this.model,
         value: text,
@@ -130,7 +131,7 @@ export class EmbeddingService {
 
       return result.embedding;
     } catch (error) {
-      console.error('Error generating embedding:', error);
+      logger.error('Error generating embedding:', error);
       throw new Error(
         `Failed to generate embedding: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
@@ -169,13 +170,13 @@ export class EmbeddingService {
 
       // If all cached, return immediately
       if (indexesToGenerate.length === 0) {
-        console.log(`Cache hit for all ${texts.length} embeddings`);
+        logger.debug(`Cache hit for all ${texts.length} embeddings`);
         return cachedResults as number[][];
       }
 
       // Generate embeddings for cache misses
       const textsToGenerate = indexesToGenerate.map((index) => texts[index]);
-      console.log(
+      logger.debug(
         `Cache miss for ${indexesToGenerate.length} out of ${texts.length} embeddings, generating...`
       );
 
@@ -197,7 +198,7 @@ export class EmbeddingService {
 
       return cachedResults as number[][];
     } catch (error) {
-      console.error('Error generating embeddings:', error);
+      logger.error('Error generating embeddings:', error);
       throw new Error(
         `Failed to generate embeddings: ${error instanceof Error ? error.message : 'Unknown error'}`
       );

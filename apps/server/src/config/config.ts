@@ -1,10 +1,12 @@
 import { loadEnv as loadEnvironment } from './env.js';
 
+import { logger } from '../utils/logger.js';
+
 // 先加载环境变量
 loadEnvironment();
 
 // 添加配置调试日志
-console.log('Current Environment:', process.env.NODE_ENV);
+logger.info('Current Environment:', process.env.NODE_ENV);
 
 export type StorageType = 'local' | 's3';
 export type AttachmentStorageType = 'local' | 's3' | 'oss';

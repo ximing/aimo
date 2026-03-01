@@ -3,6 +3,7 @@ import { Inject, Service } from 'typedi';
 import { OBJECT_TYPE } from '../models/constant/type.js';
 import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
 import { generateTypeId } from '../utils/id.js';
+import { logger } from '../utils/logger.js';
 import { ChannelFactory } from './channels/channel.factory.js';
 
 import type { PushRuleRecord } from '../models/db/schema.js';
@@ -56,7 +57,7 @@ export class PushRuleService {
 
       return this.toDto(rule);
     } catch (error) {
-      console.error('Failed to create push rule:', error);
+      logger.error('Failed to create push rule:', error);
       throw error;
     }
   }
@@ -72,7 +73,7 @@ export class PushRuleService {
 
       return results.map((record) => this.toDto(record as PushRuleRecord));
     } catch (error) {
-      console.error('Failed to get push rules:', error);
+      logger.error('Failed to get push rules:', error);
       throw error;
     }
   }
@@ -96,7 +97,7 @@ export class PushRuleService {
 
       return this.toDto(results[0] as PushRuleRecord);
     } catch (error) {
-      console.error('Failed to get push rule:', error);
+      logger.error('Failed to get push rule:', error);
       throw error;
     }
   }
@@ -140,7 +141,7 @@ export class PushRuleService {
 
       return this.toDto(updatedRecord);
     } catch (error) {
-      console.error('Failed to update push rule:', error);
+      logger.error('Failed to update push rule:', error);
       throw error;
     }
   }
@@ -163,7 +164,7 @@ export class PushRuleService {
 
       return true;
     } catch (error) {
-      console.error('Failed to delete push rule:', error);
+      logger.error('Failed to delete push rule:', error);
       throw error;
     }
   }
@@ -179,7 +180,7 @@ export class PushRuleService {
 
       return results.map((record) => this.toDto(record as PushRuleRecord));
     } catch (error) {
-      console.error('Failed to get enabled push rules:', error);
+      logger.error('Failed to get enabled push rules:', error);
       throw error;
     }
   }
@@ -205,9 +206,9 @@ export class PushRuleService {
           title: '测试推送',
           msg: '这是一条测试消息，如果你能看到这条消息，说明推送配置正确！',
         });
-        console.log(`Test push sent for rule ${ruleId} via channel ${channelConfig.type}`);
+        logger.info(`Test push sent for rule ${ruleId} via channel ${channelConfig.type}`);
       } catch (error) {
-        console.error(
+        logger.error(
           `Failed to send test push for rule ${ruleId} via channel ${channelConfig.type}:`,
           error
         );

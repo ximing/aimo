@@ -7,6 +7,7 @@ import { ErrorCode } from '../../constants/error-codes.js';
 import { AvatarService } from '../../services/avatar.service.js';
 import { UserService } from '../../services/user.service.js';
 import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
+import { logger } from '../../utils/logger.js';
 
 import type { UserInfoDto, UpdateUserDto, ChangePasswordDto } from '@aimo/dto';
 import type { Request } from 'express';
@@ -62,7 +63,7 @@ export class UserV1Controller {
 
       return ResponseUtility.success(userInfo);
     } catch (error) {
-      console.error('Get user info error:', error);
+      logger.error('Get user info error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
@@ -97,7 +98,7 @@ export class UserV1Controller {
         user: userInfo,
       });
     } catch (error) {
-      console.error('Update user info error:', error);
+      logger.error('Update user info error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
@@ -137,7 +138,7 @@ export class UserV1Controller {
         message: result.message,
       });
     } catch (error) {
-      console.error('Change password error:', error);
+      logger.error('Change password error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
@@ -156,7 +157,7 @@ export class UserV1Controller {
           if (error.message.includes('File too large')) {
             return resolve(ResponseUtility.error(ErrorCode.FILE_TOO_LARGE));
           }
-          console.error('Avatar upload error:', error);
+          logger.error('Avatar upload error:', error);
           return resolve(ResponseUtility.error(ErrorCode.FILE_UPLOAD_ERROR));
         }
 
@@ -191,7 +192,7 @@ export class UserV1Controller {
           // Delete old avatar if exists
           if (oldAvatar) {
             this.avatarService.deleteAvatar(oldAvatar).catch((error) => {
-              console.warn('Failed to delete old avatar:', error);
+              logger.warn('Failed to delete old avatar:', error);
             });
           }
 
@@ -202,7 +203,7 @@ export class UserV1Controller {
             })
           );
         } catch (error) {
-          console.error('Failed to upload avatar:', error);
+          logger.error('Failed to upload avatar:', error);
           return resolve(ResponseUtility.error(ErrorCode.STORAGE_ERROR));
         }
       });

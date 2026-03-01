@@ -13,6 +13,7 @@ import { Service } from 'typedi';
 import { ErrorCode } from '../../constants/error-codes.js';
 import { TagService } from '../../services/tag.service.js';
 import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
+import { logger } from '../../utils/logger.js';
 
 import type { CreateTagDto, UpdateTagDto, UserInfoDto } from '@aimo/dto';
 
@@ -35,7 +36,7 @@ export class TagV1Controller {
         tags,
       });
     } catch (error) {
-      console.error('Get tags error:', error);
+      logger.error('Get tags error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
@@ -57,7 +58,7 @@ export class TagV1Controller {
         tag,
       });
     } catch (error) {
-      console.error('Get tag error:', error);
+      logger.error('Get tag error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
@@ -80,7 +81,7 @@ export class TagV1Controller {
         tag,
       });
     } catch (error) {
-      console.error('Create tag error:', error);
+      logger.error('Create tag error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
@@ -110,7 +111,7 @@ export class TagV1Controller {
         tag,
       });
     } catch (error) {
-      console.error('Update tag error:', error);
+      logger.error('Update tag error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
@@ -131,7 +132,7 @@ export class TagV1Controller {
         message: 'Tag deleted successfully',
       });
     } catch (error) {
-      console.error('Delete tag error:', error);
+      logger.error('Delete tag error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }

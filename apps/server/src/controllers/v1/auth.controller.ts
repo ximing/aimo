@@ -6,6 +6,7 @@ import { config } from '../../config/config.js';
 import { ErrorCode } from '../../constants/error-codes.js';
 import { UserService } from '../../services/user.service.js';
 import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
+import { logger } from '../../utils/logger.js';
 
 import type { RegisterDto, LoginDto } from '@aimo/dto';
 import type { Response } from 'express';
@@ -47,7 +48,7 @@ export class AuthV1Controller {
         },
       });
     } catch (error) {
-      console.error('Registration error:', error);
+      logger.error('Registration error:', error);
       if (error instanceof Error && error.message.includes('already exists')) {
         return ResponseUtility.error(ErrorCode.USER_ALREADY_EXISTS);
       }
@@ -104,7 +105,7 @@ export class AuthV1Controller {
         },
       });
     } catch (error) {
-      console.error('Login error:', error);
+      logger.error('Login error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }

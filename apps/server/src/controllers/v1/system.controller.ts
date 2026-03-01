@@ -4,6 +4,7 @@ import { Service } from 'typedi';
 import { ErrorCode } from '../../constants/error-codes.js';
 import { GitHubReleaseService } from '../../services/github-release.service.js';
 import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
+import { logger } from '../../utils/logger.js';
 
 import type { UserInfoDto } from '@aimo/dto';
 
@@ -31,7 +32,7 @@ export class SystemController {
       const versions = await this.gitHubReleaseService.getAllVersions();
       return ResponseUtility.success(versions);
     } catch (error) {
-      console.error('Error fetching app versions:', error);
+      logger.error('Error fetching app versions:', error);
       return ResponseUtility.error(
         ErrorCode.SYSTEM_ERROR,
         error instanceof Error ? error.message : 'Failed to fetch app versions'

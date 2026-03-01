@@ -3,6 +3,8 @@
  * Creates tables for storing AI conversation data
  */
 
+import { logger } from '../../utils/logger.js';
+
 import { aiConversationsSchema, aiMessagesSchema } from '../../models/db/schema.js';
 
 import type { Migration } from '../types.js';
@@ -19,11 +21,11 @@ async function createTableIfNotExists(
   const tableNames = await connection.tableNames();
 
   if (tableNames.includes(tableName)) {
-    console.log(`Table already exists: ${tableName}`);
+    logger.info(`Table already exists: ${tableName}`);
   } else {
-    console.log(`Creating table: ${tableName}`);
+    logger.info(`Creating table: ${tableName}`);
     await connection.createEmptyTable(tableName, schema);
-    console.log(`Table created: ${tableName}`);
+    logger.info(`Table created: ${tableName}`);
   }
 }
 

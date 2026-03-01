@@ -11,6 +11,7 @@
  */
 
 import { MigrationExecutor } from './executor.js';
+import { logger } from '../utils/logger.js';
 import {
   ALL_MIGRATIONS,
   getMigrationsFromVersion,
@@ -51,7 +52,7 @@ export class MigrationManager {
   async initialize(connection: Connection): Promise<void> {
     try {
       if (this.options.verbose) {
-        console.log('Starting migration manager initialization...');
+        logger.info('Starting migration manager initialization...');
       }
 
       // Step 1: Ensure metadata table exists
@@ -61,7 +62,7 @@ export class MigrationManager {
       const tableNames = getAllTableNames();
 
       if (this.options.verbose) {
-        console.log(`Found ${tableNames.length} tables with migrations: ${tableNames.join(', ')}`);
+        logger.info(`Found ${tableNames.length} tables with migrations: ${tableNames.join(', ')}`);
       }
 
       for (const tableName of tableNames) {
@@ -69,10 +70,10 @@ export class MigrationManager {
       }
 
       if (this.options.verbose) {
-        console.log('Migration manager initialization completed successfully');
+        logger.info('Migration manager initialization completed successfully');
       }
     } catch (error) {
-      console.error('Migration manager initialization failed:', error);
+      logger.error('Migration manager initialization failed:', error);
       throw error;
     }
   }
@@ -87,7 +88,7 @@ export class MigrationManager {
   ): Promise<void> {
     try {
       if (this.options.verbose) {
-        console.log(`\nProcessing table: ${tableName}`);
+        logger.info(`\nProcessing table: ${tableName}`);
       }
 
       // Get current version from metadata
@@ -97,13 +98,13 @@ export class MigrationManager {
       const targetVersion = getLatestVersion(tableName);
 
       if (this.options.verbose) {
-        console.log(`  Current version: ${currentVersion}, Target version: ${targetVersion}`);
+        logger.info(`  Current version: ${currentVersion}, Target version: ${targetVersion}`);
       }
 
       // If versions match, nothing to do
       if (currentVersion === targetVersion) {
-        if (this.options.verbose) {
-          console.log(`  Table ${tableName} is up to date`);
+      if (this.options.verbose) {
+        logger.info(`  Table ${tableName} is up to date`);
         }
         return;
       }
@@ -112,34 +113,34 @@ export class MigrationManager {
       const pendingMigrations = getMigrationsFromVersion(tableName, currentVersion);
 
       if (pendingMigrations.length === 0) {
-        if (this.options.verbose) {
-          console.log(`  No pending migrations for table ${tableName}`);
+      if (this.options.verbose) {
+        logger.info(`  No pending migrations for table ${tableName}`);
         }
         return;
       }
 
       if (this.options.verbose) {
-        console.log(
+        logger.info(
           `  Pending migrations: v${pendingMigrations.map((m) => m.version).join(' -> v')}`
         );
       }
 
       // Execute pending migrations
       if (this.options.dryRun) {
-        console.log(
+        logger.info(
           `  [DRY RUN] Would execute ${pendingMigrations.length} migrations for ${tableName}`
         );
         for (const migration of pendingMigrations) {
-          console.log(`    - ${migration.description || 'Migration'} (v${migration.version})`);
+          logger.info(`    - ${migration.description || 'Migration'} (v${migration.version})`);
         }
       } else {
         await MigrationExecutor.executeMigrations(connection, pendingMigrations, metadataTable);
-        if (this.options.verbose) {
-          console.log(`  Successfully migrated ${tableName} to v${targetVersion}`);
+      if (this.options.verbose) {
+        logger.info(`  Successfully migrated ${tableName} to v${targetVersion}`);
         }
       }
     } catch (error) {
-      console.error(`Failed to migrate table ${tableName}:`, error);
+      logger.error(`Failed to migrate table ${tableName}:`, error);
       throw error;
     }
   }
@@ -160,7 +161,7 @@ export class MigrationManager {
 
       return status;
     } catch (error) {
-      console.error('Failed to get migration status:', error);
+      logger.error('Failed to get migration status:', error);
       throw error;
     }
   }
@@ -185,7 +186,7 @@ export class MigrationManager {
         errors,
       };
     } catch (error) {
-      console.error('Migration validation failed:', error);
+      logger.error('Migration validation failed:', error);
       throw error;
     }
   }

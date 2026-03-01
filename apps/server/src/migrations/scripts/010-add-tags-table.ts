@@ -3,6 +3,8 @@
  * Creates a separate tags table for storing tag metadata (name, color, usage count)
  */
 
+import { logger } from '../../utils/logger.js';
+
 import { tagsSchema } from '../../models/db/schema.js';
 
 import type { Migration } from '../types.js';
@@ -20,15 +22,15 @@ export const addTagsTableMigration: Migration = {
       const tableNames = await connection.tableNames();
 
       if (tableNames.includes('tags')) {
-        console.log('Table already exists: tags');
+        logger.info('Table already exists: tags');
         return;
       }
 
-      console.log('Creating table: tags');
+      logger.info('Creating table: tags');
       await connection.createEmptyTable('tags', tagsSchema);
-      console.log('Table created: tags');
+      logger.info('Table created: tags');
     } catch (error: any) {
-      console.error('Error running migration v10:', error);
+      logger.error('Error running migration v10:', error);
       throw error;
     }
   },

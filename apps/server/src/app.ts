@@ -18,6 +18,7 @@ import { authHandler } from './middlewares/auth-handler.js';
 import { errorHandler } from './middlewares/error-handler.js';
 import { SchedulerService } from './services/scheduler.service.js';
 import { LanceDbService as LanceDatabaseService } from './sources/lancedb.js';
+import { logger } from './utils/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -33,9 +34,9 @@ export async function createApp() {
   try {
     const schedulerService = Container.get(SchedulerService);
     await schedulerService.init();
-    console.log('Scheduler service initialized');
+    logger.info('Scheduler service initialized');
   } catch (error) {
-    console.error('Failed to initialize scheduler service:', error);
+    logger.error('Failed to initialize scheduler service:', error);
     // Continue app startup even if scheduler service fails to initialize
   }
 
@@ -96,12 +97,12 @@ export async function createApp() {
   app.use(errorHandler);
 
   const server = app.listen(config.port, () => {
-    console.log(`Server is running on port ${config.port}`);
+    logger.info(`Server is running on port ${config.port}`);
   });
 
   // Graceful shutdown handler
   const shutdownHandler = async (signal: string) => {
-    console.log(`Received ${signal}, shutting down gracefully...`);
+    logger.info(`Received ${signal}, shutting down gracefully...`);
     server.close(async () => {
       try {
         // Stop scheduler service
@@ -112,10 +113,10 @@ export async function createApp() {
 
         // Close LanceDB connections and release resources
         await Container.get(LanceDatabaseService).close();
-        console.log('All resources cleaned up');
+        logger.info('All resources cleaned up');
         process.exit(0);
       } catch (error) {
-        console.error('Error during shutdown:', error);
+        logger.error('Error during shutdown:', error);
         process.exit(1);
       }
     });

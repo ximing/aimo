@@ -2,6 +2,8 @@ import * as crypto from 'crypto';
 
 import { Service } from 'typedi';
 
+import { logger } from '../../utils/logger.js';
+
 import type { PushChannel, PushChannelOptions } from './push-channel.interface.js';
 
 export interface FeishuChannelConfig {
@@ -86,9 +88,9 @@ export class FeishuChannel implements PushChannel {
         throw new Error(`Feishu channel error: ${response.status} - ${JSON.stringify(result)}`);
       }
 
-      console.log(`Feishu notification sent successfully: ${options.title}`);
+      logger.info(`Feishu notification sent successfully: ${options.title}`);
     } catch (error) {
-      console.error('Failed to send Feishu notification:', error);
+      logger.error('Failed to send Feishu notification:', error);
       throw error;
     }
   }

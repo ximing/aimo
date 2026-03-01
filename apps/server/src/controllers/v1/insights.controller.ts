@@ -5,6 +5,7 @@ import { ErrorCode } from '../../constants/error-codes.js';
 import { MemoService } from '../../services/memo.service.js';
 import { RecommendationService } from '../../services/recommendation.service.js';
 import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
+import { logger } from '../../utils/logger.js';
 
 import type { UserInfoDto } from '@aimo/dto';
 
@@ -34,7 +35,7 @@ export class InsightsController {
 
       return ResponseUtility.success(stats);
     } catch (error) {
-      console.error('Get activity stats error:', error);
+      logger.error('Get activity stats error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
@@ -54,7 +55,7 @@ export class InsightsController {
 
       return ResponseUtility.success(result);
     } catch (error) {
-      console.error('Get on this day memos error:', error);
+      logger.error('Get on this day memos error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
@@ -77,7 +78,7 @@ export class InsightsController {
         total: memos.length,
       });
     } catch (error) {
-      console.error('Get daily recommendations error:', error);
+      logger.error('Get daily recommendations error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }

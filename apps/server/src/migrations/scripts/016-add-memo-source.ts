@@ -3,6 +3,8 @@
  * Adds source field for storing source URL (e.g., from Chrome extension)
  */
 
+import { logger } from '../../utils/logger.js';
+
 import type { Migration } from '../types.js';
 import type { Connection } from '@lancedb/lancedb';
 
@@ -28,7 +30,7 @@ export const addSourceToMemosMigration: Migration = {
       ];
 
       await memosTable.addColumns(newColumns);
-      console.log('Successfully added source column to memos table');
+      logger.info('Successfully added source column to memos table');
     } catch (error: any) {
       // Check if the column already exists or is already compatible
       if (
@@ -36,10 +38,10 @@ export const addSourceToMemosMigration: Migration = {
         error.message?.includes('duplicate') ||
         error.message?.includes('Type conflicts between source')
       ) {
-        console.log('Source column already exists in memos table, skipping migration');
+        logger.info('Source column already exists in memos table, skipping migration');
         return;
       }
-      console.error('Error running migration v16:', error);
+      logger.error('Error running migration v16:', error);
       throw error;
     }
   },

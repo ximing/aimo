@@ -25,6 +25,7 @@ import { config } from '../../config/config.js';
 import { ErrorCode } from '../../constants/error-codes.js';
 import { AttachmentService } from '../../services/attachment.service.js';
 import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
+import { logger } from '../../utils/logger.js';
 
 import type { UserInfoDto, UpdateAttachmentPropertiesDto } from '@aimo/dto';
 import type { Request, Response } from 'express';
@@ -85,7 +86,7 @@ export class AttachmentV1Controller {
             if (error instanceof multer.MulterError && error.code === 'LIMIT_FILE_SIZE') {
               return resolve(ResponseUtility.error(ErrorCode.FILE_TOO_LARGE));
             }
-            console.error('File upload error:', error);
+            logger.error('File upload error:', error);
             return resolve(ResponseUtility.error(ErrorCode.FILE_UPLOAD_ERROR));
           }
 
@@ -149,13 +150,13 @@ export class AttachmentV1Controller {
               })
             );
           } catch (error) {
-            console.error('Failed to save attachment:', error);
+            logger.error('Failed to save attachment:', error);
             return resolve(ResponseUtility.error(ErrorCode.STORAGE_ERROR));
           }
         });
       });
     } catch (error) {
-      console.error('Upload attachment error:', error);
+      logger.error('Upload attachment error:', error);
       return ResponseUtility.error(ErrorCode.SYSTEM_ERROR);
     }
   }
@@ -183,7 +184,7 @@ export class AttachmentV1Controller {
 
       return ResponseUtility.success(result);
     } catch (error) {
-      console.error('Get attachments error:', error);
+      logger.error('Get attachments error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
@@ -211,7 +212,7 @@ export class AttachmentV1Controller {
 
       return ResponseUtility.success(attachment);
     } catch (error) {
-      console.error('Get attachment error:', error);
+      logger.error('Get attachment error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
@@ -238,7 +239,7 @@ export class AttachmentV1Controller {
 
       return ResponseUtility.success({ message: 'Attachment deleted successfully' });
     } catch (error) {
-      console.error('Delete attachment error:', error);
+      logger.error('Delete attachment error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
@@ -278,7 +279,7 @@ export class AttachmentV1Controller {
       // Send file buffer
       return response.send(result.buffer);
     } catch (error) {
-      console.error('Download attachment error:', error);
+      logger.error('Download attachment error:', error);
       return response.status(500).json(ResponseUtility.error(ErrorCode.SYSTEM_ERROR));
     }
   }
@@ -318,7 +319,7 @@ export class AttachmentV1Controller {
         attachment,
       });
     } catch (error) {
-      console.error('Update attachment properties error:', error);
+      logger.error('Update attachment properties error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }

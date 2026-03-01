@@ -3,6 +3,7 @@ import { Service } from 'typedi';
 import { OBJECT_TYPE } from '../models/constant/type.js';
 import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
 import { generateTypeId } from '../utils/id.js';
+import { logger } from '../utils/logger.js';
 
 import type {
   AIConversationDto,
@@ -137,7 +138,7 @@ export class AIConversationService {
 
       return conversations;
     } catch (error) {
-      console.error('Get conversations error:', error);
+      logger.error('Get conversations error:', error);
       throw new Error('Failed to get conversations');
     }
   }
@@ -171,7 +172,7 @@ export class AIConversationService {
         messages,
       };
     } catch (error) {
-      console.error('Get conversation error:', error);
+      logger.error('Get conversation error:', error);
       throw new Error('Failed to get conversation');
     }
   }
@@ -199,7 +200,7 @@ export class AIConversationService {
 
       return this.toConversationDto(record, 0);
     } catch (error) {
-      console.error('Create conversation error:', error);
+      logger.error('Create conversation error:', error);
       throw new Error('Failed to create conversation');
     }
   }
@@ -241,7 +242,7 @@ export class AIConversationService {
       const messageCount = await this.getMessageCount(conversationId);
       return this.toConversationDto(updatedRecord, messageCount);
     } catch (error) {
-      console.error('Update conversation error:', error);
+      logger.error('Update conversation error:', error);
       throw new Error('Failed to update conversation');
     }
   }
@@ -273,7 +274,7 @@ export class AIConversationService {
 
       return true;
     } catch (error) {
-      console.error('Delete conversation error:', error);
+      logger.error('Delete conversation error:', error);
       throw new Error('Failed to delete conversation');
     }
   }
@@ -292,7 +293,7 @@ export class AIConversationService {
 
       return result.map((record) => this.toMessageDto(record));
     } catch (error) {
-      console.error('Get messages error:', error);
+      logger.error('Get messages error:', error);
       throw new Error('Failed to get messages');
     }
   }
@@ -306,7 +307,7 @@ export class AIConversationService {
       const result = await table.query().where(`conversationId = '${conversationId}'`).toArray();
       return result.length;
     } catch (error) {
-      console.error('Get message count error:', error);
+      logger.error('Get message count error:', error);
       return 0;
     }
   }
@@ -361,7 +362,7 @@ export class AIConversationService {
 
       return this.toMessageDto(record);
     } catch (error) {
-      console.error('Add message error:', error);
+      logger.error('Add message error:', error);
       throw new Error('Failed to add message');
     }
   }
@@ -386,7 +387,7 @@ export class AIConversationService {
       const messageCount = await this.getMessageCount(String(result[0].conversationId));
       return this.toConversationDto(result[0], messageCount);
     } catch (error) {
-      console.error('Get most recent conversation error:', error);
+      logger.error('Get most recent conversation error:', error);
       return null;
     }
   }

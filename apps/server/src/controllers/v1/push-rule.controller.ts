@@ -13,6 +13,7 @@ import { Service } from 'typedi';
 import { ErrorCode } from '../../constants/error-codes.js';
 import { PushRuleService } from '../../services/push-rule.service.js';
 import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
+import { logger } from '../../utils/logger.js';
 
 import type { CreatePushRuleDto, UpdatePushRuleDto, UserInfoDto } from '@aimo/dto';
 
@@ -35,7 +36,7 @@ export class PushRuleV1Controller {
         pushRules,
       });
     } catch (error) {
-      console.error('Get push rules error:', error);
+      logger.error('Get push rules error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
@@ -57,7 +58,7 @@ export class PushRuleV1Controller {
         pushRule,
       });
     } catch (error) {
-      console.error('Get push rule error:', error);
+      logger.error('Get push rule error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
@@ -95,7 +96,7 @@ export class PushRuleV1Controller {
         pushRule,
       });
     } catch (error) {
-      console.error('Create push rule error:', error);
+      logger.error('Create push rule error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
@@ -121,7 +122,7 @@ export class PushRuleV1Controller {
         pushRule,
       });
     } catch (error) {
-      console.error('Update push rule error:', error);
+      logger.error('Update push rule error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
@@ -142,7 +143,7 @@ export class PushRuleV1Controller {
         message: 'Push rule deleted successfully',
       });
     } catch (error) {
-      console.error('Delete push rule error:', error);
+      logger.error('Delete push rule error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
@@ -160,7 +161,7 @@ export class PushRuleV1Controller {
         message: 'Test push sent successfully',
       });
     } catch (error) {
-      console.error('Test push error:', error);
+      logger.error('Test push error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to send test push';
       return ResponseUtility.error(ErrorCode.DB_ERROR, errorMessage);
     }

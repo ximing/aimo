@@ -1,5 +1,7 @@
 import { Service } from 'typedi';
 
+import { logger } from '../utils/logger.js';
+
 import type { AllVersionsResponseDto, VersionInfoDto } from '@aimo/dto';
 
 interface CachedVersion {
@@ -32,7 +34,7 @@ export class GitHubReleaseService {
       this.setCachedVersion(repoKey, version);
       return { version };
     } catch (error) {
-      console.error(`Failed to fetch version for ${repoKey}:`, error);
+      logger.error(`Failed to fetch version for ${repoKey}:`, error);
       return {
         version: undefined,
         error: error instanceof Error ? error.message : 'Unknown error',

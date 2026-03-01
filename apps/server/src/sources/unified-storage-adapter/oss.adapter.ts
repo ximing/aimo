@@ -1,6 +1,7 @@
 import OSS from 'ali-oss';
 
 import { BaseUnifiedStorageAdapter, type StorageMetadata } from './base.adapter.js';
+import { logger } from '../../utils/logger.js';
 
 export interface OSSUnifiedStorageAdapterConfig {
   bucket: string;
@@ -54,7 +55,7 @@ export class OSSUnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
       secure: true, // Use HTTPS
     });
 
-    console.log(
+    logger.info(
       `OSS adapter initialized with bucket: ${this.bucket}, region: ${this.region}, ` +
         `endpoint: ${ossEndpoint}, isPublic: ${this.isPublic}`
     );
@@ -69,9 +70,9 @@ export class OSSUnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
       const fullKey = this.getFullKey(key);
 
       await this.client.put(fullKey, buffer);
-      console.log(`File uploaded to OSS: oss://${this.bucket}/${fullKey}`);
+      logger.debug(`File uploaded to OSS: oss://${this.bucket}/${fullKey}`);
     } catch (error) {
-      console.error(`Failed to upload file to OSS: ${key}`, error);
+      logger.error(`Failed to upload file to OSS: ${key}`, error);
       throw error;
     }
   }
@@ -91,10 +92,10 @@ export class OSSUnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
         ? result.content
         : Buffer.from(result.content as any);
 
-      console.log(`File downloaded from OSS: oss://${this.bucket}/${fullKey}`);
+      logger.debug(`File downloaded from OSS: oss://${this.bucket}/${fullKey}`);
       return buffer;
     } catch (error) {
-      console.error(`Failed to download file from OSS: ${key}`, error);
+      logger.error(`Failed to download file from OSS: ${key}`, error);
       throw error;
     }
   }
@@ -104,9 +105,9 @@ export class OSSUnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
       const fullKey = this.getFullKey(key);
 
       await this.client.delete(fullKey);
-      console.log(`File deleted from OSS: oss://${this.bucket}/${fullKey}`);
+      logger.debug(`File deleted from OSS: oss://${this.bucket}/${fullKey}`);
     } catch (error) {
-      console.error(`Failed to delete file from OSS: ${key}`, error);
+      logger.error(`Failed to delete file from OSS: ${key}`, error);
       throw error;
     }
   }
@@ -146,7 +147,7 @@ export class OSSUnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
 
       return files;
     } catch (error) {
-      console.error(`Failed to list files from OSS with prefix ${prefix}:`, error);
+      logger.error(`Failed to list files from OSS with prefix ${prefix}:`, error);
       return [];
     }
   }
@@ -161,7 +162,7 @@ export class OSSUnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
       if (error.status === 404) {
         return false;
       }
-      console.error(`Failed to check file existence in OSS: ${key}`, error);
+      logger.error(`Failed to check file existence in OSS: ${key}`, error);
       return false;
     }
   }
@@ -181,7 +182,7 @@ export class OSSUnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
         lastModified: new Date(result.meta['last-modified'] || Date.now()),
       };
     } catch (error) {
-      console.error(`Failed to get file metadata from OSS: ${key}`, error);
+      logger.error(`Failed to get file metadata from OSS: ${key}`, error);
       return null;
     }
   }
@@ -225,10 +226,10 @@ export class OSSUnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
         ContentType: contentType,
       });
 
-      console.log(`Generated signed URL for key: ${fullKey} (expires in ${expiresIn}s)`);
+      logger.debug(`Generated signed URL for key: ${fullKey} (expires in ${expiresIn}s)`);
       return url;
     } catch (error) {
-      console.error(`Failed to generate access URL for OSS key: ${key}`, error);
+      logger.error(`Failed to generate access URL for OSS key: ${key}`, error);
       throw error;
     }
   }

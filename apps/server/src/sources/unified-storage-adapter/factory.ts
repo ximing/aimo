@@ -10,6 +10,7 @@ import type {
   OSSStorageConfig,
   AttachmentStorageType,
 } from '../../config/config.js';
+import { logger } from '../../utils/logger.js';
 
 /**
  * Factory for creating unified storage adapters based on configuration
@@ -26,7 +27,7 @@ export const UnifiedStorageAdapterFactory = {
   createAttachmentAdapter(attachmentConfig: AttachmentConfig): UnifiedStorageAdapter {
     const storageType = attachmentConfig.storageType;
 
-    console.log(`Creating attachment storage adapter for type: ${storageType}`);
+    logger.info(`Creating attachment storage adapter for type: ${storageType}`);
 
     switch (storageType) {
       case 'local': {

@@ -5,6 +5,8 @@
 
 import * as lancedb from '@lancedb/lancedb';
 
+import { logger } from '../../utils/logger.js';
+
 import type { Migration } from '../types.js';
 import type { Connection } from '@lancedb/lancedb';
 
@@ -25,13 +27,13 @@ async function createIndexIfNotExists(
         : { config: lancedb.Index.btree() };
 
     await table.createIndex(columnName, indexConfig);
-    console.log(`Created ${indexType} index on ${tableName}.${columnName}`);
+    logger.info(`Created ${indexType} index on ${tableName}.${columnName}`);
   } catch (error: any) {
     // Index already exists or other error
     if (error.message?.includes('already exists') || error.message?.includes('duplicate')) {
-      console.debug(`Index already exists on ${tableName}.${columnName}`);
+      logger.debug(`Index already exists on ${tableName}.${columnName}`);
     } else {
-      console.warn(`Failed to create index on ${tableName}.${columnName}:`, error.message);
+      logger.warn(`Failed to create index on ${tableName}.${columnName}:`, error.message);
     }
   }
 }
@@ -45,11 +47,11 @@ export const createTagIndexesMigration: Migration = {
   description: 'Create indexes on tags table for efficient queries',
   up: async (connection: Connection) => {
     try {
-      console.log('Starting tags table index creation...');
+      logger.info('Starting tags table index creation...');
 
       const tableNames = await connection.tableNames();
       if (!tableNames.includes('tags')) {
-        console.log('Tags table does not exist, skipping index creation');
+        logger.info('Tags table does not exist, skipping index creation');
         return;
       }
 
@@ -64,9 +66,9 @@ export const createTagIndexesMigration: Migration = {
       // createdAt: BTREE for date range queries
       await createIndexIfNotExists(table, 'createdAt', 'BTREE', 'tags');
 
-      console.log('Tags table index creation completed successfully');
+      logger.info('Tags table index creation completed successfully');
     } catch (error) {
-      console.error('Tags table index creation failed:', error);
+      logger.error('Tags table index creation failed:', error);
       throw error;
     }
   },

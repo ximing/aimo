@@ -5,6 +5,7 @@ import { config } from '../config/config.js';
 import { OBJECT_TYPE } from '../models/constant/type.js';
 import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
 import { generateTypeId } from '../utils/id.js';
+import { logger } from '../utils/logger.js';
 
 import { MemoService } from './memo.service.js';
 
@@ -73,7 +74,7 @@ export class RecommendationService {
         createdAt: record.createdAt as number,
       };
     } catch (error) {
-      console.error('Error checking cached recommendations:', error);
+      logger.error('Error checking cached recommendations:', error);
       return null;
     }
   }
@@ -111,7 +112,7 @@ export class RecommendationService {
 
       await table.add([record as unknown as Record<string, unknown>]);
     } catch (error) {
-      console.error('Error caching recommendations:', error);
+      logger.error('Error caching recommendations:', error);
       // Don't throw - caching failure shouldn't break the feature
     }
   }
@@ -143,7 +144,7 @@ export class RecommendationService {
       // Check cache first
       const cached = await this.getCachedRecommendations(uid, today);
       if (cached && cached.memoIds.length > 0) {
-        console.log('Using cached daily recommendations for user:', uid);
+        logger.info('Using cached daily recommendations for user:', uid);
         const memos = await this.memoService.getMemosByIds(cached.memoIds, uid);
         // Preserve order from cached recommendation
         const memoMap = new Map(memos.map((m) => [m.memoId, m]));
@@ -190,7 +191,7 @@ export class RecommendationService {
           return this.memoService.getMemosByIds(selectedIds, uid);
         }
       } catch (aiError) {
-        console.warn('AI recommendation failed, falling back to random selection:', aiError);
+        logger.warn('AI recommendation failed, falling back to random selection:', aiError);
       }
 
       // Fallback: random selection from sampled memos
@@ -198,7 +199,7 @@ export class RecommendationService {
       await this.cacheRecommendations(uid, today, randomIds);
       return this.memoService.getMemosByIds(randomIds, uid);
     } catch (error) {
-      console.error('Error generating daily recommendations:', error);
+      logger.error('Error generating daily recommendations:', error);
       throw error;
     }
   }
@@ -268,7 +269,7 @@ Respond with exactly 3 memo IDs in JSON array format.`;
         }
       }
     } catch (parseError) {
-      console.warn('Failed to parse AI response:', parseError, 'Response:', content);
+      logger.warn('Failed to parse AI response:', parseError, 'Response:', content);
     }
 
     // If parsing fails, return empty to trigger fallback
