@@ -1,4 +1,4 @@
-import { mysqlTable, varchar, text, json, timestamp, index } from 'drizzle-orm/mysql-core';
+import { mysqlTable, varchar, text, json, timestamp, boolean, index } from 'drizzle-orm/mysql-core';
 import { users } from './users.js';
 import { categories } from './categories.js';
 
@@ -21,6 +21,7 @@ export const memos = mysqlTable(
     source: varchar('source', { length: 500 }),
     attachments: json('attachments').$type<string[]>(),
     tagIds: json('tag_ids').$type<string[]>(),
+    isPublic: boolean('is_public').default(false).notNull(),
     createdAt: timestamp('created_at', { mode: 'date', fsp: 3 })
       .notNull()
       .defaultNow(),
