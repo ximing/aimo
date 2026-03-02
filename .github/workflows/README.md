@@ -7,33 +7,39 @@ This directory contains all CI/CD workflows for the AIMO project.
 ### 1. ci.yml - Continuous Integration
 
 **Triggers:**
+
 - Push to `master`, `main`, or `develop` branches
 - Pull requests to `master` or `main` branches
 
 **Jobs:**
 
 #### Lint
+
 - Runs ESLint across all packages
 - Ensures code style consistency
 
 #### Typecheck
+
 - Type-checks server code (`apps/server`)
 - Type-checks web code (`apps/web`)
 - Builds DTO package first (required dependency)
 
 #### Test
+
 - Runs Jest tests in `apps/server`
 - Spins up MySQL 8.0 service container
 - Sets up test database with credentials
 - Ensures all tests pass before deployment
 
 #### Build
+
 - Runs after lint, typecheck, and test pass
 - Builds all packages using Turbo
 - Uploads build artifacts (dist directories)
 - Retention: 7 days
 
 #### Docker Build Test (PR only)
+
 - Tests both Dockerfiles build successfully
 - Matrix strategy: tests `Dockerfile` and `Dockerfile.migrate`
 - Only runs on pull requests
@@ -42,6 +48,7 @@ This directory contains all CI/CD workflows for the AIMO project.
 ### 2. docker-build.yml - Main Application Docker Image
 
 **Triggers:**
+
 - Push to `master`, `main`, or `develop` branches
 - Push tags matching `v*.*.*` (e.g., v1.0.0)
 - Changes to:
@@ -53,6 +60,7 @@ This directory contains all CI/CD workflows for the AIMO project.
 - Manual workflow dispatch (with optional custom tag)
 
 **What it does:**
+
 - Builds multi-platform Docker image (linux/amd64, linux/arm64)
 - Pushes to GitHub Container Registry (ghcr.io)
 - Generates artifact attestation for security
@@ -66,6 +74,7 @@ This directory contains all CI/CD workflows for the AIMO project.
 **Image name:** `ghcr.io/ximing/aimo`
 
 **Example usage:**
+
 ```bash
 docker pull ghcr.io/ximing/aimo:latest
 docker pull ghcr.io/ximing/aimo:stable
@@ -75,6 +84,7 @@ docker pull ghcr.io/ximing/aimo:v1.0.0
 ### 3. docker-migrate.yml - Migration Docker Image
 
 **Triggers:**
+
 - Push to `master`, `main`, or `develop` branches
 - Changes to:
   - `apps/server/**`
@@ -86,6 +96,7 @@ docker pull ghcr.io/ximing/aimo:v1.0.0
 - Manual workflow dispatch (with optional custom tag)
 
 **What it does:**
+
 - Builds migration-specific Docker image
 - Includes dev dependencies (drizzle-kit, tsx)
 - Multi-platform support (linux/amd64, linux/arm64)
@@ -94,6 +105,7 @@ docker pull ghcr.io/ximing/aimo:v1.0.0
 **Image name:** `ghcr.io/ximing/aimo-migrate`
 
 **Example usage:**
+
 ```bash
 # Pull migration image
 docker pull ghcr.io/ximing/aimo-migrate:latest
@@ -121,16 +133,19 @@ docker run --rm --network aimo-network \
 ### 4. build-electron.yml - Electron Desktop App
 
 **Triggers:**
+
 - Push tags matching `v*` (e.g., v1.0.0)
 - Manual workflow dispatch
 
 **What it does:**
+
 - Builds Electron desktop application
 - Multi-platform: macOS (x64, arm64), Windows (x64), Linux (x64)
 - Creates installers and portable versions
 - Uploads release artifacts to GitHub Releases
 
 **Artifacts:**
+
 - macOS: `.dmg` files (Intel and Apple Silicon)
 - Windows: `.exe` installer
 - Linux: AppImage, `.deb`, `.rpm`
@@ -140,10 +155,12 @@ docker run --rm --network aimo-network \
 **Note:** This workflow may be superseded by `docker-build.yml` and `docker-migrate.yml`.
 
 **Triggers:**
+
 - Push tags matching `v*` (e.g., v1.0.0)
 - Manual workflow dispatch
 
 **What it does:**
+
 - Builds and publishes Docker image to GitHub Container Registry
 - Single-platform build
 
@@ -188,6 +205,7 @@ gh workflow run docker-migrate.yml -f tag=hotfix-migration
 All workflows use `GITHUB_TOKEN` (automatically provided by GitHub Actions).
 
 No additional secrets needed for:
+
 - CI/CD workflows
 - Docker builds
 - Artifact uploads

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { login, testConnection, getCategories, type Category } from '../api/aimo.js';
 import { setConfig, getSettings, setSettings } from '../storage/index.js';
-import { useTheme } from './App.js';
+import { useTheme } from './theme-context.js';
 import type { Config } from '../types/index.js';
 
 interface ConfigPageProps {

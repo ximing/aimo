@@ -77,6 +77,7 @@ OPENAI_API_KEY=sk-xxx
 ## 🎯 三个迁移命令说明
 
 ### 1. migrate:generate（开发用）
+
 生成新的 Drizzle 迁移文件（修改 schema 后使用）
 
 ```bash
@@ -85,6 +86,7 @@ pnpm --filter @aimo/server migrate:generate
 ```
 
 ### 2. migrate（必须）
+
 运行 Drizzle 迁移，创建 MySQL 表结构
 
 ```bash
@@ -92,11 +94,13 @@ make -f Makefile.migrate migrate-schema
 ```
 
 **作用：**
+
 - 创建所有 MySQL 表（users, memos, categories, tags, etc.）
 - 创建索引和外键约束
 - 记录迁移历史
 
 ### 3. migrate:data（一次性）
+
 从 LanceDB 迁移数据到 MySQL
 
 ```bash
@@ -104,6 +108,7 @@ make -f Makefile.migrate migrate-data
 ```
 
 **作用：**
+
 - 读取 LanceDB 中的所有标量数据
 - 插入到 MySQL 对应的表中
 - LanceDB 表保持不变（仍包含完整数据）
@@ -112,6 +117,7 @@ make -f Makefile.migrate migrate-data
 ## ⚠️ 重要提示
 
 1. **数据备份**
+
    ```bash
    # 备份 LanceDB 数据
    cp -r lancedb_data lancedb_data.backup
@@ -177,6 +183,7 @@ make -f Makefile.migrate migrate-all
 ## 📚 完整文档
 
 详细文档请查看：
+
 - [DOCKER_MIGRATION_GUIDE.md](./DOCKER_MIGRATION_GUIDE.md) - 完整迁移指南
 - [ARCHITECTURE_UPDATE.md](./apps/server/ARCHITECTURE_UPDATE.md) - 架构说明
 

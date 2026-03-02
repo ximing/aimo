@@ -1,26 +1,11 @@
-import { useState, useEffect, createContext, useContext } from 'react';
+import { useState, useEffect } from 'react';
 import { ConfigPage } from './ConfigPage.js';
 import { MainPage } from './MainPage.js';
 import { getConfig, getSettings } from '../storage/index.js';
+import { ThemeContext, type ThemeContextType } from './theme-context.js';
 import type { Config } from '../types/index.js';
 
 type ViewState = 'loading' | 'config' | 'main';
-
-// Theme context
-interface ThemeContextType {
-  isDarkMode: boolean;
-  theme: 'light' | 'dark' | 'system';
-  setTheme: (theme: 'light' | 'dark' | 'system') => void;
-}
-
-const ThemeContext = createContext<ThemeContextType>({
-  isDarkMode: false,
-  theme: 'system',
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  setTheme: () => {},
-});
-
-export const useTheme = () => useContext(ThemeContext);
 
 // AIMO brand colors - matching apps/web
 const COLORS = {
@@ -64,8 +49,7 @@ function App() {
   const [systemPrefersDark, setSystemPrefersDark] = useState(false);
 
   // Calculate actual dark mode based on theme setting
-  const isDarkMode =
-    theme === 'dark' || (theme === 'system' && systemPrefersDark);
+  const isDarkMode = theme === 'dark' || (theme === 'system' && systemPrefersDark);
 
   // Detect system theme preference
   useEffect(() => {
@@ -150,8 +134,7 @@ function App() {
   const containerStyle: React.CSSProperties = {
     backgroundColor: isDarkMode ? COLORS.background.dark : COLORS.background.light,
     color: isDarkMode ? COLORS.text.dark : COLORS.text.light,
-    fontFamily:
-      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     minHeight: '400px',
     width: '320px',
   };
@@ -167,9 +150,7 @@ function App() {
     return (
       <ThemeContext.Provider value={themeContextValue}>
         <div style={{ ...containerStyle, padding: '40px', textAlign: 'center' }}>
-          <div style={{ fontSize: '14px', color: COLORS.textSecondary.light }}>
-            加载中...
-          </div>
+          <div style={{ fontSize: '14px', color: COLORS.textSecondary.light }}>加载中...</div>
           {error && (
             <div
               style={{
@@ -190,10 +171,7 @@ function App() {
   if (viewState === 'config') {
     return (
       <ThemeContext.Provider value={themeContextValue}>
-        <ConfigPage
-          onConfigSaved={handleConfigSaved}
-          initialErrorMessage={configErrorMessage}
-        />
+        <ConfigPage onConfigSaved={handleConfigSaved} initialErrorMessage={configErrorMessage} />
       </ThemeContext.Provider>
     );
   }
@@ -218,9 +196,7 @@ function App() {
   return (
     <ThemeContext.Provider value={themeContextValue}>
       <div style={{ ...containerStyle, padding: '40px', textAlign: 'center' }}>
-        <div style={{ fontSize: '14px', color: '#ef4444' }}>
-          发生错误，请刷新重试
-        </div>
+        <div style={{ fontSize: '14px', color: '#ef4444' }}>发生错误，请刷新重试</div>
       </div>
     </ThemeContext.Provider>
   );

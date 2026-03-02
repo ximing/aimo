@@ -168,10 +168,12 @@ docker compose -f docker-compose.migrate.yml run --rm migrate \
 ```
 
 **When to use:**
+
 - After modifying Drizzle schema files in `apps/server/src/db/schema/`
 - During development to create new migration files
 
 **Output:**
+
 - New migration files in `apps/server/drizzle/` directory
 
 ### 2. migrate
@@ -184,11 +186,13 @@ docker compose -f docker-compose.migrate.yml run --rm migrate \
 ```
 
 **When to use:**
+
 - First deployment to create all MySQL tables
 - After pulling new code with schema changes
 - Before starting the application server
 
 **What it does:**
+
 - Creates tables: users, memos, categories, tags, memo_relations, attachments, etc.
 - Creates indexes and foreign key constraints
 - Tracks migration history in `__drizzle_migrations` table
@@ -203,16 +207,19 @@ docker compose -f docker-compose.migrate.yml run --rm migrate \
 ```
 
 **When to use:**
+
 - **ONLY ONCE** when migrating from LanceDB-only to hybrid MySQL+LanceDB architecture
 - After running schema migrations (step 2)
 
 **What it does:**
+
 - Reads all scalar data from LanceDB tables
 - Inserts scalar data into MySQL tables
 - Preserves LanceDB tables unchanged (they still contain complete records)
 - Idempotent: skips records that already exist in MySQL
 
 **⚠️ Important:**
+
 - Backup your LanceDB data before running!
 - Run with `--dry-run` flag first to preview changes
 - Can be run multiple times safely (skips existing records)
@@ -339,6 +346,7 @@ docker compose up -d
 ## Support
 
 For issues or questions:
+
 - Check logs: `docker compose logs`
 - Review migration docs: `apps/server/MIGRATION.md`
 - Open issue: https://github.com/ximing/aimo/issues

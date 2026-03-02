@@ -125,7 +125,11 @@ export class AttachmentService {
       } as unknown as Record<string, unknown>,
     ]);
 
-    logger.info('Attachment created in MySQL and LanceDB:', { attachmentId: fileId, uid, filename });
+    logger.info('Attachment created in MySQL and LanceDB:', {
+      attachmentId: fileId,
+      uid,
+      filename,
+    });
 
     // Generate multimodal embedding asynchronously for images and videos if enabled
     // This is non-blocking and happens in the background

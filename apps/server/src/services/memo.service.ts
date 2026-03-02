@@ -139,7 +139,6 @@ export class MemoService {
     return await db.openTable('memos');
   }
 
-
   /**
    * Enrich memo items with tag data
    * Converts tagIds to TagDto objects
@@ -988,8 +987,14 @@ export class MemoService {
           attachments: attachmentDtos,
           tagIds,
           isPublic: memo.isPublic ?? false,
-          createdAt: typeof memo.createdAt === 'number' ? memo.createdAt : new Date(memo.createdAt).getTime(),
-          updatedAt: typeof memo.updatedAt === 'number' ? memo.updatedAt : new Date(memo.updatedAt).getTime(),
+          createdAt:
+            typeof memo.createdAt === 'number'
+              ? memo.createdAt
+              : new Date(memo.createdAt).getTime(),
+          updatedAt:
+            typeof memo.updatedAt === 'number'
+              ? memo.updatedAt
+              : new Date(memo.updatedAt).getTime(),
           source: memo.source || undefined,
           relevanceScore: Math.max(0, Math.min(1, 1 - (memo._distance || 0) / 2)),
         });

@@ -410,7 +410,6 @@ async function handleSaveClick(): Promise<void> {
  * @param type - Notification type ('success' | 'error')
  */
 function showNotification(message: string, type: 'success' | 'error'): void {
-
   // Create notification element
   const notification = document.createElement('div');
   notification.style.cssText = `

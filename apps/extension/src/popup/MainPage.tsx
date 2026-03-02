@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
 import { ContentList } from './ContentList.js';
-import { useTheme } from './App.js';
+import { useTheme } from './theme-context.js';
 import type { Config } from '../types/index.js';
 
 // AIMO brand colors - matching apps/web
@@ -224,12 +223,7 @@ export function MainPage({ config, onOpenSettings, onAuthError }: MainPageProps)
           >
             {getThemeIcon()}
           </button>
-          <button
-            type="button"
-            onClick={onOpenSettings}
-            style={styles.actionButton}
-            title="设置"
-          >
+          <button type="button" onClick={onOpenSettings} style={styles.actionButton} title="设置">
             <SettingsIcon />
           </button>
         </div>
