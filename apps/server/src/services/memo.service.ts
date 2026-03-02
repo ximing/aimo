@@ -280,6 +280,7 @@ export class MemoService {
           source: source || null,
           attachments: attachments || null,
           tagIds: resolvedTagIds.length > 0 ? resolvedTagIds : null,
+          isPublic: isPublic || false,
           embedding: embeddingArray,
           createdAt: createdAt || now,
           updatedAt: updatedAt || now,

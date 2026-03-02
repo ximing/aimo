@@ -15,6 +15,7 @@ import {
   Struct,
   Timestamp,
   TimeUnit,
+  Bool,
 } from 'apache-arrow';
 
 import { config } from '../../config/config.js';
@@ -59,6 +60,7 @@ export const memosSchema = new Schema([
   new Field('source', new Utf8(), true), // nullable source URL (e.g., from Chrome extension)
   new Field('attachments', new List(new Field('item', new Utf8(), true)), true), // nullable list of attachment IDs (URLs generated at runtime)
   new Field('tagIds', new List(new Field('item', new Utf8(), true)), true), // nullable list of tag IDs (new primary field)
+  new Field('isPublic', new Bool(), true), // nullable boolean for public visibility (defaults to false)
   new Field(
     'embedding',
     new FixedSizeList(getEmbeddingDimensions(), new Field('item', new Float32(), true)),
@@ -94,6 +96,7 @@ export interface MemoRecord {
   attachments?: string[]; // attachment IDs array (URLs generated at runtime)
   tags?: string[]; // optional array of tag strings (legacy, for backward compatibility)
   tagIds?: string[]; // optional array of tag IDs (new primary field)
+  isPublic?: boolean; // optional boolean for public visibility (defaults to false)
   embedding: number[];
   createdAt: number; // timestamp in milliseconds
   updatedAt: number; // timestamp in milliseconds
