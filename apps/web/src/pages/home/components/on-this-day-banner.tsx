@@ -123,7 +123,7 @@ export const OnThisDayBanner = view(() => {
         <div
           ref={scrollContainerRef}
           onWheel={handleWheel}
-          className="flex gap-3 overflow-x-auto scrollbar-hide px-4 pb-1"
+          className="flex gap-3 overflow-x-auto scrollbar-hide pb-1"
           style={{
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
