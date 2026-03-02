@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { login, testConnection, getCategories, type Category } from '../api/aimo.js';
-import { setConfig } from '../storage/index.js';
-import { getSettings, setSettings } from '../storage/index.js';
+import { setConfig, getSettings, setSettings } from '../storage/index.js';
+import { useTheme } from './App.js';
 import type { Config } from '../types/index.js';
 
 interface ConfigPageProps {
@@ -17,6 +17,112 @@ interface FormErrors {
   general?: string;
 }
 
+// AIMO brand colors - matching apps/web
+const COLORS = {
+  primary: '#22c55e', // primary-500
+  primaryHover: '#16a34a', // primary-600
+  background: {
+    light: '#ffffff',
+    dark: '#1a1a1a', // dark-900
+  },
+  surface: {
+    light: '#f9fafb',
+    dark: '#2a2a2a', // dark-800
+  },
+  text: {
+    light: '#1f2937',
+    dark: '#f3f4f6',
+  },
+  textSecondary: {
+    light: '#6b7280',
+    dark: '#9ca3af',
+  },
+  border: {
+    light: '#e5e7eb',
+    dark: '#374151',
+  },
+  input: {
+    light: '#ffffff',
+    dark: '#374151',
+  },
+  error: {
+    light: '#fef2f2',
+    dark: '#450a0a',
+  },
+  errorBorder: {
+    light: '#fecaca',
+    dark: '#7f1d1d',
+  },
+  errorText: {
+    light: '#dc2626',
+    dark: '#fca5a5',
+  },
+};
+
+// Sun icon for light mode
+function SunIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="5" />
+      <line x1="12" y1="1" x2="12" y2="3" />
+      <line x1="12" y1="21" x2="12" y2="23" />
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+      <line x1="1" y1="12" x2="3" y2="12" />
+      <line x1="21" y1="12" x2="23" y2="12" />
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+    </svg>
+  );
+}
+
+// Moon icon for dark mode
+function MoonIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+    </svg>
+  );
+}
+
+// Computer icon for system theme
+function ComputerIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+      <line x1="8" y1="21" x2="16" y2="21" />
+      <line x1="12" y1="17" x2="12" y2="21" />
+    </svg>
+  );
+}
+
 export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPageProps) {
   const [url, setUrl] = useState('');
   const [email, setEmail] = useState('');
@@ -27,25 +133,13 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
   const [errors, setErrors] = useState<FormErrors>(
     initialErrorMessage ? { general: initialErrorMessage } : {}
   );
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [activeTab, setActiveTab] = useState<'account' | 'settings'>('account');
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
   const [saveSourceUrl, setSaveSourceUrl] = useState<boolean>(true);
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
 
-  // Detect dark mode preference
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    setIsDarkMode(mediaQuery.matches);
-
-    const handleChange = (e: MediaQueryListEvent) => {
-      setIsDarkMode(e.matches);
-    };
-
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
+  const { isDarkMode, theme, setTheme } = useTheme();
 
   // Load saved URL from storage on mount
   useEffect(() => {
@@ -230,13 +324,24 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
     }
   };
 
+  const getThemeLabel = () => {
+    switch (theme) {
+      case 'light':
+        return '浅色';
+      case 'dark':
+        return '深色';
+      default:
+        return '跟随系统';
+    }
+  };
+
   const styles: Record<string, React.CSSProperties> = {
     container: {
       padding: '20px',
       width: '320px',
       minHeight: '400px',
-      backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
-      color: isDarkMode ? '#f3f4f6' : '#1f2937',
+      backgroundColor: isDarkMode ? COLORS.background.dark : COLORS.background.light,
+      color: isDarkMode ? COLORS.text.dark : COLORS.text.light,
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     },
     header: {
@@ -245,13 +350,13 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
       gap: '10px',
       marginBottom: '20px',
       paddingBottom: '16px',
-      borderBottom: `1px solid ${isDarkMode ? '#374151' : '#e5e7eb'}`,
+      borderBottom: `1px solid ${isDarkMode ? COLORS.border.dark : COLORS.border.light}`,
     },
     logo: {
       width: '32px',
       height: '32px',
       borderRadius: '8px',
-      backgroundColor: '#3b82f6',
+      backgroundColor: COLORS.primary,
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -263,11 +368,11 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
       fontSize: '18px',
       fontWeight: 600,
       margin: 0,
-      color: isDarkMode ? '#f3f4f6' : '#1f2937',
+      color: isDarkMode ? COLORS.text.dark : COLORS.text.light,
     },
     subtitle: {
       fontSize: '13px',
-      color: isDarkMode ? '#9ca3af' : '#6b7280',
+      color: isDarkMode ? COLORS.textSecondary.dark : COLORS.textSecondary.light,
       marginTop: '4px',
     },
     form: {
@@ -289,9 +394,9 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
       padding: '10px 12px',
       fontSize: '14px',
       borderRadius: '8px',
-      border: `1px solid ${isDarkMode ? '#4b5563' : '#d1d5db'}`,
-      backgroundColor: isDarkMode ? '#374151' : '#ffffff',
-      color: isDarkMode ? '#f3f4f6' : '#1f2937',
+      border: `1px solid ${isDarkMode ? COLORS.border.dark : COLORS.border.light}`,
+      backgroundColor: isDarkMode ? COLORS.input.dark : COLORS.input.light,
+      color: isDarkMode ? COLORS.text.dark : COLORS.text.light,
       outline: 'none',
       transition: 'border-color 0.2s, box-shadow 0.2s',
     },
@@ -305,16 +410,16 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
     },
     generalError: {
       padding: '10px 12px',
-      backgroundColor: isDarkMode ? '#450a0a' : '#fef2f2',
-      border: `1px solid ${isDarkMode ? '#7f1d1d' : '#fecaca'}`,
+      backgroundColor: isDarkMode ? COLORS.error.dark : COLORS.error.light,
+      border: `1px solid ${isDarkMode ? COLORS.errorBorder.dark : COLORS.errorBorder.light}`,
       borderRadius: '8px',
       fontSize: '13px',
-      color: isDarkMode ? '#fca5a5' : '#dc2626',
+      color: isDarkMode ? COLORS.errorText.dark : COLORS.errorText.light,
     },
     testButton: {
       padding: '8px 12px',
       fontSize: '13px',
-      color: '#3b82f6',
+      color: COLORS.primary,
       backgroundColor: 'transparent',
       border: 'none',
       cursor: 'pointer',
@@ -326,7 +431,7 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
       fontSize: '14px',
       fontWeight: 500,
       color: '#ffffff',
-      backgroundColor: '#3b82f6',
+      backgroundColor: COLORS.primary,
       border: 'none',
       borderRadius: '8px',
       cursor: isLoading ? 'not-allowed' : 'pointer',
@@ -337,9 +442,9 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
     footer: {
       marginTop: '20px',
       paddingTop: '16px',
-      borderTop: `1px solid ${isDarkMode ? '#374151' : '#e5e7eb'}`,
+      borderTop: `1px solid ${isDarkMode ? COLORS.border.dark : COLORS.border.light}`,
       fontSize: '12px',
-      color: isDarkMode ? '#9ca3af' : '#6b7280',
+      color: isDarkMode ? COLORS.textSecondary.dark : COLORS.textSecondary.light,
       textAlign: 'center' as const,
     },
     tabs: {
@@ -355,22 +460,51 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
       borderRadius: '8px',
       border: 'none',
       cursor: 'pointer',
-      backgroundColor: isDarkMode ? '#374151' : '#f3f4f6',
+      backgroundColor: isDarkMode ? COLORS.surface.dark : COLORS.surface.light,
       color: isDarkMode ? '#d1d5db' : '#374151',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '6px',
     },
     tabActive: {
-      backgroundColor: '#3b82f6',
+      backgroundColor: COLORS.primary,
       color: '#ffffff',
     },
     select: {
       padding: '10px 12px',
       fontSize: '14px',
       borderRadius: '8px',
-      border: `1px solid ${isDarkMode ? '#4b5563' : '#d1d5db'}`,
-      backgroundColor: isDarkMode ? '#374151' : '#ffffff',
-      color: isDarkMode ? '#f3f4f6' : '#1f2937',
+      border: `1px solid ${isDarkMode ? COLORS.border.dark : COLORS.border.light}`,
+      backgroundColor: isDarkMode ? COLORS.input.dark : COLORS.input.light,
+      color: isDarkMode ? COLORS.text.dark : COLORS.text.light,
       outline: 'none',
       cursor: 'pointer',
+    },
+    themeToggle: {
+      display: 'flex',
+      gap: '8px',
+    },
+    themeButton: {
+      flex: 1,
+      padding: '10px 12px',
+      fontSize: '14px',
+      fontWeight: 500,
+      borderRadius: '8px',
+      border: `1px solid ${isDarkMode ? COLORS.border.dark : COLORS.border.light}`,
+      cursor: 'pointer',
+      backgroundColor: isDarkMode ? COLORS.input.dark : COLORS.input.light,
+      color: isDarkMode ? COLORS.textSecondary.dark : COLORS.textSecondary.light,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '6px',
+      transition: 'all 0.15s',
+    },
+    themeButtonActive: {
+      borderColor: COLORS.primary,
+      color: COLORS.primary,
+      backgroundColor: isDarkMode ? 'rgba(34, 197, 94, 0.1)' : 'rgba(34, 197, 94, 0.1)',
     },
   };
 
@@ -468,9 +602,17 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
                   border: 'none',
                   cursor: isLoading ? 'not-allowed' : 'pointer',
                   backgroundColor:
-                    loginMethod === 'password' ? '#3b82f6' : isDarkMode ? '#374151' : '#e5e7eb',
+                    loginMethod === 'password'
+                      ? COLORS.primary
+                      : isDarkMode
+                        ? COLORS.input.dark
+                        : COLORS.surface.light,
                   color:
-                    loginMethod === 'password' ? '#ffffff' : isDarkMode ? '#d1d5db' : '#374151',
+                    loginMethod === 'password'
+                      ? '#ffffff'
+                      : isDarkMode
+                        ? COLORS.textSecondary.dark
+                        : COLORS.textSecondary.light,
                   opacity: isLoading ? 0.6 : 1,
                 }}
                 disabled={isLoading}
@@ -489,8 +631,17 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
                   border: 'none',
                   cursor: isLoading ? 'not-allowed' : 'pointer',
                   backgroundColor:
-                    loginMethod === 'token' ? '#3b82f6' : isDarkMode ? '#374151' : '#e5e7eb',
-                  color: loginMethod === 'token' ? '#ffffff' : isDarkMode ? '#d1d5db' : '#374151',
+                    loginMethod === 'token'
+                      ? COLORS.primary
+                      : isDarkMode
+                        ? COLORS.input.dark
+                        : COLORS.surface.light,
+                  color:
+                    loginMethod === 'token'
+                      ? '#ffffff'
+                      : isDarkMode
+                        ? COLORS.textSecondary.dark
+                        : COLORS.textSecondary.light,
                   opacity: isLoading ? 0.6 : 1,
                 }}
                 disabled={isLoading}
@@ -582,11 +733,11 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
             disabled={isLoading}
             onMouseEnter={(e) => {
               if (!isLoading) {
-                e.currentTarget.style.backgroundColor = '#2563eb';
+                e.currentTarget.style.backgroundColor = COLORS.primaryHover;
               }
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#3b82f6';
+              e.currentTarget.style.backgroundColor = COLORS.primary;
             }}
           >
             {isLoading ? '登录中...' : '登录'}
@@ -594,6 +745,55 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
         </form>
       ) : (
         <div style={styles.form}>
+          {/* Theme Settings */}
+          <div style={styles.fieldGroup}>
+            <label style={styles.label}>主题</label>
+            <div style={styles.themeToggle}>
+              <button
+                type="button"
+                onClick={() => setTheme('light')}
+                style={{
+                  ...styles.themeButton,
+                  ...(theme === 'light' ? styles.themeButtonActive : {}),
+                }}
+              >
+                <SunIcon />
+                浅色
+              </button>
+              <button
+                type="button"
+                onClick={() => setTheme('dark')}
+                style={{
+                  ...styles.themeButton,
+                  ...(theme === 'dark' ? styles.themeButtonActive : {}),
+                }}
+              >
+                <MoonIcon />
+                深色
+              </button>
+              <button
+                type="button"
+                onClick={() => setTheme('system')}
+                style={{
+                  ...styles.themeButton,
+                  ...(theme === 'system' ? styles.themeButtonActive : {}),
+                }}
+              >
+                <ComputerIcon />
+                跟随系统
+              </button>
+            </div>
+            <span
+              style={{
+                fontSize: '12px',
+                color: isDarkMode ? COLORS.textSecondary.dark : COLORS.textSecondary.light,
+                marginTop: '4px',
+              }}
+            >
+              当前: {getThemeLabel()}
+            </span>
+          </div>
+
           {/* Settings Tab */}
           <div style={styles.fieldGroup}>
             <label style={styles.label}>默认分类</label>
@@ -613,7 +813,7 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
             <span
               style={{
                 fontSize: '12px',
-                color: isDarkMode ? '#9ca3af' : '#6b7280',
+                color: isDarkMode ? COLORS.textSecondary.dark : COLORS.textSecondary.light,
                 marginTop: '4px',
               }}
             >
@@ -622,7 +822,12 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
           </div>
 
           {isLoadingCategories && (
-            <div style={{ fontSize: '13px', color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
+            <div
+              style={{
+                fontSize: '13px',
+                color: isDarkMode ? COLORS.textSecondary.dark : COLORS.textSecondary.light,
+              }}
+            >
               加载分类中...
             </div>
           )}
@@ -640,7 +845,11 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
                   borderRadius: '12px',
                   border: 'none',
                   cursor: 'pointer',
-                  backgroundColor: saveSourceUrl ? '#3b82f6' : isDarkMode ? '#4b5563' : '#d1d5db',
+                  backgroundColor: saveSourceUrl
+                    ? COLORS.primary
+                    : isDarkMode
+                      ? COLORS.border.dark
+                      : COLORS.border.light,
                   position: 'relative',
                   transition: 'background-color 0.2s',
                 }}
@@ -663,7 +872,7 @@ export function ConfigPage({ onConfigSaved, initialErrorMessage }: ConfigPagePro
             <span
               style={{
                 fontSize: '12px',
-                color: isDarkMode ? '#9ca3af' : '#6b7280',
+                color: isDarkMode ? COLORS.textSecondary.dark : COLORS.textSecondary.light,
                 marginTop: '4px',
               }}
             >

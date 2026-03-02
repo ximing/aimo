@@ -11,6 +11,7 @@ const SETTINGS_KEY = 'aimo_settings';
 export interface Settings {
   defaultCategoryId?: string;
   saveSourceUrl?: boolean;
+  theme?: 'light' | 'dark' | 'system';
 }
 
 /**

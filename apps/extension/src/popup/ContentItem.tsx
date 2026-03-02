@@ -231,7 +231,7 @@ export function ContentItem({
       fontSize: '12px',
       fontWeight: 500,
       color: '#ffffff',
-      backgroundColor: '#3b82f6',
+      backgroundColor: '#22c55e',
       border: 'none',
       borderRadius: '4px',
       cursor: 'pointer',
@@ -267,7 +267,7 @@ export function ContentItem({
       fontSize: '12px',
       fontWeight: 500,
       color: '#ffffff',
-      backgroundColor: '#3b82f6',
+      backgroundColor: '#22c55e',
       border: 'none',
       borderRadius: '6px',
       cursor: 'pointer',
@@ -286,7 +286,7 @@ export function ContentItem({
     },
     progressBar: {
       height: '100%',
-      backgroundColor: '#3b82f6',
+      backgroundColor: '#22c55e',
       borderRadius: '3px',
       transition: 'width 0.2s ease',
     },
@@ -401,10 +401,10 @@ export function ContentItem({
           style={styles.uploadButton}
           onClick={handleUpload}
           onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#2563eb';
+            e.currentTarget.style.backgroundColor = '#16a34a';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = '#3b82f6';
+            e.currentTarget.style.backgroundColor = '#22c55e';
           }}
         >
           <UploadIcon />

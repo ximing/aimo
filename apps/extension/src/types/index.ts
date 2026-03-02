@@ -140,4 +140,6 @@ export interface Settings {
   defaultCategoryId?: string;
   /** Whether to save source URL with memos */
   saveSourceUrl?: boolean;
+  /** Theme preference: light, dark, or system */
+  theme?: 'light' | 'dark' | 'system';
 }

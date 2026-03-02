@@ -1,6 +1,33 @@
 import { useState, useEffect } from 'react';
 import { ContentList } from './ContentList.js';
+import { useTheme } from './App.js';
 import type { Config } from '../types/index.js';
+
+// AIMO brand colors - matching apps/web
+const COLORS = {
+  primary: '#22c55e', // primary-500
+  primaryHover: '#16a34a', // primary-600
+  background: {
+    light: '#ffffff',
+    dark: '#1a1a1a', // dark-900
+  },
+  surface: {
+    light: '#f9fafb',
+    dark: '#2a2a2a', // dark-800
+  },
+  text: {
+    light: '#1f2937',
+    dark: '#f3f4f6',
+  },
+  textSecondary: {
+    light: '#6b7280',
+    dark: '#9ca3af',
+  },
+  border: {
+    light: '#e5e7eb',
+    dark: '#374151',
+  },
+};
 
 interface MainPageProps {
   config: Config;
@@ -27,34 +54,90 @@ function SettingsIcon() {
   );
 }
 
+// Sun icon for light mode
+function SunIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="5" />
+      <line x1="12" y1="1" x2="12" y2="3" />
+      <line x1="12" y1="21" x2="12" y2="23" />
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+      <line x1="1" y1="12" x2="3" y2="12" />
+      <line x1="21" y1="12" x2="23" y2="12" />
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+    </svg>
+  );
+}
+
+// Moon icon for dark mode
+function MoonIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+    </svg>
+  );
+}
+
+// Computer icon for system theme
+function ComputerIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+      <line x1="8" y1="21" x2="16" y2="21" />
+      <line x1="12" y1="17" x2="12" y2="21" />
+    </svg>
+  );
+}
+
 export function MainPage({ config, onOpenSettings, onAuthError }: MainPageProps) {
-  // Initialize dark mode state without effect
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const { isDarkMode, theme, setTheme } = useTheme();
+
+  const handleThemeToggle = () => {
+    if (theme === 'light') {
+      setTheme('dark');
+    } else if (theme === 'dark') {
+      setTheme('system');
+    } else {
+      setTheme('light');
     }
-    return false;
-  });
-
-  // Detect dark mode preference changes
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-
-    const handleChange = (e: MediaQueryListEvent) => {
-      setIsDarkMode(e.matches);
-    };
-
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
+  };
 
   const styles: Record<string, React.CSSProperties> = {
     container: {
       padding: '16px',
       width: '320px',
       minHeight: '400px',
-      backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
-      color: isDarkMode ? '#f3f4f6' : '#1f2937',
+      backgroundColor: isDarkMode ? COLORS.background.dark : COLORS.background.light,
+      color: isDarkMode ? COLORS.text.dark : COLORS.text.light,
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     },
     header: {
@@ -63,7 +146,7 @@ export function MainPage({ config, onOpenSettings, onAuthError }: MainPageProps)
       justifyContent: 'space-between',
       marginBottom: '16px',
       paddingBottom: '12px',
-      borderBottom: `1px solid ${isDarkMode ? '#374151' : '#e5e7eb'}`,
+      borderBottom: `1px solid ${isDarkMode ? COLORS.border.dark : COLORS.border.light}`,
     },
     headerLeft: {
       display: 'flex',
@@ -74,7 +157,7 @@ export function MainPage({ config, onOpenSettings, onAuthError }: MainPageProps)
       width: '32px',
       height: '32px',
       borderRadius: '8px',
-      backgroundColor: '#3b82f6',
+      backgroundColor: COLORS.primary,
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -86,23 +169,40 @@ export function MainPage({ config, onOpenSettings, onAuthError }: MainPageProps)
       fontSize: '16px',
       fontWeight: 600,
       margin: 0,
-      color: isDarkMode ? '#f3f4f6' : '#1f2937',
+      color: isDarkMode ? COLORS.text.dark : COLORS.text.light,
     },
     userInfo: {
       fontSize: '12px',
-      color: isDarkMode ? '#9ca3af' : '#6b7280',
+      color: isDarkMode ? COLORS.textSecondary.dark : COLORS.textSecondary.light,
     },
-    settingsButton: {
+    actions: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '4px',
+    },
+    actionButton: {
       padding: '8px',
       backgroundColor: 'transparent',
       border: 'none',
       borderRadius: '6px',
       cursor: 'pointer',
-      color: isDarkMode ? '#9ca3af' : '#6b7280',
+      color: isDarkMode ? COLORS.textSecondary.dark : COLORS.textSecondary.light,
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
+      transition: 'background-color 0.15s, color 0.15s',
     },
+  };
+
+  const getThemeIcon = () => {
+    switch (theme) {
+      case 'light':
+        return <SunIcon />;
+      case 'dark':
+        return <MoonIcon />;
+      default:
+        return <ComputerIcon />;
+    }
   };
 
   return (
@@ -115,9 +215,24 @@ export function MainPage({ config, onOpenSettings, onAuthError }: MainPageProps)
             <div style={styles.userInfo}>{config.username || '已登录'}</div>
           </div>
         </div>
-        <button type="button" onClick={onOpenSettings} style={styles.settingsButton} title="设置">
-          <SettingsIcon />
-        </button>
+        <div style={styles.actions}>
+          <button
+            type="button"
+            onClick={handleThemeToggle}
+            style={styles.actionButton}
+            title={`当前: ${theme === 'light' ? '浅色' : theme === 'dark' ? '深色' : '跟随系统'}`}
+          >
+            {getThemeIcon()}
+          </button>
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            style={styles.actionButton}
+            title="设置"
+          >
+            <SettingsIcon />
+          </button>
+        </div>
       </div>
 
       <ContentList isDarkMode={isDarkMode} onAuthError={onAuthError} />

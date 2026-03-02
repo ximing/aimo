@@ -72,7 +72,7 @@ export const OnThisDayBanner = view(() => {
     return (
       <div className="w-full py-3">
         {/* Header */}
-        <div className="flex items-center gap-2 px-4 mb-2">
+        <div className="flex items-center gap-2 mb-2">
           <Clock className="w-4 h-4 text-primary-500" />
           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">历史的今天</span>
         </div>
@@ -88,7 +88,7 @@ export const OnThisDayBanner = view(() => {
   return (
     <div className="w-full py-3">
       {/* Header */}
-      <div className="flex items-center gap-2 px-4 mb-2">
+      <div className="flex items-center gap-2 mb-2">
         <Clock className="w-4 h-4 text-primary-500" />
         <span className="text-sm font-medium text-gray-700 dark:text-gray-300">历史的今天</span>
       </div>

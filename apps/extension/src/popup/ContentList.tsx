@@ -415,7 +415,7 @@ export function ContentList({ isDarkMode, onAuthError }: ContentListProps) {
       fontSize: '13px',
       fontWeight: 500,
       color: '#ffffff',
-      backgroundColor: '#3b82f6',
+      backgroundColor: '#22c55e',
       border: 'none',
       borderRadius: '6px',
       cursor: 'pointer',
@@ -447,7 +447,7 @@ export function ContentList({ isDarkMode, onAuthError }: ContentListProps) {
     },
     progressFill: {
       height: '100%',
-      backgroundColor: '#3b82f6',
+      backgroundColor: '#22c55e',
       borderRadius: '4px',
       transition: 'width 0.3s ease',
     },
@@ -569,12 +569,12 @@ export function ContentList({ isDarkMode, onAuthError }: ContentListProps) {
           disabled={isSaving}
           onMouseEnter={(e) => {
             if (!isSaving) {
-              e.currentTarget.style.backgroundColor = '#2563eb';
+              e.currentTarget.style.backgroundColor = '#16a34a';
             }
           }}
           onMouseLeave={(e) => {
             if (!isSaving) {
-              e.currentTarget.style.backgroundColor = '#3b82f6';
+              e.currentTarget.style.backgroundColor = '#22c55e';
             }
           }}
         >

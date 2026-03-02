@@ -9,25 +9,33 @@ let shadowRoot: ShadowRoot | null = null;
 let currentSelection: ExtractedContent | null = null;
 let hideTimeout: number | null = null;
 
-// AIMO brand colors
+// AIMO brand colors - matching apps/web
 const COLORS = {
-  primary: '#3b82f6',
-  primaryHover: '#2563eb',
+  primary: '#22c55e', // primary-500
+  primaryHover: '#16a34a', // primary-600
   background: {
     light: '#ffffff',
-    dark: '#1f2937',
+    dark: '#1a1a1a', // dark-900
+  },
+  surface: {
+    light: '#f9fafb',
+    dark: '#2a2a2a', // dark-800
   },
   text: {
     light: '#374151',
     dark: '#f3f4f6',
+  },
+  textSecondary: {
+    light: '#6b7280',
+    dark: '#9ca3af',
   },
   border: {
     light: '#e5e7eb',
     dark: '#374151',
   },
   shadow: {
-    light: '0 4px 12px rgba(0, 0, 0, 0.15)',
-    dark: '0 4px 12px rgba(0, 0, 0, 0.4)',
+    light: '0 4px 16px rgba(0, 0, 0, 0.12)',
+    dark: '0 4px 16px rgba(0, 0, 0, 0.5)',
   },
 };
 
@@ -46,10 +54,12 @@ function getThemeStyles(): {
   text: string;
   border: string;
   shadow: string;
+  surface: string;
 } {
   const dark = isDarkMode();
   return {
     background: dark ? COLORS.background.dark : COLORS.background.light,
+    surface: dark ? COLORS.surface.dark : COLORS.surface.light,
     text: dark ? COLORS.text.dark : COLORS.text.light,
     border: dark ? COLORS.border.dark : COLORS.border.light,
     shadow: dark ? COLORS.shadow.dark : COLORS.shadow.light,
@@ -74,35 +84,37 @@ function createToolbar(): HTMLElement {
   // Get theme styles
   const theme = getThemeStyles();
 
-  // Add styles to shadow DOM
+  // Add styles to shadow DOM - refined compact design
   const style = document.createElement('style');
   style.textContent = `
     #aimo-toolbar {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
+      gap: 6px;
+      padding: 6px 10px;
       background: ${theme.background};
       border: 1px solid ${theme.border};
-      border-radius: 8px;
+      border-radius: 10px;
       box-shadow: ${theme.shadow};
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      font-size: 14px;
+      font-size: 13px;
       color: ${theme.text};
       cursor: default;
       user-select: none;
       animation: aimo-fade-in 0.15s ease-out;
       z-index: 2147483647;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
     }
 
     @keyframes aimo-fade-in {
       from {
         opacity: 0;
-        transform: translateY(4px);
+        transform: translateY(4px) scale(0.96);
       }
       to {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(0) scale(1);
       }
     }
 
@@ -113,67 +125,71 @@ function createToolbar(): HTMLElement {
     @keyframes aimo-fade-out {
       from {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(0) scale(1);
       }
       to {
         opacity: 0;
-        transform: translateY(4px);
+        transform: translateY(4px) scale(0.96);
       }
     }
 
     .aimo-logo {
-      width: 20px;
-      height: 20px;
+      width: 22px;
+      height: 22px;
       flex-shrink: 0;
     }
 
     .aimo-divider {
       width: 1px;
-      height: 16px;
-      background: ${theme.border};
-      margin: 0 4px;
-    }
-
-    .aimo-save-btn {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 12px;
-      background: ${COLORS.primary};
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background 0.15s ease;
-    }
-
-    .aimo-save-btn:hover {
-      background: ${COLORS.primaryHover};
-    }
-
-    .aimo-save-btn:active {
-      transform: scale(0.98);
-    }
-
-    .aimo-save-btn svg {
-      width: 14px;
       height: 14px;
+      background: ${theme.border};
+      margin: 0 2px;
     }
 
     .aimo-type-indicator {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 3px;
       font-size: 12px;
       color: ${theme.text};
-      opacity: 0.7;
+      opacity: 0.65;
+      padding: 2px 6px;
+      background: ${theme.surface};
+      border-radius: 4px;
     }
 
     .aimo-type-indicator svg {
-      width: 14px;
-      height: 14px;
+      width: 13px;
+      height: 13px;
+    }
+
+    .aimo-save-btn {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 5px 10px;
+      background: ${COLORS.primary};
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .aimo-save-btn:hover {
+      background: ${COLORS.primaryHover};
+      transform: translateY(-1px);
+    }
+
+    .aimo-save-btn:active {
+      transform: translateY(0) scale(0.98);
+    }
+
+    .aimo-save-btn svg {
+      width: 13px;
+      height: 13px;
     }
   `;
 
@@ -188,8 +204,8 @@ function createToolbar(): HTMLElement {
  */
 function getLogoSVG(): string {
   return `<svg class="aimo-logo" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect width="24" height="24" rx="4" fill="${COLORS.primary}"/>
-    <path d="M7 12L10.5 15.5L17 9" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect width="24" height="24" rx="6" fill="${COLORS.primary}"/>
+    <path d="M7 12L10.5 15.5L17 9" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`;
 }
 
@@ -240,15 +256,14 @@ function updateToolbarContent(): void {
   const isImage = currentSelection.type === 'image';
   const typeLabel = isImage ? '图片' : '文本';
   const typeIcon = isImage ? getImageIconSVG() : getTextIconSVG();
-  const saveText = isImage ? '保存图片到 AIMO' : '保存到 AIMO';
+  const saveText = isImage ? '保存图片' : '保存';
 
   toolbar.innerHTML = `
     ${getLogoSVG()}
-    <div class="aimo-type-indicator">
+    <span class="aimo-type-indicator">
       ${typeIcon}
       <span>${typeLabel}</span>
-    </div>
-    <div class="aimo-divider"></div>
+    </span>
     <button class="aimo-save-btn" id="aimo-save-btn">
       ${getSaveIconSVG()}
       <span>${saveText}</span>
@@ -268,14 +283,14 @@ function updateToolbarContent(): void {
 function positionToolbar(rect: DOMRect): void {
   if (!toolbarContainer) return;
 
-  // Calculate position (bottom-right of selection with some offset)
-  const offset = 8;
-  let left = rect.right + offset - 150; // Center horizontally relative to right edge
+  // Calculate position - more refined positioning
+  const offset = 10;
+  let left = rect.right + offset - 140;
   let top = rect.bottom + offset;
 
   // Ensure toolbar stays within viewport
-  const toolbarWidth = 200;
-  const toolbarHeight = 50;
+  const toolbarWidth = 180;
+  const toolbarHeight = 40;
 
   if (left + toolbarWidth > window.innerWidth) {
     left = window.innerWidth - toolbarWidth - 16;
@@ -395,18 +410,19 @@ async function handleSaveClick(): Promise<void> {
  * @param type - Notification type ('success' | 'error')
  */
 function showNotification(message: string, type: 'success' | 'error'): void {
+
   // Create notification element
   const notification = document.createElement('div');
   notification.style.cssText = `
     position: fixed;
     top: 20px;
     right: 20px;
-    padding: 12px 20px;
-    background: ${type === 'error' ? '#dc2626' : '#16a34a'};
+    padding: 10px 16px;
+    background: ${type === 'error' ? '#dc2626' : COLORS.primary};
     color: white;
     border-radius: 8px;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     z-index: 2147483647;
@@ -466,12 +482,12 @@ function showLoadingNotification(message: string): HTMLElement {
     position: fixed;
     top: 20px;
     right: 20px;
-    padding: 12px 20px;
-    background: #3b82f6;
+    padding: 10px 16px;
+    background: ${COLORS.primary};
     color: white;
     border-radius: 8px;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     z-index: 2147483647;
@@ -484,8 +500,8 @@ function showLoadingNotification(message: string): HTMLElement {
   // Add spinner
   const spinner = document.createElement('div');
   spinner.style.cssText = `
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
     border: 2px solid rgba(255,255,255,0.3);
     border-top-color: white;
     border-radius: 50%;
