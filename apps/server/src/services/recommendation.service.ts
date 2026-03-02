@@ -105,6 +105,22 @@ export class RecommendationService {
   }
 
   /**
+   * Clear cached recommendations for a specific date
+   */
+  private async clearCachedRecommendations(uid: string, date: string): Promise<void> {
+    try {
+      const db = getDatabase();
+      await db
+        .delete(dailyRecommendations)
+        .where(and(eq(dailyRecommendations.uid, uid), eq(dailyRecommendations.date, date)));
+      logger.info(`Cleared cached recommendations for user ${uid} on ${date}`);
+    } catch (error) {
+      logger.error('Error clearing cached recommendations:', error);
+      // Don't throw - cache clearing failure shouldn't break the feature
+    }
+  }
+
+  /**
    * Generate unique random offsets for sampling
    */
   private generateRandomOffsets(max: number, count: number): number[] {
@@ -133,11 +149,21 @@ export class RecommendationService {
       if (cached && cached.memoIds.length > 0) {
         logger.info('Using cached daily recommendations for user:', uid);
         const memos = await this.memoService.getMemosByIds(cached.memoIds, uid);
-        // Preserve order from cached recommendation
-        const memoMap = new Map(memos.map((m) => [m.memoId, m]));
-        return cached.memoIds
-          .map((id) => memoMap.get(id))
-          .filter((m): m is MemoListItemDto => m !== undefined);
+
+        // If some memos were deleted, clear cache and regenerate
+        if (memos.length < cached.memoIds.length) {
+          logger.info(
+            `Cached recommendations contain deleted memos (${cached.memoIds.length} cached, ${memos.length} found). Regenerating...`
+          );
+          await this.clearCachedRecommendations(uid, today);
+          // Continue to regenerate recommendations below
+        } else {
+          // Preserve order from cached recommendation
+          const memoMap = new Map(memos.map((m) => [m.memoId, m]));
+          return cached.memoIds
+            .map((id) => memoMap.get(id))
+            .filter((m): m is MemoListItemDto => m !== undefined);
+        }
       }
 
       // Get memo count only (efficient - doesn't load all data)
