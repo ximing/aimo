@@ -42,13 +42,13 @@ export interface GetAttachmentsOptions {
 @Service()
 export class AttachmentService {
   private storageAdapter: UnifiedStorageAdapter;
-  private lanceDatabaseService: LanceDatabaseService;
 
-  constructor(private multimodalEmbeddingService: MultimodalEmbeddingService) {
+  constructor(
+    private multimodalEmbeddingService: MultimodalEmbeddingService,
+    private lanceDatabaseService: LanceDatabaseService
+  ) {
     // Create storage adapter for attachments
     this.storageAdapter = UnifiedStorageAdapterFactory.createAttachmentAdapter(config.attachment);
-    // Keep LanceDB service for vector operations only
-    this.lanceDatabaseService = new LanceDatabaseService();
   }
 
   /**
