@@ -50,8 +50,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build DTO (required for typecheck)
-        run: pnpm --filter @aimo/dto build
+      - name: Build dependencies (required for typecheck)
+        run: |
+          pnpm --filter @aimo/dto build
+          pnpm --filter @aimo/logger build
 
       - name: Typecheck server
         run: cd apps/server && pnpm typecheck
