@@ -248,11 +248,7 @@ function toggleWindowVisibility(): void {
 }
 
 function registerGlobalShortcuts(): void {
-  // Register CommandOrControl+Shift+A to toggle window visibility
-  const registered = globalShortcut.register('CommandOrControl+Shift+A', toggleWindowVisibility);
-  if (!registered) {
-    console.warn('Failed to register global shortcut CommandOrControl+Shift+A');
-  }
+  // @TODO Register CommandOrControl+Shift+A to toggle window visibility
 }
 
 function createTray(): void {
