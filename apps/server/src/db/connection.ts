@@ -45,6 +45,13 @@ export function initializeDatabase() {
     queueLimit: 0,
     enableKeepAlive: true,
     keepAliveInitialDelay: 0,
+    // Connection timeout and retry settings
+    connectTimeout: 10000, // 10 seconds
+    acquireTimeout: 10000, // 10 seconds
+    timeout: 60000, // 60 seconds for query execution
+    // Automatically reconnect on connection loss
+    maxIdle: 10, // Maximum idle connections
+    idleTimeout: 60000, // Close idle connections after 60 seconds
   });
 
   // Create Drizzle instance with schema
