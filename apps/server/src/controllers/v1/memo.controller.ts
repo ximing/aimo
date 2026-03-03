@@ -88,6 +88,34 @@ export class MemoV1Controller {
     }
   }
 
+  @Get('/poll')
+  async pollNewMemos(
+    @CurrentUser() user: UserInfoDto,
+    @QueryParam('latestMemoId') latestMemoId: string,
+    @QueryParam('sortBy') sortBy: 'createdAt' | 'updatedAt' = 'createdAt'
+  ) {
+    try {
+      if (!user?.uid) {
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
+      }
+
+      if (!latestMemoId || !sortBy) {
+        return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'latestMemoId and sortBy are required');
+      }
+
+      const items = await this.memoService.getNewMemosAfter(user.uid, latestMemoId, sortBy);
+
+      return ResponseUtility.success({
+        hasNew: items.length > 0,
+        items,
+        count: items.length,
+      });
+    } catch (error) {
+      logger.error('Poll new memos error:', error);
+      return ResponseUtility.error(ErrorCode.DB_ERROR);
+    }
+  }
+
   @Post('/search/vector')
   async vectorSearch(
     @Body()

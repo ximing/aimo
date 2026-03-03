@@ -143,3 +143,24 @@ export const getPublicMemoById = (memoId: string) => {
     `/api/v1/memos/public/memo/${memoId}`
   );
 };
+
+/**
+ * Poll for new memos created/updated after the latest memo
+ * Used for real-time updates without WebSocket
+ */
+export const pollNewMemos = (params: {
+  latestMemoId: string;
+  sortBy: 'createdAt' | 'updatedAt';
+}) => {
+  return request.get<
+    unknown,
+    {
+      code: number;
+      data: {
+        hasNew: boolean;
+        items: MemoListItemDto[];
+        count: number;
+      };
+    }
+  >('/api/v1/memos/poll', { params });
+};

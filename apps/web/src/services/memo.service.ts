@@ -183,10 +183,33 @@ export class MemoService extends Service {
       const response = await memoApi.createMemo(data);
 
       if (response.code === 0 && response.data) {
-        // Refresh the list after creating
-        await this.fetchMemos(true);
-        // Refresh heatmap after creating
-        await this.fetchActivityStats();
+        // 乐观更新：仅在满足以下条件时立即插入新 memo
+        // 1. 按创建时间倒序排列（最新的在前）
+        // 2. 没有搜索查询
+        // 3. 没有过滤器（分类、标签、日期范围）
+        const shouldOptimisticUpdate =
+          this.sortOrder === 'desc' &&
+          this.sortBy === 'createdAt' &&
+          !this.searchQuery &&
+          !this.categoryFilter &&
+          this.tagFilter.length === 0 &&
+          !this.startDate &&
+          !this.endDate;
+
+        if (shouldOptimisticUpdate) {
+          this.memos = [response.data.memo, ...this.memos];
+          this.total += 1;
+        }
+
+        // 后台刷新：并行执行，不阻塞返回
+        // 使用 Promise.allSettled 确保即使某个请求失败也不影响其他请求
+        Promise.allSettled([
+          this.fetchMemos(true),
+          this.fetchActivityStats(),
+        ]).catch((error) => {
+          console.error('Background refresh error:', error);
+        });
+
         return { success: true, memo: response.data.memo };
       } else {
         return { success: false, message: 'Failed to create memo' };

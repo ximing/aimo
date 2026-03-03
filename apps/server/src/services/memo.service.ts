@@ -472,6 +472,86 @@ export class MemoService {
   }
 
   /**
+   * Get new memos created/updated after a reference memo
+   * Used for polling to detect new memos
+   */
+  async getNewMemosAfter(
+    uid: string,
+    latestMemoId: string,
+    sortBy: 'createdAt' | 'updatedAt'
+  ): Promise<MemoListItemDto[]> {
+    try {
+      const db = getDatabase();
+
+      // First, get the reference memo to get its timestamp
+      const referenceMemo = await db
+        .select()
+        .from(memos)
+        .where(and(eq(memos.memoId, latestMemoId), eq(memos.uid, uid)))
+        .limit(1);
+
+      // If reference memo not found, return empty array
+      if (referenceMemo.length === 0) {
+        return [];
+      }
+
+      const referenceTimestamp = sortBy === 'createdAt'
+        ? referenceMemo[0].createdAt
+        : referenceMemo[0].updatedAt;
+
+      // Query for memos with timestamp greater than reference
+      const sortColumn = sortBy === 'createdAt' ? memos.createdAt : memos.updatedAt;
+
+      const results = await db
+        .select()
+        .from(memos)
+        .where(
+          and(
+            eq(memos.uid, uid),
+            sql`${sortColumn} > ${referenceTimestamp}`
+          )
+        )
+        .orderBy(desc(sortColumn))
+        .limit(50);
+
+      // Convert to DTOs
+      const items: MemoListItemDto[] = [];
+      for (const memo of results) {
+        const attachmentIds = memo.attachments || [];
+        const attachmentDtos: AttachmentDto[] =
+          attachmentIds.length > 0
+            ? await this.attachmentService.getAttachmentsByIds(attachmentIds, uid)
+            : [];
+
+        items.push({
+          memoId: memo.memoId,
+          uid: memo.uid,
+          content: memo.content,
+          type: (memo.type as 'text' | 'audio' | 'video') || 'text',
+          categoryId: memo.categoryId || undefined,
+          attachments: attachmentDtos,
+          tagIds: memo.tagIds || [],
+          isPublic: memo.isPublic,
+          createdAt: memo.createdAt.getTime(),
+          updatedAt: memo.updatedAt.getTime(),
+          source: memo.source || undefined,
+        });
+      }
+
+      // Enrich items with tags
+      const itemsWithTags = await this.enrichTags(uid, items);
+
+      // Enrich items with relations
+      const enrichedItems = await this.enrichMemosWithRelations(uid, itemsWithTags);
+
+      return enrichedItems;
+    } catch (error) {
+      logger.error('Error getting new memos after:', error);
+      return [];
+    }
+  }
+
+  /**
    * Get a single memo by ID
    */
   async getMemoById(memoId: string, uid: string): Promise<MemoWithAttachmentsDto | null> {

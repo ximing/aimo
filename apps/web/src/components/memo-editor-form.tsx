@@ -262,15 +262,17 @@ export const MemoEditorForm = view(
           setSuggestions([]);
           setShowSuggestions(false);
           if (mode === 'create') {
-            // 创建模式：清空表单
+            // 创建模式：立即清空表单（乐观更新，不等待刷新）
             setContent('');
             setAttachments([]);
             setSelectedRelations([]);
             setSelectedTags([]);
             setRows(3);
           }
-          // 刷新标签列表（更新使用计数）
-          void tagService.fetchTags();
+          // 后台刷新标签列表（更新使用计数），不阻塞用户操作
+          tagService.fetchTags().catch((error) => {
+            console.error('Failed to refresh tags:', error);
+          });
           // 调用 onSave 回调
           if (onSave && result.memo) {
             onSave(result.memo);

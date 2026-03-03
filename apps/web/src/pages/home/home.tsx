@@ -3,6 +3,7 @@ import { view, useService } from '@rabjs/react';
 import { useSearchParams } from 'react-router';
 import { ArrowUp, ChevronLeft, ChevronRight, X, Calendar, Filter } from 'lucide-react';
 import { MemoService } from '../../services/memo.service';
+import { MemoPollingService } from '../../services/memo-polling.service';
 import { MemoEditor } from './components/memo-editor';
 import { MemoList } from './components/memo-list';
 import { SearchSortBar } from './components/search-sort-bar';
@@ -49,6 +50,7 @@ function saveCollapsedState(collapsed: boolean): void {
 
 export const HomePage = view(() => {
   const memoService = useService(MemoService);
+  const pollingService = useService(MemoPollingService);
   const [, setSearchParams] = useSearchParams();
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [isCompact, setIsCompact] = useState(getIsCompactLayout);
@@ -162,6 +164,15 @@ export const HomePage = view(() => {
     memoService.fetchMemos();
     memoService.fetchActivityStats();
   }, [memoService]);
+
+  // Start polling on mount, stop on unmount
+  useEffect(() => {
+    pollingService.startPolling();
+
+    return () => {
+      pollingService.stopPolling();
+    };
+  }, [pollingService]);
 
   // Toggle collapsed state
   const toggleCollapsed = useCallback(() => {
