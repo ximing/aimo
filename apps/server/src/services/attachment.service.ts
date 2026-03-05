@@ -434,7 +434,7 @@ export class AttachmentService {
   }
 
   /**
-   * Delete attachment
+   * Delete attachment (soft delete)
    */
   async deleteAttachment(attachmentId: string, uid: string): Promise<boolean> {
     const db = getDatabase();
@@ -456,19 +456,10 @@ export class AttachmentService {
       return false;
     }
 
-    const record = results[0];
-
-    // Delete from storage
-    try {
-      await this.storageAdapter.deleteFile(record.path);
-    } catch (error) {
-      logger.error('Failed to delete file from storage:', error);
-      // Continue with database deletion even if storage deletion fails
-    }
-
-    // Delete from MySQL
+    // Soft delete in MySQL
     await db
-      .delete(attachments)
+      .update(attachments)
+      .set({ deletedAt: Date.now() })
       .where(
         and(
           eq(attachments.attachmentId, attachmentId),
@@ -477,14 +468,22 @@ export class AttachmentService {
         )
       );
 
-    // Delete from LanceDB attachments table
+    // Soft delete in LanceDB attachments table
     try {
       const attachmentsTable = await this.lanceDatabaseService.openTable('attachments');
-      await attachmentsTable.delete(`attachmentId = '${attachmentId}'`);
+      await attachmentsTable.update({
+        where: `attachmentId = '${attachmentId}'`,
+        values: {
+          deletedAt: Date.now(),
+        },
+      });
     } catch (error) {
-      logger.warn('Failed to delete attachment from LanceDB (may not exist):', error);
+      logger.warn('Failed to soft delete attachment from LanceDB (may not exist):', error);
       // Non-critical - record may not exist if creation failed
     }
+
+    // Note: We do NOT delete the physical file from storage
+    // Files are preserved for potential recovery
 
     return true;
   }

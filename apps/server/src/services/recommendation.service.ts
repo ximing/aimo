@@ -111,13 +111,14 @@ export class RecommendationService {
   }
 
   /**
-   * Clear cached recommendations for a specific date
+   * Clear cached recommendations for a specific date (soft delete)
    */
   private async clearCachedRecommendations(uid: string, date: string): Promise<void> {
     try {
       const db = getDatabase();
       await db
-        .delete(dailyRecommendations)
+        .update(dailyRecommendations)
+        .set({ deletedAt: Date.now() })
         .where(
           and(
             eq(dailyRecommendations.uid, uid),
@@ -129,6 +130,51 @@ export class RecommendationService {
     } catch (error) {
       logger.error('Error clearing cached recommendations:', error);
       // Don't throw - cache clearing failure shouldn't break the feature
+    }
+  }
+
+  /**
+   * Delete recommendation (soft delete)
+   * Public method for explicit deletion
+   */
+  async deleteRecommendation(recommendationId: string, uid: string): Promise<boolean> {
+    try {
+      const db = getDatabase();
+
+      // Check if recommendation exists
+      const existing = await db
+        .select()
+        .from(dailyRecommendations)
+        .where(
+          and(
+            eq(dailyRecommendations.recommendationId, recommendationId),
+            eq(dailyRecommendations.uid, uid),
+            eq(dailyRecommendations.deletedAt, 0)
+          )
+        )
+        .limit(1);
+
+      if (existing.length === 0) {
+        return false;
+      }
+
+      // Soft delete
+      await db
+        .update(dailyRecommendations)
+        .set({ deletedAt: Date.now() })
+        .where(
+          and(
+            eq(dailyRecommendations.recommendationId, recommendationId),
+            eq(dailyRecommendations.uid, uid),
+            eq(dailyRecommendations.deletedAt, 0)
+          )
+        );
+
+      logger.info(`Soft deleted recommendation ${recommendationId} for user ${uid}`);
+      return true;
+    } catch (error) {
+      logger.error('Error deleting recommendation:', error);
+      throw error;
     }
   }
 

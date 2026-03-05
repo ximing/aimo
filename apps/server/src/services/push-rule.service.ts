@@ -152,7 +152,7 @@ export class PushRuleService {
   }
 
   /**
-   * Delete a push rule
+   * Delete a push rule (soft delete)
    */
   async delete(id: string, uid: string): Promise<boolean> {
     try {
@@ -169,8 +169,11 @@ export class PushRuleService {
         return false;
       }
 
-      // Delete the rule
-      await db.delete(pushRules).where(and(eq(pushRules.id, id), eq(pushRules.deletedAt, 0)));
+      // Soft delete the rule
+      await db
+        .update(pushRules)
+        .set({ deletedAt: Date.now() })
+        .where(and(eq(pushRules.id, id), eq(pushRules.uid, uid), eq(pushRules.deletedAt, 0)));
 
       return true;
     } catch (error) {
