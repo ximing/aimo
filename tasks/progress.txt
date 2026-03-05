@@ -175,3 +175,34 @@
   - All three services now follow the same soft delete pattern: set deletedAt = Date.now() with WHERE deletedAt = 0 condition
   - No cascade operations needed for these entities - they are leaf nodes in the data model
 ---
+
+## 2026-03-05 - US-011
+- What was implemented: Generated migration to drop all foreign key constraints from database
+- Files changed:
+  - `apps/server/src/db/schema/memos.ts` - Removed .references() for uid and categoryId foreign keys. Removed unused imports for users and categories.
+  - `apps/server/src/db/schema/memo-relations.ts` - Removed .references() for uid, sourceMemoId, and targetMemoId foreign keys. Removed unused imports for users and memos.
+  - `apps/server/src/db/schema/attachments.ts` - Removed .references() for uid foreign key. Removed unused import for users.
+  - `apps/server/src/db/schema/ai-conversations.ts` - Removed .references() for uid foreign key. Removed unused import for users.
+  - `apps/server/src/db/schema/ai-messages.ts` - Removed .references() for conversationId foreign key. Removed unused import for aiConversations.
+  - `apps/server/src/db/schema/categories.ts` - Removed .references() for uid foreign key. Removed unused import for users.
+  - `apps/server/src/db/schema/tags.ts` - Removed .references() for uid foreign key. Removed unused import for users.
+  - `apps/server/src/db/schema/daily-recommendations.ts` - Removed .references() for uid foreign key. Removed unused import for users.
+  - `apps/server/src/db/schema/push-rules.ts` - Removed .references() for uid foreign key. Removed unused import for users.
+  - `apps/server/drizzle/0003_eminent_peter_quill.sql` - Generated migration with 12 DROP FOREIGN KEY statements
+  - `apps/server/drizzle/0003_eminent_peter_quill.rollback.sql` - Created rollback script with 12 ADD CONSTRAINT statements to re-add foreign keys
+  - `apps/server/drizzle/0003_MIGRATION_TEST_PLAN.md` - Created comprehensive test plan with pre-migration checks, migration steps, post-migration verification, rollback procedure, and success criteria
+  - `apps/server/drizzle/meta/0003_snapshot.json` - Auto-generated Drizzle metadata
+  - `apps/server/drizzle/meta/_journal.json` - Auto-generated Drizzle journal
+- **Learnings for future iterations:**
+  - Drizzle-kit generates migrations automatically by comparing schema files with database state
+  - Migration generation requires building first: `pnpm build` then `pnpm migrate:generate`
+  - Drizzle doesn't have native rollback support - must create manual rollback SQL files
+  - Removing .references() from schema definitions generates DROP FOREIGN KEY statements
+  - All indexes are preserved when dropping foreign keys - they're separate database objects
+  - Foreign key constraint names follow pattern: `{table}_{column}_{ref_table}_{ref_column}_fk`
+  - Rollback requires exact constraint names and ON DELETE/ON UPDATE clauses
+  - Migration files are in `drizzle/` folder, metadata in `drizzle/meta/`
+  - Always create test plan documentation for database migrations
+  - Removing foreign keys is safe when application-layer referential integrity is already implemented (US-001 through US-010)
+---
+
