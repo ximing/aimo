@@ -206,3 +206,23 @@
   - Removing foreign keys is safe when application-layer referential integrity is already implemented (US-001 through US-010)
 ---
 
+## 2026-03-05 - US-012
+- What was implemented: Created pre-deployment validation script to check data integrity before and after foreign key removal
+- Files changed:
+  - `apps/server/scripts/validate-data-integrity.ts` - Created comprehensive validation script with 11 validation checks for referential integrity
+  - `apps/server/scripts/README.md` - Created detailed documentation covering usage, validation checks, output format, CI/CD integration, and troubleshooting
+  - `apps/server/package.json` - Added `validate:data` script command
+- **Learnings for future iterations:**
+  - Validation script uses Drizzle ORM with direct mysql2 connection pool (separate from app connection)
+  - LEFT JOIN pattern for detecting orphaned records: `LEFT JOIN parent ON child.fk = parent.pk WHERE parent.pk IS NULL`
+  - Check both non-existent references AND soft-deleted references: `WHERE (parent.id IS NULL OR parent.deletedAt > 0)`
+  - JSON array validation requires in-memory filtering after fetching records (can't use SQL for array contains)
+  - Exit codes: 0 for success/warnings, 1 for critical issues or errors
+  - Script outputs both console logs (human-readable) and timestamped JSON files (machine-readable)
+  - Critical issues prevent deployment, warnings allow deployment with review
+  - Validation checks include: memos→users, relations→memos, attachments→users, messages→conversations, categories→users, tags→users, recommendations→users, push_rules→users, conversations→users, memos→categories, memos→tags
+  - Use `sql` template from drizzle-orm for raw SQL conditions like `IS NULL` checks
+  - Environment variables pattern: Read from process.env with defaults for database connection
+  - Create logs/validation/ directory recursively if it doesn't exist using fs.mkdirSync with recursive: true
+---
+
