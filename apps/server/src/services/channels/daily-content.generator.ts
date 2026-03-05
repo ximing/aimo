@@ -54,22 +54,11 @@ export class DailyContentGenerator implements ContentGenerator {
         const createdAt = memo.createdAt
           ? new Date(memo.createdAt).toLocaleDateString('zh-CN')
           : '';
-        return `
-        <div style="margin-bottom: 16px; padding: 12px; background: #f5f5f5; border-radius: 8px;">
-          <p style="color: #999; font-size: 12px; margin: 0 0 8px 0;">${createdAt}</p>
-          <p style="margin: 0; font-size: 14px; line-height: 1.6;">${this.escapeHtml(content)}</p>
-        </div>
-      `;
+        return `<div style="margin-bottom: 16px; padding: 12px; background: #f5f5f5; border-radius: 8px;"><p style="color: #999; font-size: 16px; margin: 0 0 8px 0;">${createdAt}</p><p style="margin: 0; font-size: 16px; line-height: 1.6;">${this.escapeHtml(content)}</p></div>`;
       })
       .join('');
 
-    const message = `
-      <div style="font-size: 14px; line-height: 1.6;">
-        ${memoItems}
-      </div>
-    `;
-
-    return { title, msg: message, isHtml: true };
+    return { title, msg: memoItems, isHtml: true };
   }
 
   /**
@@ -112,22 +101,11 @@ export class DailyContentGenerator implements ContentGenerator {
             })
           : '';
 
-        return `
-        <div style="margin-bottom: 12px; padding: 8px; background: #f5f5f5; border-radius: 6px;">
-          <p style="color: #999; font-size: 12px; margin: 0 0 4px 0;">${createdAt}</p>
-          <p style="margin: 0;">${this.escapeHtml(content)}</p>
-        </div>
-      `;
+        return `<div style="margin-bottom: 12px; padding: 8px; background: #f5f5f5; border-radius: 6px;"><p style="color: #999; font-size: 16px; margin: 0 0 4px 0;">${createdAt}</p><p style="margin: 0;">${this.escapeHtml(content)}</p></div>`;
       })
       .join('');
 
-    const message = `
-      <div style="font-size: 14px; line-height: 1.6;">
-        ${memoItems}
-      </div>
-    `;
-
-    return { title, msg: message, isHtml: true };
+    return { title, msg: memoItems, isHtml: true };
   }
 
   /**
@@ -142,6 +120,6 @@ export class DailyContentGenerator implements ContentGenerator {
       "'": '&#x27;',
       '/': '&#x2F;',
     };
-    return text.replaceAll(/[&<>"'\/]/g, (char) => htmlEscapes[char] || char);
+    return text.replaceAll(/[&<>"'/]/g, (char) => htmlEscapes[char] || char);
   }
 }

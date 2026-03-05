@@ -1,8 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useService, view } from '@rabjs/react';
-import { Bell, Plus, Pencil, Trash2 } from 'lucide-react';
+import { Bell, Plus, Pencil, Trash2, Send } from 'lucide-react';
 import type { PushRuleDto, PushChannelConfigDto } from '@aimo/dto';
 import { PushRuleService } from './push-rule.service';
+import { toast } from '../../../../services/toast.service';
 
 interface PushRulesListProps {
   onAddRule: () => void;
@@ -11,6 +12,7 @@ interface PushRulesListProps {
 
 export const PushRulesList = view(({ onAddRule, onEditRule }: PushRulesListProps) => {
   const pushRuleService = useService(PushRuleService);
+  const [testingRuleId, setTestingRuleId] = useState<string | null>(null);
 
   useEffect(() => {
     pushRuleService.fetchRules();
@@ -23,6 +25,22 @@ export const PushRulesList = view(({ onAddRule, onEditRule }: PushRulesListProps
     }
 
     await pushRuleService.deleteRule(ruleId);
+  };
+
+  const handleTest = async (ruleId: string) => {
+    setTestingRuleId(ruleId);
+    try {
+      const result = await pushRuleService.testPush(ruleId);
+      if (result.success) {
+        toast.success(result.message || '测试消息已发送');
+      } else {
+        toast.error(`发送失败: ${result.message || '未知错误'}`);
+      }
+    } catch (error) {
+      toast.error(`发送失败: ${error instanceof Error ? error.message : '未知错误'}`);
+    } finally {
+      setTestingRuleId(null);
+    }
   };
 
   if (pushRuleService.loading) {
@@ -88,6 +106,14 @@ export const PushRulesList = view(({ onAddRule, onEditRule }: PushRulesListProps
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleTest(rule.id)}
+                    disabled={testingRuleId === rule.id}
+                    className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="测试推送"
+                  >
+                    <Send className={`w-4 h-4 ${testingRuleId === rule.id ? 'animate-pulse' : ''}`} />
+                  </button>
                   <button
                     onClick={() => onEditRule(rule)}
                     className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg transition-colors"

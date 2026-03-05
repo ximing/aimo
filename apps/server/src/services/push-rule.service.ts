@@ -201,9 +201,16 @@ export class PushRuleService {
     for (const channelConfig of rule.channels) {
       try {
         const channel = this.channelFactory.getChannel(channelConfig);
+
+        // Format test message based on channel msgType
+        let testMessage = '这是一条测试消息，如果你能看到这条消息，说明推送配置正确！';
+        if (channelConfig.msgType === 'html') {
+          testMessage = '<p style="font-size: 14px; line-height: 1.6;">这是一条测试消息，如果你能看到这条消息，说明推送配置正确！</p>';
+        }
+
         await channel.send({
           title: '测试推送',
-          msg: '这是一条测试消息，如果你能看到这条消息，说明推送配置正确！',
+          msg: testMessage,
         });
         logger.info(`Test push sent for rule ${ruleId} via channel ${channelConfig.type}`);
       } catch (error) {

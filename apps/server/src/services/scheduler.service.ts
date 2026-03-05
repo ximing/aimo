@@ -153,10 +153,16 @@ export class SchedulerService {
       try {
         const content = await this.contentGenerator.generate(rule.contentType, rule.uid);
 
+        // If channel is text type and content is HTML, convert to plain text
+        let message = content.msg;
+        if (channelConfig.msgType === 'text' && content.isHtml) {
+          message = this.stripHtml(content.msg);
+        }
+
         const channel = this.channelFactory.getChannel(channelConfig);
         await channel.send({
           title: content.title,
-          msg: content.msg,
+          msg: message,
         });
         logger.info(`Push sent for rule ${rule.id} via channel ${channelConfig.type}`);
       } catch (error) {
@@ -167,6 +173,26 @@ export class SchedulerService {
         // Continue with other channels
       }
     }
+  }
+
+  /**
+   * Strip HTML tags and convert to plain text
+   */
+  private stripHtml(html: string): string {
+    return html
+      .replaceAll(/<\/div>/gi, '\n')
+      .replaceAll(/<\/p>/gi, '\n')
+      .replaceAll(/<br\s*\/?>/gi, '\n')
+      .replaceAll(/<[^>]+>/g, '')
+      .replaceAll(/&nbsp;/g, ' ')
+      .replaceAll(/&amp;/g, '&')
+      .replaceAll(/&lt;/g, '<')
+      .replaceAll(/&gt;/g, '>')
+      .replaceAll(/&quot;/g, '"')
+      .replaceAll(/&#x27;/g, "'")
+      .replaceAll(/&#x2F;/g, '/')
+      .replaceAll(/\n\s*\n/g, '\n\n')
+      .trim();
   }
 
   /**

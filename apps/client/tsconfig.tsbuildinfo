@@ -1,1 +1,1 @@
-{"root":["./src/main/index.ts","./src/preload/index.ts"],"version":"5.9.3"}
+{"root":["./src/main/index.ts","./src/preload/index.ts"],"errors":true,"version":"5.9.3"}

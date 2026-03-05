@@ -1,5 +1,3 @@
-import { Service } from 'typedi';
-
 import { logger } from '../../utils/logger.js';
 
 import type { PushChannel, PushChannelOptions } from './push-channel.interface.js';
@@ -25,17 +23,36 @@ export class MeowChannel implements PushChannel {
   async send(options: PushChannelOptions): Promise<void> {
     try {
       const messageType = this.config.msgType || 'text';
-      const response = await fetch(`${this.apiUrl}/${this.config.nickname}`, {
+
+      // Build URL with query parameters (msgType and htmlHeight go in URL, not body)
+      const url = new URL(`${this.apiUrl}/${this.config.nickname}`);
+      url.searchParams.set('msgType', messageType.toLowerCase());
+
+      // Add htmlHeight parameter when msgType is html
+      if (messageType === 'html' && this.config.htmlHeight) {
+        url.searchParams.set('htmlHeight', this.config.htmlHeight.toString());
+      }
+
+      // Request body only contains title, msg, and optional url
+      const requestBody: {
+        title: string;
+        msg: string;
+        url?: string;
+      } = {
+        title: options.title,
+        msg: options.msg,
+        url: options.url,
+      };
+
+      logger.info(`MeoW request URL: ${url.toString()}`);
+      logger.info(`MeoW request body:`, JSON.stringify(requestBody, undefined, 2));
+
+      const response = await fetch(url.toString(), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          msgType: messageType.toLocaleLowerCase(),
-          title: options.title,
-          msg: options.msg,
-          url: options.url,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
