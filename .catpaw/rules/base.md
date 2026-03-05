@@ -82,7 +82,7 @@ aimo/
 - **框架**: Express.js
 - **路由**: routing-controllers
 - **依赖注入**: TypeDI
-- **数据库**: LanceDB (向量数据库)
+- **数据库**: 标量数据 mysql， 向量数据库 LanceDB
 - **向量化**: @ai-sdk/openai
 - **认证**: JWT + bcrypt
 - **构建**: TypeScript (tsc)
@@ -112,8 +112,8 @@ aimo/
 
 ### 数据存储
 
-- **用户数据**: LanceDB
-- **笔记数据**: LanceDB （含 embedding）
+- **用户数据**: mysql
+- **笔记数据**: mysql，含 embedding放在 LanceDB
 - **向量维度**: 1536 (text-embedding-3-small)
 
 ## 日志规范
