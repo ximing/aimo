@@ -2,6 +2,7 @@ import { eq, and, desc, asc, sql } from 'drizzle-orm';
 import { Service } from 'typedi';
 
 import { getDatabase } from '../db/connection.js';
+import { withTransaction } from '../db/transaction.js';
 import { aiConversations, aiMessages } from '../db/schema/index.js';
 import { OBJECT_TYPE } from '../models/constant/type.js';
 import { generateTypeId } from '../utils/id.js';
@@ -233,8 +234,8 @@ export class AIConversationService {
   }
 
   /**
-   * Delete a conversation and all its messages
-   * Messages are automatically deleted via foreign key cascade
+   * Delete a conversation and all its messages (soft delete)
+   * Cascades soft delete to all messages in the conversation
    */
   async deleteConversation(conversationId: string, uid: string): Promise<boolean> {
     try {
@@ -257,12 +258,25 @@ export class AIConversationService {
         return false;
       }
 
-      // Delete the conversation (messages are cascade deleted via foreign key)
-      await db
-        .delete(aiConversations)
-        .where(
-          and(eq(aiConversations.conversationId, conversationId), eq(aiConversations.deletedAt, 0))
-        );
+      // Use transaction to soft delete conversation and cascade to messages
+      await withTransaction(async (tx) => {
+        // Soft delete the conversation
+        await tx
+          .update(aiConversations)
+          .set({ deletedAt: Date.now() })
+          .where(
+            and(
+              eq(aiConversations.conversationId, conversationId),
+              eq(aiConversations.deletedAt, 0)
+            )
+          );
+
+        // Cascade soft delete to all messages in this conversation
+        await tx
+          .update(aiMessages)
+          .set({ deletedAt: Date.now() })
+          .where(and(eq(aiMessages.conversationId, conversationId), eq(aiMessages.deletedAt, 0)));
+      });
 
       return true;
     } catch (error) {
