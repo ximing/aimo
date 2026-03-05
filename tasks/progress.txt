@@ -99,3 +99,19 @@
   - Authentication middleware (from US-002) automatically rejects soft-deleted users
   - This change preserves all user data for audit/recovery purposes
 ---
+
+## 2026-03-05 - US-006
+- What was implemented: Implemented soft delete for memos with cascade to memo_relations
+- Files changed:
+  - `apps/server/src/services/memo.service.ts` - Updated deleteMemo() to set `deletedAt = Date.now()` instead of hard delete. Removed tag usage count decrement logic. Changed from DELETE to UPDATE in both MySQL and LanceDB.
+  - `apps/server/src/services/memo-relation.service.ts` - Added softDeleteRelationsByMemo() method to cascade soft delete to relations where memoId is either source or target. Uses `or()` operator to match both directions in a single query. Accepts optional transaction context for atomicity.
+  - `apps/server/src/services/MEMO_SERVICE_SOFT_DELETE_US006_TEST.md` - Created manual test documentation
+- **Learnings for future iterations:**
+  - Cascade soft delete pattern: Create a dedicated method that accepts transaction context (tx?: any) for atomic operations
+  - Use `or()` operator from drizzle-orm to match multiple conditions: `or(eq(table.field1, value), eq(table.field2, value))`
+  - Single query is more efficient than multiple queries for cascade operations
+  - LanceDB update() accepts number values for Int64 fields, not BigInt
+  - Transaction pattern: Pass `tx` parameter to service methods to include them in the same transaction
+  - Attachments are NOT cascaded - they remain intact when memos are deleted (preserves files)
+  - Removed tag usage count decrement - soft delete doesn't affect tag statistics
+---
