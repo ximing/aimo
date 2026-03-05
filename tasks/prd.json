@@ -16,8 +16,8 @@
         "Typecheck passes"
       ],
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed - Added deletedAt bigint column to all 10 tables in both LanceDB and Drizzle schemas. Created migration 019. Typecheck passes."
     },
     {
       "id": "US-002",
