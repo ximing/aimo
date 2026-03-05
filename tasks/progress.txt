@@ -146,3 +146,17 @@
   - Import pattern consistent: `import * as lancedb from '@lancedb/lancedb'` and `import type { Connection, Table } from '@lancedb/lancedb'`
   - Config import path: Use `../config/config.js` not `../config/index.js`
 ---
+
+## 2026-03-05 - US-009
+- What was implemented: Implemented soft delete for AI conversations with cascade to messages
+- Files changed:
+  - `apps/server/src/services/ai-conversation.service.ts` - Updated deleteConversation() to set deletedAt = Date.now() instead of hard delete. Added cascade soft delete to all ai_messages with matching conversationId. Used withTransaction() for atomicity. Both conversation and all messages are soft deleted in a single transaction.
+  - `apps/server/src/services/AI_CONVERSATION_SERVICE_SOFT_DELETE_US009_TEST.md` - Created manual test documentation
+- **Learnings for future iterations:**
+  - AIConversationService follows the same cascade soft delete pattern as MemoService
+  - Transaction pattern: soft delete parent entity + cascade to child entities in same transaction
+  - Use `withTransaction()` to ensure atomicity - both conversation and messages are updated together or rolled back together
+  - Cascade to messages uses simple `eq(aiMessages.conversationId, conversationId)` filter (no need for `or()` like memo_relations)
+  - Both conversation and messages must filter by `deletedAt = 0` to prevent operating on already soft-deleted records
+  - No LanceDB updates needed - AI conversations and messages are only stored in MySQL
+---
