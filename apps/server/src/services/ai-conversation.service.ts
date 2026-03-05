@@ -92,7 +92,7 @@ export class AIConversationService {
       const result = await db
         .select()
         .from(aiConversations)
-        .where(eq(aiConversations.uid, uid))
+        .where(and(eq(aiConversations.uid, uid), eq(aiConversations.deletedAt, 0)))
         .orderBy(desc(aiConversations.updatedAt));
 
       // Get message counts for each conversation
@@ -124,7 +124,11 @@ export class AIConversationService {
         .select()
         .from(aiConversations)
         .where(
-          and(eq(aiConversations.conversationId, conversationId), eq(aiConversations.uid, uid))
+          and(
+            eq(aiConversations.conversationId, conversationId),
+            eq(aiConversations.uid, uid),
+            eq(aiConversations.deletedAt, 0)
+          )
         )
         .limit(1);
 
@@ -191,7 +195,11 @@ export class AIConversationService {
         .select()
         .from(aiConversations)
         .where(
-          and(eq(aiConversations.conversationId, conversationId), eq(aiConversations.uid, uid))
+          and(
+            eq(aiConversations.conversationId, conversationId),
+            eq(aiConversations.uid, uid),
+            eq(aiConversations.deletedAt, 0)
+          )
         )
         .limit(1);
 
@@ -203,13 +211,17 @@ export class AIConversationService {
       await db
         .update(aiConversations)
         .set({ title: data.title })
-        .where(eq(aiConversations.conversationId, conversationId));
+        .where(
+          and(eq(aiConversations.conversationId, conversationId), eq(aiConversations.deletedAt, 0))
+        );
 
       // Fetch the updated conversation
       const result = await db
         .select()
         .from(aiConversations)
-        .where(eq(aiConversations.conversationId, conversationId))
+        .where(
+          and(eq(aiConversations.conversationId, conversationId), eq(aiConversations.deletedAt, 0))
+        )
         .limit(1);
 
       const messageCount = await this.getMessageCount(conversationId);
@@ -233,7 +245,11 @@ export class AIConversationService {
         .select()
         .from(aiConversations)
         .where(
-          and(eq(aiConversations.conversationId, conversationId), eq(aiConversations.uid, uid))
+          and(
+            eq(aiConversations.conversationId, conversationId),
+            eq(aiConversations.uid, uid),
+            eq(aiConversations.deletedAt, 0)
+          )
         )
         .limit(1);
 
@@ -242,7 +258,11 @@ export class AIConversationService {
       }
 
       // Delete the conversation (messages are cascade deleted via foreign key)
-      await db.delete(aiConversations).where(eq(aiConversations.conversationId, conversationId));
+      await db
+        .delete(aiConversations)
+        .where(
+          and(eq(aiConversations.conversationId, conversationId), eq(aiConversations.deletedAt, 0))
+        );
 
       return true;
     } catch (error) {
@@ -261,7 +281,7 @@ export class AIConversationService {
       const result = await db
         .select()
         .from(aiMessages)
-        .where(eq(aiMessages.conversationId, conversationId))
+        .where(and(eq(aiMessages.conversationId, conversationId), eq(aiMessages.deletedAt, 0)))
         .orderBy(asc(aiMessages.createdAt));
 
       return result.map((record) => this.toMessageDto(record));
@@ -280,7 +300,7 @@ export class AIConversationService {
       const result = await db
         .select({ count: sql<number>`count(*)` })
         .from(aiMessages)
-        .where(eq(aiMessages.conversationId, conversationId));
+        .where(and(eq(aiMessages.conversationId, conversationId), eq(aiMessages.deletedAt, 0)));
 
       return result[0]?.count || 0;
     } catch (error) {
@@ -306,7 +326,11 @@ export class AIConversationService {
         .select()
         .from(aiConversations)
         .where(
-          and(eq(aiConversations.conversationId, conversationId), eq(aiConversations.uid, uid))
+          and(
+            eq(aiConversations.conversationId, conversationId),
+            eq(aiConversations.uid, uid),
+            eq(aiConversations.deletedAt, 0)
+          )
         )
         .limit(1);
 
@@ -329,7 +353,9 @@ export class AIConversationService {
       await db
         .update(aiConversations)
         .set({ updatedAt: new Date() })
-        .where(eq(aiConversations.conversationId, conversationId));
+        .where(
+          and(eq(aiConversations.conversationId, conversationId), eq(aiConversations.deletedAt, 0))
+        );
 
       // Fetch the created message to get auto-generated timestamps
       const result = await db
@@ -356,7 +382,7 @@ export class AIConversationService {
       const result = await db
         .select()
         .from(aiConversations)
-        .where(eq(aiConversations.uid, uid))
+        .where(and(eq(aiConversations.uid, uid), eq(aiConversations.deletedAt, 0)))
         .orderBy(desc(aiConversations.updatedAt))
         .limit(1);
 

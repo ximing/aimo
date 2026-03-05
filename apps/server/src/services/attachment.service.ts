@@ -230,7 +230,13 @@ export class AttachmentService {
     const results = await db
       .select()
       .from(attachments)
-      .where(and(eq(attachments.attachmentId, attachmentId), eq(attachments.uid, uid)))
+      .where(
+        and(
+          eq(attachments.attachmentId, attachmentId),
+          eq(attachments.uid, uid),
+          eq(attachments.deletedAt, 0)
+        )
+      )
       .limit(1);
 
     if (!results || results.length === 0) {
@@ -259,13 +265,25 @@ export class AttachmentService {
     await db
       .update(attachments)
       .set({ properties: propertiesJson })
-      .where(and(eq(attachments.attachmentId, attachmentId), eq(attachments.uid, uid)));
+      .where(
+        and(
+          eq(attachments.attachmentId, attachmentId),
+          eq(attachments.uid, uid),
+          eq(attachments.deletedAt, 0)
+        )
+      );
 
     // Fetch updated record
     const updatedResults = await db
       .select()
       .from(attachments)
-      .where(and(eq(attachments.attachmentId, attachmentId), eq(attachments.uid, uid)))
+      .where(
+        and(
+          eq(attachments.attachmentId, attachmentId),
+          eq(attachments.uid, uid),
+          eq(attachments.deletedAt, 0)
+        )
+      )
       .limit(1);
 
     const updatedRecord = updatedResults[0]!;
@@ -347,7 +365,13 @@ export class AttachmentService {
     const results = await db
       .select()
       .from(attachments)
-      .where(and(eq(attachments.attachmentId, attachmentId), eq(attachments.uid, uid)))
+      .where(
+        and(
+          eq(attachments.attachmentId, attachmentId),
+          eq(attachments.uid, uid),
+          eq(attachments.deletedAt, 0)
+        )
+      )
       .limit(1);
 
     if (!results || results.length === 0) {
@@ -378,7 +402,7 @@ export class AttachmentService {
     const countResult = await db
       .select({ count: sql<number>`count(*)` })
       .from(attachments)
-      .where(eq(attachments.uid, uid));
+      .where(and(eq(attachments.uid, uid), eq(attachments.deletedAt, 0)));
 
     const total = countResult[0]?.count ?? 0;
 
@@ -389,7 +413,7 @@ export class AttachmentService {
     const results = await db
       .select()
       .from(attachments)
-      .where(eq(attachments.uid, uid))
+      .where(and(eq(attachments.uid, uid), eq(attachments.deletedAt, 0)))
       .orderBy(orderByClause)
       .limit(limit)
       .offset(offset);
@@ -419,7 +443,13 @@ export class AttachmentService {
     const results = await db
       .select()
       .from(attachments)
-      .where(and(eq(attachments.attachmentId, attachmentId), eq(attachments.uid, uid)))
+      .where(
+        and(
+          eq(attachments.attachmentId, attachmentId),
+          eq(attachments.uid, uid),
+          eq(attachments.deletedAt, 0)
+        )
+      )
       .limit(1);
 
     if (!results || results.length === 0) {
@@ -439,7 +469,13 @@ export class AttachmentService {
     // Delete from MySQL
     await db
       .delete(attachments)
-      .where(and(eq(attachments.attachmentId, attachmentId), eq(attachments.uid, uid)));
+      .where(
+        and(
+          eq(attachments.attachmentId, attachmentId),
+          eq(attachments.uid, uid),
+          eq(attachments.deletedAt, 0)
+        )
+      );
 
     // Delete from LanceDB attachments table
     try {
@@ -473,7 +509,8 @@ export class AttachmentService {
       .where(
         and(
           sql`${attachments.attachmentId} IN ${sql.raw(`(${attachmentIds.map((id) => `'${id}'`).join(',')})`)}`,
-          eq(attachments.uid, uid)
+          eq(attachments.uid, uid),
+          eq(attachments.deletedAt, 0)
         )
       );
 
@@ -513,7 +550,13 @@ export class AttachmentService {
     const results = await db
       .select()
       .from(attachments)
-      .where(and(eq(attachments.attachmentId, attachmentId), eq(attachments.uid, uid)))
+      .where(
+        and(
+          eq(attachments.attachmentId, attachmentId),
+          eq(attachments.uid, uid),
+          eq(attachments.deletedAt, 0)
+        )
+      )
       .limit(1);
 
     if (!results || results.length === 0) {

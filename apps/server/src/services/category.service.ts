@@ -64,7 +64,10 @@ export class CategoryService {
   async getCategoriesByUid(uid: string): Promise<CategoryDto[]> {
     try {
       const db = getDatabase();
-      const results = await db.select().from(categories).where(eq(categories.uid, uid));
+      const results = await db
+        .select()
+        .from(categories)
+        .where(and(eq(categories.uid, uid), eq(categories.deletedAt, 0)));
 
       // Sort by name alphabetically (case-insensitive)
       results.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
@@ -87,7 +90,13 @@ export class CategoryService {
       const results = await db
         .select()
         .from(categories)
-        .where(and(eq(categories.uid, uid), sql`LOWER(${categories.name}) = LOWER(${name})`))
+        .where(
+          and(
+            eq(categories.uid, uid),
+            sql`LOWER(${categories.name}) = LOWER(${name})`,
+            eq(categories.deletedAt, 0)
+          )
+        )
         .limit(1);
 
       if (results.length === 0) {
@@ -110,7 +119,13 @@ export class CategoryService {
       const results = await db
         .select()
         .from(categories)
-        .where(and(eq(categories.categoryId, categoryId), eq(categories.uid, uid)))
+        .where(
+          and(
+            eq(categories.categoryId, categoryId),
+            eq(categories.uid, uid),
+            eq(categories.deletedAt, 0)
+          )
+        )
         .limit(1);
 
       if (results.length === 0) {
@@ -161,13 +176,16 @@ export class CategoryService {
 
       // Perform update
       const db = getDatabase();
-      await db.update(categories).set(updates).where(eq(categories.categoryId, categoryId));
+      await db
+        .update(categories)
+        .set(updates)
+        .where(and(eq(categories.categoryId, categoryId), eq(categories.deletedAt, 0)));
 
       // Fetch updated category
       const results = await db
         .select()
         .from(categories)
-        .where(eq(categories.categoryId, categoryId))
+        .where(and(eq(categories.categoryId, categoryId), eq(categories.deletedAt, 0)))
         .limit(1);
 
       if (results.length === 0) {
@@ -196,7 +214,9 @@ export class CategoryService {
 
       // Delete the category (MySQL will automatically set categoryId to null in memos)
       const db = getDatabase();
-      await db.delete(categories).where(eq(categories.categoryId, categoryId));
+      await db
+        .delete(categories)
+        .where(and(eq(categories.categoryId, categoryId), eq(categories.deletedAt, 0)));
 
       return true;
     } catch (error) {

@@ -63,7 +63,13 @@ export class RecommendationService {
       const results = await db
         .select()
         .from(dailyRecommendations)
-        .where(and(eq(dailyRecommendations.uid, uid), eq(dailyRecommendations.date, date)))
+        .where(
+          and(
+            eq(dailyRecommendations.uid, uid),
+            eq(dailyRecommendations.date, date),
+            eq(dailyRecommendations.deletedAt, 0)
+          )
+        )
         .limit(1);
 
       if (results.length === 0) {
@@ -112,7 +118,13 @@ export class RecommendationService {
       const db = getDatabase();
       await db
         .delete(dailyRecommendations)
-        .where(and(eq(dailyRecommendations.uid, uid), eq(dailyRecommendations.date, date)));
+        .where(
+          and(
+            eq(dailyRecommendations.uid, uid),
+            eq(dailyRecommendations.date, date),
+            eq(dailyRecommendations.deletedAt, 0)
+          )
+        );
       logger.info(`Cleared cached recommendations for user ${uid} on ${date}`);
     } catch (error) {
       logger.error('Error clearing cached recommendations:', error);

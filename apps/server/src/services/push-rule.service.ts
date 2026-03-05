@@ -68,7 +68,10 @@ export class PushRuleService {
   async findByUid(uid: string): Promise<PushRuleDto[]> {
     try {
       const db = getDatabase();
-      const results = await db.select().from(pushRules).where(eq(pushRules.uid, uid));
+      const results = await db
+        .select()
+        .from(pushRules)
+        .where(and(eq(pushRules.uid, uid), eq(pushRules.deletedAt, 0)));
 
       return results.map((record) => this.toDto(record));
     } catch (error) {
@@ -86,7 +89,7 @@ export class PushRuleService {
       const results = await db
         .select()
         .from(pushRules)
-        .where(and(eq(pushRules.id, id), eq(pushRules.uid, uid)))
+        .where(and(eq(pushRules.id, id), eq(pushRules.uid, uid), eq(pushRules.deletedAt, 0)))
         .limit(1);
 
       if (results.length === 0) {
@@ -111,7 +114,7 @@ export class PushRuleService {
       const existing = await db
         .select()
         .from(pushRules)
-        .where(and(eq(pushRules.id, id), eq(pushRules.uid, uid)))
+        .where(and(eq(pushRules.id, id), eq(pushRules.uid, uid), eq(pushRules.deletedAt, 0)))
         .limit(1);
 
       if (existing.length === 0) {
@@ -129,10 +132,17 @@ export class PushRuleService {
       if (data.enabled !== undefined) updates.enabled = data.enabled ? 1 : 0;
 
       // Update the rule
-      await db.update(pushRules).set(updates).where(eq(pushRules.id, id));
+      await db
+        .update(pushRules)
+        .set(updates)
+        .where(and(eq(pushRules.id, id), eq(pushRules.deletedAt, 0)));
 
       // Fetch the updated rule
-      const result = await db.select().from(pushRules).where(eq(pushRules.id, id)).limit(1);
+      const result = await db
+        .select()
+        .from(pushRules)
+        .where(and(eq(pushRules.id, id), eq(pushRules.deletedAt, 0)))
+        .limit(1);
 
       return this.toDto(result[0]);
     } catch (error) {
@@ -152,7 +162,7 @@ export class PushRuleService {
       const existing = await db
         .select()
         .from(pushRules)
-        .where(and(eq(pushRules.id, id), eq(pushRules.uid, uid)))
+        .where(and(eq(pushRules.id, id), eq(pushRules.uid, uid), eq(pushRules.deletedAt, 0)))
         .limit(1);
 
       if (existing.length === 0) {
@@ -160,7 +170,7 @@ export class PushRuleService {
       }
 
       // Delete the rule
-      await db.delete(pushRules).where(eq(pushRules.id, id));
+      await db.delete(pushRules).where(and(eq(pushRules.id, id), eq(pushRules.deletedAt, 0)));
 
       return true;
     } catch (error) {
@@ -175,7 +185,10 @@ export class PushRuleService {
   async findAllEnabled(): Promise<PushRuleDto[]> {
     try {
       const db = getDatabase();
-      const results = await db.select().from(pushRules).where(eq(pushRules.enabled, 1));
+      const results = await db
+        .select()
+        .from(pushRules)
+        .where(and(eq(pushRules.enabled, 1), eq(pushRules.deletedAt, 0)));
 
       return results.map((record) => this.toDto(record));
     } catch (error) {

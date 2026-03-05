@@ -51,7 +51,10 @@ export class TagService {
    */
   async getTagsByUser(uid: string): Promise<TagDto[]> {
     const db = getDatabase();
-    const results = await db.select().from(tags).where(eq(tags.uid, uid));
+    const results = await db
+      .select()
+      .from(tags)
+      .where(and(eq(tags.uid, uid), eq(tags.deletedAt, 0)));
 
     return results.map((record) => this.convertToTagDto(record));
   }
@@ -64,7 +67,7 @@ export class TagService {
     const results = await db
       .select()
       .from(tags)
-      .where(and(eq(tags.tagId, tagId), eq(tags.uid, uid)))
+      .where(and(eq(tags.tagId, tagId), eq(tags.uid, uid), eq(tags.deletedAt, 0)))
       .limit(1);
 
     if (results.length === 0) {
@@ -91,7 +94,8 @@ export class TagService {
       .where(
         and(
           sql`${tags.tagId} IN ${sql.raw(`(${tagIds.map((id) => `'${id}'`).join(',')})`)}`,
-          eq(tags.uid, uid)
+          eq(tags.uid, uid),
+          eq(tags.deletedAt, 0)
         )
       );
 
@@ -116,7 +120,13 @@ export class TagService {
     const results = await db
       .select()
       .from(tags)
-      .where(and(sql`LOWER(${tags.name}) = LOWER(${normalizedName})`, eq(tags.uid, uid)))
+      .where(
+        and(
+          sql`LOWER(${tags.name}) = LOWER(${normalizedName})`,
+          eq(tags.uid, uid),
+          eq(tags.deletedAt, 0)
+        )
+      )
       .limit(1);
 
     if (results.length === 0) {
@@ -173,7 +183,7 @@ export class TagService {
     const existing = await db
       .select()
       .from(tags)
-      .where(and(eq(tags.tagId, tagId), eq(tags.uid, uid)))
+      .where(and(eq(tags.tagId, tagId), eq(tags.uid, uid), eq(tags.deletedAt, 0)))
       .limit(1);
 
     if (existing.length === 0) {
@@ -195,7 +205,7 @@ export class TagService {
     await db
       .update(tags)
       .set(updates)
-      .where(and(eq(tags.tagId, tagId), eq(tags.uid, uid)));
+      .where(and(eq(tags.tagId, tagId), eq(tags.uid, uid), eq(tags.deletedAt, 0)));
 
     // Return updated tag
     return this.getTagById(tagId, uid);
@@ -212,7 +222,7 @@ export class TagService {
     const existing = await db
       .select()
       .from(tags)
-      .where(and(eq(tags.tagId, tagId), eq(tags.uid, uid)))
+      .where(and(eq(tags.tagId, tagId), eq(tags.uid, uid), eq(tags.deletedAt, 0)))
       .limit(1);
 
     if (existing.length === 0) {
@@ -223,7 +233,7 @@ export class TagService {
     await this.removeTagFromAllMemos(tagId, uid);
 
     // Delete the tag
-    await db.delete(tags).where(and(eq(tags.tagId, tagId), eq(tags.uid, uid)));
+    await db.delete(tags).where(and(eq(tags.tagId, tagId), eq(tags.uid, uid), eq(tags.deletedAt, 0)));
 
     return true;
   }
@@ -240,7 +250,7 @@ export class TagService {
       .set({
         usageCount: sql`${tags.usageCount} + 1`,
       })
-      .where(and(eq(tags.tagId, tagId), eq(tags.uid, uid)));
+      .where(and(eq(tags.tagId, tagId), eq(tags.uid, uid), eq(tags.deletedAt, 0)));
   }
 
   /**
@@ -255,7 +265,7 @@ export class TagService {
       .set({
         usageCount: sql`GREATEST(0, ${tags.usageCount} - 1)`,
       })
-      .where(and(eq(tags.tagId, tagId), eq(tags.uid, uid)));
+      .where(and(eq(tags.tagId, tagId), eq(tags.uid, uid), eq(tags.deletedAt, 0)));
   }
 
   /**

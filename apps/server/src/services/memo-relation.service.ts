@@ -64,7 +64,13 @@ export class MemoRelationService {
       const results = await db
         .select()
         .from(memoRelations)
-        .where(and(eq(memoRelations.uid, uid), eq(memoRelations.sourceMemoId, sourceMemoId)));
+        .where(
+          and(
+            eq(memoRelations.uid, uid),
+            eq(memoRelations.sourceMemoId, sourceMemoId),
+            eq(memoRelations.deletedAt, 0)
+          )
+        );
 
       return results.map((record) => record.targetMemoId);
     } catch (error) {
@@ -85,7 +91,8 @@ export class MemoRelationService {
           and(
             eq(memoRelations.uid, uid),
             eq(memoRelations.sourceMemoId, sourceMemoId),
-            eq(memoRelations.targetMemoId, targetMemoId)
+            eq(memoRelations.targetMemoId, targetMemoId),
+            eq(memoRelations.deletedAt, 0)
           )
         );
 
@@ -104,7 +111,13 @@ export class MemoRelationService {
       const db = getDatabase();
       await db
         .delete(memoRelations)
-        .where(and(eq(memoRelations.uid, uid), eq(memoRelations.sourceMemoId, sourceMemoId)));
+        .where(
+          and(
+            eq(memoRelations.uid, uid),
+            eq(memoRelations.sourceMemoId, sourceMemoId),
+            eq(memoRelations.deletedAt, 0)
+          )
+        );
     } catch (error) {
       logger.error('Failed to delete relations by source memo:', error);
       throw error;
@@ -119,7 +132,13 @@ export class MemoRelationService {
       const db = getDatabase();
       await db
         .delete(memoRelations)
-        .where(and(eq(memoRelations.uid, uid), eq(memoRelations.targetMemoId, targetMemoId)));
+        .where(
+          and(
+            eq(memoRelations.uid, uid),
+            eq(memoRelations.targetMemoId, targetMemoId),
+            eq(memoRelations.deletedAt, 0)
+          )
+        );
     } catch (error) {
       logger.error('Failed to delete relations by target memo:', error);
       throw error;
@@ -160,7 +179,13 @@ export class MemoRelationService {
       const results = await db
         .select()
         .from(memoRelations)
-        .where(and(eq(memoRelations.uid, uid), eq(memoRelations.targetMemoId, targetMemoId)));
+        .where(
+          and(
+            eq(memoRelations.uid, uid),
+            eq(memoRelations.targetMemoId, targetMemoId),
+            eq(memoRelations.deletedAt, 0)
+          )
+        );
 
       return results.map((record) => record.sourceMemoId);
     } catch (error) {
