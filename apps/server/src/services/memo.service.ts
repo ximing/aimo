@@ -280,6 +280,7 @@ export class MemoService {
           attachments: attachments || null,
           tagIds: resolvedTagIds.length > 0 ? resolvedTagIds : null,
           isPublic: isPublic || false,
+          deletedAt: 0n, // soft delete: 0 = not deleted
           embedding: embeddingArray,
           createdAt: createdAt || now,
           updatedAt: updatedAt || now,
