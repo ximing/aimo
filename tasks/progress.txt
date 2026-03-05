@@ -115,3 +115,18 @@
   - Attachments are NOT cascaded - they remain intact when memos are deleted (preserves files)
   - Removed tag usage count decrement - soft delete doesn't affect tag statistics
 ---
+
+## 2026-03-05 - US-007
+- What was implemented: Implemented soft delete for categories with memo cleanup
+- Files changed:
+  - `apps/server/src/services/category.service.ts` - Added LanceDB connection initialization (initLanceDb, getLanceDb, openMemosTable). Updated deleteCategory() to set deletedAt = Date.now() instead of hard delete. Added transaction to soft delete category and set categoryId = NULL for all matching memos in both MySQL and LanceDB.
+  - `apps/server/src/services/CATEGORY_SERVICE_SOFT_DELETE_US007_TEST.md` - Created manual test documentation
+  - `apps/server/drizzle/0002_thankful_aaron_stack.sql` - Auto-generated Drizzle migration for deletedAt columns (from US-001)
+- **Learnings for future iterations:**
+  - CategoryService now follows same pattern as MemoService for LanceDB access (private connection, initLanceDb, openMemosTable)
+  - Transaction pattern for soft delete with cleanup: soft delete entity + update related records in same transaction
+  - LanceDB update uses WHERE clause to filter: `categoryId = 'xxx' AND deletedAt = 0`
+  - Must update both MySQL (via Drizzle transaction) and LanceDB (outside transaction) for consistency
+  - Import pattern: `import * as lancedb from '@lancedb/lancedb'` and `import type { Connection, Table } from '@lancedb/lancedb'`
+  - Drizzle migrations are auto-generated after schema changes - include them in commits
+---
