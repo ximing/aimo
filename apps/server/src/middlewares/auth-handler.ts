@@ -70,6 +70,14 @@ export const authHandler = async (request: Request, res: Response, next: NextFun
       });
     }
 
+    // Check if user is soft-deleted
+    if (user.deletedAt > 0) {
+      return res.status(401).json({
+        success: false,
+        message: 'Account has been deleted',
+      });
+    }
+
     // Add user information to request context
     request.user = {
       uid: user.uid,

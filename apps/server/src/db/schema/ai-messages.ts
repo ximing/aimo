@@ -29,7 +29,7 @@ export const aiMessages = mysqlTable(
   },
   (table) => ({
     conversationIdIdx: index('conversation_id_idx').on(table.conversationId),
-    deletedAtIdx: index('conversation_id_idx').on(table.conversationId),
+    deletedAtIdx: index('deleted_at_idx').on(table.deletedAt),
   })
 );
 

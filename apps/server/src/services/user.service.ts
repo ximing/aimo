@@ -1,6 +1,6 @@
 import * as bcrypt from 'bcrypt';
 import { Service } from 'typedi';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 
 import { getDatabase } from '../db/connection.js';
 import { users } from '../db/schema/users.js';
@@ -47,7 +47,10 @@ export class UserService {
       await db.insert(users).values(newUser);
 
       // Fetch the created user to get auto-generated timestamps
-      const [createdUser] = await db.select().from(users).where(eq(users.uid, uid));
+      const [createdUser] = await db
+        .select()
+        .from(users)
+        .where(and(eq(users.uid, uid), eq(users.deletedAt, 0)));
 
       // Create default category for new user
       try {
@@ -72,7 +75,11 @@ export class UserService {
   async findUserByEmail(email: string): Promise<User | null> {
     try {
       const db = getDatabase();
-      const results = await db.select().from(users).where(eq(users.email, email)).limit(1);
+      const results = await db
+        .select()
+        .from(users)
+        .where(and(eq(users.email, email), eq(users.deletedAt, 0)))
+        .limit(1);
 
       return results.length > 0 ? results[0] : null;
     } catch (error) {
@@ -87,7 +94,11 @@ export class UserService {
   async findUserByUid(uid: string): Promise<User | null> {
     try {
       const db = getDatabase();
-      const results = await db.select().from(users).where(eq(users.uid, uid)).limit(1);
+      const results = await db
+        .select()
+        .from(users)
+        .where(and(eq(users.uid, uid), eq(users.deletedAt, 0)))
+        .limit(1);
 
       return results.length > 0 ? results[0] : null;
     } catch (error) {
@@ -102,7 +113,11 @@ export class UserService {
   async findUserByPhone(phone: string): Promise<User | null> {
     try {
       const db = getDatabase();
-      const results = await db.select().from(users).where(eq(users.phone, phone)).limit(1);
+      const results = await db
+        .select()
+        .from(users)
+        .where(and(eq(users.phone, phone), eq(users.deletedAt, 0)))
+        .limit(1);
 
       return results.length > 0 ? results[0] : null;
     } catch (error) {
@@ -153,11 +168,14 @@ export class UserService {
       // Remove uid from updates to prevent changing primary key
       const { uid: _, ...updateValues } = updates;
 
-      // Update user in MySQL
-      await db.update(users).set(updateValues).where(eq(users.uid, uid));
+      // Update user in MySQL (only if not soft-deleted)
+      await db.update(users).set(updateValues).where(and(eq(users.uid, uid), eq(users.deletedAt, 0)));
 
       // Fetch updated user
-      const [updatedUser] = await db.select().from(users).where(eq(users.uid, uid));
+      const [updatedUser] = await db
+        .select()
+        .from(users)
+        .where(and(eq(users.uid, uid), eq(users.deletedAt, 0)));
 
       return updatedUser;
     } catch (error) {
@@ -179,8 +197,8 @@ export class UserService {
         throw new Error('User not found');
       }
 
-      // Mark as inactive instead of hard delete
-      await db.update(users).set({ status: 0 }).where(eq(users.uid, uid));
+      // Mark as inactive instead of hard delete (only if not already soft-deleted)
+      await db.update(users).set({ status: 0 }).where(and(eq(users.uid, uid), eq(users.deletedAt, 0)));
 
       return true;
     } catch (error) {

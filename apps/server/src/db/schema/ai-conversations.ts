@@ -21,7 +21,7 @@ export const aiConversations = mysqlTable(
   },
   (table) => ({
     uidIdx: index('uid_idx').on(table.uid),
-    deletedAtIdx: index('uid_idx').on(table.uid),
+    deletedAtIdx: index('deleted_at_idx').on(table.deletedAt),
   })
 );
 
