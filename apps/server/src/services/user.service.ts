@@ -185,7 +185,7 @@ export class UserService {
   }
 
   /**
-   * Delete user
+   * Delete user (soft delete)
    */
   async deleteUser(uid: string): Promise<boolean> {
     try {
@@ -197,8 +197,8 @@ export class UserService {
         throw new Error('User not found');
       }
 
-      // Mark as inactive instead of hard delete (only if not already soft-deleted)
-      await db.update(users).set({ status: 0 }).where(and(eq(users.uid, uid), eq(users.deletedAt, 0)));
+      // Soft delete user by setting deletedAt timestamp (only if not already soft-deleted)
+      await db.update(users).set({ deletedAt: Date.now() }).where(and(eq(users.uid, uid), eq(users.deletedAt, 0)));
 
       return true;
     } catch (error) {
