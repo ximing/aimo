@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, or } from 'drizzle-orm';
 import { Service } from 'typedi';
 
 import { getDatabase } from '../db/connection.js';
@@ -190,6 +190,41 @@ export class MemoRelationService {
       return results.map((record) => record.sourceMemoId);
     } catch (error) {
       logger.error('Failed to get backlinks:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Soft delete all relations where the memo is either source or target (cascade on memo deletion)
+   * @param tx - Optional transaction context for atomic operations
+   */
+  async softDeleteRelationsByMemo(
+    uid: string,
+    memoId: string,
+    deletedAt: number,
+    tx?: any
+  ): Promise<void> {
+    try {
+      const db = tx || getDatabase();
+
+      // Soft delete relations where memoId is either source or target
+      await db
+        .update(memoRelations)
+        .set({ deletedAt })
+        .where(
+          and(
+            eq(memoRelations.uid, uid),
+            or(
+              eq(memoRelations.sourceMemoId, memoId),
+              eq(memoRelations.targetMemoId, memoId)
+            ),
+            eq(memoRelations.deletedAt, 0)
+          )
+        );
+
+      logger.info('Soft deleted memo relations:', { uid, memoId, deletedAt });
+    } catch (error) {
+      logger.error('Failed to soft delete relations by memo:', error);
       throw error;
     }
   }

@@ -833,7 +833,7 @@ export class MemoService {
     try {
       const db = getDatabase();
 
-      // Get the memo to access tagIds before deletion
+      // Get the memo to verify it exists
       const results = await db
         .select()
         .from(memos)
@@ -844,41 +844,30 @@ export class MemoService {
         throw new Error('Memo not found');
       }
 
-      const existingMemo = results[0];
-      const existingTagIds = existingMemo.tagIds || [];
+      const deletedAt = Date.now();
 
-      // Use transaction for multi-table delete
+      // Use transaction for soft delete with cascade
       await withTransaction(async (tx) => {
-        // Delete from MySQL
+        // Soft delete memo in MySQL
         await tx
-          .delete(memos)
+          .update(memos)
+          .set({ deletedAt })
           .where(and(eq(memos.memoId, memoId), eq(memos.uid, uid), eq(memos.deletedAt, 0)));
 
-        logger.info('Memo scalar data deleted from MySQL:', { memoId, uid });
+        // Cascade soft delete to memo_relations (in same transaction)
+        await this.memoRelationService.softDeleteRelationsByMemo(uid, memoId, deletedAt, tx);
+
+        logger.info('Memo soft deleted in MySQL with cascade:', { memoId, uid, deletedAt });
       });
 
-      // Delete from LanceDB memos table (outside transaction)
+      // Soft delete memo in LanceDB (outside transaction)
       const memosTable = await this.openMemosTable();
-      await memosTable.delete(`memoId = '${memoId}'`);
+      await memosTable.update({
+        where: `memoId = '${memoId}'`,
+        values: { deletedAt },
+      });
 
-      logger.info('Memo complete record deleted from LanceDB:', { memoId });
-
-      // Clean up relations
-      try {
-        await this.memoRelationService.deleteRelationsBySourceMemo(uid, memoId);
-        await this.memoRelationService.deleteRelationsByTargetMemo(uid, memoId);
-      } catch (error) {
-        logger.warn('Failed to delete memo relations during memo deletion:', error);
-      }
-
-      // Decrement usage counts for tags
-      for (const tagId of existingTagIds) {
-        try {
-          await this.tagService.decrementUsageCount(tagId, uid);
-        } catch (error) {
-          logger.warn(`Failed to decrement usage count for tag ${tagId}:`, error);
-        }
-      }
+      logger.info('Memo soft deleted in LanceDB:', { memoId, deletedAt });
 
       return true;
     } catch (error) {
