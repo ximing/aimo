@@ -234,19 +234,6 @@ function showMainWindow(): void {
   }
 }
 
-function toggleWindowVisibility(): void {
-  if (!mainWindow) {
-    createWindow();
-    return;
-  }
-
-  if (mainWindow.isVisible()) {
-    mainWindow.hide();
-  } else {
-    showMainWindow();
-  }
-}
-
 function registerGlobalShortcuts(): void {
   // @TODO Register CommandOrControl+Shift+A to toggle window visibility
 }
