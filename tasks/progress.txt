@@ -130,3 +130,19 @@
   - Import pattern: `import * as lancedb from '@lancedb/lancedb'` and `import type { Connection, Table } from '@lancedb/lancedb'`
   - Drizzle migrations are auto-generated after schema changes - include them in commits
 ---
+
+## 2026-03-05 - US-008
+- What was implemented: Implemented soft delete for tags with memo cleanup
+- Files changed:
+  - `apps/server/src/services/tag.service.ts` - Added LanceDB connection initialization (initLanceDb, getLanceDb, openMemosTable). Updated deleteTag() to set deletedAt = Date.now() instead of hard delete. Added transaction to soft delete tag and remove tagId from all matching memos' tagIds arrays in both MySQL and LanceDB. Handles empty arrays by setting to NULL. Removed old removeTagFromAllMemos() method as logic is now integrated into deleteTag().
+  - `apps/server/src/services/TAG_SERVICE_SOFT_DELETE_US008_TEST.md` - Created manual test documentation
+- **Learnings for future iterations:**
+  - TagService now follows same pattern as CategoryService for LanceDB access (private connection, initLanceDb, openMemosTable)
+  - Transaction pattern for soft delete with cleanup: soft delete entity + update related records in same transaction
+  - For JSON array fields in MySQL: Use array filter operations to remove specific values from arrays
+  - When filtering memos by tagIds array: Fetch all memos with deletedAt = 0, then filter in-memory for array contains
+  - LanceDB array handling: Empty arrays must be set to NULL using `arrow_cast(NULL, 'List(Utf8)')`
+  - Both MySQL and LanceDB must be updated for consistency - MySQL uses transaction, LanceDB updates happen after
+  - Import pattern consistent: `import * as lancedb from '@lancedb/lancedb'` and `import type { Connection, Table } from '@lancedb/lancedb'`
+  - Config import path: Use `../config/config.js` not `../config/index.js`
+---
