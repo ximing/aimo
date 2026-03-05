@@ -7,6 +7,8 @@
 - Drizzle migrations are generated via `pnpm migrate:generate` after building
 - For bigint fields: LanceDB uses `Int64()`, Drizzle uses `bigint('field_name', { mode: 'number' })`
 - Type interfaces for LanceDB records use `bigint` TypeScript type (not `number`)
+- **Soft delete pattern**: All queries must filter `deletedAt = 0` using `and(eq(table.field, value), eq(table.deletedAt, 0))`
+- Authentication middleware: Check `user.deletedAt > 0` and return "Account has been deleted" error
 
 ---
 
@@ -27,4 +29,24 @@
   - LanceDB migration adds columns using `addColumns()` with `valueSql: 'CAST(0 AS BIGINT)'`
   - Indexes are created using `lancedb.Index.btree()` API
   - Drizzle migrations are auto-generated after schema changes and building
+---
+
+## 2026-03-05 - US-002
+- What was implemented: Updated UserService to filter soft-deleted records (deletedAt = 0) in all queries and authentication
+- Files changed:
+  - `apps/server/src/services/user.service.ts` - Added `and(eq(users.deletedAt, 0))` filter to all SELECT queries (findUserByEmail, findUserByUid, findUserByPhone, createUser fetch, updateUser, deleteUser)
+  - `apps/server/src/middlewares/auth-handler.ts` - Added check for `user.deletedAt > 0` to reject soft-deleted users with "Account has been deleted" error
+  - `apps/server/src/db/schema/ai-conversations.ts` - Fixed deletedAtIdx to point to deletedAt column (was incorrectly pointing to uid)
+  - `apps/server/src/db/schema/ai-messages.ts` - Fixed deletedAtIdx to point to deletedAt column (was incorrectly pointing to conversationId)
+  - `apps/server/src/db/schema/attachments.ts` - Fixed deletedAtIdx to point to deletedAt column (was incorrectly pointing to uid)
+  - `apps/server/src/db/schema/daily-recommendations.ts` - Fixed deletedAtIdx to point to deletedAt column (was incorrectly pointing to uid)
+  - `apps/server/src/db/schema/push-rules.ts` - Fixed deletedAtIdx to point to deletedAt column (was incorrectly pointing to uid)
+  - `apps/server/src/services/USER_SERVICE_SOFT_DELETE_TEST.md` - Created manual test documentation
+- **Learnings for future iterations:**
+  - Use Drizzle ORM's `and()` operator to combine multiple WHERE conditions: `and(eq(table.field, value), eq(table.deletedAt, 0))`
+  - Import `and` from 'drizzle-orm' alongside `eq`
+  - Authentication middleware gets user from database, so UserService filtering automatically applies
+  - Add explicit deletedAt check in auth middleware for clarity and proper error messaging
+  - Index definitions in Drizzle schemas were copy-pasted incorrectly in US-001 - always verify index column references
+  - Manual test documentation is acceptable when Jest ESM setup is complex (package.json has "type": "module")
 ---
