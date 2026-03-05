@@ -5,6 +5,7 @@ import { CategoryService } from '../services/category.service';
 import { TagService } from '../services/tag.service';
 import { AIToolsService } from '../services/ai-tools.service';
 import { ToastService } from '../services/toast.service';
+import { DraftService } from '../services/draft.service';
 import { AttachmentUploader, type AttachmentItem } from './attachment-uploader';
 import { attachmentApi } from '../api/attachment';
 import { ocrApi } from '../api/ocr';
@@ -38,10 +39,10 @@ interface MemoEditorFormProps {
 
 export const MemoEditorForm = view(
   ({ mode, initialMemo, onSave, onCancel, defaultCategoryId }: MemoEditorFormProps) => {
+    const [draftRestored, setDraftRestored] = useState(false); // 标记草稿是否已恢复
     const [content, setContent] = useState(initialMemo?.content || '');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [rows, setRows] = useState(mode === 'create' ? 3 : 5);
     const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
     const [selectedRelations, setSelectedRelations] = useState<MemoListItemDto[]>([]);
     const [suggestions, setSuggestions] = useState<MemoListItemDto[]>([]);
@@ -89,10 +90,36 @@ export const MemoEditorForm = view(
     const tagService = useService(TagService);
     const aiToolsService = useService(AIToolsService);
     const toastService = useService(ToastService);
+    const draftService = useMemo(() => new DraftService(), []);
 
-    // 初始化编辑模式的数据
+    // 初始化：恢复草稿或初始化编辑模式的数据
     useEffect(() => {
-      if (mode === 'edit' && initialMemo) {
+      // 尝试恢复草稿（仅在首次加载时执行）
+      if (!draftRestored) {
+        const draft = draftService.getDraft(mode, initialMemo?.memoId);
+        if (draft) {
+          // 如果存在草稿，询问用户是否恢复
+          const shouldRestore = window.confirm(
+            '检测到未保存的草稿，是否恢复？\n\n点击"确定"恢复草稿，点击"取消"丢弃草稿。'
+          );
+          if (shouldRestore) {
+            setContent(draft.content);
+            setSelectedCategoryId(draft.categoryId);
+            setIsPublic(draft.isPublic);
+            setSelectedTags(draft.tags);
+            setAttachments(draft.attachments);
+            setSelectedRelations(draft.relations);
+            toastService.show('草稿已恢复', { type: 'success' });
+          } else {
+            // 用户选择不恢复，清除草稿
+            draftService.clearDraft(mode, initialMemo?.memoId);
+          }
+        }
+        setDraftRestored(true);
+      }
+
+      // 初始化编辑模式的数据（仅在编辑模式且未恢复草稿时）
+      if (mode === 'edit' && initialMemo && !draftService.getDraft(mode, initialMemo.memoId)) {
         // 初始化附件
         if (initialMemo.attachments && initialMemo.attachments.length > 0) {
           const initialAttachments: AttachmentItem[] = initialMemo.attachments.map((att) => ({
@@ -119,7 +146,7 @@ export const MemoEditorForm = view(
           setSelectedTags(initialMemo.tags.map((t) => t.name));
         }
       }
-    }, [mode, initialMemo]);
+    }, [mode, initialMemo, draftRestored, draftService, toastService]);
 
     // 获取类别列表
     useEffect(() => {
@@ -209,6 +236,60 @@ export const MemoEditorForm = view(
       };
     }, []);
 
+    // 自动保存草稿（内容变化时）
+    useEffect(() => {
+      // 只有在草稿已恢复后才开始自动保存（避免覆盖初始状态）
+      if (!draftRestored) return;
+
+      // 如果内容为空，不保存草稿
+      if (!content.trim()) {
+        return;
+      }
+
+      // 防抖保存（延迟 1 秒）
+      const timer = setTimeout(() => {
+        draftService.saveDraft(
+          mode,
+          {
+            content,
+            categoryId: selectedCategoryId,
+            isPublic,
+            tags: selectedTags,
+            attachments,
+            relations: selectedRelations,
+            timestamp: Date.now(),
+          },
+          initialMemo?.memoId
+        );
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }, [
+      draftRestored,
+      content,
+      selectedCategoryId,
+      isPublic,
+      selectedTags,
+      attachments,
+      selectedRelations,
+      mode,
+      initialMemo?.memoId,
+      draftService,
+    ]);
+
+    // 自动调整 textarea 高度
+    useEffect(() => {
+      if (textareaRef.current) {
+        // 先重置高度以获取准确的 scrollHeight
+        textareaRef.current.style.height = 'auto';
+        // 设置新高度，最小 5 行，最大 20 行
+        const minHeight = 5 * 24; // 5行 * 行高(约24px)
+        const maxHeight = 20 * 24; // 20行 * 行高
+        const newHeight = Math.min(Math.max(textareaRef.current.scrollHeight, minHeight), maxHeight);
+        textareaRef.current.style.height = `${newHeight}px`;
+      }
+    }, [content]);
+
     const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
       setError('');
@@ -261,13 +342,18 @@ export const MemoEditorForm = view(
           // 清除推荐
           setSuggestions([]);
           setShowSuggestions(false);
+          // 清除草稿（保存成功后）
+          draftService.clearDraft(mode, initialMemo?.memoId);
           if (mode === 'create') {
             // 创建模式：立即清空表单（乐观更新，不等待刷新）
             setContent('');
             setAttachments([]);
             setSelectedRelations([]);
             setSelectedTags([]);
-            setRows(3);
+            // 重置 textarea 高度到最小值
+            if (textareaRef.current) {
+              textareaRef.current.style.height = '72px';
+            }
           }
           // 后台刷新标签列表（更新使用计数），不阻塞用户操作
           tagService.fetchTags().catch((error) => {
@@ -293,11 +379,15 @@ export const MemoEditorForm = view(
       const value = e.target.value;
       setContent(value);
 
-      // 根据内容行数动态调整行数
+      // 根据 scrollHeight 动态调整高度
       if (textareaRef.current) {
-        const lineCount = value.split('\n').length;
-        const newRows = Math.min(Math.max(lineCount + 1, 5), 10);
-        setRows(newRows);
+        // 先重置高度以获取准确的 scrollHeight
+        textareaRef.current.style.height = 'auto';
+        // 设置新高度，最小 5 行，最大 20 行
+        const minHeight = 5 * 24; // 5行 * 行高(约24px)
+        const maxHeight = 20 * 24; // 20行 * 行高
+        const newHeight = Math.min(Math.max(textareaRef.current.scrollHeight, minHeight), maxHeight);
+        textareaRef.current.style.height = `${newHeight}px`;
       }
 
       // 清除之前的防抖计时器
@@ -366,24 +456,26 @@ export const MemoEditorForm = view(
     };
 
     const handleFocus = () => {
-      // 聚焦时展开到5行（仅创建模式）
-      if (mode === 'create' && rows < 5) {
-        setRows(5);
+      // 聚焦时确保 textarea 高度正确
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+        const minHeight = 5 * 24;
+        const maxHeight = 20 * 24;
+        const newHeight = Math.min(Math.max(textareaRef.current.scrollHeight, minHeight), maxHeight);
+        textareaRef.current.style.height = `${newHeight}px`;
       }
     };
 
     const handleBlur = () => {
-      // 失焦时，如果内容为空且焦点移出编辑区则还原到3行（仅创建模式）
-      if (mode !== 'create' || content.trim()) {
-        return;
+      // 失焦时，如果内容为空则收缩到最小高度（仅创建模式）
+      if (mode === 'create' && !content.trim()) {
+        requestAnimationFrame(() => {
+          const activeElement = document.activeElement;
+          if (!formRef.current?.contains(activeElement) && textareaRef.current) {
+            textareaRef.current.style.height = '72px'; // 3行的高度
+          }
+        });
       }
-
-      requestAnimationFrame(() => {
-        const activeElement = document.activeElement;
-        if (!formRef.current?.contains(activeElement)) {
-          setRows(3);
-        }
-      });
     };
 
     // Command+Enter (Mac) 或 Ctrl+Enter (Windows/Linux) 提交表单
@@ -800,7 +892,7 @@ export const MemoEditorForm = view(
               onKeyDown={handleKeyDown}
               placeholder={mode === 'create' ? '记录你的想法... (⌘+Enter)' : '编辑你的笔记...'}
               className="w-full px-0 py-0 bg-transparent text-gray-900 dark:text-gray-50 rounded-lg focus:outline-none resize-none placeholder-gray-400 dark:placeholder-gray-600 text-sm leading-relaxed"
-              rows={rows}
+              style={{ minHeight: '120px', maxHeight: '480px' }}
               disabled={loading}
               aria-label="Memo content"
             />

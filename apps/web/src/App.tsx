@@ -17,6 +17,7 @@ import { ProtectedRoute } from './components/protected-route';
 import { ToastContainer } from './components/toast';
 import { setNavigate } from './utils/navigation';
 import { isElectron } from './electron/isElectron';
+import { DraftService } from './services/draft.service';
 
 // 内部组件，用于根据环境渲染根路由
 function RootRoute() {
@@ -40,6 +41,12 @@ function AppContent() {
 
 function App() {
   const Router = isElectron() ? HashRouter : BrowserRouter;
+
+  // 清除过期草稿（应用启动时执行一次）
+  useEffect(() => {
+    const draftService = new DraftService();
+    draftService.clearExpiredDrafts();
+  }, []);
 
   return (
     <Router>

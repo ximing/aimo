@@ -1,41 +1,44 @@
 ---
 ruleType: Model Request
-description: "@rabjs/react" 的使用说明 所有使用状态管理的场景均需要加载此规则，提供了基于响应式的状态管理方案，如 *.service.ts，.tsx等，不要再组件中使用其他状态管理方案
-globs: *.service.ts
+description: "@rabjs/react" 的核心使用说明。所有使用状态管理的场景均需要加载此规则，提供了基于响应式的状态管理方案，如 *.service.ts，.tsx等。
+globs: *.service.ts, *.tsx
 ---
 
-# @rabjs/react
+# @rabjs/react 核心用法
 
 ## 特性
 
 - 🚀 **响应式组件** - 使用 `observer` / `view` HOC 自动追踪 observable 变化
-- 🎣 **Hooks 支持** -
-  `useObserver`、`useLocalObservable`、`useAsObservableSource`
+- 🎣 **Hooks 支持** - `useObserver`、`useLocalObservable`、`useService`
 - 💉 **依赖注入** - 内置 IOC 容器，支持 Service 模式和依赖注入
 - ⚡️ **并发模式** - 完全支持 React 18+ 的并发特性
 - 🛡 **严格模式** - 正确处理 StrictMode 的双重渲染
-- 🖥 **SSR 支持** - 通过 `enableStaticRendering` 支持服务端渲染
 - 🧹 **内存管理** - 自动清理资源，防止内存泄漏
 - 📝 **TypeScript** - 完整的类型支持
 
-## 安装
+## 核心 API
 
-```bash
-npm install @rabjs/react
-# 或
-pnpm add @rabjs/react
+### 1. observer / view
+
+将组件转换为响应式组件，自动追踪 observable 变化并重新渲染。
+
+```tsx
+import { observer, view } from '@rabjs/react';
+
+// observer 用于函数组件
+const ProductList = observer(() => {
+  return <div>{productService.filteredProducts.length}</div>;
+});
+
+// view 支持函数和类组件
+const Header = view(() => {
+  return <header>{/* 内容 */}</header>;
+});
 ```
 
-> **注意**：`@rabjs/react` 已重新导出了 `@osgfe/rs-observer` 和
-> `@osgfe/rs-service` 的所有 API，你无需单独安装这两个包。
+### 2. Service
 
-## 快速开始
-
-### 单页面 Service 模式
-
-适用于复杂业务场景，通过依赖注入管理服务生命周期，支持服务间依赖。
-
-**第一步：定义 Service**
+业务服务基类，默认响应式和 Action。
 
 ```tsx
 import { Service } from '@rabjs/react';
@@ -64,77 +67,109 @@ class ProductService extends Service {
 }
 ```
 
-**第二步：绑定 Service 到组件**
+**访问异步状态：**
 
 ```tsx
-import { useService, bindServices } from '@rabjs/react';
-
-// 注意：使用 useService 时组件不需要 observer 包裹
-const ProductPage = () => {
+const ProductList = view(() => {
   const productService = useService(ProductService);
 
-  return (
-    <div>
-      <select
-        value={productService.filterStatus}
-        onChange={(e) => productService.setFilterStatus(e.target.value)}
-      >
-        <option value="all">全部</option>
-        <option value="active">在售</option>
-      </select>
-      <div>共 {productService.filteredProducts.length} 个商品</div>
+  // 访问异步方法的状态
+  const { loading, error } = productService.$model.fetchProducts;
 
-      {/* 访问异步方法的状态 */}
-      {productService.$model.fetchProducts.loading && <div>加载中...</div>}
-    </div>
-  );
+  if (loading) return <div>加载中...</div>;
+  if (error) return <div>错误: {error.message}</div>;
+
+  return <div>{/* 产品列表 */}</div>;
+});
+```
+
+### 3. useService
+
+在组件中获取服务实例。会从当前组件向上查找最近的容器。
+
+```tsx
+import { useService } from '@rabjs/react';
+
+function ProductList() {
+  const productService = useService(ProductService);
+  return <div>{productService.filteredProducts.length}</div>;
+}
+```
+
+## Service 作用域
+
+### 全局作用域 - 使用 register()
+
+全局注册的 Service 生命周期独立于组件，整个应用共享。
+
+```tsx
+// app.tsx - 应用入口
+import { register } from '@rabjs/react';
+import { AuthService, ThemeService, ConfigService } from '@/services';
+
+// 全局注册 Service（应用启动时执行一次）
+register(AuthService);
+register(ThemeService);
+register(ConfigService);
+
+function App() {
+  return <Router>{/* 路由配置 */}</Router>;
+}
+```
+
+**特点：**
+- ✅ 全局单例，整个应用共享
+- ✅ 生命周期独立于组件
+- ✅ 任何组件都可以通过 `useService` 获取
+- ✅ 适用于：认证、主题、全局配置等
+
+### 组件作用域 - 使用 bindServices()
+
+将 Service 与组件生命周期绑定，组件挂载时创建，卸载时销毁。
+
+```tsx
+// pages/product/index.tsx
+import { bindServices, useService } from '@rabjs/react';
+
+const ProductPage = () => {
+  const productService = useService(ProductService);
+  return <div>{/* 页面内容 */}</div>;
 };
 
 // bindServices 会自动创建容器并注入 observer
 export default bindServices(ProductPage, [ProductService]);
 ```
 
-### 多级 Domain 嵌套
+**特点：**
+- ✅ 组件挂载时创建，卸载时销毁
+- ✅ 子组件可通过 `useService` 访问
+- ✅ 同级组件的 Service 相互隔离
+- ✅ 适用于：页面级状态、表单状态等
+- ✅ 自动注入 observer，组件无需再包裹
+
+**重要区别：**
+
+| 特性 | register() | bindServices() |
+|------|-----------|----------------|
+| 生命周期 | 独立于组件 | 绑定组件生命周期 |
+| 作用域 | 全局共享 | 组件及其子组件 |
+| 实例数量 | 单例 | 每个组件独立实例 |
+| 适用场景 | 认证、主题、配置 | 页面状态、表单 |
+
+## 多级 Domain 嵌套
 
 支持多级领域嵌套，子组件可访问父级 Service，同级 Service 相互隔离。
 
 ```tsx
-import { Service, bindServices, useService } from '@rabjs/react';
+import { Service, bindServices, useService, register } from '@rabjs/react';
 
-// ========== 应用级 Service ==========
-class AppService extends Service {
-  appName = 'My App';
-  theme = 'light';
-}
+// ========== 应用级 Service（全局注册）==========
+register(AppService);
 
 // ========== 页面级 Service ==========
-class PageService extends Service {
-  pageTitle = '页面标题';
-  data: any[] = [];
-}
-
-// ========== 组件级 Service ==========
-class ComponentService extends Service {
-  componentState = 0;
-}
-
-// ========== 应用根（第一级）==========
-const AppContent = () => {
-  const appService = useService(AppService);
-  return (
-    <div>
-      <h1>{appService.appName}</h1>
-      <PageComponent />
-    </div>
-  );
-};
-
-export const App = bindServices(AppContent, [AppService]);
-
-// ========== 页面组件（第二级）==========
 const PageContent = () => {
-  const appService = useService(AppService); // ✅ 访问父级
-  const pageService = useService(PageService); // ✅ 访问当前级
+  const appService = useService(AppService);     // ✅ 访问全局
+  const pageService = useService(PageService);   // ✅ 访问当前级
 
   return (
     <div>
@@ -149,8 +184,8 @@ export const Page = bindServices(PageContent, [PageService]);
 
 // ========== 组件 A（第三级，独立领域）==========
 const ComponentAContent = () => {
-  const appService = useService(AppService); // ✅ 访问应用级
-  const pageService = useService(PageService); // ✅ 访问页面级
+  const appService = useService(AppService);           // ✅ 访问应用级
+  const pageService = useService(PageService);         // ✅ 访问页面级
   const componentService = useService(ComponentService); // ✅ 访问组件级
 
   return <div>主题: {appService.theme}</div>;
@@ -160,7 +195,7 @@ export const ComponentA = bindServices(ComponentAContent, [ComponentService]);
 
 // ========== 组件 B（第三级，独立领域）==========
 const ComponentBContent = () => {
-  const appService = useService(AppService); // ✅ 访问应用级
+  const appService = useService(AppService);   // ✅ 访问应用级
   const pageService = useService(PageService); // ✅ 访问页面级
   // ❌ 无法访问 ComponentA 的 ComponentService（同级隔离）
 
@@ -176,241 +211,70 @@ export const ComponentB = bindServices(ComponentBContent, [ComponentService]);
 - ✅ 同级容器的 Service 相互隔离
 - ✅ 支持任意层级嵌套
 
-## API 文档
+## 页面级组件的服务管理
 
-### 响应式 API
+### 核心原则
 
-#### observer(Component)
+页面级组件（放在 `src/pages/{xx页面}/components/` 下）的 Service 应在页面统一注册。
 
-将函数组件转换为响应式组件，自动追踪 observable 变化并重新渲染。
+**✅ 正确做法**：在页面级 `bindServices` 中统一注册所有子组件的 Service
 
 ```tsx
-const ProductList = observer(() => {
-  return <div>{productService.filteredProducts.length}</div>;
+// src/pages/workbench/index.tsx
+import { Header, HeaderService } from './components/header';
+import { Sidebar, SidebarService } from './components/sidebar';
+
+export default bindServices(WorkbenchPage, [
+  WorkbenchService,    // 页面主业务 Service
+  HeaderService,       // 子组件 Service
+  SidebarService,      // 子组件 Service
+]);
+```
+
+**❌ 错误做法**：在子组件内部注册 Service
+
+```tsx
+// ❌ 不要这样做
+// src/pages/workbench/components/header/header.tsx
+export default bindServices(Header, [HeaderService]);
+```
+
+### 子组件中的服务使用
+
+**✅ 正确做法**：使用 `view` + `useService` 从 Domain 获取
+
+```tsx
+// src/pages/workbench/components/header/header.tsx
+import { view, useService } from '@rabjs/react';
+import { HeaderService } from './header.service';
+
+const Header = view(() => {
+  // 通过 Domain 机制自动获取 Service 实例
+  const headerService = useService(HeaderService);
+
+  return <div>{/* 组件内容 */}</div>;
 });
+
+export default Header; // 简洁导出，无需 bindServices
 ```
 
-#### view(Component)
+### 何时需要在组件内注册 Service
 
-类似 observer，但支持函数组件和类组件。
-
-```tsx
-class ClassComponent extends React.Component {
-  render() {
-    return <div>{store.count}</div>;
-  }
-}
-const ReactiveClass = view(ClassComponent);
-```
-
-#### useObserver(selector)
-
-手动追踪 observable 变化，细粒度控制。
+**多实例场景**：当需要多个独立的 Service 实例时，才在组件内注册
 
 ```tsx
-function MyComponent() {
-  const count = useObserver(() => state.count);
-  return <div>{count}</div>;
-}
-```
-
-#### useLocalObservable(initializer)
-
-创建组件内部的 observable 对象。
-
-```tsx
-const Counter = observer(() => {
-  const state = useLocalObservable(() => ({
-    count: 0,
-    increment() {
-      this.count++;
-    },
-  }));
-  return <button onClick={state.increment}>{state.count}</button>;
-});
-```
-
-### Service 类
-
-业务服务基类，默认响应式和 Action。
-
-```tsx
-class ProductService extends Service {
-  products = []; // 响应式属性
-
-  get totalCount() {
-    return this.products.length; // 计算属性
-  }
-
-  setProducts(products) {
-    this.products = products; // 自动 Action
-  }
-
-  async fetchProducts() {
-    const res = await fetch('/api/products');
-    this.products = await res.json();
-  }
-}
-
-// 异步状态访问
-const service = new ProductService();
-service.fetchProducts();
-console.log(service.$model.fetchProducts.loading); // true
-console.log(service.$model.fetchProducts.error); // null | Error
-```
-
-**装饰器（可选）：**
-
-- `@Inject(ServiceClass)` - 注入依赖
-- `@Debounce(ms)` / `@Throttle(ms)` - 防抖/节流
-- `@Memo()` - 缓存计算属性
-- `@On(eventName)` / `@Once(eventName)` - 自动监听事件
-
-```tsx
-class UserService extends Service {
-  @Inject(AuthService) authService!: AuthService;
-  @Debounce(300) search(keyword: string) {
-    return fetch(`/api/search?q=${keyword}`);
-  }
-  @Memo() get fullName() {
-    return `${this.userInfo?.firstName} ${this.userInfo?.lastName}`;
-  }
-}
-```
-
-### 依赖注入 API
-
-#### bindServices(Component, services)
-
-创建独立容器并注册服务，自动注入 observer。
-
-- **自动注入 observer**：bindServices 会自动将组件包裹为响应式组件
-- **服务注册**：在组件挂载时创建容器并注册服务，卸载时销毁
-- **子组件可用**：子组件通过 `useService` 访问服务
-
-```tsx
-const ProductPage = () => {
-  const productService = useService(ProductService);
-  return <div>{productService.products.length}</div>;
+// ✅ 多实例场景：列表中的每一项都有自己的 Service
+const ListItem = ({ data }) => {
+  const itemService = useService(ListItemService);
+  return <div>{/* 列表项内容 */}</div>;
 };
 
-export default bindServices(ProductPage, [ProductService, CategoryService]);
-```
+export default bindServices(ListItem, [ListItemService]);
 
-**全局注册 Service 的情况：**
-
-如果服务已在应用根节点全局注册（通过 `register` 和 `bindServices`），那么在页面或子组件中**不需要再次在 bindServices 中重复注册**，直接使用 `useService` 即可获取：
-
-```tsx
-// app.tsx - 应用根节点，全局注册 Service
-const AppWithServices = bindServices(App, [AuthService, ThemeService]);
-
-// pages/home/index.tsx - 页面组件，不需要重复注册
-const HomePageWithServices = bindServices(HomePage, []);
-// 或直接不使用 bindServices，但需要使用 view/observer 包裹组件
-
-// pages/home/home.tsx - 组件内部
-export const HomePage = view(() => {
-  // ✅ 直接使用全局注册的 Service，无需在 bindServices 中再次注册
-  const authService = useService(AuthService);
-  const themeService = useService(ThemeService);
-
-  return <div>{authService.user?.email}</div>;
-});
-```
-
-**规则总结：**
-
-- 全局 Service（在应用根注册）：所有组件都可以 `useService` 获取，无需重复注册
-- 页面级 Service（仅页面及其子组件使用）：在页面的 `bindServices` 中注册
-- 组件级 Service（仅组件内部使用）：在组件的 `bindServices` 中注册
-
-#### useService(ServiceClass)
-
-在组件中获取服务实例。会从当前组件向上查找最近的容器。
-
-```tsx
-function ProductList() {
-  const productService = useService(ProductService);
-  return <div>{productService.filteredProducts.length}</div>;
-}
-```
-
-#### useObserverService(ServiceClass, selector)
-
-获取服务实例并手动追踪特定字段。使用此 Hook 时组件**不需要** `observer` 包裹。
-
-- 返回 `[selectedValue, serviceInstance]`
-- 只在 selector 返回值变化时重新渲染
-
-```tsx
-function ProductCount() {
-  const [count, productService] = useObserverService(ProductService, (s) => s.products.length);
-  return <div>{count}</div>;
-}
-```
-
-#### useContainer() / useContainerEvents()
-
-获取当前容器或事件发射器。
-
-```tsx
-const container = useContainer();
-const events = useContainerEvents();
-events.on('product:added', handler);
-```
-
-### Observable API
-
-#### observable(target) / raw(obj) / isObservable(value)
-
-```tsx
-const state = observable({ count: 0 }); // 创建响应式对象
-state.count++; // 变化会被追踪
-
-const rawObj = raw(state); // 获取原始对象
-isObservable(state); // true
-```
-
-#### observe(callback)
-
-创建响应式副作用。
-
-```tsx
-const state = observable({ count: 0 });
-const dispose = observe(() => console.log(state.count));
-state.count++; // 输出: 1
-dispose(); // 停止观察
-```
-
-### 容器 API
-
-#### Container / register / resolve / has
-
-```tsx
-// 手动创建容器
-const container = new Container();
-container.register(ProductService);
-const service = container.resolve(ProductService);
-
-// 全局注册和解析
-register(ProductService);
-const service2 = resolve(ProductService);
-if (has(ProductService)) {
-  /* ... */
-}
-```
-
-### SSR
-
-#### enableStaticRendering(enable)
-
-服务端渲染时禁用响应式追踪。
-
-```tsx
-if (typeof window === 'undefined') {
-  enableStaticRendering(true);
-}
+// 使用时每个 ListItem 都有独立的 Service 实例
+<div>
+  {items.map(item => <ListItem key={item.id} data={item} />)}
+</div>
 ```
 
 ## 最佳实践
@@ -435,16 +299,25 @@ if (typeof window === 'undefined') {
 - **选择性响应**：用 `useObserverService` 仅在特定字段变化时渲染
 - **避免追踪**：用 `raw()` 访问原始对象
 
-### 常见问题
+## 常见问题
 
-**Q: bindServices 后为何不需要 observer？**  
-A: 已自动注入 observer。
+**Q: 全局 Service 和组件 Service 如何选择？**
+A: 全局状态（认证、主题）用 `register`，页面/组件状态用 `bindServices`。
 
-**Q: Service 需要装饰器吗？**  
+**Q: bindServices 后为何不需要 observer？**
+A: `bindServices` 已自动注入 observer。
+
+**Q: Service 需要装饰器吗？**
 A: 不需要。默认响应式和 Action，装饰器仅用于高级功能。
 
-**Q: observer vs view？**  
+**Q: observer vs view？**
 A: observer 用于函数组件，view 支持函数和类组件。
 
-**Q: Service 间如何通信？**  
+**Q: Service 间如何通信？**
 A: 用 `@Inject` 注入或事件系统（`this.emit`/`this.on`）。
+
+## 详细文档参考
+
+- 完整 API 文档：参考 `~/.claude/skills/generate-component-doc/references/rabjs-api-reference.md`
+- Service 设计模式：参考 `~/.claude/skills/generate-component-doc/references/service-patterns.md`
+- 页面组件管理：参考 `.catpaw/rules/page-component-service.md`
