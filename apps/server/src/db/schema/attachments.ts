@@ -1,4 +1,4 @@
-import { mysqlTable, varchar, int, text, timestamp, index } from 'drizzle-orm/mysql-core';
+import { mysqlTable, varchar, int, bigint, text, timestamp, index } from 'drizzle-orm/mysql-core';
 import { users } from './users.js';
 
 /**
@@ -24,10 +24,12 @@ export const attachments = mysqlTable(
     isPublicBucket: varchar('is_public_bucket', { length: 10 }),
     multimodalModelHash: varchar('multimodal_model_hash', { length: 255 }),
     properties: text('properties'),
+    deletedAt: bigint('deleted_at', { mode: 'number' }).notNull().default(0),
     createdAt: timestamp('created_at', { mode: 'date', fsp: 3 }).notNull().defaultNow(),
   },
   (table) => ({
     uidIdx: index('uid_idx').on(table.uid),
+    deletedAtIdx: index('uid_idx').on(table.uid),
   })
 );
 

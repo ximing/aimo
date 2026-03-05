@@ -46,6 +46,7 @@ export class MemoRelationService {
         uid: relation.uid,
         sourceMemoId: relation.sourceMemoId,
         targetMemoId: relation.targetMemoId,
+        deletedAt: BigInt(relation.deletedAt),
         createdAt: relation.createdAt.getTime(),
       };
     } catch (error) {

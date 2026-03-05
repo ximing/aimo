@@ -1,4 +1,4 @@
-import { mysqlTable, varchar, int, timestamp, index } from 'drizzle-orm/mysql-core';
+import { mysqlTable, varchar, int, bigint, timestamp, index } from 'drizzle-orm/mysql-core';
 
 /**
  * Users table - stores user account information
@@ -15,6 +15,7 @@ export const users = mysqlTable(
     nickname: varchar('nickname', { length: 100 }),
     avatar: varchar('avatar', { length: 500 }),
     status: int('status').notNull().default(1),
+    deletedAt: bigint('deleted_at', { mode: 'number' }).notNull().default(0),
     createdAt: timestamp('created_at', { mode: 'date', fsp: 3 }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { mode: 'date', fsp: 3 })
       .notNull()
@@ -24,6 +25,7 @@ export const users = mysqlTable(
   (table) => ({
     emailIdx: index('email_idx').on(table.email),
     phoneIdx: index('phone_idx').on(table.phone),
+    deletedAtIdx: index('deleted_at_idx').on(table.deletedAt),
   })
 );
 

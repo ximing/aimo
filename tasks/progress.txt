@@ -1,0 +1,30 @@
+## Codebase Patterns
+- This project uses BOTH LanceDB (vector database) and MySQL (via Drizzle ORM) in a hybrid architecture
+- LanceDB schemas are defined in `apps/server/src/models/db/schema.ts` using Apache Arrow types
+- Drizzle/MySQL schemas are defined in `apps/server/src/db/schema/*.ts`
+- When adding fields to tables, BOTH schemas must be updated
+- LanceDB migrations are in `apps/server/src/migrations/scripts/` and run automatically on startup
+- Drizzle migrations are generated via `pnpm migrate:generate` after building
+- For bigint fields: LanceDB uses `Int64()`, Drizzle uses `bigint('field_name', { mode: 'number' })`
+- Type interfaces for LanceDB records use `bigint` TypeScript type (not `number`)
+
+---
+
+## 2026-03-05 - US-001
+- What was implemented: Added soft delete support by adding deletedAt bigint column (default 0) to all 10 tables
+- Files changed:
+  - `apps/server/src/models/db/schema.ts` - Added Int64 import and deletedAt field to all LanceDB schemas (users, memos, memo_relations, categories, tags, attachments, ai_conversations, ai_messages, daily_recommendations, push_rules)
+  - Updated all TypeScript interfaces to include `deletedAt: bigint`
+  - `apps/server/src/migrations/scripts/019-add-deleted-at.ts` - Created migration to add deletedAt column and indexes to all tables
+  - `apps/server/src/migrations/scripts/index.ts` - Registered migration 019
+  - `apps/server/src/db/schema/*.ts` - Added deletedAt bigint field and indexes to all 10 Drizzle schemas
+  - `apps/server/src/services/memo-relation.service.ts` - Updated createRelation return value to include deletedAt field
+- **Learnings for future iterations:**
+  - The project has a dual-database architecture: LanceDB for vectors + MySQL for relational data
+  - When adding fields, must update BOTH LanceDB schema (Apache Arrow) AND Drizzle schema (MySQL)
+  - LanceDB uses Int64() for bigint, Drizzle uses bigint('name', { mode: 'number' })
+  - Type interfaces must use TypeScript `bigint` type, not `number`
+  - LanceDB migration adds columns using `addColumns()` with `valueSql: 'CAST(0 AS BIGINT)'`
+  - Indexes are created using `lancedb.Index.btree()` API
+  - Drizzle migrations are auto-generated after schema changes and building
+---

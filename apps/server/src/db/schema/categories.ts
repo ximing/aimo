@@ -1,4 +1,4 @@
-import { mysqlTable, varchar, timestamp, index } from 'drizzle-orm/mysql-core';
+import { mysqlTable, varchar, bigint, timestamp, index } from 'drizzle-orm/mysql-core';
 import { users } from './users.js';
 
 /**
@@ -13,6 +13,7 @@ export const categories = mysqlTable(
       .references(() => users.uid, { onDelete: 'cascade' }),
     name: varchar('name', { length: 100 }).notNull(),
     color: varchar('color', { length: 20 }),
+    deletedAt: bigint('deleted_at', { mode: 'number' }).notNull().default(0),
     createdAt: timestamp('created_at', { mode: 'date', fsp: 3 }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { mode: 'date', fsp: 3 })
       .notNull()
@@ -21,6 +22,7 @@ export const categories = mysqlTable(
   },
   (table) => ({
     uidIdx: index('uid_idx').on(table.uid),
+    deletedAtIdx: index('deleted_at_idx').on(table.deletedAt),
   })
 );
 

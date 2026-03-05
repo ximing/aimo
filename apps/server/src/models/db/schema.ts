@@ -8,6 +8,7 @@ import {
   Schema,
   Field,
   Int32,
+  Int64,
   Utf8,
   FixedSizeList,
   Float32,
@@ -41,6 +42,7 @@ export const usersSchema = new Schema([
   new Field('nickname', new Utf8(), true), // nullable nickname
   new Field('avatar', new Utf8(), true), // nullable avatar URL
   new Field('status', new Int32(), false), // non-nullable status
+  new Field('deletedAt', new Int64(), false), // non-nullable soft delete timestamp (0 = not deleted)
   new Field('createdAt', new Timestamp(TimeUnit.MILLISECOND), false), // non-nullable creation timestamp in milliseconds
   new Field('updatedAt', new Timestamp(TimeUnit.MILLISECOND), false), // non-nullable update timestamp in milliseconds
 ]);
@@ -61,6 +63,7 @@ export const memosSchema = new Schema([
   new Field('attachments', new List(new Field('item', new Utf8(), true)), true), // nullable list of attachment IDs (URLs generated at runtime)
   new Field('tagIds', new List(new Field('item', new Utf8(), true)), true), // nullable list of tag IDs (new primary field)
   new Field('isPublic', new Bool(), true), // nullable boolean for public visibility (defaults to false)
+  new Field('deletedAt', new Int64(), false), // non-nullable soft delete timestamp (0 = not deleted)
   new Field(
     'embedding',
     new FixedSizeList(getEmbeddingDimensions(), new Field('item', new Float32(), true)),
@@ -82,6 +85,7 @@ export interface UserRecord {
   nickname?: string;
   avatar?: string;
   status: number;
+  deletedAt: bigint; // soft delete timestamp (0n = not deleted)
   createdAt: number; // timestamp in milliseconds
   updatedAt: number; // timestamp in milliseconds
 }
@@ -97,6 +101,7 @@ export interface MemoRecord {
   tags?: string[]; // optional array of tag strings (legacy, for backward compatibility)
   tagIds?: string[]; // optional array of tag IDs (new primary field)
   isPublic?: boolean; // optional boolean for public visibility (defaults to false)
+  deletedAt: bigint; // soft delete timestamp (0n = not deleted)
   embedding: number[];
   createdAt: number; // timestamp in milliseconds
   updatedAt: number; // timestamp in milliseconds
@@ -161,6 +166,7 @@ export const memoRelationsSchema = new Schema([
   new Field('uid', new Utf8(), false), // non-nullable user id (for permission isolation)
   new Field('sourceMemoId', new Utf8(), false), // non-nullable source memo id (who initiates the relation)
   new Field('targetMemoId', new Utf8(), false), // non-nullable target memo id (what is being related)
+  new Field('deletedAt', new Int64(), false), // non-nullable soft delete timestamp (0 = not deleted)
   new Field('createdAt', new Timestamp(TimeUnit.MILLISECOND), false), // non-nullable creation timestamp in milliseconds
 ]);
 
@@ -173,6 +179,7 @@ export const categoriesSchema = new Schema([
   new Field('uid', new Utf8(), false), // non-nullable user id
   new Field('name', new Utf8(), false), // non-nullable category name
   new Field('color', new Utf8(), true), // nullable color hex code for UI display
+  new Field('deletedAt', new Int64(), false), // non-nullable soft delete timestamp (0 = not deleted)
   new Field('createdAt', new Timestamp(TimeUnit.MILLISECOND), false), // non-nullable creation timestamp in milliseconds
   new Field('updatedAt', new Timestamp(TimeUnit.MILLISECOND), false), // non-nullable update timestamp in milliseconds
 ]);
@@ -187,6 +194,7 @@ export const tagsSchema = new Schema([
   new Field('name', new Utf8(), false), // non-nullable tag name
   new Field('color', new Utf8(), true), // nullable color hex code for UI display
   new Field('usageCount', new Int32(), false), // non-nullable usage count
+  new Field('deletedAt', new Int64(), false), // non-nullable soft delete timestamp (0 = not deleted)
   new Field('createdAt', new Timestamp(TimeUnit.MILLISECOND), false), // non-nullable creation timestamp in milliseconds
   new Field('updatedAt', new Timestamp(TimeUnit.MILLISECOND), false), // non-nullable update timestamp in milliseconds
 ]);
@@ -218,6 +226,7 @@ export const attachmentsSchema = new Schema([
   ), // nullable multimodal embedding vector (1024-dim)
   new Field('multimodalModelHash', new Utf8(), true), // nullable model hash for multimodal embedding
   new Field('properties', new Utf8(), true), // nullable JSON string for properties: audio(duration), image(width,height), video(duration)
+  new Field('deletedAt', new Int64(), false), // non-nullable soft delete timestamp (0 = not deleted)
   new Field('createdAt', new Timestamp(TimeUnit.MILLISECOND), false), // non-nullable creation timestamp in milliseconds
 ]);
 
@@ -229,6 +238,7 @@ export interface CategoryRecord {
   uid: string;
   name: string;
   color?: string; // optional color hex code for UI display
+  deletedAt: bigint; // soft delete timestamp (0n = not deleted)
   createdAt: number; // timestamp in milliseconds
   updatedAt: number; // timestamp in milliseconds
 }
@@ -242,6 +252,7 @@ export interface TagRecord {
   name: string;
   color?: string; // optional color hex code for UI display
   usageCount: number;
+  deletedAt: bigint; // soft delete timestamp (0n = not deleted)
   createdAt: number; // timestamp in milliseconds
   updatedAt: number; // timestamp in milliseconds
 }
@@ -254,6 +265,7 @@ export interface MemoRelationRecord {
   uid: string;
   sourceMemoId: string;
   targetMemoId: string;
+  deletedAt: bigint; // soft delete timestamp (0n = not deleted)
   createdAt: number; // timestamp in milliseconds
 }
 
@@ -276,6 +288,7 @@ export interface AttachmentRecord {
   multimodalEmbedding?: number[]; // optional multimodal embedding vector for images and videos
   multimodalModelHash?: string; // optional model hash for multimodal embedding
   properties?: string; // optional JSON string for properties: audio(duration), image(width,height), video(duration)
+  deletedAt: bigint; // soft delete timestamp (0n = not deleted)
   createdAt: number; // timestamp in milliseconds
 }
 
@@ -307,6 +320,7 @@ export const aiConversationsSchema = new Schema([
   new Field('conversationId', new Utf8(), false), // non-nullable unique conversation id
   new Field('uid', new Utf8(), false), // non-nullable user id
   new Field('title', new Utf8(), false), // non-nullable conversation title
+  new Field('deletedAt', new Int64(), false), // non-nullable soft delete timestamp (0 = not deleted)
   new Field('createdAt', new Timestamp(TimeUnit.MILLISECOND), false), // non-nullable creation timestamp in milliseconds
   new Field('updatedAt', new Timestamp(TimeUnit.MILLISECOND), false), // non-nullable update timestamp in milliseconds
 ]);
@@ -318,6 +332,7 @@ export interface AIConversationRecord {
   conversationId: string;
   uid: string;
   title: string;
+  deletedAt: bigint; // soft delete timestamp (0n = not deleted)
   createdAt: number; // timestamp in milliseconds
   updatedAt: number; // timestamp in milliseconds
 }
@@ -347,6 +362,7 @@ export const aiMessagesSchema = new Schema([
     ),
     true
   ), // nullable list of source references
+  new Field('deletedAt', new Int64(), false), // non-nullable soft delete timestamp (0 = not deleted)
   new Field('createdAt', new Timestamp(TimeUnit.MILLISECOND), false), // non-nullable creation timestamp in milliseconds
 ]);
 
@@ -368,6 +384,7 @@ export interface AIMessageRecord {
   role: 'user' | 'assistant';
   content: string;
   sources?: AIMessageSource[];
+  deletedAt: bigint; // soft delete timestamp (0n = not deleted)
   createdAt: number; // timestamp in milliseconds
 }
 
@@ -380,6 +397,7 @@ export const dailyRecommendationsSchema = new Schema([
   new Field('uid', new Utf8(), false), // non-nullable user id
   new Field('date', new Utf8(), false), // non-nullable date in YYYY-MM-DD format
   new Field('memoIds', new List(new Field('item', new Utf8(), true)), false), // non-nullable list of recommended memo IDs
+  new Field('deletedAt', new Int64(), false), // non-nullable soft delete timestamp (0 = not deleted)
   new Field('createdAt', new Timestamp(TimeUnit.MILLISECOND), false), // non-nullable creation timestamp in milliseconds
 ]);
 
@@ -391,6 +409,7 @@ export interface DailyRecommendationRecord {
   uid: string;
   date: string; // YYYY-MM-DD format
   memoIds: string[];
+  deletedAt: bigint; // soft delete timestamp (0n = not deleted)
   createdAt: number; // timestamp in milliseconds
 }
 
@@ -406,6 +425,7 @@ export const pushRulesSchema = new Schema([
   new Field('contentType', new Utf8(), false), // non-nullable content type: 'daily_pick' | 'daily_memos'
   new Field('channels', new Utf8(), true), // nullable JSON string for channel configurations
   new Field('enabled', new Int32(), false), // non-nullable enabled flag (0 or 1)
+  new Field('deletedAt', new Int64(), false), // non-nullable soft delete timestamp (0 = not deleted)
   new Field('createdAt', new Timestamp(TimeUnit.MILLISECOND), false), // non-nullable creation timestamp in milliseconds
   new Field('updatedAt', new Timestamp(TimeUnit.MILLISECOND), false), // non-nullable update timestamp in milliseconds
 ]);
@@ -421,6 +441,7 @@ export interface PushRuleRecord {
   contentType: 'daily_pick' | 'daily_memos';
   channels?: string; // JSON string for channel configurations
   enabled: number; // 0 or 1
+  deletedAt: bigint; // soft delete timestamp (0n = not deleted)
   createdAt: number; // timestamp in milliseconds
   updatedAt: number; // timestamp in milliseconds
 }

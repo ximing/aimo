@@ -1,4 +1,4 @@
-import { mysqlTable, varchar, json, timestamp, uniqueIndex, index } from 'drizzle-orm/mysql-core';
+import { mysqlTable, varchar, json, bigint, timestamp, uniqueIndex, index } from 'drizzle-orm/mysql-core';
 import { users } from './users.js';
 
 /**
@@ -14,10 +14,12 @@ export const dailyRecommendations = mysqlTable(
       .references(() => users.uid, { onDelete: 'cascade' }),
     date: varchar('date', { length: 10 }).notNull(),
     memoIds: json('memo_ids').$type<string[]>().notNull(),
+    deletedAt: bigint('deleted_at', { mode: 'number' }).notNull().default(0),
     createdAt: timestamp('created_at', { mode: 'date', fsp: 3 }).notNull().defaultNow(),
   },
   (table) => ({
     uidIdx: index('uid_idx').on(table.uid),
+    deletedAtIdx: index('uid_idx').on(table.uid),
     uidDateUnique: uniqueIndex('uid_date_unique').on(table.uid, table.date),
   })
 );

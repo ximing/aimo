@@ -1,4 +1,4 @@
-import { mysqlTable, varchar, text, json, timestamp, boolean, index } from 'drizzle-orm/mysql-core';
+import { mysqlTable, varchar, text, json, bigint, timestamp, boolean, index } from 'drizzle-orm/mysql-core';
 import { users } from './users.js';
 import { categories } from './categories.js';
 
@@ -22,6 +22,7 @@ export const memos = mysqlTable(
     attachments: json('attachments').$type<string[]>(),
     tagIds: json('tag_ids').$type<string[]>(),
     isPublic: boolean('is_public').default(false).notNull(),
+    deletedAt: bigint('deleted_at', { mode: 'number' }).notNull().default(0),
     createdAt: timestamp('created_at', { mode: 'date', fsp: 3 }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { mode: 'date', fsp: 3 })
       .notNull()
@@ -32,6 +33,7 @@ export const memos = mysqlTable(
     uidIdx: index('uid_idx').on(table.uid),
     categoryIdIdx: index('category_id_idx').on(table.categoryId),
     createdAtIdx: index('created_at_idx').on(table.createdAt),
+    deletedAtIdx: index('deleted_at_idx').on(table.deletedAt),
   })
 );
 

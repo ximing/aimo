@@ -1,4 +1,4 @@
-import { mysqlTable, varchar, text, json, timestamp, index } from 'drizzle-orm/mysql-core';
+import { mysqlTable, varchar, text, json, bigint, timestamp, index } from 'drizzle-orm/mysql-core';
 import { aiConversations } from './ai-conversations.js';
 
 /**
@@ -24,10 +24,12 @@ export const aiMessages = mysqlTable(
     role: varchar('role', { length: 20 }).notNull(),
     content: text('content').notNull(),
     sources: json('sources').$type<AIMessageSource[]>(),
+    deletedAt: bigint('deleted_at', { mode: 'number' }).notNull().default(0),
     createdAt: timestamp('created_at', { mode: 'date', fsp: 3 }).notNull().defaultNow(),
   },
   (table) => ({
     conversationIdIdx: index('conversation_id_idx').on(table.conversationId),
+    deletedAtIdx: index('conversation_id_idx').on(table.conversationId),
   })
 );
 

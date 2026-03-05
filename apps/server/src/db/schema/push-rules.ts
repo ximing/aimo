@@ -1,4 +1,4 @@
-import { mysqlTable, varchar, int, text, timestamp, index } from 'drizzle-orm/mysql-core';
+import { mysqlTable, varchar, int, bigint, text, timestamp, index } from 'drizzle-orm/mysql-core';
 import { users } from './users.js';
 
 /**
@@ -17,6 +17,7 @@ export const pushRules = mysqlTable(
     contentType: varchar('content_type', { length: 50 }).notNull(),
     channels: text('channels'),
     enabled: int('enabled').notNull().default(1),
+    deletedAt: bigint('deleted_at', { mode: 'number' }).notNull().default(0),
     createdAt: timestamp('created_at', { mode: 'date', fsp: 3 }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { mode: 'date', fsp: 3 })
       .notNull()
@@ -25,6 +26,7 @@ export const pushRules = mysqlTable(
   },
   (table) => ({
     uidIdx: index('uid_idx').on(table.uid),
+    deletedAtIdx: index('uid_idx').on(table.uid),
   })
 );
 

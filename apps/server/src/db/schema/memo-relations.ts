@@ -1,4 +1,4 @@
-import { mysqlTable, varchar, timestamp, index, uniqueIndex } from 'drizzle-orm/mysql-core';
+import { mysqlTable, varchar, bigint, timestamp, index, uniqueIndex } from 'drizzle-orm/mysql-core';
 import { users } from './users.js';
 import { memos } from './memos.js';
 
@@ -19,12 +19,14 @@ export const memoRelations = mysqlTable(
     targetMemoId: varchar('target_memo_id', { length: 191 })
       .notNull()
       .references(() => memos.memoId, { onDelete: 'cascade' }),
+    deletedAt: bigint('deleted_at', { mode: 'number' }).notNull().default(0),
     createdAt: timestamp('created_at', { mode: 'date', fsp: 3 }).notNull().defaultNow(),
   },
   (table) => ({
     uidIdx: index('uid_idx').on(table.uid),
     sourceMemoIdIdx: index('source_memo_id_idx').on(table.sourceMemoId),
     targetMemoIdIdx: index('target_memo_id_idx').on(table.targetMemoId),
+    deletedAtIdx: index('deleted_at_idx').on(table.deletedAt),
     sourceTargetUnique: uniqueIndex('source_target_unique').on(
       table.sourceMemoId,
       table.targetMemoId

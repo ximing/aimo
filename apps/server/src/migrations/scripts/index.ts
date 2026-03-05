@@ -36,6 +36,7 @@ import {
   attachmentVectorsTableMigration,
 } from './017-add-vector-tables.js';
 import { backfillMemoVectorsMigration } from './018-backfill-memo-vectors.js';
+import { addDeletedAtMigration } from './019-add-deleted-at.js';
 
 import type { Migration } from '../types.js';
 
@@ -112,10 +113,13 @@ export const ALL_MIGRATIONS: Migration[] = [
   // Version 18: Backfill memo_vectors from legacy memos embeddings
   backfillMemoVectorsMigration,
 
+  // Version 19: Add deletedAt field to all tables for soft delete support
+  addDeletedAtMigration,
+
   // Add future migrations here
   // Example:
-  // - Version 14: Add new field to existing table
-  // - Version 15: Add new table
+  // - Version 20: Add new field to existing table
+  // - Version 21: Add new table
   // etc.
 ];
 

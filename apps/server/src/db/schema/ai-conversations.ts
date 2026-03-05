@@ -1,4 +1,4 @@
-import { mysqlTable, varchar, timestamp, index } from 'drizzle-orm/mysql-core';
+import { mysqlTable, varchar, bigint, timestamp, index } from 'drizzle-orm/mysql-core';
 import { users } from './users.js';
 
 /**
@@ -12,6 +12,7 @@ export const aiConversations = mysqlTable(
       .notNull()
       .references(() => users.uid, { onDelete: 'cascade' }),
     title: varchar('title', { length: 255 }).notNull(),
+    deletedAt: bigint('deleted_at', { mode: 'number' }).notNull().default(0),
     createdAt: timestamp('created_at', { mode: 'date', fsp: 3 }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { mode: 'date', fsp: 3 })
       .notNull()
@@ -20,6 +21,7 @@ export const aiConversations = mysqlTable(
   },
   (table) => ({
     uidIdx: index('uid_idx').on(table.uid),
+    deletedAtIdx: index('uid_idx').on(table.uid),
   })
 );
 
