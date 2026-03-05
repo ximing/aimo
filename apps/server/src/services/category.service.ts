@@ -1,17 +1,64 @@
 import { Service } from 'typedi';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql, isNull } from 'drizzle-orm';
+import * as lancedb from '@lancedb/lancedb';
 
 import { OBJECT_TYPE } from '../models/constant/type.js';
 import { getDatabase } from '../db/connection.js';
+import { withTransaction } from '../db/transaction.js';
 import { categories } from '../db/schema/categories.js';
+import { memos } from '../db/schema/memos.js';
 import { generateTypeId } from '../utils/id.js';
 import { logger } from '../utils/logger.js';
+import { config } from '../config/config.js';
+
+import type { Connection, Table } from '@lancedb/lancedb';
 
 import type { CategoryDto, CreateCategoryDto, UpdateCategoryDto } from '@aimo/dto';
 
 @Service()
 export class CategoryService {
-  constructor() {}
+  private lanceDb!: Connection;
+  private initialized = false;
+
+  constructor() {
+    // Initialize local LanceDB instance for vector operations
+    this.initLanceDb().catch((error) => {
+      logger.error('Failed to initialize LanceDB in CategoryService:', error);
+    });
+  }
+
+  /**
+   * Initialize LanceDB connection
+   */
+  private async initLanceDb(): Promise<void> {
+    try {
+      const lanceDbPath = config.lancedb.path;
+      this.lanceDb = await lancedb.connect(lanceDbPath);
+      this.initialized = true;
+      logger.info('LanceDB initialized in CategoryService');
+    } catch (error) {
+      logger.error('Failed to initialize LanceDB in CategoryService:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get LanceDB connection (throws if not initialized)
+   */
+  private getLanceDb(): Connection {
+    if (!this.initialized) {
+      throw new Error('LanceDB not initialized in CategoryService');
+    }
+    return this.lanceDb;
+  }
+
+  /**
+   * Open memos table from LanceDB
+   */
+  private async openMemosTable(): Promise<Table> {
+    const db = this.getLanceDb();
+    return await db.openTable('memos');
+  }
 
   /**
    * Create a new category for a user
@@ -200,9 +247,8 @@ export class CategoryService {
   }
 
   /**
-   * Delete a category
-   * Note: Memos associated with this category will have their categoryId set to null automatically
-   * via the foreign key constraint (onDelete: 'set null')
+   * Delete a category (soft delete)
+   * Sets deletedAt timestamp and clears categoryId from all associated memos
    */
   async deleteCategory(categoryId: string, uid: string): Promise<boolean> {
     try {
@@ -212,11 +258,53 @@ export class CategoryService {
         return false;
       }
 
-      // Delete the category (MySQL will automatically set categoryId to null in memos)
+      const deletedAt = Date.now();
       const db = getDatabase();
-      await db
-        .delete(categories)
-        .where(and(eq(categories.categoryId, categoryId), eq(categories.deletedAt, 0)));
+
+      // Use transaction for soft delete with memo cleanup
+      await withTransaction(async (tx) => {
+        // Soft delete category in MySQL
+        await tx
+          .update(categories)
+          .set({ deletedAt })
+          .where(and(eq(categories.categoryId, categoryId), eq(categories.deletedAt, 0)));
+
+        // Find all memos with this categoryId (deletedAt = 0)
+        const affectedMemos = await tx
+          .select({ memoId: memos.memoId })
+          .from(memos)
+          .where(and(eq(memos.categoryId, categoryId), eq(memos.deletedAt, 0)));
+
+        // Set categoryId = NULL for all matching memos in MySQL
+        if (affectedMemos.length > 0) {
+          await tx
+            .update(memos)
+            .set({ categoryId: null })
+            .where(and(eq(memos.categoryId, categoryId), eq(memos.deletedAt, 0)));
+
+          logger.info('Cleared categoryId from memos in MySQL:', {
+            categoryId,
+            count: affectedMemos.length,
+          });
+        }
+
+        logger.info('Category soft deleted in MySQL with memo cleanup:', {
+          categoryId,
+          uid,
+          deletedAt,
+        });
+      });
+
+      // Update memos in LanceDB (outside transaction)
+      if (category) {
+        const memosTable = await this.openMemosTable();
+        await memosTable.update({
+          where: `categoryId = '${categoryId}' AND deletedAt = 0`,
+          values: { categoryId: null },
+        });
+
+        logger.info('Cleared categoryId from memos in LanceDB:', { categoryId });
+      }
 
       return true;
     } catch (error) {
