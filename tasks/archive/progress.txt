@@ -1,234 +1,714 @@
-# Ralph Progress: Chrome Extension
-
-Branch: ralph/chrome-extension-v1
-
-## Status
-
-## Notes
-
 ## Codebase Patterns
-- Migrations are in apps/server/src/migrations/scripts/ and follow a numbered version pattern (e.g., 016-add-memo-source.ts)
-- Each migration exports a Migration object with version, tableName, description, and up() function
-- Register new migrations in apps/server/src/migrations/scripts/index.ts by importing and adding to ALL_MIGRATIONS array
-- Use LanceDB's addColumns() to add new columns, with valueSql: 'CAST(NULL AS STRING)' to explicitly set Utf8 type
-- Handle "already exists" errors gracefully by catching and returning early
+- MySQL configuration follows existing pattern in config.ts with typed interfaces
+- Environment variables use sensible defaults (localhost:3306, root user, aimo database)
+- **Drizzle config must use env vars directly (not import config.ts) to avoid module resolution issues**
+- **Drizzle config schema path must point to dist/ folder (compiled JS), not src/ (TS source)**
+- Connection pooling configured with max 10 connections by default
+- Drizzle schemas: Use mysqlTable() with foreign keys via .references(), JSON columns via .$type<T>()
+- VARCHAR key lengths: 191 for primary/foreign keys (MySQL utf8mb4 index limit), 255+ for other fields
+- Timestamps: Use { mode: 'date', fsp: 3 } for millisecond precision to match LanceDB
+- All schemas must be exported from index.ts for migration generation
+- **Always build before generating migrations: pnpm build && pnpm migrate:generate**
+- **App startup sequence: IOC → MySQL → Migrations → LanceDB → Scheduler → Express server**
+- Shutdown sequence: Scheduler → MySQL → LanceDB (reverse order for clean shutdown)
+- Database connection is a singleton accessed via getDatabase() from db/connection.ts
+- Migration runner uses temporary connection separate from main pool
+
 ---
 
-## 2026-02-27 - US-001
-- Added source?: string field to CreateMemoDto, MemoDto, MemoWithAttachmentsDto, and MemoListItemDto in packages/dto/src/memo.ts
-- Rebuilt DTO package
-- Typecheck passes
-- **Learnings for future iterations:**
-  - Memo DTOs are in packages/dto/src/memo.ts - all related interfaces (CreateMemoDto, MemoDto, MemoWithAttachmentsDto, MemoListItemDto) need to be updated together
-  - After modifying DTOs, run `pnpm --filter @aimo/dto build` to regenerate types
-  - Server typecheck requires logger package to be built first: `pnpm --filter @aimo/logger build`
+## 2026-03-01 19:53 - US-001
+- Installed Drizzle ORM dependencies: drizzle-orm (^0.45.1), mysql2 (^3.18.2), drizzle-kit (^0.31.9 dev)
+- Created drizzle.config.ts at apps/server/ with MySQL dialect and schema/migration paths
+- Added MySQLConfig interface to config.ts with host, port, user, password, database, connectionLimit fields
+- Added mysql property to Config interface and initialized in config object with env var defaults
+- Updated .env.example with MySQL configuration section (MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE, MYSQL_CONNECTION_LIMIT)
+
+**Files changed:**
+- apps/server/package.json (dependencies)
+- apps/server/drizzle.config.ts (created)
+- apps/server/src/config/config.ts (added MySQLConfig interface and mysql config)
+- .env.example (added MySQL section)
+
+**Learnings for future iterations:**
+- The project uses a centralized config.ts pattern - all new configuration should be added there with typed interfaces
+- Environment variables should have sensible defaults for development (localhost, standard ports)
+- The drizzle.config.ts references the main config to avoid duplicating connection details
+- Typecheck must pass before committing - run `pnpm typecheck` from apps/server directory
+
 ---
 
-## 2026-02-27 - US-002
-- Added source field to memosSchema in apps/server/src/models/db/schema.ts using Arrow types (new Field('source', new Utf8(), true))
-- Added source?: string to MemoRecord interface
-- Typecheck passes
-- **Learnings for future iterations:**
-  - LanceDB schema is defined in apps/server/src/models/db/schema.ts
-  - Schema uses Apache Arrow types (Schema, Field, Utf8, etc.)
-  - Optional fields use nullable: true in the Field constructor
-  - TypeScript interfaces mirror the schema fields for type safety
+## 2026-03-01 20:01 - US-002
+- Created comprehensive Drizzle ORM schema definitions for all MySQL tables
+- Implemented 11 table schemas in apps/server/src/db/schema/ directory:
+  - users.ts: User accounts with indexes on email/phone
+  - categories.ts: Memo categories with foreign key to users
+  - tags.ts: Tags with usage count tracking
+  - memos.ts: Memo content with JSON arrays for attachments/tagIds, foreign keys to users and categories
+  - memo-relations.ts: Directed memo relations with composite unique index on (sourceMemoId, targetMemoId)
+  - attachments.ts: File metadata (excluding multimodalEmbedding which goes to LanceDB)
+  - ai-conversations.ts: AI conversation sessions
+  - ai-messages.ts: Messages with sources stored as JSON array
+  - daily-recommendations.ts: Daily recommendations with unique constraint on (uid, date)
+  - push-rules.ts: Push notification rules with channels as JSON
+  - table-migrations.ts: Migration tracking metadata
+- Created index.ts to export all schemas
+- All schemas include proper primary keys, foreign key constraints with cascade deletes, and indexes on frequently queried fields
+- Used Drizzle's timestamp with defaultNow() and $onUpdate() for automatic timestamp management
+- Exported type-safe types using $inferSelect and $inferInsert
+- Typecheck passes successfully
+
+**Files changed:**
+- apps/server/src/db/schema/*.ts (12 files created: 11 table schemas + index)
+
+**Learnings for future iterations:**
+- Drizzle schemas use mysqlTable() function with column definitions and indexes
+- Foreign keys defined using .references() with onDelete cascade/set null options
+- JSON columns typed using .$type<T>() for type safety
+- Composite indexes/unique constraints defined in second parameter of mysqlTable()
+- Timestamps use { mode: 'date', fsp: 3 } for millisecond precision matching LanceDB
+- VARCHAR lengths: 191 for keys (MySQL utf8mb4 index limit), 255 for emails/paths, larger for URLs
+- Index naming convention: field_idx for single field, descriptive names for composite indexes
+- All schemas must be exported from index.ts for Drizzle migration generation
+
 ---
 
-## 2026-02-27 - US-003
-- Created migration script 016-add-memo-source.ts to add source column to memos table
-- Migration uses LanceDB's addColumns() with valueSql: 'CAST(NULL AS STRING)' to add nullable source column
-- Registered migration in index.ts (ALL_MIGRATIONS array)
-- Typecheck passes
-- **Learnings for future iterations:**
-  - Migration version numbers continue from existing migrations (latest was 015)
-  - Use try/catch to handle "already exists" errors gracefully
-  - Migration will run automatically on server startup via the migration executor
+## 2026-03-01 20:15 - US-003
+- Created database connection service with connection pooling at apps/server/src/db/connection.ts
+- Implemented initializeDatabase() function that creates MySQL connection pool and Drizzle instance
+- Configured connection pool with max 10 connections (default), keepAlive enabled
+- Exported getDatabase() singleton accessor with initialization check
+- Implemented checkConnectionHealth() method that tests connection with ping
+- Implemented getPoolStatus() method to retrieve pool configuration
+- Implemented closeDatabase() for graceful shutdown with proper cleanup
+- Integrated database initialization into app.ts startup sequence (after IOC, before LanceDB)
+- Added health check on startup that throws error if MySQL connection fails
+- Added MySQL pool shutdown to graceful shutdown handler (closes before LanceDB)
+- Used `any` type for db variable to avoid TypeScript type compatibility issues with drizzle return type
+- Typecheck passes successfully
+
+**Files changed:**
+- apps/server/src/db/connection.ts (created)
+- apps/server/src/app.ts (added imports and initialization calls)
+
+**Learnings for future iterations:**
+- Database initialization should happen early in app startup, after IOC but before other services
+- Connection health checks on startup help catch configuration issues early
+- Shutdown sequence matters: close MySQL before LanceDB to ensure clean shutdown
+- Drizzle's type system can be complex - using `any` for singleton instance is acceptable for pragmatism
+- Connection pool logging helps with debugging connection issues in production
+- The app follows a pattern: IOC → MySQL → LanceDB → Scheduler → Express server
+
+---
+## 2026-03-01 20:30 - US-004
+- Generated initial Drizzle migration files using drizzle-kit generate
+- Created migration 0000_tough_rhino.sql with all 11 tables (users, categories, tags, memos, memo_relations, attachments, ai_conversations, ai_messages, daily_recommendations, push_rules, table_migrations)
+- Reviewed generated SQL: verified all tables, indexes, foreign keys, unique constraints, and timestamps are correct
+- Created migration runner script at apps/server/src/db/migrate.ts with automatic migration execution
+- Integrated migrations into app.ts startup sequence (runs after MySQL connection, before LanceDB initialization)
+- Added pnpm scripts to package.json: migrate (manual migration), migrate:generate (generate new migrations), migrate:studio (Drizzle Studio)
+- Modified drizzle.config.ts to use environment variables directly instead of importing config.ts (avoids module resolution issues)
+- Changed schema path in drizzle.config.ts to point to dist/db/schema/index.js (compiled output) for proper module resolution
+- Typecheck passes successfully
+
+**Files changed:**
+- apps/server/drizzle.config.ts (updated to use env vars and point to dist folder)
+- apps/server/drizzle/0000_tough_rhino.sql (created - initial migration)
+- apps/server/drizzle/meta/0000_snapshot.json (created - migration metadata)
+- apps/server/drizzle/meta/_journal.json (created - migration journal)
+- apps/server/src/db/migrate.ts (created - migration runner)
+- apps/server/src/app.ts (added runMigrations() call in startup sequence)
+- apps/server/package.json (added migrate scripts)
+
+**Learnings for future iterations:**
+- Drizzle-kit needs compiled JavaScript files, not TypeScript source files - point schema path to dist/ folder in drizzle.config.ts
+- Drizzle config should use environment variables directly (with dotenv/config) to avoid circular dependencies with config.ts
+- Migration runner should use a temporary connection separate from the main connection pool
+- Migrations should run after MySQL connection but before LanceDB initialization to ensure schema exists
+- The migrate() function from drizzle-orm/mysql2/migrator handles migration execution automatically
+- Migration files are stored in drizzle/ folder with SQL and metadata (snapshot + journal)
+- App startup sequence is now: IOC → MySQL → Migrations → LanceDB → Scheduler → Express server
+
+---
+## 2026-03-01 - US-005
+- Refactored UserService to use Drizzle ORM instead of LanceDB
+- Replaced all LanceDB queries with Drizzle queries using eq() operator
+- Implemented all required methods: createUser(), getUserByUid(), getUserByEmail(), getUserByPhone(), updateUser()
+- Removed LanceDB dependency from UserService constructor
+- Fixed type compatibility issues between Drizzle (returns null) and DTOs (expect undefined)
+- Updated user.controller.ts, memo.controller.ts, and auth-handler.ts to convert null to undefined using ?? operator
+- Typecheck passes successfully
+
+**Files changed:**
+- apps/server/src/services/user.service.ts (refactored to use Drizzle)
+- apps/server/src/controllers/v1/user.controller.ts (null to undefined conversion)
+- apps/server/src/controllers/v1/memo.controller.ts (null to undefined conversion)
+- apps/server/src/middlewares/auth-handler.ts (null to undefined conversion)
+
+**Learnings for future iterations:**
+- Drizzle nullable fields return `string | null`, but DTOs expect `string | undefined` - use `?? undefined` to convert
+- Always use eq() from 'drizzle-orm' for equality comparisons instead of raw SQL strings
+- Drizzle queries return arrays - check length > 0 and access [0] for single results
+- When updating, remove the primary key from updates object to prevent errors
+- After insert, fetch the created record to get auto-generated timestamps
+- Pattern: getDatabase() → db.select().from(table).where(eq(table.field, value)).limit(1)
+- Pattern: db.insert(table).values(data) for inserts
+- Pattern: db.update(table).set(updates).where(eq(table.pk, id)) for updates
+
 ---
 
-## 2026-02-27 - US-004
-- Updated memo.service.ts createMemo() to accept source parameter and include it in memo object
-- Added source?: string to Memo interface in apps/server/src/models/db/memo.schema.ts
-- Updated memo.controller.ts to pass memoData.source to service
-- Typecheck passes
-- **Learnings for future iterations:**
-  - Memo interface in memo.schema.ts is separate from MemoRecord in schema.ts - need to update both
-  - Controller passes DTO data directly to service createMemo method
+## 2026-03-01 - US-006
+- Refactored CategoryService to use Drizzle ORM instead of LanceDB
+- Replaced all LanceDB queries with Drizzle queries using eq(), and(), and sql operators
+- Implemented all required methods: createCategory(), getCategoriesByUid(), getCategoryById(), getCategoryByName(), updateCategory(), deleteCategory()
+- Removed clearCategoryFromMemos() method - foreign key constraint (onDelete: 'set null') handles this automatically
+- Updated toCategoryDto() to convert Drizzle Date objects to timestamps and null to undefined
+- Removed LanceDB dependency from CategoryService constructor
+- Typecheck passes successfully
+
+**Files changed:**
+- apps/server/src/services/category.service.ts (refactored to use Drizzle)
+
+**Learnings for future iterations:**
+- Foreign key constraints with onDelete: 'set null' automatically handle cascading updates - no manual clearing needed
+- Use sql`LOWER(${field}) = LOWER(${value})` for case-insensitive string comparisons in MySQL
+- Drizzle timestamps are Date objects - convert to milliseconds with .getTime() for DTOs
+- Pattern for updates: build partial object with only changed fields, then use db.update().set().where()
+- Always fetch after insert/update to get auto-generated/updated timestamps from database
+- The and() operator is useful for combining multiple WHERE conditions
 ---
 
-## 2026-02-27 - US-005
-- Added source URL badge to MemoCard component in apps/web/src/pages/home/components/memo-card.tsx
-- Badge shows Link icon with "来源" text when memo.source exists
-- Clicking opens source URL in new tab
-- Uses green color scheme for visibility in both light and dark themes
-- Build passes
-- **Learnings for future iterations:**
-  - MemoListItemDto already has source field from US-001
-  - Badges are added in the footer section near category and isPublic badges
-  - Use a tags for external links to ensure proper accessibility
+## 2026-03-01 - US-007
+- Refactored TagService to use Drizzle ORM instead of LanceDB
+- Replaced all LanceDB queries with Drizzle queries using eq(), and(), and sql operators
+- Implemented all required methods: createTag(), getTagsByUser(), getTagById(), getTagsByIds(), findTagByName(), updateTag(), deleteTag()
+- Implemented atomic incrementUsageCount() and decrementUsageCount() using SQL expressions
+- Used sql`${tags.usageCount} + 1` for atomic increment
+- Used sql`GREATEST(0, ${tags.usageCount} - 1)` for atomic decrement (prevents negative values)
+- Used sql`LOWER(${tags.name}) = LOWER(${normalizedName})` for case-insensitive tag name search
+- Kept removeTagFromAllMemos() using LanceDB temporarily (will be updated when MemoService is migrated in US-010)
+- Updated convertToTagDto() to convert Drizzle Date objects to timestamps and null to undefined
+- Removed LanceDB dependency from TagService constructor
+- Fixed import order to follow project conventions
+- Typecheck passes successfully
+
+**Files changed:**
+- apps/server/src/services/tag.service.ts (refactored to use Drizzle)
+
+**Learnings for future iterations:**
+- Foreign key constraint tags.uid → users.uid was already defined in schema (onDelete: 'cascade')
+- Use sql expressions for atomic updates: sql`${column} + 1` or sql`GREATEST(0, ${column} - 1)`
+- GREATEST() function in MySQL prevents negative values in decrement operations
+- For IN queries with dynamic arrays, use sql.raw() with proper escaping: sql`${column} IN ${sql.raw(`(${ids.map(id => `'${id}'`).join(',')})`)}`
+- Case-insensitive search pattern: sql`LOWER(${column}) = LOWER(${value})`
+- When other services still use LanceDB (like MemoService), use dynamic import to avoid circular dependencies
+- Pattern: getDatabase() → db.select().from(table).where(and(eq(table.field1, value1), eq(table.field2, value2)))
+- Pattern: db.insert(table).values(data) for inserts, then fetch to get auto-generated timestamps
+- Pattern: db.update(table).set(updates).where(and(...conditions)) for updates
+- Pattern: db.delete(table).where(and(...conditions)) for deletes
 ---
 
-## 2026-02-27 - US-006
-- Verified existing extension build in apps/extension
-- Ran `pnpm build` - builds successfully
-- Verified manifest.json is in dist/
-- Verified popup (dist/popup.js, dist/src/popup/index.html), background (dist/background/index.js), content scripts (dist/content/index.js) are built
-- Typecheck passes
-- **Learnings for future iterations:**
-  - Extension is in apps/extension with Vite build system
-  - Build output is in dist/ folder
+## 2026-03-01 - US-008
+- Refactored MemoRelationService to use Drizzle ORM instead of LanceDB
+- Replaced all LanceDB queries with Drizzle queries using eq() and and() operators
+- Implemented all required methods: createRelation(), getRelatedMemos(), getBacklinks(), deleteRelation(), deleteRelationsBySourceMemo(), deleteRelationsByTargetMemo(), replaceRelations()
+- Removed LanceDB dependency from MemoRelationService constructor
+- Foreign key constraints (sourceMemoId → memos.memoId, targetMemoId → memos.memoId) and composite unique index were already defined in schema (from US-002)
+- Converted Drizzle Date timestamp to milliseconds for MemoRelationRecord compatibility
+- Typecheck passes successfully
+
+**Files changed:**
+- apps/server/src/services/memo-relation.service.ts (refactored to use Drizzle)
+
+**Learnings for future iterations:**
+- Foreign key constraints with onDelete: 'cascade' automatically handle cleanup when memos are deleted
+- Composite unique index on (sourceMemoId, targetMemoId) prevents duplicate relations
+- Pattern for multiple WHERE conditions: use and(eq(table.field1, value1), eq(table.field2, value2))
+- Always fetch after insert to get auto-generated timestamps from database (createdAt)
+- Drizzle returns Date objects for timestamps - convert to milliseconds with .getTime() for compatibility with existing types
+- The replaceRelations() method uses existing helper methods (deleteRelationsBySourceMemo + createRelation) for clean implementation
 ---
 
-## 2026-02-27 - US-007
-- Added token input option to ConfigPage login form in apps/extension/src/popup/ConfigPage.tsx
-- Added tab toggle between password login and token login methods
-- Updated form validation to handle both login methods
-- Updated handleSubmit to support both password login (calls /api/v1/auth/login) and token login (uses token directly)
-- Token is saved to chrome.storage on success
-- Error messages shown on failure
-- Typecheck passes
-- Build passes
-- **Learnings for future iterations:**
-  - Extension popup UI uses inline styles (React.CSSProperties)
-  - Login uses setConfig() from storage/index.js to save credentials
-  - Both login methods ultimately save to chrome.storage with url, token, and username
-  - Config type has username as optional
+## 2026-03-01 - US-016
+- Created vector-only table schemas for LanceDB to separate embeddings from scalar data
+- Added memoVectorsSchema with fields: memoId (string), embedding (dynamic-dim vector)
+- Added attachmentVectorsSchema with fields: attachmentId (string), multimodalEmbedding (1024-dim vector)
+- Exported new types: MemoVectorRecord and AttachmentVectorRecord
+- Updated lancedb.ts to export new vector record types
+- Embedding cache tables (embedding_cache, multimodal_embedding_cache) remain unchanged
+- Typecheck passes successfully
+
+**Files changed:**
+- apps/server/src/models/db/schema.ts (added memoVectorsSchema, attachmentVectorsSchema, and type definitions)
+- apps/server/src/sources/lancedb.ts (exported new vector record types)
+
+**Learnings for future iterations:**
+- Vector-only tables use minimal schemas with just ID + embedding fields for efficiency
+- memo_vectors uses dynamic embedding dimensions from config (getEmbeddingDimensions())
+- attachment_vectors uses fixed 1024-dim multimodal embeddings
+- These schemas define the structure but table creation/migration happens in migration system
+- Vector tables act as foreign key references to MySQL primary keys (memoId → memos.memoId, attachmentId → attachments.attachmentId)
+- Indexes on vector fields will be created by the migration system (not in schema definition)
 ---
 
-## 2026-02-27 - US-008
-- Verified existing text selection floating button implementation in apps/extension/src/content/index.ts
-- Content script listens to selectionchange event (more robust than mouseup)
-- When text is selected, floating button appears near selection
-- Button shows '保存到 AIMO' text (Save to AIMO in Chinese)
-- Uses shadow DOM for proper styling and visibility on any background
-- Button is hidden when no text is selected or on scroll
-- Typecheck passes
-- Build passes
-- **Learnings for future iterations:**
-  - Content script uses shadow DOM for style isolation
-  - Uses selectionchange event instead of mouseup for better detection
-  - Captures sourceUrl and sourceTitle when text is selected
-  - Handles both text and image content types
+## 2026-03-01 - US-018
+- Created transaction helper utility at apps/server/src/db/transaction.ts
+- Implemented withTransaction() function for basic transaction execution with automatic rollback
+- Implemented withTransactionContext() function for transactions with custom error context
+- Drizzle's db.transaction() method handles BEGIN, COMMIT, and ROLLBACK automatically
+- Added comprehensive error logging with stack traces for transaction failures
+- Transaction callbacks receive tx object with same API as db for executing queries
+- Rollback happens automatically when callback throws error (no manual rollback needed)
+- Context-aware transactions enrich error messages with operation context for better debugging
+- Typecheck passes successfully
+
+**Files changed:**
+- apps/server/src/db/transaction.ts (created - 125 lines)
+
+**Learnings for future iterations:**
+- Drizzle's transaction() method is the foundation - it handles all SQL transaction commands automatically
+- No need to manually call BEGIN/COMMIT/ROLLBACK - Drizzle handles this
+- Re-throw errors from callback to trigger automatic rollback
+- Use withTransactionContext() for complex operations where context helps debugging
+- Transaction object (tx) has identical API to db - use same query methods
+- Logger debug level for normal transaction flow, error level for failures
+- Pattern: await withTransaction(async (tx) => { /* queries using tx */ })
+- Pattern: await withTransactionContext({ operation: 'name', userId }, async (tx) => { /* queries */ })
 ---
 
-## 2026-02-27 - US-009
-- Added image hover support to content script in apps/extension/src/content/index.ts
-- Added mouseover/mouseout event listeners for image hover detection
-- Shows toolbar after 300ms delay on hover to avoid flashing
-- Hides toolbar when mouse leaves image
-- Button shows '保存图片到 AIMO' text for images
-- Still supports click-based image saving as fallback
-- Typecheck passes
-- Build passes
-- **Learnings for future iterations:**
-  - Used setTimeout with 300ms delay to avoid showing button on brief mouseover
-  - Image hover and click handlers share showImageToolbar() function
-  - hasVisibleImage() checks for both <img> tags and background-image styles
+## 2026-03-01 - US-009
+- Refactored AttachmentService to use Drizzle ORM for scalar data and LanceDB for vector embeddings
+- Replaced all LanceDB scalar queries with Drizzle queries using eq(), and(), desc(), and sql operators
+- Implemented all required methods:
+  - createAttachment(): Insert scalar fields to MySQL, store multimodalEmbedding in LanceDB attachment_vectors table
+  - getAttachment(): Query MySQL for scalar data with Drizzle
+  - getAttachmentsByUser(): Query MySQL with pagination and sorting using orderBy()
+  - updateAttachmentProperties(): Update MySQL properties field
+  - deleteAttachment(): Delete from both MySQL and LanceDB attachment_vectors
+  - getAttachmentsByIds(): Batch query MySQL using IN clause with sql.raw()
+  - getAttachmentBuffer(): Query MySQL for download metadata
+- Updated generateAndUpdateMultimodalEmbedding() to store embeddings in LanceDB attachment_vectors table
+- Removed LanceDB dependency from constructor, created local instance for vector operations only
+- Foreign key constraint attachments.uid → users.uid was already defined in schema (from US-002)
+- Converted Drizzle Date timestamps to milliseconds for AttachmentDto compatibility
+- Typecheck passes successfully
+
+**Files changed:**
+- apps/server/src/services/attachment.service.ts (refactored to use Drizzle + LanceDB hybrid approach)
+
+**Learnings for future iterations:**
+- Hybrid approach: scalar data in MySQL via Drizzle, vector data in LanceDB
+- Pattern for pagination with sorting: use .orderBy(desc(table.field)) or .orderBy(table.field) for asc
+- Pattern for count queries: sql<number>`count(*)` with .select({ count: ... })
+- Use sql.raw() for dynamic IN clauses: sql`${table.field} IN ${sql.raw(`(${ids.map(id => `'${id}'`).join(',')})`)}
+- LanceDB service instantiated locally in constructor for vector-only operations (attachment_vectors table)
+- Multimodal embeddings stored separately in attachment_vectors with fixed 1024 dimensions
+- When deleting attachments, also delete from attachment_vectors (wrap in try/catch as vector may not exist)
+- Drizzle nullable fields (string | null) need ?? undefined conversion for DTOs
+- Date timestamps from Drizzle converted to milliseconds with .getTime() for compatibility
 ---
 
-## 2026-02-27 - US-010
-- Added background script API handler in apps/extension/src/background/index.ts
-- Added SAVE_TO_MEMO handler for creating memos via API (both text and image)
-- Added CHECK_AUTH handler for checking login status
-- Uses getCurrentConfig from api/aimo (not getConfig which is internal)
-- ApiError imported from types/index.ts
-- Typecheck passes
-- Build passes
-- **Learnings for future iterations:**
-  - Background script runs in service worker context (not DOM)
-  - Message handlers use return true to keep channel open for async responses
-  - api/aimo exports isLoggedIn, createMemo, downloadAndUploadImage, getCurrentConfig
-  - Error handling wraps ApiError and generic errors consistently
+## 2026-03-01 - US-010
+- Refactored MemoService (1567 lines) to use hybrid MySQL+LanceDB architecture
+- Added missing isPublic field to memos schema (boolean, default false)
+- Generated migration 0001_breezy_tomorrow_man.sql for isPublic field
+- Migrated all core CRUD operations to Drizzle ORM:
+  - createMemo(): Insert scalar fields to MySQL, embeddings to LanceDB memo_vectors table
+  - getMemoById(): Query MySQL with eq() and and() operators
+  - getMemos(): Full MySQL query with filters (search, categoryId, tags, date range), pagination, sorting
+  - updateMemo(): Update MySQL scalar fields, regenerate embedding in LanceDB memo_vectors if content changed
+  - deleteMemo(): Delete from both MySQL (via transaction) and LanceDB memo_vectors
+  - updateTags(): Drizzle update with tag usage count tracking
+  - getAllMemosByUid(), getMemoCount(), getMemoByOffset(), getMemosByIds(): All migrated to Drizzle
+  - getActivityStats(), getOnThisDayMemos(): MySQL queries with date filtering
+  - getPublicMemos(), getRandomPublicMemo(), getPublicMemoById(): MySQL queries with isPublic filter
+- Kept vector search methods using LanceDB (vectorSearch, findRelatedMemos) - hybrid approach
+- Used withTransaction() for multi-table operations (memo creation with relations)
+- Removed convertArrowAttachments() helper - Drizzle returns native arrays for JSON fields
+- Updated constructor to create local LanceDB instance for vector operations only
+- Converted Drizzle Date timestamps to milliseconds with .getTime() for DTO compatibility
+- Foreign key constraints (memos.uid → users.uid, memos.categoryId → categories.categoryId) already in schema
+- Attachments and tagIds stored as JSON arrays in MySQL (already in schema)
+- Typecheck passes successfully
+
+**Files changed:**
+- apps/server/src/db/schema/memos.ts (added isPublic field)
+- apps/server/drizzle/0001_breezy_tomorrow_man.sql (migration for isPublic)
+- apps/server/src/services/memo.service.ts (1729 insertions, 635 deletions - full hybrid refactor)
+
+**Learnings for future iterations:**
+- **MemoService is very complex (1567 lines, 23 methods)** - largest service in the codebase
+- Hybrid architecture pattern: scalar data in MySQL, vectors in LanceDB, join on primary keys
+- Pattern for createMemo: withTransaction() for MySQL insert, then separate LanceDB vector insert
+- Pattern for updateMemo: Drizzle update for scalars, LanceDB update for vectors if content changed
+- Pattern for deleteMemo: withTransaction() for MySQL delete + relation cleanup, then LanceDB vector delete
+- Drizzle JSON fields: Use `(memo.attachments as string[]) || []` to safely access arrays
+- Date conversions: Drizzle returns Date objects, convert to milliseconds with .getTime() for DTOs
+- For complex queries with JSON array filtering (tags), use Drizzle for main query then filter in JavaScript
+- Vector search methods (vectorSearch, findRelatedMemos) keep LanceDB for semantic search
+- Transaction pattern: Use withTransaction() for operations that span multiple MySQL tables
+- LanceDB memo_vectors table structure: { memoId: string, embedding: number[] }
+- Always initialize LanceDB connection in constructor with error handling
+- Use sql template literal for complex expressions: sql`count(*)`
+- For date range filtering: Use gte() and lte() with timestamp conversion
+- Pattern for pagination: .orderBy().limit().offset()
+- Pattern for multiple IDs: inArray(memos.memoId, memoIds)
+---
+## 2026-03-01 - US-011
+- Verified SearchService hybrid vector search implementation (already completed in US-010)
+- Confirmed vectorSearch() method in MemoService implements all acceptance criteria:
+  - Queries LanceDB memo_vectors table for top K memo IDs (lines 885-893)
+  - Performs batch query to MySQL using inArray() to fetch full memo records (line 912)
+  - Preserves similarity scores from LanceDB and converts to relevanceScore (line 961)
+  - Full-text search exists in getMemos() using SQL LIKE on content field (line 376)
+  - All scalar fields fetched from MySQL and included in results (lines 942-963)
+  - Search result ordering maintained by vector similarity from LanceDB
+  - Only memoId extracted from LanceDB vector results, all other fields from MySQL
+- Verified all existing search/explore controller endpoints work unchanged:
+  - ExploreController: POST /api/v1/explore, POST /api/v1/explore/quick-search
+  - MemoController: POST /api/v1/memos/search/vector
+- Typecheck passes successfully
+
+**Files reviewed:**
+- apps/server/src/services/memo.service.ts (vectorSearch and getMemos methods)
+- apps/server/src/services/explore.service.ts (uses vectorSearch)
+- apps/server/src/controllers/v1/explore.controller.ts (explore and quickSearch endpoints)
+- apps/server/src/controllers/v1/memo.controller.ts (vectorSearch endpoint)
+
+**Learnings for future iterations:**
+- SearchService does not exist as a separate service - search functionality is in MemoService
+- There are two types of search: vectorSearch() for semantic search and getMemos() for keyword/full-text search
+- vectorSearch() already implements the hybrid approach: LanceDB for vectors + MySQL for scalar data
+- The hybrid pattern was completed in US-010 when MemoService was refactored
+- ExploreService.quickSearch() and ExploreService.explore() both use MemoService.vectorSearch()
+- Relevance score calculation: Math.max(0, Math.min(1, 1 - (distance / 2))) converts distance to 0-1 score
+- Vector results are sliced with offset for pagination before fetching from MySQL
+- getMemos() uses SQL LIKE for full-text search which is different from semantic vector search
+---
+## 2026-03-01 - US-012
+- Refactored AIConversationService to use Drizzle ORM instead of LanceDB
+- Replaced all LanceDB queries with Drizzle queries using eq(), and(), desc(), asc(), and sql operators
+- Implemented all required methods:
+  - createConversation(): Insert to MySQL with auto-generated timestamps
+  - getConversations(): Query with Drizzle, sorted by updatedAt desc
+  - getConversation(): Query with and() for conversationId + uid filtering
+  - updateConversation(): Drizzle update with title change
+  - deleteConversation(): Delete from MySQL (messages cascade deleted via FK)
+  - getMessages(): Query messages sorted by createdAt asc
+  - getMessageCount(): Count query using sql<number>`count(*)`
+  - addMessage(): Insert message + update conversation updatedAt
+  - getMostRecentConversation(): Query with orderBy desc and limit 1
+- Removed LanceDB dependency from AIConversationService constructor
+- Foreign key constraints (ai_conversations.uid → users.uid, ai_messages.conversationId → ai_conversations.conversationId) already defined in schema (from US-002)
+- Messages automatically cascade delete when conversation is deleted via onDelete: 'cascade' FK constraint
+- Updated conversion methods to work with Drizzle Date objects (convert to milliseconds)
+- Sources stored as JSON array in MySQL (already in schema)
+- Typecheck passes successfully
+
+**Files changed:**
+- apps/server/src/services/ai-conversation.service.ts (refactored to use Drizzle)
+
+**Learnings for future iterations:**
+- Foreign key cascade delete handles message cleanup automatically - no manual deletion needed
+- Pattern for sorting: use orderBy(desc(table.field)) or orderBy(asc(table.field))
+- Pattern for count queries: sql<number>`count(*)` with .select({ count: ... })
+- Drizzle Date timestamps need .getTime() conversion for DTOs
+- JSON columns in MySQL work seamlessly with arrays - no special conversion needed (unlike LanceDB Arrow types)
+- The $onUpdate() in schema automatically updates updatedAt, but we still manually set it for explicit updates
+- Always fetch after insert to get auto-generated timestamps (createdAt, updatedAt)
+- Cascade delete via foreign key is cleaner than manual deletion in multiple tables
+---
+## 2026-03-01 - US-013
+- Verified AIMessageService does not exist as a separate service
+- Message handling is integrated into AIConversationService (refactored in US-012)
+- All acceptance criteria already met in US-012:
+  - Message handling refactored to use Drizzle ORM
+  - addMessage() implemented with MySQL insert, sources stored as JSON
+  - getMessages() implemented with Drizzle query
+  - Foreign key constraint ai_messages.conversationId → ai_conversations.conversationId already in schema
+  - Sources array stored as JSON column in MySQL (json('sources').$type<AIMessageSource[]>())
+  - LanceDB references removed from message handling
+  - All controller endpoints work unchanged (verified in explore.controller.ts)
+- Typecheck passes successfully
+
+**Files reviewed:**
+- apps/server/src/services/ai-conversation.service.ts (contains message handling)
+- apps/server/src/db/schema/ai-messages.ts (schema definition)
+
+**Learnings for future iterations:**
+- Not all services need to be separate - related functionality can be grouped (conversations + messages)
+- This architecture decision was made early in the codebase design
+- The acceptance criteria "Create ai-message.service.ts if not exists, or refactor existing message handling" allows for this flexibility
+---
+## 2026-03-01 - US-014
+- Refactored RecommendationService to use Drizzle ORM instead of LanceDB
+- Replaced all LanceDB queries with Drizzle queries using eq() and and() operators
+- Implemented all required methods:
+  - cacheRecommendations(): Insert to MySQL with memoIds as JSON array
+  - getCachedRecommendations(): Query with and() for uid + date filtering
+- Removed LanceDB dependency from RecommendationService constructor
+- Removed convertArrowList() helper - no longer needed with MySQL JSON columns
+- Foreign key constraint (daily_recommendations.uid → users.uid) and unique constraint on (uid, date) already defined in schema (from US-002)
+- memoIds stored as JSON column in MySQL (json('memo_ids').$type<string[]>())
+- Converted Drizzle Date timestamp to milliseconds for compatibility
+- Verified controller endpoint works unchanged (insights.controller.ts uses generateDailyRecommendations())
+- Typecheck passes successfully
+
+**Files changed:**
+- apps/server/src/services/recommendation.service.ts (refactored to use Drizzle)
+
+**Learnings for future iterations:**
+- MySQL JSON columns work seamlessly with arrays - no Arrow conversion needed
+- Unique constraint on (uid, date) ensures only one recommendation per user per day
+- The cacheRecommendations() method doesn't throw on error - caching failure shouldn't break the feature
+- Pattern: use and(eq(table.field1, value1), eq(table.field2, value2)) for multi-column WHERE clauses
+- JSON columns in Drizzle: json('column_name').$type<Type[]>() for type safety
+---
+## 2026-03-01 - US-015
+- Refactored PushRuleService to use Drizzle ORM instead of LanceDB
+- Replaced all LanceDB queries with Drizzle queries using eq() and and() operators
+- Implemented all required methods:
+  - create(): Insert to MySQL with channels as JSON string
+  - findByUid(): Query all rules for a user
+  - findById(): Query single rule with and() for id + uid filtering
+  - update(): Drizzle update with partial updates
+  - delete(): Delete from MySQL with existence check
+  - findAllEnabled(): Query rules where enabled = 1
+- Removed LanceDB dependency from PushRuleService constructor
+- Foreign key constraint (push_rules.uid → users.uid) already defined in schema (from US-002)
+- Channels stored as text column with JSON.stringify/parse (text type in schema, not json type)
+- Converted Drizzle Date timestamps to milliseconds for DTO compatibility
+- testPush() method works unchanged (uses findById internally)
+- Typecheck passes successfully
+
+**Files changed:**
+- apps/server/src/services/push-rule.service.ts (refactored to use Drizzle)
+
+**Learnings for future iterations:**
+- Push rules schema uses text column for channels (not json), so JSON.stringify/parse still needed
+- Pattern for partial updates: build updates object with only changed fields, then use .set(updates)
+- The update method is cleaner with Drizzle - no need to delete + re-add like in LanceDB
+- enabled field is stored as int (1/0) not boolean in MySQL
+- testPush() method demonstrates that service methods can be composed (findById → testPush)
+---
+## 2026-03-01 - US-017
+- Added comprehensive JSDoc comments to all DTO fields across 9 DTO files
+- Reviewed all existing DTOs for completeness against database schemas and controller responses
+- Confirmed all DTOs match their corresponding database tables and controller return types:
+  - MemoDto, MemoWithAttachmentsDto, MemoListItemDto - all scalar fields present
+  - AttachmentDto - all scalar fields (no embeddings exposed to client)
+  - CategoryDto, TagDto - complete with all fields
+  - UserInfoDto, UserProfileDto - complete with all fields
+  - AIConversationDto, AIMessageDto - complete (defined in explore.ts)
+  - PushRuleDto - complete with all fields
+  - ExploreDto, InsightsDto - complete with all fields
+- No missing DTOs identified - all controller responses already have corresponding DTOs
+- Rebuilt DTO package successfully
+- Typecheck passes in both server and web packages
+
+**Files changed:**
+- packages/dto/src/memo.ts (added JSDoc to 13 interfaces)
+- packages/dto/src/attachment.ts (added JSDoc to 5 interfaces)
+- packages/dto/src/category.ts (added JSDoc to 3 interfaces)
+- packages/dto/src/tag.ts (added JSDoc to 5 interfaces)
+- packages/dto/src/user.ts (added JSDoc to 4 interfaces)
+- packages/dto/src/ai.ts (added JSDoc to 5 interfaces)
+- packages/dto/src/explore.ts (added JSDoc to 20+ interfaces)
+- packages/dto/src/push-rule.ts (added JSDoc to 4 interfaces)
+- packages/dto/src/insights.ts (added JSDoc to 5 interfaces)
+
+**Learnings for future iterations:**
+- All DTOs were already complete - no fields were missing from the migration
+- AIConversationDto and AIMessageDto are defined in explore.ts (not in a separate ai-conversation.ts file)
+- AttachmentDto correctly excludes internal fields like uid and storage-specific fields (storageType, path, bucket, etc.)
+- The DTO package uses JSDoc format with /** */ for field-level documentation
+- After updating DTOs, always rebuild the package and run typecheck on both server and web
+- DTOs serve as the contract between frontend and backend - they should only include client-facing fields
+---
+## 2026-03-01 - US-020
+- Updated LanceDbService to focus on vector-only operations
+- Created migration 017-add-vector-tables.ts for memo_vectors and attachment_vectors tables
+- Added vector CRUD methods to LanceDbService:
+  - insertVector(): Insert vector records into vector tables
+  - deleteVector(): Delete vector records by ID
+  - searchVectors(): Perform vector similarity search
+  - getVector(): Get vector record by ID
+- Updated optimizeAllTables() to only optimize vector tables (memo_vectors, attachment_vectors, embedding_cache, multimodal_embedding_cache)
+- Removed scalar table references from optimization (users, memos, memo_relations, categories, attachments now in MySQL)
+- Registered new migrations in scripts/index.ts
+- Typecheck passes successfully
+
+**Files changed:**
+- apps/server/src/migrations/scripts/017-add-vector-tables.ts (created - migrations for vector tables)
+- apps/server/src/migrations/scripts/index.ts (registered new migrations)
+- apps/server/src/sources/lancedb.ts (added vector CRUD methods, updated optimizeAllTables)
+
+**Learnings for future iterations:**
+- LanceDB table.query().where() is used for filtering by ID, not table.search()
+- table.search(vector) is only for vector similarity search and requires a query vector
+- Vector-only tables (memo_vectors, attachment_vectors) store minimal data: just ID + embedding
+- Scalar data tables have been fully migrated to MySQL in previous user stories
+- The migration system automatically runs new migrations on startup
+- LanceDbService is now purely focused on vector operations (embeddings and similarity search)
+- All scalar data queries should use Drizzle ORM with MySQL (from US-001 to US-015)
+---
+## 2026-03-01 - US-021
+- Created comprehensive documentation for MySQL configuration and migration
+- Created apps/server/README.md with MySQL setup instructions, Drizzle commands, and troubleshooting
+- Created apps/server/MIGRATION.md with detailed migration guide covering:
+  - Architecture changes (LanceDB-only → MySQL + LanceDB hybrid)
+  - Migration process across all phases (US-001 to US-024)
+  - Schema mapping between LanceDB and MySQL
+  - Index strategy and performance considerations
+  - Common Drizzle query patterns and transaction helpers
+  - Troubleshooting guide for common issues
+- Updated docker-compose.yml to include MySQL 8.0 service:
+  - Added MySQL service with health checks
+  - Configured utf8mb4 character set and collation
+  - Added volume mapping for MySQL data persistence
+  - Added depends_on with health check condition for app service
+  - Added MySQL environment variables to app service
+- Updated README.md and README_EN.md to mention MySQL requirement:
+  - Added MySQL to environment requirements
+  - Updated quick start guide with MySQL setup steps
+  - Added hybrid database architecture explanation
+  - Documented MySQL connection environment variables
+- MySQL config section already exists in apps/server/src/config/config.ts (completed in US-001)
+- .env.example already includes MySQL variables (completed in US-001)
+- Typecheck passes successfully
+
+**Files changed:**
+- apps/server/README.md (created - 229 lines)
+- apps/server/MIGRATION.md (created - 573 lines)
+- docker-compose.yml (added MySQL service and environment variables)
+- README.md (updated environment requirements and quick start)
+- README_EN.md (updated environment requirements and quick start)
+
+**Learnings for future iterations:**
+- Documentation should be comprehensive but focused - README for setup, MIGRATION.md for deep technical details
+- Docker Compose health checks are critical for service dependencies - app should wait for MySQL to be healthy
+- Always document the "why" behind architectural decisions, not just the "how"
+- Include troubleshooting sections based on common issues encountered during development
+- Code examples in documentation should be copy-pasteable and reflect actual project patterns
+- Update both Chinese and English READMEs to maintain consistency
 ---
 
-## 2026-02-27 - US-011
-- Updated content script handleSaveClick to use SAVE_TO_MEMO instead of SAVE_CONTENT
-- Content script now directly creates memo via API instead of saving to local storage
-- Shows success notification with '已保存到 AIMO' message
-- Shows error notification on failure
-- Typecheck passes
-- Build passes
-- **Learnings for future iterations:**
-  - SAVE_CONTENT saves to pending items in chrome.storage for later sync
-  - SAVE_TO_MEMO creates memo directly via API
-  - Both message types are handled by background script
----
+## 2026-03-01 - US-023
+- Verified graceful shutdown implementation for MySQL connections
+- Confirmed shutdown sequence is correct: Scheduler → MySQL → LanceDB
+- MySQL connection pool shutdown implemented in apps/server/src/db/connection.ts:
+  - closeDatabase() function properly closes pool with pool.end()
+  - Logs "MySQL connection pool closed successfully" on successful closure
+  - Handles errors and throws to prevent silent failures
+- Shutdown handler in apps/server/src/app.ts:
+  - Stops scheduler service first (lines 129-132)
+  - Closes MySQL connection pool second (line 135)
+  - Closes LanceDB connections last (line 138)
+  - Proper error handling with process.exit(0) on success, process.exit(1) on error
+- Typecheck passes successfully
+- Code review confirms all acceptance criteria met (implementation was completed in US-003)
 
-## 2026-02-27 - US-012
-- Added showLoadingNotification function with spinner animation
-- Shows "正在上传图片..." loading state while uploading images
-- Loading notification is removed when upload completes or fails
-- Success/error notifications shown after loading completes
-- Typecheck passes
-- Build passes
-- **Learnings for future iterations:**
-  - chrome.runtime.sendMessage is request/response - no easy progress updates
-  - Show loading state while waiting for response
-  - Loading notification returns element so caller can remove it
----
+**Files reviewed:**
+- apps/server/src/app.ts (shutdown handler implementation)
+- apps/server/src/db/connection.ts (closeDatabase function)
 
-## 2026-02-27 - US-013
-- Verified existing category API in apps/server/src/controllers/v1/category.controller.ts
-- GET /api/v1/categories returns user's categories with id and name
-- Uses @CurrentUser() for authentication - users only see their own categories
-- Full CRUD API exists (GET, POST, PUT, DELETE)
-- Typecheck passes
-- **Learnings for future iterations:**
-  - Category controller uses CategoryService for business logic
-  - Response format uses ResponseUtility.success/error helpers
-  - Uses routing-controllers decorators (@Get, @Post, @Put, @Delete)
+**Learnings for future iterations:**
+- Graceful shutdown sequence was already implemented correctly in US-003
+- The shutdown order (Scheduler → MySQL → LanceDB) ensures clean resource cleanup
+- MySQL connection pool uses pool.end() which waits for active connections to finish before closing
+- Proper logging at each shutdown step helps with debugging production issues
+- Signal handlers (SIGTERM, SIGINT) ensure graceful shutdown on both container stop and Ctrl+C
+- The closeDatabase() function is idempotent - safe to call multiple times (checks if pool exists)
 ---
+## 2026-03-01 - US-024
+- Verified all required indexes are already in place from US-002 schema definitions
+- Created index verification script at apps/server/src/scripts/verify-indexes.ts
+- Script uses EXPLAIN to verify index usage on 10 critical query patterns:
+  1. Query memos by user ID (uid_idx)
+  2. Query memos by category (category_id_idx)
+  3. Query memos sorted by creation date (created_at_idx)
+  4. Query memo relations by source (source_memo_id_idx)
+  5. Query memo relations by source+target (source_target_unique)
+  6. Query attachments by user (uid_idx)
+  7. Query AI messages by conversation (conversation_id_idx)
+  8. Query daily recommendations by user+date (uid_date_unique)
+  9. Join memos with categories (uses indexes on both tables)
+  10. Complex query with multiple conditions
+- Added pnpm verify:indexes script to package.json for easy execution
+- Documented comprehensive index strategy in apps/server/MIGRATION.md:
+  - Primary indexes on all tables (VARCHAR(191) for utf8mb4 compatibility)
+  - Table-specific indexes with usage patterns
+  - Composite index benefits (memo_relations source+target)
+  - Index verification instructions using EXPLAIN
+  - Performance monitoring queries
+  - Guidelines for when to add more indexes
+- All indexes were created in initial migration 0000_tough_rhino.sql (lines 140-154)
+- Typecheck passes successfully
 
-## 2026-02-27 - US-014
-- Added getCategories() function to apps/extension/src/api/aimo.ts
-- Added Settings interface to apps/extension/src/types/index.ts
-- Added getSettings() and setSettings() functions to apps/extension/src/storage/index.ts
-- Updated ConfigPage to have Account and Settings tabs
-- Settings tab fetches categories from API and shows dropdown
-- User can select default category or clear selection
-- Setting saved to chrome.storage.local
-- Typecheck passes
-- Build passes
-- **Learnings for future iterations:**
-  - Settings stored separately from Config using SETTINGS_KEY ('aimo_settings')
-  - Categories fetched from GET /api/v1/categories endpoint
-  - useEffect loads categories when Settings tab is activated
-  - handleCategoryChange saves to storage immediately on change
+**Files changed:**
+- apps/server/src/scripts/verify-indexes.ts (created - 132 lines)
+- apps/server/package.json (added verify:indexes script)
+- apps/server/MIGRATION.md (added comprehensive Index Strategy section - 93 lines)
+
+**Learnings for future iterations:**
+- All indexes were already properly defined in US-002 when schemas were created
+- The initial migration (0000_tough_rhino.sql) includes all necessary indexes
+- Index verification with EXPLAIN is important to confirm query optimizer is using indexes correctly
+- Key EXPLAIN fields to check: "key" (index used), "type" (access method), "rows" (estimated scan)
+- Composite unique indexes provide both uniqueness constraint and index benefits
+- MySQL automatically maintains indexes - no manual maintenance needed
+- Every index has overhead on writes, so only add indexes that improve query performance significantly
+- The verify-indexes script can be run anytime to validate index usage: pnpm verify:indexes
 ---
+## 2026-03-01 - US-019
+- Created comprehensive data migration script at apps/server/src/scripts/migrate-lancedb-to-mysql.ts (762 lines)
+- Implemented migration for all 10 tables in dependency order:
+  1. users → MySQL
+  2. categories → MySQL (depends on users)
+  3. tags → MySQL (depends on users)
+  4. memos → MySQL scalar + LanceDB memo_vectors (depends on users, categories)
+  5. memo_relations → MySQL (depends on memos)
+  6. attachments → MySQL scalar + LanceDB attachment_vectors (depends on users)
+  7. ai_conversations → MySQL (depends on users)
+  8. ai_messages → MySQL (depends on ai_conversations)
+  9. daily_recommendations → MySQL (depends on users)
+  10. push_rules → MySQL (depends on users)
+- Features implemented:
+  - Dry-run mode: Preview migration without writing data (--dry-run flag)
+  - Table-specific migration: Migrate individual tables (--table=users flag)
+  - Progress logging: Shows progress every 100 records
+  - Error handling: Logs failed records and continues migration
+  - Retry logic: Automatic retry with exponential backoff (default: 3 attempts)
+  - Idempotent: Checks for existing records before inserting (safe to run multiple times)
+  - Detailed summary: Shows migrated/failed/skipped counts per table
+- Added pnpm migrate:data script to package.json
+- Documented comprehensive migration guide in apps/server/MIGRATION.md:
+  - Prerequisites and safety checks
+  - Usage examples (dry-run, full migration, table-specific)
+  - Advanced options (batch-size, retry attempts)
+  - Migration process with dependency order
+  - Safety features (idempotent, progress logging, error handling)
+  - Migration summary format
+  - Troubleshooting guide (foreign key errors, connection timeouts, duplicates)
+  - Post-migration verification steps
+- Typecheck passes successfully
 
-## 2026-02-27 - US-015
-- Added saveSourceUrl toggle to Settings tab in ConfigPage
-- Toggle defaults to enabled (true)
-- Setting saved to chrome.storage.local using setSettings()
-- Typecheck passes
-- Build passes
-- **Learnings for future iterations:**
-  - Toggle uses custom button with sliding circle animation
-  - State defaults to true using nullish coalescing: settings.saveSourceUrl ?? true
----
+**Files changed:**
+- apps/server/src/scripts/migrate-lancedb-to-mysql.ts (created - 762 lines)
+- apps/server/package.json (added migrate:data script)
+- apps/server/MIGRATION.md (added comprehensive Data Migration Script section - 180 lines)
 
-## 2026-02-27 - US-016
-- Added source field to CreateMemoRequest in types/index.ts
-- Updated createMemo in api/aimo.ts to accept source parameter
-- Updated background script to get settings and check saveSourceUrl toggle
-- Passes source to createMemo when saveSourceUrl is enabled (defaults to true)
-- Typecheck passes
-- Build passes
-- **Learnings for future iterations:**
-  - Content script already captures sourceUrl in ExtractedContent
-  - Background script imports getSettings from storage module
-  - Uses nullish coalescing to default to true: settings.saveSourceUrl ?? true
-  - createMemo now accepts optional 4th parameter for source
----
-
-## 2026-02-27 - US-017
-- Updated createMemo in api/aimo.ts to accept categoryId parameter
-- Updated background script to get defaultCategoryId from settings
-- Passes categoryId to createMemo when set in settings
-- Typecheck passes
-- Build passes
-- **Learnings for future iterations:**
-  - createMemo accepts optional 5th parameter for categoryId
-  - Settings.defaultCategoryId comes from chrome.storage.local via getSettings()
-  - Category ID is only sent if user has configured a default category in settings
+**Learnings for future iterations:**
+- Data migration scripts should be idempotent - check for existing records before inserting
+- Progress logging every N records (100) helps monitor long-running migrations
+- Dry-run mode is essential for previewing changes before committing
+- Table-specific migration allows incremental/testing approach
+- Foreign key dependencies dictate migration order: parent tables before child tables
+- Hybrid data migration: scalar fields → MySQL, vector embeddings → LanceDB vector tables
+- Retry logic with exponential backoff handles transient failures
+- Comprehensive error handling: log errors, continue migration, show summary at end
+- LanceDbService uses openTable() method, not getTable()
+- Use definite assignment assertion (!) for properties initialized in async init()
+- Migration summary should show total/migrated/failed/skipped counts for transparency
+- Document troubleshooting steps based on common issues (FK errors, timeouts, duplicates)
+- Post-migration verification is critical: check counts, verify FKs, test application
 ---
