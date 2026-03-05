@@ -18,7 +18,8 @@
     "migrate:generate": "drizzle-kit generate",
     "migrate:studio": "drizzle-kit studio",
     "migrate:data": "tsx src/scripts/migrate-lancedb-to-mysql.ts",
-    "verify:indexes": "tsx src/scripts/verify-indexes.ts"
+    "verify:indexes": "tsx src/scripts/verify-indexes.ts",
+    "validate:data": "tsx scripts/validate-data-integrity.ts"
   },
   "type": "module",
   "dependencies": {
