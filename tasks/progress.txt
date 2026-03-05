@@ -67,3 +67,22 @@
   - Vector search in LanceDB supports filtering with .where() method on both .search() and .query() operations
   - The semantic search builds a filterStr variable that concatenates multiple conditions
 ---
+
+## 2026-03-05 - US-004
+- What was implemented: Updated all remaining service queries to filter soft-deleted records (deletedAt = 0)
+- Files changed:
+  - `apps/server/src/services/category.service.ts` - Added deletedAt = 0 filter to 5 queries (getCategoriesByUid, getCategoryByName, getCategoryById, updateCategory SELECT + UPDATE, deleteCategory SELECT + DELETE)
+  - `apps/server/src/services/tag.service.ts` - Added deletedAt = 0 filter to 9 queries (getTagsByUser, getTagById, getTagsByIds, findTagByName, updateTag SELECT + UPDATE, deleteTag SELECT + DELETE, incrementUsageCount, decrementUsageCount)
+  - `apps/server/src/services/attachment.service.ts` - Added deletedAt = 0 filter to 6 queries (getAttachment, updateAttachmentProperties SELECT + UPDATE, getAttachmentsByUser count + SELECT, deleteAttachment SELECT + DELETE, getAttachmentsByIds, getAttachmentBuffer)
+  - `apps/server/src/services/ai-conversation.service.ts` - Added deletedAt = 0 filter to 8 queries (getConversations, getConversation, updateConversation SELECT + UPDATE, deleteConversation SELECT + DELETE, getMessages, getMessageCount, addMessage SELECT + UPDATE, getMostRecentConversation)
+  - `apps/server/src/services/recommendation.service.ts` - Added deletedAt = 0 filter to 2 queries (getCachedRecommendations, clearCachedRecommendations)
+  - `apps/server/src/services/push-rule.service.ts` - Added deletedAt = 0 filter to 5 queries (findByUid, findById, update SELECT + UPDATE, delete SELECT + DELETE, findAllEnabled)
+  - `apps/server/src/services/memo-relation.service.ts` - Added deletedAt = 0 filter to 5 queries (getRelatedMemos, deleteRelation, deleteRelationsBySourceMemo, deleteRelationsByTargetMemo, getBacklinks)
+- **Learnings for future iterations:**
+  - Completed soft delete filtering across ALL service layers (7 services, 40+ queries total)
+  - Pattern is consistent: add `eq(table.deletedAt, 0)` to all WHERE clauses using `and()` operator
+  - Both SELECT queries AND UPDATE/DELETE operations need deletedAt filter to prevent operating on soft-deleted records
+  - AIConversationService includes both conversation and message queries - messages filter by deletedAt even though they're accessed via conversationId
+  - MemoRelationService filters relations by deletedAt for both forward relations (getRelatedMemos) and backlinks (getBacklinks)
+  - All services now follow the soft delete pattern established in US-001/002/003
+---
