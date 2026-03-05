@@ -1,5 +1,4 @@
 import { mysqlTable, varchar, text, json, bigint, timestamp, index } from 'drizzle-orm/mysql-core';
-import { aiConversations } from './ai-conversations.js';
 
 /**
  * AI message source reference type
@@ -18,9 +17,7 @@ export const aiMessages = mysqlTable(
   'ai_messages',
   {
     messageId: varchar('message_id', { length: 191 }).primaryKey().notNull(),
-    conversationId: varchar('conversation_id', { length: 191 })
-      .notNull()
-      .references(() => aiConversations.conversationId, { onDelete: 'cascade' }),
+    conversationId: varchar('conversation_id', { length: 191 }).notNull(),
     role: varchar('role', { length: 20 }).notNull(),
     content: text('content').notNull(),
     sources: json('sources').$type<AIMessageSource[]>(),

@@ -1,5 +1,4 @@
 import { mysqlTable, varchar, int, bigint, text, timestamp, index } from 'drizzle-orm/mysql-core';
-import { users } from './users.js';
 
 /**
  * Attachments table - stores file attachments with metadata (scalar fields only)
@@ -9,9 +8,7 @@ export const attachments = mysqlTable(
   'attachments',
   {
     attachmentId: varchar('attachment_id', { length: 191 }).primaryKey().notNull(),
-    uid: varchar('uid', { length: 191 })
-      .notNull()
-      .references(() => users.uid, { onDelete: 'cascade' }),
+    uid: varchar('uid', { length: 191 }).notNull(),
     filename: varchar('filename', { length: 255 }).notNull(),
     type: varchar('type', { length: 100 }).notNull(),
     size: int('size').notNull(),

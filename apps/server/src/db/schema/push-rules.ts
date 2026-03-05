@@ -1,5 +1,4 @@
 import { mysqlTable, varchar, int, bigint, text, timestamp, index } from 'drizzle-orm/mysql-core';
-import { users } from './users.js';
 
 /**
  * Push Rules table - stores user push notification rule configurations
@@ -9,9 +8,7 @@ export const pushRules = mysqlTable(
   'push_rules',
   {
     id: varchar('id', { length: 191 }).primaryKey().notNull(),
-    uid: varchar('uid', { length: 191 })
-      .notNull()
-      .references(() => users.uid, { onDelete: 'cascade' }),
+    uid: varchar('uid', { length: 191 }).notNull(),
     name: varchar('name', { length: 255 }).notNull(),
     pushTime: int('push_time').notNull(),
     contentType: varchar('content_type', { length: 50 }).notNull(),

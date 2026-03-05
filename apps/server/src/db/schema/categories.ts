@@ -1,5 +1,4 @@
 import { mysqlTable, varchar, bigint, timestamp, index } from 'drizzle-orm/mysql-core';
-import { users } from './users.js';
 
 /**
  * Categories table - stores memo categories per user
@@ -8,9 +7,7 @@ export const categories = mysqlTable(
   'categories',
   {
     categoryId: varchar('category_id', { length: 191 }).primaryKey().notNull(),
-    uid: varchar('uid', { length: 191 })
-      .notNull()
-      .references(() => users.uid, { onDelete: 'cascade' }),
+    uid: varchar('uid', { length: 191 }).notNull(),
     name: varchar('name', { length: 100 }).notNull(),
     color: varchar('color', { length: 20 }),
     deletedAt: bigint('deleted_at', { mode: 'number' }).notNull().default(0),

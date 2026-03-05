@@ -1,5 +1,4 @@
 import { mysqlTable, varchar, json, bigint, timestamp, uniqueIndex, index } from 'drizzle-orm/mysql-core';
-import { users } from './users.js';
 
 /**
  * Daily Recommendations table - stores cached daily memo recommendations per user
@@ -9,9 +8,7 @@ export const dailyRecommendations = mysqlTable(
   'daily_recommendations',
   {
     recommendationId: varchar('recommendation_id', { length: 191 }).primaryKey().notNull(),
-    uid: varchar('uid', { length: 191 })
-      .notNull()
-      .references(() => users.uid, { onDelete: 'cascade' }),
+    uid: varchar('uid', { length: 191 }).notNull(),
     date: varchar('date', { length: 10 }).notNull(),
     memoIds: json('memo_ids').$type<string[]>().notNull(),
     deletedAt: bigint('deleted_at', { mode: 'number' }).notNull().default(0),
