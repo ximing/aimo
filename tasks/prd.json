@@ -63,8 +63,8 @@
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed - Added deletedAt = 0 filter to all queries in CategoryService (5 queries), TagService (9 queries), AttachmentService (6 queries), AIConversationService (8 queries + AIMessageService 2 queries), RecommendationService (2 queries), PushRuleService (5 queries), and MemoRelationService (5 queries). All SELECT, UPDATE, and DELETE queries now filter soft-deleted records. Typecheck passes."
     },
     {
       "id": "US-005",
