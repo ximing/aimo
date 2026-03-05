@@ -19,6 +19,14 @@ export class AuthV1Controller {
   @Post('/register')
   async register(@Body() userData: RegisterDto) {
     try {
+      // Check if registration is allowed
+      if (!config.auth.allowRegistration) {
+        return ResponseUtility.error(
+          ErrorCode.OPERATION_NOT_ALLOWED,
+          'Registration is currently disabled'
+        );
+      }
+
       if (!userData.email || !userData.password) {
         return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'Email and password are required');
       }

@@ -1,6 +1,7 @@
 import { JsonController, Get, CurrentUser } from 'routing-controllers';
 import { Service } from 'typedi';
 
+import { config } from '../../config/config.js';
 import { ErrorCode } from '../../constants/error-codes.js';
 import { GitHubReleaseService } from '../../services/github-release.service.js';
 import { logger } from '../../utils/logger.js';
@@ -38,5 +39,16 @@ export class SystemController {
         error instanceof Error ? error.message : 'Failed to fetch app versions'
       );
     }
+  }
+
+  /**
+   * Get public system configuration
+   * Public endpoint - no authentication required
+   */
+  @Get('/config')
+  async getConfig() {
+    return ResponseUtility.success({
+      allowRegistration: config.auth.allowRegistration,
+    });
   }
 }

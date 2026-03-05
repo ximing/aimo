@@ -133,6 +133,9 @@ export interface Config {
     enabled: boolean;
     token: string;
   };
+  auth: {
+    allowRegistration: boolean; // 是否允许用户注册
+  };
   env: string;
 }
 
@@ -277,6 +280,9 @@ export const config: Config = {
   ba: {
     enabled: process.env.BA_AUTH_ENABLED === 'true',
     token: process.env.BA_AUTH_TOKEN || '',
+  },
+  auth: {
+    allowRegistration: process.env.ALLOW_REGISTRATION !== 'false', // 默认允许注册
   },
   env: process.env.NODE_ENV || 'development',
 };

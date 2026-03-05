@@ -19,3 +19,13 @@ export const getAppVersions = () => {
     '/api/v1/system/app-versions'
   );
 };
+
+/**
+ * Get public system configuration
+ * Public endpoint - no authentication required
+ */
+export const getSystemConfig = () => {
+  return request.get<unknown, { code: number; msg: string; data: { allowRegistration: boolean } }>(
+    '/api/v1/system/config'
+  );
+};

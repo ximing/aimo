@@ -6,6 +6,7 @@ export const ErrorCode = {
   NOT_FOUND: 3,
   UNAUTHORIZED: 4,
   FORBIDDEN: 5,
+  OPERATION_NOT_ALLOWED: 6,
 
   // 用户相关错误: 1000-1999
   USER_NOT_FOUND: 1000,
@@ -36,6 +37,7 @@ export const ErrorMessage = {
   [ErrorCode.NOT_FOUND]: '资源不存在',
   [ErrorCode.UNAUTHORIZED]: '未授权',
   [ErrorCode.FORBIDDEN]: '禁止访问',
+  [ErrorCode.OPERATION_NOT_ALLOWED]: '操作不被允许',
   [ErrorCode.USER_NOT_FOUND]: '用户不存在',
   [ErrorCode.USER_ALREADY_EXISTS]: '用户已存在',
   [ErrorCode.PASSWORD_ERROR]: '密码错误',
