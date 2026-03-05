@@ -160,3 +160,18 @@
   - Both conversation and messages must filter by `deletedAt = 0` to prevent operating on already soft-deleted records
   - No LanceDB updates needed - AI conversations and messages are only stored in MySQL
 ---
+
+## 2026-03-05 - US-010
+- What was implemented: Implemented soft delete for remaining entities (attachments, daily_recommendations, push_rules)
+- Files changed:
+  - `apps/server/src/services/attachment.service.ts` - Updated deleteAttachment() to set deletedAt = Date.now() instead of hard delete. Soft deletes in both MySQL and LanceDB. Physical files are preserved in storage (not deleted).
+  - `apps/server/src/services/recommendation.service.ts` - Updated clearCachedRecommendations() to use UPDATE instead of DELETE. Added new public deleteRecommendation() method for explicit soft delete.
+  - `apps/server/src/services/push-rule.service.ts` - Updated delete() to set deletedAt = Date.now() instead of hard delete.
+- **Learnings for future iterations:**
+  - AttachmentService soft delete preserves physical files in storage - only database records are soft deleted
+  - LanceDB attachments table is also soft deleted for consistency
+  - RecommendationService had a private clearCachedRecommendations() method that was updated, plus a new public deleteRecommendation() method was added
+  - PushRuleService delete() is straightforward soft delete - no cascades needed
+  - All three services now follow the same soft delete pattern: set deletedAt = Date.now() with WHERE deletedAt = 0 condition
+  - No cascade operations needed for these entities - they are leaf nodes in the data model
+---

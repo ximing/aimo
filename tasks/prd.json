@@ -157,8 +157,8 @@
         "Add unit tests for each entity's soft delete"
       ],
       "priority": 10,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed - Updated AttachmentService.deleteAttachment() to set deletedAt = Date.now() in both MySQL and LanceDB (physical files preserved). Updated RecommendationService clearCachedRecommendations() and added new deleteRecommendation() method. Updated PushRuleService.delete() to set deletedAt = Date.now(). No cascades needed for these entities. Typecheck passes."
     },
     {
       "id": "US-011",
