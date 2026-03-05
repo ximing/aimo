@@ -5,17 +5,61 @@
 
 import { eq, and, sql } from 'drizzle-orm';
 import { Service } from 'typedi';
+import * as lancedb from '@lancedb/lancedb';
 
 import { getDatabase } from '../db/connection.js';
-import { tags } from '../db/schema/index.js';
+import { withTransaction } from '../db/transaction.js';
+import { tags, memos } from '../db/schema/index.js';
 import { generateTagId } from '../utils/id.js';
+import { config } from '../config/config.js';
+import { logger } from '../utils/logger.js';
 
 import type { Tag } from '../db/schema/tags.js';
 import type { TagDto, CreateTagDto, UpdateTagDto } from '@aimo/dto';
+import type { Connection, Table } from '@lancedb/lancedb';
 
 @Service()
 export class TagService {
+  private lanceDb: Connection | null = null;
+  private initialized = false;
+
   constructor() {}
+
+  /**
+   * Initialize LanceDB connection
+   */
+  private async initLanceDb(): Promise<void> {
+    try {
+      const lanceDbPath = config.lancedb.path;
+      this.lanceDb = await lancedb.connect(lanceDbPath);
+      this.initialized = true;
+      logger.info('LanceDB initialized in TagService');
+    } catch (error) {
+      logger.error('Failed to initialize LanceDB in TagService:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get LanceDB connection (throws if not initialized)
+   */
+  private getLanceDb(): Connection {
+    if (!this.lanceDb || !this.initialized) {
+      throw new Error('LanceDB not initialized in TagService');
+    }
+    return this.lanceDb;
+  }
+
+  /**
+   * Open memos table in LanceDB
+   */
+  private async openMemosTable(): Promise<Table> {
+    if (!this.initialized) {
+      await this.initLanceDb();
+    }
+    const db = this.getLanceDb();
+    return db.openTable('memos');
+  }
 
   /**
    * Convert a Tag record to TagDto
@@ -216,26 +260,129 @@ export class TagService {
    * Returns true if deleted, false if not found
    */
   async deleteTag(tagId: string, uid: string): Promise<boolean> {
-    const db = getDatabase();
+    try {
+      // Check if tag exists
+      const tag = await this.getTagById(tagId, uid);
+      if (!tag) {
+        return false;
+      }
 
-    // Check if tag exists and belongs to user
-    const existing = await db
-      .select()
-      .from(tags)
-      .where(and(eq(tags.tagId, tagId), eq(tags.uid, uid), eq(tags.deletedAt, 0)))
-      .limit(1);
+      const deletedAt = Date.now();
+      const db = getDatabase();
 
-    if (existing.length === 0) {
-      return false;
+      // Use transaction for soft delete with memo cleanup
+      await withTransaction(async (tx) => {
+        // Soft delete tag in MySQL
+        await tx
+          .update(tags)
+          .set({ deletedAt })
+          .where(and(eq(tags.tagId, tagId), eq(tags.deletedAt, 0)));
+
+        // Find all memos where tagIds contains this tagId (deletedAt = 0)
+        const affectedMemos = await tx
+          .select({ memoId: memos.memoId, tagIds: memos.tagIds })
+          .from(memos)
+          .where(and(eq(memos.deletedAt, 0)));
+
+        // Filter memos that actually have this tagId in their tagIds array
+        const memosWithTag = affectedMemos.filter((memo) => {
+          if (!memo.tagIds || !Array.isArray(memo.tagIds)) {
+            return false;
+          }
+          return memo.tagIds.includes(tagId);
+        });
+
+        // Remove tagId from each memo's tagIds array in MySQL
+        if (memosWithTag.length > 0) {
+          for (const memo of memosWithTag) {
+            const newTagIds = (memo.tagIds as string[]).filter((id) => id !== tagId);
+            await tx
+              .update(memos)
+              .set({ tagIds: newTagIds })
+              .where(and(eq(memos.memoId, memo.memoId), eq(memos.deletedAt, 0)));
+          }
+
+          logger.info('Removed tagId from memos in MySQL:', {
+            tagId,
+            count: memosWithTag.length,
+          });
+        }
+
+        logger.info('Tag soft deleted in MySQL with memo cleanup:', {
+          tagId,
+          uid,
+          deletedAt,
+        });
+      });
+
+      // Update memos in LanceDB (outside transaction)
+      const memosTable = await this.openMemosTable();
+
+      // Find all memos with this tagId in LanceDB
+      const lanceDbMemos = await memosTable
+        .query()
+        .where(`uid = '${uid}' AND deletedAt = 0`)
+        .toArray();
+
+      // Filter and update memos that have this tagId
+      for (const memo of lanceDbMemos) {
+        const m = memo as unknown as {
+          memoId: string;
+          tagIds?: string[] | string | null;
+        };
+
+        // Normalize tagIds to an array
+        let normalizedTagIds: string[] = [];
+        if (Array.isArray(m.tagIds)) {
+          normalizedTagIds = m.tagIds;
+        } else if (typeof m.tagIds === 'string') {
+          normalizedTagIds = m.tagIds
+            .split(',')
+            .map((id) => id.trim())
+            .filter(Boolean);
+        }
+
+        if (normalizedTagIds.includes(tagId)) {
+          const newTagIds = normalizedTagIds.filter((id) => id !== tagId);
+
+          // Update memo in LanceDB
+          const updateValues: Record<string, any> = { updatedAt: Date.now() };
+          const updateValuesSql: Record<string, string> = {};
+
+          if (newTagIds.length > 0) {
+            updateValues.tagIds = newTagIds;
+          } else {
+            // Set to NULL if array is empty
+            updateValuesSql.tagIds = "arrow_cast(NULL, 'List(Utf8)')";
+          }
+
+          const updateOptions: {
+            where: string;
+            values: Record<string, any>;
+            valuesSql?: Record<string, string>;
+          } = {
+            where: `memoId = '${m.memoId}' AND uid = '${uid}'`,
+            values: updateValues,
+          };
+
+          if (Object.keys(updateValuesSql).length > 0) {
+            updateOptions.valuesSql = updateValuesSql;
+          }
+
+          await memosTable.update(updateOptions);
+        }
+      }
+
+      logger.info('Tag soft deleted in LanceDB with memo cleanup:', {
+        tagId,
+        uid,
+      });
+
+      return true;
+    } catch (error) {
+      logger.error('Failed to soft delete tag:', error);
+      throw error;
     }
-
-    // Remove tag from all memos that reference it
-    await this.removeTagFromAllMemos(tagId, uid);
-
-    // Delete the tag
-    await db.delete(tags).where(and(eq(tags.tagId, tagId), eq(tags.uid, uid), eq(tags.deletedAt, 0)));
-
-    return true;
   }
 
   /**
@@ -266,107 +413,6 @@ export class TagService {
         usageCount: sql`GREATEST(0, ${tags.usageCount} - 1)`,
       })
       .where(and(eq(tags.tagId, tagId), eq(tags.uid, uid), eq(tags.deletedAt, 0)));
-  }
-
-  /**
-   * Remove a tag from all memos that reference it
-   * TODO: Update this method when MemoService is migrated to MySQL (US-010)
-   * For now, memos are still in LanceDB, so we need to use LanceDB API
-   */
-  private async removeTagFromAllMemos(tagId: string, uid: string): Promise<void> {
-    // Import LanceDB service dynamically to avoid circular dependency
-    const { LanceDbService } = await import('../sources/lancedb.js');
-    const lanceDbService = new LanceDbService();
-    const memosTable = await lanceDbService.openTable('memos');
-
-    // Find all memos that have this tagId in their tagIds array
-    // LanceDB doesn't support array contains query, so we fetch all and filter
-    const allMemos = await memosTable.query().where(`uid = '${uid}'`).toArray();
-
-    const memosToUpdate: Array<{ memoId: string; newTagIds: string[]; newTags: string[] }> = [];
-
-    for (const memo of allMemos) {
-      const m = memo as unknown as {
-        memoId: string;
-        tagIds?: string[] | string | null;
-        tags?: string[] | string | null;
-      };
-
-      // Normalize tagIds to an array (handle null, undefined, or string)
-      let normalizedTagIds: string[] = [];
-      if (Array.isArray(m.tagIds)) {
-        normalizedTagIds = m.tagIds;
-      } else if (typeof m.tagIds === 'string') {
-        // Handle case where tagIds might be a comma-separated string
-        normalizedTagIds = m.tagIds
-          .split(',')
-          .map((id) => id.trim())
-          .filter(Boolean);
-      }
-
-      if (normalizedTagIds.includes(tagId)) {
-        const newTagIds = normalizedTagIds.filter((id) => id !== tagId);
-
-        // Also update the legacy tags field if it exists
-        // Normalize tags to an array as well
-        let normalizedTags: string[] = [];
-        if (Array.isArray(m.tags)) {
-          normalizedTags = m.tags;
-        } else if (typeof m.tags === 'string') {
-          normalizedTags = m.tags
-            .split(',')
-            .map((t) => t.trim())
-            .filter(Boolean);
-        }
-
-        const tagToRemove = normalizedTags[normalizedTagIds.indexOf(tagId)];
-        const newTags = tagToRemove
-          ? normalizedTags.filter((t) => t !== tagToRemove)
-          : normalizedTags;
-
-        memosToUpdate.push({
-          memoId: m.memoId,
-          newTagIds,
-          newTags,
-        });
-      }
-    }
-
-    // Update each memo
-    // Note: LanceDB cannot automatically convert empty array to NULL for List types
-    // We need to use valuesSql to explicitly set NULL when array is empty
-    const now = Date.now();
-    for (const { memoId, newTagIds, newTags } of memosToUpdate) {
-      const updateValues: Record<string, any> = { updatedAt: now };
-      const updateValuesSql: Record<string, string> = {};
-
-      if (newTagIds.length > 0) {
-        updateValues.tagIds = newTagIds;
-      } else {
-        updateValuesSql.tagIds = "arrow_cast(NULL, 'List(Utf8)')";
-      }
-
-      if (newTags && newTags.length > 0) {
-        updateValues.tags = newTags;
-      } else if (newTags && newTags.length === 0) {
-        updateValuesSql.tags = "arrow_cast(NULL, 'List(Utf8)')";
-      }
-
-      const updateOptions: {
-        where: string;
-        values: Record<string, any>;
-        valuesSql?: Record<string, string>;
-      } = {
-        where: `memoId = '${memoId}' AND uid = '${uid}'`,
-        values: updateValues,
-      };
-
-      if (Object.keys(updateValuesSql).length > 0) {
-        updateOptions.valuesSql = updateValuesSql;
-      }
-
-      await memosTable.update(updateOptions);
-    }
   }
 
   /**
