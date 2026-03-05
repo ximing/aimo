@@ -317,7 +317,11 @@ export class MemoService {
         resolvedTagIds.length > 0 ? await this.tagService.getTagsByIds(resolvedTagIds, uid) : [];
 
       // Fetch the created record from MySQL
-      const results = await db.select().from(memos).where(eq(memos.memoId, memoId)).limit(1);
+      const results = await db
+        .select()
+        .from(memos)
+        .where(and(eq(memos.memoId, memoId), eq(memos.deletedAt, 0)))
+        .limit(1);
 
       const record = results[0]!;
 
@@ -367,7 +371,7 @@ export class MemoService {
       }
 
       // Build filter conditions
-      const conditions: any[] = [eq(memos.uid, uid)];
+      const conditions: any[] = [eq(memos.uid, uid), eq(memos.deletedAt, 0)];
 
       const isUncategorizedFilter = categoryId === UNCATEGORIZED_CATEGORY_ID;
 
@@ -487,7 +491,7 @@ export class MemoService {
       const referenceMemo = await db
         .select()
         .from(memos)
-        .where(and(eq(memos.memoId, latestMemoId), eq(memos.uid, uid)))
+        .where(and(eq(memos.memoId, latestMemoId), eq(memos.uid, uid), eq(memos.deletedAt, 0)))
         .limit(1);
 
       // If reference memo not found, return empty array
@@ -508,6 +512,7 @@ export class MemoService {
         .where(
           and(
             eq(memos.uid, uid),
+            eq(memos.deletedAt, 0),
             sql`${sortColumn} > ${referenceTimestamp}`
           )
         )
@@ -561,7 +566,7 @@ export class MemoService {
       const results = await db
         .select()
         .from(memos)
-        .where(and(eq(memos.memoId, memoId), eq(memos.uid, uid)))
+        .where(and(eq(memos.memoId, memoId), eq(memos.uid, uid), eq(memos.deletedAt, 0)))
         .limit(1);
 
       if (results.length === 0) {
@@ -632,7 +637,7 @@ export class MemoService {
       const results = await db
         .select()
         .from(memos)
-        .where(and(eq(memos.memoId, memoId), eq(memos.uid, uid)))
+        .where(and(eq(memos.memoId, memoId), eq(memos.uid, uid), eq(memos.deletedAt, 0)))
         .limit(1);
 
       if (results.length === 0) {
@@ -688,7 +693,7 @@ export class MemoService {
       await db
         .update(memos)
         .set(updateValues)
-        .where(and(eq(memos.memoId, memoId), eq(memos.uid, uid)));
+        .where(and(eq(memos.memoId, memoId), eq(memos.uid, uid), eq(memos.deletedAt, 0)));
 
       logger.info('Memo scalar data updated in MySQL:', { memoId, uid });
 
@@ -761,7 +766,7 @@ export class MemoService {
               tagIds: resolvedTagIds.length > 0 ? resolvedTagIds : null,
               updatedAt: new Date(now),
             })
-            .where(and(eq(memos.memoId, memoId), eq(memos.uid, uid)));
+            .where(and(eq(memos.memoId, memoId), eq(memos.uid, uid), eq(memos.deletedAt, 0)));
 
           // Update usage counts
           for (const tagId of addedTagIds) {
@@ -832,7 +837,7 @@ export class MemoService {
       const results = await db
         .select()
         .from(memos)
-        .where(and(eq(memos.memoId, memoId), eq(memos.uid, uid)))
+        .where(and(eq(memos.memoId, memoId), eq(memos.uid, uid), eq(memos.deletedAt, 0)))
         .limit(1);
 
       if (results.length === 0) {
@@ -845,7 +850,9 @@ export class MemoService {
       // Use transaction for multi-table delete
       await withTransaction(async (tx) => {
         // Delete from MySQL
-        await tx.delete(memos).where(and(eq(memos.memoId, memoId), eq(memos.uid, uid)));
+        await tx
+          .delete(memos)
+          .where(and(eq(memos.memoId, memoId), eq(memos.uid, uid), eq(memos.deletedAt, 0)));
 
         logger.info('Memo scalar data deleted from MySQL:', { memoId, uid });
       });
@@ -897,7 +904,7 @@ export class MemoService {
       const results = await db
         .select()
         .from(memos)
-        .where(and(eq(memos.memoId, memoId), eq(memos.uid, uid)))
+        .where(and(eq(memos.memoId, memoId), eq(memos.uid, uid), eq(memos.deletedAt, 0)))
         .limit(1);
 
       if (results.length === 0) {
@@ -928,7 +935,7 @@ export class MemoService {
           tagIds: resolvedTagIds.length > 0 ? resolvedTagIds : null,
           updatedAt: new Date(now),
         })
-        .where(and(eq(memos.memoId, memoId), eq(memos.uid, uid)));
+        .where(and(eq(memos.memoId, memoId), eq(memos.uid, uid), eq(memos.deletedAt, 0)));
 
       // Update usage counts
       for (const tagId of addedTagIds) {
@@ -998,7 +1005,7 @@ export class MemoService {
       const memosTable = await this.openMemosTable();
 
       // Build filter string for LanceDB
-      let filterStr = `uid = '${uid}'`;
+      let filterStr = `uid = '${uid}' AND deletedAt = 0`;
 
       const isUncategorizedFilter = categoryId === UNCATEGORIZED_CATEGORY_ID;
 
@@ -1105,7 +1112,10 @@ export class MemoService {
   async getAllMemosByUid(uid: string): Promise<Memo[]> {
     try {
       const db = getDatabase();
-      return await db.select().from(memos).where(eq(memos.uid, uid));
+      return await db
+        .select()
+        .from(memos)
+        .where(and(eq(memos.uid, uid), eq(memos.deletedAt, 0)));
     } catch (error) {
       logger.error('Error getting all memos by uid:', error);
       throw error;
@@ -1121,7 +1131,7 @@ export class MemoService {
       const result = await db
         .select({ count: sql<number>`count(*)` })
         .from(memos)
-        .where(eq(memos.uid, uid));
+        .where(and(eq(memos.uid, uid), eq(memos.deletedAt, 0)));
 
       return result[0]?.count || 0;
     } catch (error) {
@@ -1139,7 +1149,7 @@ export class MemoService {
       const results = await db
         .select()
         .from(memos)
-        .where(eq(memos.uid, uid))
+        .where(and(eq(memos.uid, uid), eq(memos.deletedAt, 0)))
         .orderBy(desc(memos.createdAt))
         .limit(1)
         .offset(offset);
@@ -1166,7 +1176,7 @@ export class MemoService {
       const memosTable = await this.openMemosTable();
       const vectorResults = await memosTable
         .query()
-        .where(`memoId = '${memoId}'`)
+        .where(`memoId = '${memoId}' AND deletedAt = 0`)
         .limit(1)
         .toArray();
 
@@ -1180,7 +1190,7 @@ export class MemoService {
       const offset = (page - 1) * limit;
       const similarMemos = await memosTable
         .search(memoEmbedding)
-        .where(`uid = '${uid}'`) // Filter by user
+        .where(`uid = '${uid}' AND deletedAt = 0`) // Filter by user and not deleted
         .limit(limit + offset + 1) // +1 to exclude self
         .toArray();
 
@@ -1210,7 +1220,7 @@ export class MemoService {
       const memosFromDb = await db
         .select()
         .from(memos)
-        .where(and(eq(memos.uid, uid), inArray(memos.memoId, memoIds)));
+        .where(and(eq(memos.uid, uid), eq(memos.deletedAt, 0), inArray(memos.memoId, memoIds)));
 
       // Build result map
       const memoMap = new Map<string, any>();
@@ -1275,7 +1285,7 @@ export class MemoService {
       const results = await db
         .select()
         .from(memos)
-        .where(and(eq(memos.uid, uid), inArray(memos.memoId, memoIds)));
+        .where(and(eq(memos.uid, uid), eq(memos.deletedAt, 0), inArray(memos.memoId, memoIds)));
 
       // Convert to DTOs
       const items: MemoListItemDto[] = [];
@@ -1399,7 +1409,12 @@ export class MemoService {
         .select()
         .from(memos)
         .where(
-          and(eq(memos.uid, uid), gte(memos.createdAt, startDate), lte(memos.createdAt, endDate))
+          and(
+            eq(memos.uid, uid),
+            eq(memos.deletedAt, 0),
+            gte(memos.createdAt, startDate),
+            lte(memos.createdAt, endDate)
+          )
         );
 
       // Group memos by date
@@ -1440,7 +1455,10 @@ export class MemoService {
       const currentDay = today.getUTCDate();
 
       // Get all memos for this user
-      const allMemos = await db.select().from(memos).where(eq(memos.uid, uid));
+      const allMemos = await db
+        .select()
+        .from(memos)
+        .where(and(eq(memos.uid, uid), eq(memos.deletedAt, 0)));
 
       // Filter memos by month and day
       const memosOnThisDay = allMemos.filter((memo) => {
@@ -1503,7 +1521,7 @@ export class MemoService {
       const countResult = await db
         .select({ count: sql<number>`count(*)` })
         .from(memos)
-        .where(and(eq(memos.uid, uid), eq(memos.isPublic, true)));
+        .where(and(eq(memos.uid, uid), eq(memos.isPublic, true), eq(memos.deletedAt, 0)));
 
       const total = countResult[0]?.count || 0;
 
@@ -1515,7 +1533,7 @@ export class MemoService {
       const results = await db
         .select()
         .from(memos)
-        .where(and(eq(memos.uid, uid), eq(memos.isPublic, true)))
+        .where(and(eq(memos.uid, uid), eq(memos.isPublic, true), eq(memos.deletedAt, 0)))
         .orderBy(sortDirection)
         .limit(limit)
         .offset(offset);
@@ -1576,7 +1594,7 @@ export class MemoService {
       const publicMemos = await db
         .select()
         .from(memos)
-        .where(and(eq(memos.uid, uid), eq(memos.isPublic, true)));
+        .where(and(eq(memos.uid, uid), eq(memos.isPublic, true), eq(memos.deletedAt, 0)));
 
       if (publicMemos.length === 0) {
         return null;
@@ -1625,7 +1643,7 @@ export class MemoService {
       const results = await db
         .select()
         .from(memos)
-        .where(and(eq(memos.memoId, memoId), eq(memos.isPublic, true)))
+        .where(and(eq(memos.memoId, memoId), eq(memos.isPublic, true), eq(memos.deletedAt, 0)))
         .limit(1);
 
       if (results.length === 0) {
