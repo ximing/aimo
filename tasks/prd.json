@@ -46,8 +46,8 @@
         "Add unit tests for soft-deleted memo filtering"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed - Added deletedAt = 0 filter to all MemoService SELECT queries (20+ queries), UPDATE queries, and DELETE queries. Updated LanceDB vector search queries to filter deletedAt = 0 in both semantic search and related memo queries. Typecheck passes."
     },
     {
       "id": "US-004",

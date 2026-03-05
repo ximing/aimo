@@ -50,3 +50,20 @@
   - Index definitions in Drizzle schemas were copy-pasted incorrectly in US-001 - always verify index column references
   - Manual test documentation is acceptable when Jest ESM setup is complex (package.json has "type": "module")
 ---
+
+## 2026-03-05 - US-003
+- What was implemented: Updated all MemoService queries to filter soft-deleted records (deletedAt = 0) in both MySQL and LanceDB
+- Files changed:
+  - `apps/server/src/services/memo.service.ts` - Added `eq(memos.deletedAt, 0)` filter to all SELECT queries (20+ queries including getMemos, getMemoById, getAllMemosByUid, getMemoCount, getMemoByOffset, getMemosByIds, getMemoActivityStats, getOnThisDayMemos, getPublicMemos, getRandomPublicMemo, getPublicMemoById, getNewMemosAfter, findRelatedMemos, semanticSearch)
+  - Updated all UPDATE queries to include deletedAt = 0 filter (updateMemo, updateMemoTags, updateMemoCategory)
+  - Updated DELETE query to include deletedAt = 0 filter (deleteMemo)
+  - Updated LanceDB vector search queries to filter `deletedAt = 0` in WHERE clauses (semanticSearch, findRelatedMemos)
+- **Learnings for future iterations:**
+  - MemoService has 20+ query methods that all need soft delete filtering
+  - Use `and()` operator to combine multiple WHERE conditions: `and(eq(memos.uid, uid), eq(memos.deletedAt, 0))`
+  - LanceDB WHERE clauses use SQL-like syntax: `uid = '${uid}' AND deletedAt = 0`
+  - Both MySQL (Drizzle) and LanceDB queries must be updated for consistency
+  - UPDATE and DELETE queries also need deletedAt = 0 filter to prevent operating on soft-deleted records
+  - Vector search in LanceDB supports filtering with .where() method on both .search() and .query() operations
+  - The semantic search builds a filterStr variable that concatenates multiple conditions
+---
