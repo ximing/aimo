@@ -1,7 +1,8 @@
 # 🚀 AIMO - AI 驱动的智能笔记系统
 
 [![CI](https://github.com/ximing/aimo/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/ximing/aimo/actions/workflows/ci.yml)
-[![Docker Build and Publish](https://github.com/ximing/aimo/actions/workflows/docker-publish.yml/badge.svg?branch=master)](https://github.com/ximing/aimo/actions/workflows/docker-publish.yml)
+[![Docker Build and Publish](https://github.com/ximing/aimo/actions/workflows/docker-build.yml/badge.svg?branch=master)](https://github.com/ximing/aimo/actions/workflows/docker-build.yml)
+[![Electron Build and Publish](https://github.com/ximing/aimo/actions/workflows/build-electron.yml/badge.svg?branch=master)](https://github.com/ximing/aimo/actions/workflows/build-electron.yml)
 ![Node.js](https://img.shields.io/badge/Node.js-20+-green)
 ![React](https://img.shields.io/badge/React-19-blue)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.7+-blue)
