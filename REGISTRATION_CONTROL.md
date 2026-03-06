@@ -43,7 +43,7 @@ async getConfig() {
 }
 ```
 
-- 路径：`GET /api/v1/system/config`
+- 路径：`GET /api/v1/system/open/config`
 - 权限：公开接口，无需认证
 - 返回：`{ allowRegistration: boolean }`
 
@@ -82,7 +82,7 @@ OPERATION_NOT_ALLOWED: 6,  // 操作不被允许
 ```typescript
 export const getSystemConfig = () => {
   return request.get<unknown, { code: number; msg: string; data: { allowRegistration: boolean } }>(
-    '/api/v1/system/config'
+    '/api/v1/system/open/config'
   );
 };
 ```
@@ -207,7 +207,7 @@ pnpm dev
 
 ```bash
 # 1. 获取系统配置
-curl http://localhost:3000/api/v1/system/config
+curl http://localhost:3000/api/v1/system/open/config
 
 # 预期响应（允许注册）：
 # {

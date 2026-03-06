@@ -14,7 +14,7 @@ import type { UserInfoDto } from '@aimo/dto';
 export class SystemController {
   constructor(private gitHubReleaseService: GitHubReleaseService) {}
 
-  @Get('/version')
+  @Get('/open/version')
   async getVersion(@CurrentUser() user: UserInfoDto) {
     // 需要登录后才能访问，返回服务端版本号
     const packageJson = await import('../../../package.json', { with: { type: 'json' } });
@@ -27,7 +27,7 @@ export class SystemController {
    * Get latest app versions from GitHub releases
    * Public endpoint - no authentication required
    */
-  @Get('/app-versions')
+  @Get('/open/app-versions')
   async getAppVersions() {
     try {
       const versions = await this.gitHubReleaseService.getAllVersions();
@@ -45,7 +45,7 @@ export class SystemController {
    * Get public system configuration
    * Public endpoint - no authentication required
    */
-  @Get('/config')
+  @Get('/open/config')
   async getConfig() {
     return ResponseUtility.success({
       allowRegistration: config.auth.allowRegistration,

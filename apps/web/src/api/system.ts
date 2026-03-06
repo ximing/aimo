@@ -6,7 +6,7 @@ import request from '../utils/request';
  */
 export const getVersion = () => {
   return request.get<unknown, { code: number; msg: string; data: { version: string } }>(
-    '/api/v1/system/version'
+    '/api/v1/system/open/version'
   );
 };
 
@@ -16,7 +16,7 @@ export const getVersion = () => {
  */
 export const getAppVersions = () => {
   return request.get<unknown, { code: number; msg: string; data: AllVersionsResponseDto }>(
-    '/api/v1/system/app-versions'
+    '/api/v1/system/open/app-versions'
   );
 };
 
@@ -26,6 +26,6 @@ export const getAppVersions = () => {
  */
 export const getSystemConfig = () => {
   return request.get<unknown, { code: number; msg: string; data: { allowRegistration: boolean } }>(
-    '/api/v1/system/config'
+    '/api/v1/system/open/config'
   );
 };
