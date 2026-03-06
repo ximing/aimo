@@ -61,6 +61,9 @@ jobs:
       - name: Typecheck web
         run: cd apps/web && pnpm typecheck
 
+      - name: Typecheck client
+        run: cd apps/client && pnpm typecheck
+
   build:
     name: Build All Packages
     runs-on: ubuntu-latest
