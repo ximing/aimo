@@ -121,6 +121,7 @@ export class AttachmentService {
         multimodalEmbedding: null, // Will be updated asynchronously
         multimodalModelHash: null,
         properties: properties || '{}',
+        deletedAt: BigInt(0),
         createdAt: attachmentCreatedAt.getTime(),
       } as unknown as Record<string, unknown>,
     ]);
