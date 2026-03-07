@@ -3,6 +3,7 @@ import { eq, and, lte } from 'drizzle-orm';
 
 import { getDatabase } from '../db/connection.js';
 import { spacedRepetitionCards, spacedRepetitionRules } from '../db/schema/index.js';
+import { users } from '../db/schema/users.js';
 import { memos } from '../db/schema/memos.js';
 import { tags } from '../db/schema/tags.js';
 import { generateTypeId } from '../utils/id.js';
@@ -10,6 +11,7 @@ import { OBJECT_TYPE } from '../models/constant/type.js';
 import { logger } from '../utils/logger.js';
 
 import type { SpacedRepetitionCard } from '../db/schema/spaced-repetition-cards.js';
+import type { SpacedRepetitionRule } from '../db/schema/spaced-repetition-rules.js';
 
 export interface SRCardState {
   easeFactor: number;
@@ -330,5 +332,101 @@ export class SpacedRepetitionService {
         and(eq(spacedRepetitionCards.cardId, cardId), eq(spacedRepetitionCards.userId, userId))
       );
     return this.getCardById(cardId, userId);
+  }
+
+  // ==================== Settings Methods ====================
+
+  /**
+   * Get SR settings for a user.
+   */
+  async getSettings(userId: string): Promise<{ srEnabled: boolean; srDailyLimit: number } | null> {
+    const db = getDatabase();
+    const results = await db
+      .select({ srEnabled: users.srEnabled, srDailyLimit: users.srDailyLimit })
+      .from(users)
+      .where(and(eq(users.uid, userId), eq(users.deletedAt, 0)))
+      .limit(1);
+    return results[0] ?? null;
+  }
+
+  /**
+   * Update SR settings for a user.
+   */
+  async updateSettings(
+    userId: string,
+    updates: { srEnabled?: boolean; srDailyLimit?: number }
+  ): Promise<{ srEnabled: boolean; srDailyLimit: number } | null> {
+    const db = getDatabase();
+    await db
+      .update(users)
+      .set(updates)
+      .where(and(eq(users.uid, userId), eq(users.deletedAt, 0)));
+    return this.getSettings(userId);
+  }
+
+  // ==================== Rules Methods ====================
+
+  /**
+   * Get all SR filter rules for a user.
+   */
+  async getRules(userId: string): Promise<SpacedRepetitionRule[]> {
+    const db = getDatabase();
+    return db
+      .select()
+      .from(spacedRepetitionRules)
+      .where(eq(spacedRepetitionRules.userId, userId));
+  }
+
+  /**
+   * Create a new SR filter rule.
+   */
+  async createRule(
+    userId: string,
+    data: { mode: 'include' | 'exclude'; filterType: 'category' | 'tag'; filterValue: string }
+  ): Promise<SpacedRepetitionRule> {
+    const db = getDatabase();
+    const ruleId = generateTypeId(OBJECT_TYPE.SR_RULE);
+    await db.insert(spacedRepetitionRules).values({
+      ruleId,
+      userId,
+      mode: data.mode,
+      filterType: data.filterType,
+      filterValue: data.filterValue,
+    });
+    const results = await db
+      .select()
+      .from(spacedRepetitionRules)
+      .where(eq(spacedRepetitionRules.ruleId, ruleId))
+      .limit(1);
+    return results[0];
+  }
+
+  /**
+   * Delete a SR filter rule. Returns false if rule not found or doesn't belong to user.
+   */
+  async deleteRule(ruleId: string, userId: string): Promise<boolean> {
+    const db = getDatabase();
+    const existing = await db
+      .select({ ruleId: spacedRepetitionRules.ruleId })
+      .from(spacedRepetitionRules)
+      .where(
+        and(
+          eq(spacedRepetitionRules.ruleId, ruleId),
+          eq(spacedRepetitionRules.userId, userId)
+        )
+      )
+      .limit(1);
+    if (existing.length === 0) {
+      return false;
+    }
+    await db
+      .delete(spacedRepetitionRules)
+      .where(
+        and(
+          eq(spacedRepetitionRules.ruleId, ruleId),
+          eq(spacedRepetitionRules.userId, userId)
+        )
+      );
+    return true;
   }
 }

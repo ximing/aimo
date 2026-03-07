@@ -2,6 +2,46 @@
 Started: 2026年 2月15日 星期日 23时33分46秒 CST
 ---
 
+## 2026-03-08 - SR US-005
+- Created apps/server/src/controllers/v1/spaced-repetition.controller.ts with 5 endpoints
+- Added settings and rules management methods to SpacedRepetitionService
+- Added SR_RULE type to OBJECT_TYPE constant and generateTypeId (generates `srr` prefix IDs)
+- Registered SpacedRepetitionController in controllers/index.ts
+- All 30 tests pass, build and typecheck pass
+- Files changed:
+  - apps/server/src/controllers/v1/spaced-repetition.controller.ts (new)
+  - apps/server/src/controllers/index.ts (added SpacedRepetitionController)
+  - apps/server/src/services/spaced-repetition.service.ts (added getSettings, updateSettings, getRules, createRule, deleteRule)
+  - apps/server/src/models/constant/type.ts (added SR_RULE)
+  - apps/server/src/utils/id.ts (added SR_RULE case generating `srr` prefix)
+- **Learnings for future iterations:**
+  - SR settings live directly in the users table (srEnabled, srDailyLimit) — update via users table
+  - When adding new OBJECT_TYPE, also add a case in generateTypeId() in utils/id.ts
+  - Controller routes: use @Get('/settings') and @Put('/settings') within @JsonController('/api/v1/spaced-repetition')
+  - The `users` table import in spaced-repetition.service.ts comes from '../db/schema/users.js'
+---
+
+## 2026-03-08 - SR US-004
+- Extended SpacedRepetitionService with card lifecycle methods: createCardIfEligible, reevaluateCard, deleteCardsByMemo, getCardById, getDueCards, updateCardAfterReview
+- isMemoEligible: checks filter rules (exclude > include, no rules = all eligible), resolves tag names from tagIds
+- Hooked createCardIfEligible into MemoService.createMemo (fire-and-forget after memo created)
+- Hooked reevaluateCard into MemoService.updateMemo when categoryId or tags change
+- Hooked deleteCardsByMemo into MemoService.deleteMemo before soft-deleting memo
+- Added SpacedRepetitionService to MemoService constructor (TypeDI injection)
+- Updated test file to mock DB dependencies (getDatabase, config) so pure SM-2 tests still pass
+- All 30 tests pass, typecheck passes
+- Files changed:
+  - apps/server/src/services/spaced-repetition.service.ts (extended)
+  - apps/server/src/services/memo.service.ts (added SR hooks)
+  - apps/server/src/__tests__/spaced-repetition.service.test.ts (added DB mocks)
+- **Learnings for future iterations:**
+  - When adding DB dependencies to a service that was previously pure computation, update tests to mock DB modules
+  - Fire-and-forget pattern: call async side effects with `.catch()` to avoid blocking the main operation
+  - TypeDI auto-injects services in constructor — just add the parameter and TypeDI handles the rest
+  - Filter rule logic: exclude rules take priority over include rules; no rules = all eligible
+  - Tag filtering requires resolving tagIds → tag names since rules store tag names
+---
+
 ## Codebase Patterns
 - LanceDB table schemas are defined in `apps/server/src/models/db/schema.ts` using Apache Arrow types
 - Migrations are created in `apps/server/src/migrations/scripts/` and registered in `index.ts`
