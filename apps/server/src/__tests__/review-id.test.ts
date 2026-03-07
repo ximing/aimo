@@ -1,5 +1,5 @@
-import { generateTypeId } from '../utils/id';
-import { OBJECT_TYPE } from '../models/constant/type';
+import { generateTypeId } from '../utils/id.js';
+import { OBJECT_TYPE } from '../models/constant/type.js';
 
 describe('Review ID generation', () => {
   it('generates review session ID with rev prefix', () => {

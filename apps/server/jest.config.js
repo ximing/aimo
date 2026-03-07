@@ -7,6 +7,7 @@ export default {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^nanoid$': '<rootDir>/__mocks__/nanoid.js',
+    '^(\\.{1,2}/.*)\\.js$': '$1',
   },
   transform: {
     '^.+\\.tsx?$': [
