@@ -14,6 +14,30 @@ Started: 2026年 2月15日 星期日 23时33分46秒 CST
 - TypeDI services are auto-injected into controllers via constructor injection
 - Table names use snake_case (e.g., `ai_conversations`)
 - Primary key fields use full name + Id (e.g., `conversationId`, not just `id`)
+- MySQL Drizzle schemas use `mysqlTable()` in `apps/server/src/db/schema/` — one file per table, exported from `schema/index.ts`
+- UserInfoDto uses `uid` (not `id`) for user identifier — always use `userDto.uid` in controllers
+- ErrorCode in `apps/server/src/constants/error-codes.ts` — add new codes there when needed
+- Always `pnpm build` in `apps/server` before `pnpm migrate:generate` (drizzle-kit reads from dist/)
+- Timestamps in Drizzle: `timestamp('col', { mode: 'date', fsp: 3 }).notNull().defaultNow()`
+- VARCHAR(191) for PK/FK columns (MySQL utf8mb4 index limit)
+
+## 2026-03-08 - SR US-001
+- Created spaced_repetition_cards and spaced_repetition_rules MySQL tables via Drizzle ORM
+- Fixed pre-existing TypeScript errors in user-model.controller.ts (userDto.id → userDto.uid) and added EXTERNAL_SERVICE_ERROR to ErrorCode
+- Files changed:
+  - apps/server/src/db/schema/spaced-repetition-cards.ts (new)
+  - apps/server/src/db/schema/spaced-repetition-rules.ts (new)
+  - apps/server/src/db/schema/index.ts (added exports)
+  - apps/server/drizzle/0006_salty_firestar.sql (generated migration)
+  - apps/server/src/constants/error-codes.ts (added EXTERNAL_SERVICE_ERROR)
+  - apps/server/src/controllers/v1/user-model.controller.ts (fixed userDto.uid)
+- **Learnings for future iterations:**
+  - UserInfoDto uses `uid` not `id` — use `userDto.uid` in controllers
+  - EXTERNAL_SERVICE_ERROR (5000) added to ErrorCode for external API failures
+  - Drizzle schema pattern: mysqlTable() with column types from drizzle-orm/mysql-core
+  - Index naming: use descriptive names like `user_id_idx`, `user_memo_idx`
+  - Float columns use `float('col_name')` not `decimal` for ease factor
+---
 
 ## 2026-02-20 11:50:00 - US-001
 - Created ai_conversations and ai_messages table schemas in schema.ts
