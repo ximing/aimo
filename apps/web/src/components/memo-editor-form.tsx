@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, forwardRef, useImperativeHandle } from 'react';
 import { view, useService } from '@rabjs/react';
 import { MemoService } from '../services/memo.service';
 import { CategoryService } from '../services/category.service';
@@ -37,8 +37,14 @@ interface MemoEditorFormProps {
   defaultCategoryId?: string | null; // 默认选中的类别ID
 }
 
+export interface MemoEditorFormRef {
+  addRelation: (memo: MemoListItemDto) => void;
+  focusTextarea: () => void;
+}
+
 export const MemoEditorForm = view(
-  ({ mode, initialMemo, onSave, onCancel, defaultCategoryId }: MemoEditorFormProps) => {
+  forwardRef<MemoEditorFormRef, MemoEditorFormProps>(
+    ({ mode, initialMemo, onSave, onCancel, defaultCategoryId }, ref) => {
     const [draftRestored, setDraftRestored] = useState(false); // 标记草稿是否已恢复
     const [content, setContent] = useState(initialMemo?.content || '');
     const [loading, setLoading] = useState(false);
@@ -91,6 +97,22 @@ export const MemoEditorForm = view(
     const aiToolsService = useService(AIToolsService);
     const toastService = useService(ToastService);
     const draftService = useMemo(() => new DraftService(), []);
+
+    useImperativeHandle(ref, () => ({
+      addRelation: (memo: MemoListItemDto) => {
+        setSelectedRelations((prev) => {
+          if (prev.some((r) => r.memoId === memo.memoId)) return prev;
+          return [...prev, memo];
+        });
+      },
+      focusTextarea: () => {
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+          const len = textareaRef.current.value.length;
+          textareaRef.current.setSelectionRange(len, len);
+        }
+      },
+    }));
 
     // 初始化：恢复草稿或初始化编辑模式的数据
     useEffect(() => {
@@ -1353,5 +1375,5 @@ export const MemoEditorForm = view(
         />
       </>
     );
-  }
+  })
 );
