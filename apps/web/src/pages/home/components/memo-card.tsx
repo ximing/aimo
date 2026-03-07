@@ -17,6 +17,7 @@ import {
   Globe,
   ExternalLink,
   Sparkles,
+  Quote,
 } from 'lucide-react';
 import { RelatedMemosModal } from './related-memos-modal';
 import { ConfirmDeleteModal } from './confirm-delete-modal';
@@ -30,6 +31,7 @@ import { AIToolsService } from '../../../services/ai-tools.service';
 
 interface MemoCardProps {
   memo: MemoListItemDto | MemoListItemWithScoreDto;
+  onQuote?: (memo: MemoListItemDto) => void;
 }
 
 // Extract plain text without markdown syntax
@@ -74,7 +76,7 @@ const extractPlainText = (content: string): string => {
   return plainText;
 };
 
-export const MemoCard = view(({ memo }: MemoCardProps) => {
+export const MemoCard = view(({ memo, onQuote }: MemoCardProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showRelatedModal, setShowRelatedModal] = useState(false);
@@ -490,6 +492,20 @@ export const MemoCard = view(({ memo }: MemoCardProps) => {
                 >
                   <Sparkles className="w-4 h-4" />
                 </button>
+
+                {onQuote && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onQuote(memo);
+                    }}
+                    className="p-1.5 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-dark-700 rounded hover:text-primary-600 dark:hover:text-primary-400 hover:border-primary-200 dark:hover:border-primary-900/50 transition-colors cursor-pointer"
+                    title="引用此笔记"
+                    aria-label="引用此笔记"
+                  >
+                    <Quote className="w-4 h-4" />
+                  </button>
+                )}
 
                 <button
                   onClick={(e) => {
