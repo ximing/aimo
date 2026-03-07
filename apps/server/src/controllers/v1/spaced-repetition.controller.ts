@@ -9,11 +9,14 @@ import {
   CurrentUser,
 } from 'routing-controllers';
 import { Service } from 'typedi';
+import { eq, and } from 'drizzle-orm';
 
 import { ErrorCode } from '../../constants/error-codes.js';
 import { SpacedRepetitionService } from '../../services/spaced-repetition.service.js';
 import { logger } from '../../utils/logger.js';
 import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
+import { getDatabase } from '../../db/connection.js';
+import { memos } from '../../db/schema/memos.js';
 
 import type { UserInfoDto } from '@aimo/dto';
 
@@ -177,6 +180,135 @@ export class SpacedRepetitionController {
     } catch (error) {
       logger.error('Delete SR rule error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR, 'Failed to delete rule');
+    }
+  }
+
+  /**
+   * GET /api/v1/spaced-repetition/due
+   * Returns due cards (nextReviewAt <= now) with memo info, sorted by nextReviewAt asc
+   */
+  @Get('/due')
+  async getDueCards(@CurrentUser() user: UserInfoDto) {
+    try {
+      if (!user?.uid) {
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
+      }
+
+      const cards = await this.spacedRepetitionService.getDueCards(user.uid);
+
+      // Fetch memo info for each card
+      const db = getDatabase();
+      const cardWithMemos = await Promise.all(
+        cards.map(async (card) => {
+          const memoResults = await db
+            .select({ memoId: memos.memoId, content: memos.content })
+            .from(memos)
+            .where(and(eq(memos.memoId, card.memoId), eq(memos.deletedAt, 0)))
+            .limit(1);
+
+          const memo = memoResults[0];
+          if (!memo) {
+            return null;
+          }
+
+          const firstLine = memo.content.split('\n')[0].trim();
+          const title = firstLine.length > 50 ? firstLine.slice(0, 50) + '...' : firstLine;
+          const contentPreview =
+            memo.content.length > 200 ? memo.content.slice(0, 200) : memo.content;
+
+          return {
+            cardId: card.cardId,
+            memoId: card.memoId,
+            memo: {
+              id: memo.memoId,
+              title,
+              content: contentPreview,
+            },
+            easeFactor: card.easeFactor,
+            interval: card.interval,
+            repetitions: card.repetitions,
+            nextReviewAt: card.nextReviewAt,
+          };
+        })
+      );
+
+      // Filter out cards whose memo was deleted
+      const validCards = cardWithMemos.filter(Boolean);
+
+      return ResponseUtility.success({ cards: validCards });
+    } catch (error) {
+      logger.error('Get due cards error:', error);
+      return ResponseUtility.error(ErrorCode.DB_ERROR, 'Failed to get due cards');
+    }
+  }
+
+  /**
+   * POST /api/v1/spaced-repetition/cards/:cardId/review
+   * Submit a review result for a card
+   * quality: 'mastered'|'remembered'|'fuzzy'|'forgot'|'skip'
+   */
+  @Post('/cards/:cardId/review')
+  async reviewCard(
+    @Param('cardId') cardId: string,
+    @Body() body: { quality: 'mastered' | 'remembered' | 'fuzzy' | 'forgot' | 'skip' },
+    @CurrentUser() user: UserInfoDto
+  ) {
+    try {
+      if (!user?.uid) {
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
+      }
+
+      if (!cardId) {
+        return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'Card ID is required');
+      }
+
+      const validQualities = ['mastered', 'remembered', 'fuzzy', 'forgot', 'skip'];
+      if (!body.quality || !validQualities.includes(body.quality)) {
+        return ResponseUtility.error(
+          ErrorCode.PARAMS_ERROR,
+          'quality must be one of: mastered, remembered, fuzzy, forgot, skip'
+        );
+      }
+
+      const card = await this.spacedRepetitionService.getCardById(cardId, user.uid);
+      if (!card) {
+        return ResponseUtility.error(ErrorCode.NOT_FOUND, 'Card not found');
+      }
+
+      // Skip: return current card without updating
+      if (body.quality === 'skip') {
+        return ResponseUtility.success({ card });
+      }
+
+      // Map quality string to SM-2 numeric quality
+      const qualityMap: Record<string, 1 | 3 | 4 | 5> = {
+        mastered: 5,
+        remembered: 4,
+        fuzzy: 3,
+        forgot: 1,
+      };
+      const numericQuality = qualityMap[body.quality];
+
+      // Calculate next review using SM-2
+      const nextReview = this.spacedRepetitionService.calculateNextReview(card, numericQuality);
+
+      // Update card in database
+      const updatedCard = await this.spacedRepetitionService.updateCardAfterReview(
+        cardId,
+        user.uid,
+        {
+          easeFactor: nextReview.easeFactor,
+          interval: nextReview.interval,
+          repetitions: nextReview.repetitions,
+          nextReviewAt: nextReview.nextReviewAt,
+          lastReviewAt: new Date(),
+        }
+      );
+
+      return ResponseUtility.success({ card: updatedCard });
+    } catch (error) {
+      logger.error('Review card error:', error);
+      return ResponseUtility.error(ErrorCode.DB_ERROR, 'Failed to submit review');
     }
   }
 }
