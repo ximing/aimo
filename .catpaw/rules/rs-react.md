@@ -118,6 +118,7 @@ function App() {
 ```
 
 **特点：**
+
 - ✅ 全局单例，整个应用共享
 - ✅ 生命周期独立于组件
 - ✅ 任何组件都可以通过 `useService` 获取
@@ -141,6 +142,7 @@ export default bindServices(ProductPage, [ProductService]);
 ```
 
 **特点：**
+
 - ✅ 组件挂载时创建，卸载时销毁
 - ✅ 子组件可通过 `useService` 访问
 - ✅ 同级组件的 Service 相互隔离
@@ -149,12 +151,12 @@ export default bindServices(ProductPage, [ProductService]);
 
 **重要区别：**
 
-| 特性 | register() | bindServices() |
-|------|-----------|----------------|
-| 生命周期 | 独立于组件 | 绑定组件生命周期 |
-| 作用域 | 全局共享 | 组件及其子组件 |
-| 实例数量 | 单例 | 每个组件独立实例 |
-| 适用场景 | 认证、主题、配置 | 页面状态、表单 |
+| 特性     | register()       | bindServices()   |
+| -------- | ---------------- | ---------------- |
+| 生命周期 | 独立于组件       | 绑定组件生命周期 |
+| 作用域   | 全局共享         | 组件及其子组件   |
+| 实例数量 | 单例             | 每个组件独立实例 |
+| 适用场景 | 认证、主题、配置 | 页面状态、表单   |
 
 ## 多级 Domain 嵌套
 
@@ -168,8 +170,8 @@ register(AppService);
 
 // ========== 页面级 Service ==========
 const PageContent = () => {
-  const appService = useService(AppService);     // ✅ 访问全局
-  const pageService = useService(PageService);   // ✅ 访问当前级
+  const appService = useService(AppService); // ✅ 访问全局
+  const pageService = useService(PageService); // ✅ 访问当前级
 
   return (
     <div>
@@ -184,8 +186,8 @@ export const Page = bindServices(PageContent, [PageService]);
 
 // ========== 组件 A（第三级，独立领域）==========
 const ComponentAContent = () => {
-  const appService = useService(AppService);           // ✅ 访问应用级
-  const pageService = useService(PageService);         // ✅ 访问页面级
+  const appService = useService(AppService); // ✅ 访问应用级
+  const pageService = useService(PageService); // ✅ 访问页面级
   const componentService = useService(ComponentService); // ✅ 访问组件级
 
   return <div>主题: {appService.theme}</div>;
@@ -195,7 +197,7 @@ export const ComponentA = bindServices(ComponentAContent, [ComponentService]);
 
 // ========== 组件 B（第三级，独立领域）==========
 const ComponentBContent = () => {
-  const appService = useService(AppService);   // ✅ 访问应用级
+  const appService = useService(AppService); // ✅ 访问应用级
   const pageService = useService(PageService); // ✅ 访问页面级
   // ❌ 无法访问 ComponentA 的 ComponentService（同级隔离）
 
@@ -225,9 +227,9 @@ import { Header, HeaderService } from './components/header';
 import { Sidebar, SidebarService } from './components/sidebar';
 
 export default bindServices(WorkbenchPage, [
-  WorkbenchService,    // 页面主业务 Service
-  HeaderService,       // 子组件 Service
-  SidebarService,      // 子组件 Service
+  WorkbenchService, // 页面主业务 Service
+  HeaderService, // 子组件 Service
+  SidebarService, // 子组件 Service
 ]);
 ```
 
@@ -273,8 +275,10 @@ export default bindServices(ListItem, [ListItemService]);
 
 // 使用时每个 ListItem 都有独立的 Service 实例
 <div>
-  {items.map(item => <ListItem key={item.id} data={item} />)}
-</div>
+  {items.map((item) => (
+    <ListItem key={item.id} data={item} />
+  ))}
+</div>;
 ```
 
 ## 最佳实践

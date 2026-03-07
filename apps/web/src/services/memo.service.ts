@@ -203,10 +203,7 @@ export class MemoService extends Service {
 
         // 后台刷新：并行执行，不阻塞返回
         // 使用 Promise.allSettled 确保即使某个请求失败也不影响其他请求
-        Promise.allSettled([
-          this.fetchMemos(true),
-          this.fetchActivityStats(),
-        ]).catch((error) => {
+        Promise.allSettled([this.fetchMemos(true), this.fetchActivityStats()]).catch((error) => {
           console.error('Background refresh error:', error);
         });
 

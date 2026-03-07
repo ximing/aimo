@@ -169,7 +169,10 @@ export class UserService {
       const { uid: _, ...updateValues } = updates;
 
       // Update user in MySQL (only if not soft-deleted)
-      await db.update(users).set(updateValues).where(and(eq(users.uid, uid), eq(users.deletedAt, 0)));
+      await db
+        .update(users)
+        .set(updateValues)
+        .where(and(eq(users.uid, uid), eq(users.deletedAt, 0)));
 
       // Fetch updated user
       const [updatedUser] = await db
@@ -198,7 +201,10 @@ export class UserService {
       }
 
       // Soft delete user by setting deletedAt timestamp (only if not already soft-deleted)
-      await db.update(users).set({ deletedAt: Date.now() }).where(and(eq(users.uid, uid), eq(users.deletedAt, 0)));
+      await db
+        .update(users)
+        .set({ deletedAt: Date.now() })
+        .where(and(eq(users.uid, uid), eq(users.deletedAt, 0)));
 
       return true;
     } catch (error) {

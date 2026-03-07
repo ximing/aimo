@@ -45,1335 +45,1347 @@ export interface MemoEditorFormRef {
 export const MemoEditorForm = view(
   forwardRef<MemoEditorFormRef, MemoEditorFormProps>(
     ({ mode, initialMemo, onSave, onCancel, defaultCategoryId }, ref) => {
-    const [draftRestored, setDraftRestored] = useState(false); // 标记草稿是否已恢复
-    const [content, setContent] = useState(initialMemo?.content || '');
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
-    const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
-    const [selectedRelations, setSelectedRelations] = useState<MemoListItemDto[]>([]);
-    const [suggestions, setSuggestions] = useState<MemoListItemDto[]>([]);
-    const [showSuggestions, setShowSuggestions] = useState(false);
-    const [searchingRelations, setSearchingRelations] = useState(false);
-    const [uploadingFiles, setUploadingFiles] = useState<Set<string>>(new Set());
-    const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
-      initialMemo?.categoryId || defaultCategoryId || null
-    );
-    const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
-    const [isCreateCategoryModalOpen, setIsCreateCategoryModalOpen] = useState(false);
-    const [isEditorActive, setIsEditorActive] = useState(false);
-    const [isSubmitting, setIsSubmitting] = useState(false); // 标记是否正在提交中，用于防止推荐接口时序问题
-    const [isPublic, setIsPublic] = useState<boolean>(initialMemo?.isPublic ?? false);
-    const [selectedTags, setSelectedTags] = useState<string[]>([]);
-    const [isAIDropdownOpen, setIsAIDropdownOpen] = useState(false);
-    const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
-    const [tagInputValue, setTagInputValue] = useState('');
-    const [tagHighlightedIndex, setTagHighlightedIndex] = useState(-1);
-    // 从 localStorage 读取推荐相关笔记的设置
-    const [enableRecommendations, setEnableRecommendations] = useState<boolean>(() => {
-      const stored = localStorage.getItem('memo_enableRecommendations');
-      return stored !== null ? JSON.parse(stored) : true;
-    });
+      const [draftRestored, setDraftRestored] = useState(false); // 标记草稿是否已恢复
+      const [content, setContent] = useState(initialMemo?.content || '');
+      const [loading, setLoading] = useState(false);
+      const [error, setError] = useState('');
+      const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
+      const [selectedRelations, setSelectedRelations] = useState<MemoListItemDto[]>([]);
+      const [suggestions, setSuggestions] = useState<MemoListItemDto[]>([]);
+      const [showSuggestions, setShowSuggestions] = useState(false);
+      const [searchingRelations, setSearchingRelations] = useState(false);
+      const [uploadingFiles, setUploadingFiles] = useState<Set<string>>(new Set());
+      const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
+        initialMemo?.categoryId || defaultCategoryId || null
+      );
+      const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
+      const [isCreateCategoryModalOpen, setIsCreateCategoryModalOpen] = useState(false);
+      const [isEditorActive, setIsEditorActive] = useState(false);
+      const [isSubmitting, setIsSubmitting] = useState(false); // 标记是否正在提交中，用于防止推荐接口时序问题
+      const [isPublic, setIsPublic] = useState<boolean>(initialMemo?.isPublic ?? false);
+      const [selectedTags, setSelectedTags] = useState<string[]>([]);
+      const [isAIDropdownOpen, setIsAIDropdownOpen] = useState(false);
+      const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
+      const [tagInputValue, setTagInputValue] = useState('');
+      const [tagHighlightedIndex, setTagHighlightedIndex] = useState(-1);
+      // 从 localStorage 读取推荐相关笔记的设置
+      const [enableRecommendations, setEnableRecommendations] = useState<boolean>(() => {
+        const stored = localStorage.getItem('memo_enableRecommendations');
+        return stored !== null ? JSON.parse(stored) : true;
+      });
 
-    // 当 defaultCategoryId 变化时，同步更新 selectedCategoryId（创建模式下）
-    useEffect(() => {
-      if (mode === 'create') {
-        setSelectedCategoryId(defaultCategoryId || null);
-      }
-    }, [defaultCategoryId, mode]);
-    const formRef = useRef<HTMLFormElement>(null);
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const ocrFileInputRef = useRef<HTMLInputElement>(null);
-    const suggestionsRef = useRef<HTMLDivElement>(null);
-    const categoryDropdownRef = useRef<HTMLDivElement>(null);
-    const aiDropdownRef = useRef<HTMLDivElement>(null);
-    const tagDropdownRef = useRef<HTMLDivElement>(null);
-    const tagInputRef = useRef<HTMLInputElement>(null);
-    const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-
-    const memoService = useService(MemoService);
-    const categoryService = useService(CategoryService);
-    const tagService = useService(TagService);
-    const aiToolsService = useService(AIToolsService);
-    const toastService = useService(ToastService);
-    const draftService = useMemo(() => new DraftService(), []);
-
-    useImperativeHandle(ref, () => ({
-      addRelation: (memo: MemoListItemDto) => {
-        setSelectedRelations((prev) => {
-          if (prev.some((r) => r.memoId === memo.memoId)) return prev;
-          return [...prev, memo];
-        });
-      },
-      focusTextarea: () => {
-        if (textareaRef.current) {
-          textareaRef.current.focus();
-          const len = textareaRef.current.value.length;
-          textareaRef.current.setSelectionRange(len, len);
-        }
-      },
-    }));
-
-    // 初始化：恢复草稿或初始化编辑模式的数据
-    useEffect(() => {
-      // 尝试恢复草稿（仅在首次加载时执行）
-      if (!draftRestored) {
-        const draft = draftService.getDraft(mode, initialMemo?.memoId);
-        if (draft) {
-          // 如果存在草稿，询问用户是否恢复
-          const shouldRestore = window.confirm(
-            '检测到未保存的草稿，是否恢复？\n\n点击"确定"恢复草稿，点击"取消"丢弃草稿。'
-          );
-          if (shouldRestore) {
-            setContent(draft.content);
-            setSelectedCategoryId(draft.categoryId);
-            setIsPublic(draft.isPublic);
-            setSelectedTags(draft.tags);
-            setAttachments(draft.attachments);
-            setSelectedRelations(draft.relations);
-            toastService.show('草稿已恢复', { type: 'success' });
-          } else {
-            // 用户选择不恢复，清除草稿
-            draftService.clearDraft(mode, initialMemo?.memoId);
-          }
-        }
-        setDraftRestored(true);
-      }
-
-      // 初始化编辑模式的数据（仅在编辑模式且未恢复草稿时）
-      if (mode === 'edit' && initialMemo && !draftService.getDraft(mode, initialMemo.memoId)) {
-        // 初始化附件
-        if (initialMemo.attachments && initialMemo.attachments.length > 0) {
-          const initialAttachments: AttachmentItem[] = initialMemo.attachments.map((att) => ({
-            attachmentId: att.attachmentId,
-            url: att.url,
-            type: att.type,
-            name: att.filename,
-          }));
-          setAttachments(initialAttachments);
-        }
-
-        // 初始化关联笔记
-        if (initialMemo.relations && initialMemo.relations.length > 0) {
-          setSelectedRelations(initialMemo.relations);
-        }
-
-        // 初始化类别
-        if (initialMemo.categoryId) {
-          setSelectedCategoryId(initialMemo.categoryId);
-        }
-
-        // 初始化标签
-        if (initialMemo.tags && initialMemo.tags.length > 0) {
-          setSelectedTags(initialMemo.tags.map((t) => t.name));
-        }
-      }
-    }, [mode, initialMemo, draftRestored, draftService, toastService]);
-
-    // 获取类别列表
-    useEffect(() => {
-      categoryService.fetchCategories();
-    }, [categoryService]);
-
-    // 获取标签列表（用于标签输入建议）
-    useEffect(() => {
-      tagService.fetchTags();
-    }, [tagService]);
-
-    // 点击外部关闭类别下拉框
-    useEffect(() => {
-      const handleClickOutside = (event: MouseEvent) => {
-        if (
-          categoryDropdownRef.current &&
-          !categoryDropdownRef.current.contains(event.target as Node)
-        ) {
-          setIsCategoryDropdownOpen(false);
-        }
-      };
-
-      if (isCategoryDropdownOpen) {
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-      }
-    }, [isCategoryDropdownOpen]);
-
-    // 点击外部关闭AI工具下拉框
-    useEffect(() => {
-      const handleClickOutside = (event: MouseEvent) => {
-        if (aiDropdownRef.current && !aiDropdownRef.current.contains(event.target as Node)) {
-          setIsAIDropdownOpen(false);
-        }
-      };
-
-      if (isAIDropdownOpen) {
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-      }
-    }, [isAIDropdownOpen]);
-
-    // 点击外部关闭标签下拉框
-    useEffect(() => {
-      const handleClickOutside = (event: MouseEvent) => {
-        if (tagDropdownRef.current && !tagDropdownRef.current.contains(event.target as Node)) {
-          setIsTagDropdownOpen(false);
-          setTagInputValue('');
-          setTagHighlightedIndex(-1);
-        }
-      };
-
-      if (isTagDropdownOpen) {
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-      }
-    }, [isTagDropdownOpen]);
-
-    // 点击编辑区外部时收起（避免选择类别时失焦）
-    useEffect(() => {
-      const handleMouseDown = (event: MouseEvent) => {
-        if (isCreateCategoryModalOpen) {
-          return;
-        }
-
-        if (formRef.current?.contains(event.target as Node)) {
-          if (!isEditorActive) {
-            setIsEditorActive(true);
-          }
-          return;
-        }
-
-        setIsEditorActive(false);
-        setIsCategoryDropdownOpen(false);
-      };
-
-      document.addEventListener('mousedown', handleMouseDown);
-      return () => document.removeEventListener('mousedown', handleMouseDown);
-    }, [isEditorActive, isCreateCategoryModalOpen]);
-
-    // 清理防抖计时器
-    useEffect(() => {
-      return () => {
-        if (debounceTimerRef.current) {
-          clearTimeout(debounceTimerRef.current);
-        }
-      };
-    }, []);
-
-    // 自动保存草稿（内容变化时）
-    useEffect(() => {
-      // 只有在草稿已恢复后才开始自动保存（避免覆盖初始状态）
-      if (!draftRestored) return;
-
-      // 如果内容为空，不保存草稿
-      if (!content.trim()) {
-        return;
-      }
-
-      // 防抖保存（延迟 1 秒）
-      const timer = setTimeout(() => {
-        draftService.saveDraft(
-          mode,
-          {
-            content,
-            categoryId: selectedCategoryId,
-            isPublic,
-            tags: selectedTags,
-            attachments,
-            relations: selectedRelations,
-            timestamp: Date.now(),
-          },
-          initialMemo?.memoId
-        );
-      }, 1000);
-
-      return () => clearTimeout(timer);
-    }, [
-      draftRestored,
-      content,
-      selectedCategoryId,
-      isPublic,
-      selectedTags,
-      attachments,
-      selectedRelations,
-      mode,
-      initialMemo?.memoId,
-      draftService,
-    ]);
-
-    // 自动调整 textarea 高度
-    useEffect(() => {
-      if (textareaRef.current) {
-        // 先重置高度以获取准确的 scrollHeight
-        textareaRef.current.style.height = 'auto';
-        // 设置新高度，最小 5 行，最大 20 行
-        const minHeight = 5 * 24; // 5行 * 行高(约24px)
-        const maxHeight = 20 * 24; // 20行 * 行高
-        const newHeight = Math.min(Math.max(textareaRef.current.scrollHeight, minHeight), maxHeight);
-        textareaRef.current.style.height = `${newHeight}px`;
-      }
-    }, [content]);
-
-    const handleSubmit = async (e: React.FormEvent) => {
-      e.preventDefault();
-      setError('');
-
-      if (!content.trim()) {
-        setError('请输入内容');
-        return;
-      }
-
-      setLoading(true);
-      setIsSubmitting(true); // 标记正在提交，防止推荐接口时序问题
-
-      try {
-        // 获取附件 IDs（所有附件都已经上传）
-        const attachmentIds = attachments.map((a) => a.attachmentId);
-
-        // 获取关系 IDs
-        const relationIds = selectedRelations.map((r) => r.memoId);
-
-        let result;
+      // 当 defaultCategoryId 变化时，同步更新 selectedCategoryId（创建模式下）
+      useEffect(() => {
         if (mode === 'create') {
-          // 创建 memo
-          result = await memoService.createMemo(
-            content,
-            'text', // type: default to text
-            selectedCategoryId || undefined,
-            attachmentIds.length > 0 ? attachmentIds : undefined,
-            relationIds.length > 0 ? relationIds : undefined,
-            isPublic,
-            selectedTags.length > 0 ? selectedTags : undefined
-          );
-        } else {
-          // 更新 memo
-          if (!initialMemo?.memoId) {
-            throw new Error('编辑模式缺少 memoId');
-          }
-          result = await memoService.updateMemo(
-            initialMemo.memoId,
-            content,
-            'text', // type: default to text
-            selectedCategoryId,
-            attachmentIds.length > 0 ? attachmentIds : undefined,
-            relationIds.length > 0 ? relationIds : undefined,
-            isPublic,
-            selectedTags.length > 0 ? selectedTags : undefined
-          );
+          setSelectedCategoryId(defaultCategoryId || null);
         }
+      }, [defaultCategoryId, mode]);
+      const formRef = useRef<HTMLFormElement>(null);
+      const textareaRef = useRef<HTMLTextAreaElement>(null);
+      const fileInputRef = useRef<HTMLInputElement>(null);
+      const ocrFileInputRef = useRef<HTMLInputElement>(null);
+      const suggestionsRef = useRef<HTMLDivElement>(null);
+      const categoryDropdownRef = useRef<HTMLDivElement>(null);
+      const aiDropdownRef = useRef<HTMLDivElement>(null);
+      const tagDropdownRef = useRef<HTMLDivElement>(null);
+      const tagInputRef = useRef<HTMLInputElement>(null);
+      const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-        if (result.success) {
-          // 清除推荐
-          setSuggestions([]);
-          setShowSuggestions(false);
-          // 清除草稿（保存成功后）
-          draftService.clearDraft(mode, initialMemo?.memoId);
-          if (mode === 'create') {
-            // 创建模式：立即清空表单（乐观更新，不等待刷新）
-            setContent('');
-            setAttachments([]);
-            setSelectedRelations([]);
-            setSelectedTags([]);
-            // 重置 textarea 高度到最小值
-            if (textareaRef.current) {
-              textareaRef.current.style.height = '72px';
+      const memoService = useService(MemoService);
+      const categoryService = useService(CategoryService);
+      const tagService = useService(TagService);
+      const aiToolsService = useService(AIToolsService);
+      const toastService = useService(ToastService);
+      const draftService = useMemo(() => new DraftService(), []);
+
+      useImperativeHandle(ref, () => ({
+        addRelation: (memo: MemoListItemDto) => {
+          setSelectedRelations((prev) => {
+            if (prev.some((r) => r.memoId === memo.memoId)) return prev;
+            return [...prev, memo];
+          });
+        },
+        focusTextarea: () => {
+          if (textareaRef.current) {
+            textareaRef.current.focus();
+            const len = textareaRef.current.value.length;
+            textareaRef.current.setSelectionRange(len, len);
+          }
+        },
+      }));
+
+      // 初始化：恢复草稿或初始化编辑模式的数据
+      useEffect(() => {
+        // 尝试恢复草稿（仅在首次加载时执行）
+        if (!draftRestored) {
+          const draft = draftService.getDraft(mode, initialMemo?.memoId);
+          if (draft) {
+            // 如果存在草稿，询问用户是否恢复
+            const shouldRestore = window.confirm(
+              '检测到未保存的草稿，是否恢复？\n\n点击"确定"恢复草稿，点击"取消"丢弃草稿。'
+            );
+            if (shouldRestore) {
+              setContent(draft.content);
+              setSelectedCategoryId(draft.categoryId);
+              setIsPublic(draft.isPublic);
+              setSelectedTags(draft.tags);
+              setAttachments(draft.attachments);
+              setSelectedRelations(draft.relations);
+              toastService.show('草稿已恢复', { type: 'success' });
+            } else {
+              // 用户选择不恢复，清除草稿
+              draftService.clearDraft(mode, initialMemo?.memoId);
             }
           }
-          // 后台刷新标签列表（更新使用计数），不阻塞用户操作
-          tagService.fetchTags().catch((error) => {
-            console.error('Failed to refresh tags:', error);
-          });
-          // 调用 onSave 回调
-          if (onSave && result.memo) {
-            onSave(result.memo);
+          setDraftRestored(true);
+        }
+
+        // 初始化编辑模式的数据（仅在编辑模式且未恢复草稿时）
+        if (mode === 'edit' && initialMemo && !draftService.getDraft(mode, initialMemo.memoId)) {
+          // 初始化附件
+          if (initialMemo.attachments && initialMemo.attachments.length > 0) {
+            const initialAttachments: AttachmentItem[] = initialMemo.attachments.map((att) => ({
+              attachmentId: att.attachmentId,
+              url: att.url,
+              type: att.type,
+              name: att.filename,
+            }));
+            setAttachments(initialAttachments);
           }
-        } else {
-          setError(result.message || '保存失败');
-        }
-      } catch (err) {
-        console.error('Submit error:', err);
-        setError('保存失败，请重试');
-      } finally {
-        setLoading(false);
-        setIsSubmitting(false);
-      }
-    };
 
-    const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const value = e.target.value;
-      setContent(value);
-
-      // 根据 scrollHeight 动态调整高度
-      if (textareaRef.current) {
-        // 先重置高度以获取准确的 scrollHeight
-        textareaRef.current.style.height = 'auto';
-        // 设置新高度，最小 5 行，最大 20 行
-        const minHeight = 5 * 24; // 5行 * 行高(约24px)
-        const maxHeight = 20 * 24; // 20行 * 行高
-        const newHeight = Math.min(Math.max(textareaRef.current.scrollHeight, minHeight), maxHeight);
-        textareaRef.current.style.height = `${newHeight}px`;
-      }
-
-      // 清除之前的防抖计时器
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-
-      // 当内容变化时，使用防抖获取推荐的相关 memo（仅在启用推荐时）
-      if (enableRecommendations && value.trim().length >= 2) {
-        // 设置新的防抖计时器（延迟 500ms）
-        debounceTimerRef.current = setTimeout(() => {
-          searchRelationSuggestions(value);
-        }, 500);
-      } else {
-        setSuggestions([]);
-        setShowSuggestions(false);
-      }
-    };
-
-    const searchRelationSuggestions = async (query: string) => {
-      // 如果正在提交中，跳过推荐搜索（防止时序问题）
-      if (isSubmitting) {
-        return;
-      }
-      setSearchingRelations(true);
-      try {
-        const response = await memoApi.vectorSearch({
-          query,
-          limit: 10,
-          page: 1,
-        });
-        // 再次检查：如果在请求过程中开始提交了，跳过更新
-        if (isSubmitting) {
-          return;
-        }
-        if (response.code === 0 && response.data) {
-          // 排除已选中的关系和自己（编辑模式）
-          const selectedIds = selectedRelations.map((r) => r.memoId);
-          const currentMemoId = mode === 'edit' && initialMemo ? initialMemo.memoId : null;
-          const filtered = response.data.items.filter(
-            (item) =>
-              !selectedIds.includes(item.memoId) &&
-              (currentMemoId ? item.memoId !== currentMemoId : true)
-          );
-          setSuggestions(filtered);
-          setShowSuggestions(filtered.length > 0);
-        }
-      } catch (error) {
-        console.error('Failed to search relations:', error);
-      } finally {
-        setSearchingRelations(false);
-      }
-    };
-
-    const handleAddRelation = (memo: MemoListItemDto) => {
-      setSelectedRelations([...selectedRelations, memo]);
-      // 从建议中移除
-      setSuggestions(suggestions.filter((s) => s.memoId !== memo.memoId));
-      if (suggestions.length <= 1) {
-        setShowSuggestions(false);
-      }
-    };
-
-    const handleRemoveRelation = (memoId: string) => {
-      setSelectedRelations(selectedRelations.filter((r) => r.memoId !== memoId));
-    };
-
-    const handleFocus = () => {
-      // 聚焦时确保 textarea 高度正确
-      if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
-        const minHeight = 5 * 24;
-        const maxHeight = 20 * 24;
-        const newHeight = Math.min(Math.max(textareaRef.current.scrollHeight, minHeight), maxHeight);
-        textareaRef.current.style.height = `${newHeight}px`;
-      }
-    };
-
-    const handleBlur = () => {
-      // 失焦时，如果内容为空则收缩到最小高度（仅创建模式）
-      if (mode === 'create' && !content.trim()) {
-        requestAnimationFrame(() => {
-          const activeElement = document.activeElement;
-          if (!formRef.current?.contains(activeElement) && textareaRef.current) {
-            textareaRef.current.style.height = '72px'; // 3行的高度
+          // 初始化关联笔记
+          if (initialMemo.relations && initialMemo.relations.length > 0) {
+            setSelectedRelations(initialMemo.relations);
           }
-        });
-      }
-    };
 
-    // Command+Enter (Mac) 或 Ctrl+Enter (Windows/Linux) 提交表单
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-        e.preventDefault();
-        if (content.trim() && !loading) {
-          // 立即清除推荐，避免显示问题
-          setSuggestions([]);
-          setShowSuggestions(false);
-          // 触发表单提交
-          handleSubmit(e as unknown as React.FormEvent);
+          // 初始化类别
+          if (initialMemo.categoryId) {
+            setSelectedCategoryId(initialMemo.categoryId);
+          }
+
+          // 初始化标签
+          if (initialMemo.tags && initialMemo.tags.length > 0) {
+            setSelectedTags(initialMemo.tags.map((t) => t.name));
+          }
         }
-      }
-    };
+      }, [mode, initialMemo, draftRestored, draftService, toastService]);
 
-    const handleFormFocus = () => {
-      if (!isEditorActive) {
-        setIsEditorActive(true);
-      }
-    };
+      // 获取类别列表
+      useEffect(() => {
+        categoryService.fetchCategories();
+      }, [categoryService]);
 
-    const handleAttachmentMouseDown = (e: React.MouseEvent) => {
-      // 阻止默认的 focus 行为，防止触发展开逻辑
-      // 然后直接触发文件选择
-      e.preventDefault();
-      fileInputRef.current?.click();
-      // 同时展开编辑器
-      if (!isEditorActive) {
-        setIsEditorActive(true);
-      }
-    };
+      // 获取标签列表（用于标签输入建议）
+      useEffect(() => {
+        tagService.fetchTags();
+      }, [tagService]);
 
-    const handleOCRMouseDown = (e: React.MouseEvent) => {
-      e.preventDefault();
-      ocrFileInputRef.current?.click();
-      if (!isEditorActive) {
-        setIsEditorActive(true);
-      }
-    };
-
-    const handleAIToolMouseDown = (e: React.MouseEvent) => {
-      e.preventDefault();
-      setIsAIDropdownOpen(!isAIDropdownOpen);
-      if (!isEditorActive) {
-        setIsEditorActive(true);
-      }
-    };
-
-    const handleSelectAITool = (toolId: string) => {
-      setIsAIDropdownOpen(false);
-
-      if (toolId === 'generate-tags') {
-        if (mode === 'edit' && initialMemo?.memoId) {
-          // Edit mode: open tool selector with memoId
-          aiToolsService.openToolSelector(initialMemo.memoId, content);
-          aiToolsService.selectTool('generate-tags');
-        } else {
-          // Create mode: open tool selector without memoId, will add tags to local state
-          aiToolsService.openToolSelector('', content);
-          aiToolsService.selectTool('generate-tags');
-        }
-      }
-    };
-
-    // Handle tags received from tag generator (create mode)
-    const handleAITagsConfirm = (tags: string[]) => {
-      // Add tags to editor's selectedTags, avoiding duplicates
-      setSelectedTags((prev) => {
-        const newTags = tags.filter(
-          (tag) => !prev.some((t) => t.toLowerCase() === tag.toLowerCase())
-        );
-        return [...prev, ...newTags];
-      });
-    };
-
-    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const files = Array.from(e.target.files || []);
-      if (files.length === 0) return;
-
-      // 检查数量限制
-      const remainingSlots = 9 - attachments.length;
-      if (remainingSlots <= 0) {
-        setError('最多只能上传 9 个附件');
-        return;
-      }
-
-      const filesToUpload = files.slice(0, remainingSlots);
-
-      // 立即上传每个文件
-      for (const file of filesToUpload) {
-        const tempId = `temp-${Date.now()}-${Math.random()}`;
-        setUploadingFiles((prev) => new Set(prev).add(tempId));
-
-        // 先添加到列表（显示上传中状态）
-        const tempAttachment: AttachmentItem = {
-          attachmentId: tempId,
-          file,
-          url: URL.createObjectURL(file),
-          type: file.type,
-          name: file.name,
+      // 点击外部关闭类别下拉框
+      useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+          if (
+            categoryDropdownRef.current &&
+            !categoryDropdownRef.current.contains(event.target as Node)
+          ) {
+            setIsCategoryDropdownOpen(false);
+          }
         };
-        setAttachments((prev) => [...prev, tempAttachment]);
 
-        try {
-          // 立即上传
-          const uploadedAttachment = await attachmentApi.upload(file);
-
-          // 更新为已上传的附件
-          setAttachments((prev) =>
-            prev.map((att) =>
-              att.attachmentId === tempId
-                ? {
-                    attachmentId: uploadedAttachment.attachmentId,
-                    url: uploadedAttachment.url,
-                    type: uploadedAttachment.type,
-                    name: uploadedAttachment.filename,
-                  }
-                : att
-            )
-          );
-        } catch (error) {
-          console.error('Upload failed:', error);
-          // 上传失败，移除这个附件
-          setAttachments((prev) => prev.filter((att) => att.attachmentId !== tempId));
-          setError(`文件 "${file.name}" 上传失败`);
-        } finally {
-          setUploadingFiles((prev) => {
-            const newSet = new Set(prev);
-            newSet.delete(tempId);
-            return newSet;
-          });
+        if (isCategoryDropdownOpen) {
+          document.addEventListener('mousedown', handleClickOutside);
+          return () => document.removeEventListener('mousedown', handleClickOutside);
         }
-      }
+      }, [isCategoryDropdownOpen]);
 
-      // 重置 input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    };
-
-    // OCR 专用文件选择处理函数 - 先上传附件，再调用 OCR 服务
-    const handleOCRFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const files = Array.from(e.target.files || []);
-      if (files.length === 0) return;
-
-      // 检查剩余空间
-      const remainingSlots = 9 - attachments.length;
-      if (remainingSlots <= 0) {
-        setError('最多只能上传 9 个附件');
-        return;
-      }
-
-      const filesToUpload = files.slice(0, remainingSlots);
-      const uploadedUrls: string[] = [];
-
-      // 上传每个文件
-      for (const file of filesToUpload) {
-        const tempId = `temp-${Date.now()}-${Math.random()}`;
-        setUploadingFiles((prev) => new Set(prev).add(tempId));
-
-        // 先添加到列表（显示上传中状态）
-        const tempAttachment: AttachmentItem = {
-          attachmentId: tempId,
-          file,
-          url: URL.createObjectURL(file),
-          type: file.type,
-          name: file.name,
+      // 点击外部关闭AI工具下拉框
+      useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+          if (aiDropdownRef.current && !aiDropdownRef.current.contains(event.target as Node)) {
+            setIsAIDropdownOpen(false);
+          }
         };
-        setAttachments((prev) => [...prev, tempAttachment]);
 
-        try {
-          // 上传文件
-          const uploadedAttachment = await attachmentApi.upload(file);
-          const fileUrl = uploadedAttachment.url;
-
-          // 保存上传后的 URL
-          uploadedUrls.push(fileUrl);
-
-          // 更新为已上传的附件
-          setAttachments((prev) =>
-            prev.map((att) =>
-              att.attachmentId === tempId
-                ? {
-                    attachmentId: uploadedAttachment.attachmentId,
-                    url: fileUrl,
-                    type: uploadedAttachment.type,
-                    name: uploadedAttachment.filename,
-                  }
-                : att
-            )
-          );
-        } catch (error) {
-          console.error('Upload failed:', error);
-          // 上传失败，移除这个附件
-          setAttachments((prev) => prev.filter((att) => att.attachmentId !== tempId));
-          setError(`文件 "${file.name}" 上传失败`);
-        } finally {
-          setUploadingFiles((prev) => {
-            const newSet = new Set(prev);
-            newSet.delete(tempId);
-            return newSet;
-          });
+        if (isAIDropdownOpen) {
+          document.addEventListener('mousedown', handleClickOutside);
+          return () => document.removeEventListener('mousedown', handleClickOutside);
         }
-      }
+      }, [isAIDropdownOpen]);
 
-      // 所有文件上传完成后，调用 OCR 服务
-      if (uploadedUrls.length > 0) {
-        try {
-          // 使用上传后的 URL 调用 OCR
-          const ocrTexts = await ocrApi.parseByUrls(uploadedUrls);
-          // 过滤掉空文本
-          const validTexts = ocrTexts.filter((text) => text.trim().length > 0);
-          if (validTexts.length > 0) {
-            // 将 OCR 识别的文本追加到内容中
-            const ocrContent = validTexts.join('\n\n');
-            setContent((prev) => {
-              if (prev.trim()) {
-                return prev + '\n\n' + ocrContent;
-              }
-              return ocrContent;
-            });
-            // 如果编辑器未激活，激活它
+      // 点击外部关闭标签下拉框
+      useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+          if (tagDropdownRef.current && !tagDropdownRef.current.contains(event.target as Node)) {
+            setIsTagDropdownOpen(false);
+            setTagInputValue('');
+            setTagHighlightedIndex(-1);
+          }
+        };
+
+        if (isTagDropdownOpen) {
+          document.addEventListener('mousedown', handleClickOutside);
+          return () => document.removeEventListener('mousedown', handleClickOutside);
+        }
+      }, [isTagDropdownOpen]);
+
+      // 点击编辑区外部时收起（避免选择类别时失焦）
+      useEffect(() => {
+        const handleMouseDown = (event: MouseEvent) => {
+          if (isCreateCategoryModalOpen) {
+            return;
+          }
+
+          if (formRef.current?.contains(event.target as Node)) {
             if (!isEditorActive) {
               setIsEditorActive(true);
             }
+            return;
+          }
+
+          setIsEditorActive(false);
+          setIsCategoryDropdownOpen(false);
+        };
+
+        document.addEventListener('mousedown', handleMouseDown);
+        return () => document.removeEventListener('mousedown', handleMouseDown);
+      }, [isEditorActive, isCreateCategoryModalOpen]);
+
+      // 清理防抖计时器
+      useEffect(() => {
+        return () => {
+          if (debounceTimerRef.current) {
+            clearTimeout(debounceTimerRef.current);
+          }
+        };
+      }, []);
+
+      // 自动保存草稿（内容变化时）
+      useEffect(() => {
+        // 只有在草稿已恢复后才开始自动保存（避免覆盖初始状态）
+        if (!draftRestored) return;
+
+        // 如果内容为空，不保存草稿
+        if (!content.trim()) {
+          return;
+        }
+
+        // 防抖保存（延迟 1 秒）
+        const timer = setTimeout(() => {
+          draftService.saveDraft(
+            mode,
+            {
+              content,
+              categoryId: selectedCategoryId,
+              isPublic,
+              tags: selectedTags,
+              attachments,
+              relations: selectedRelations,
+              timestamp: Date.now(),
+            },
+            initialMemo?.memoId
+          );
+        }, 1000);
+
+        return () => clearTimeout(timer);
+      }, [
+        draftRestored,
+        content,
+        selectedCategoryId,
+        isPublic,
+        selectedTags,
+        attachments,
+        selectedRelations,
+        mode,
+        initialMemo?.memoId,
+        draftService,
+      ]);
+
+      // 自动调整 textarea 高度
+      useEffect(() => {
+        if (textareaRef.current) {
+          // 先重置高度以获取准确的 scrollHeight
+          textareaRef.current.style.height = 'auto';
+          // 设置新高度，最小 5 行，最大 20 行
+          const minHeight = 5 * 24; // 5行 * 行高(约24px)
+          const maxHeight = 20 * 24; // 20行 * 行高
+          const newHeight = Math.min(
+            Math.max(textareaRef.current.scrollHeight, minHeight),
+            maxHeight
+          );
+          textareaRef.current.style.height = `${newHeight}px`;
+        }
+      }, [content]);
+
+      const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError('');
+
+        if (!content.trim()) {
+          setError('请输入内容');
+          return;
+        }
+
+        setLoading(true);
+        setIsSubmitting(true); // 标记正在提交，防止推荐接口时序问题
+
+        try {
+          // 获取附件 IDs（所有附件都已经上传）
+          const attachmentIds = attachments.map((a) => a.attachmentId);
+
+          // 获取关系 IDs
+          const relationIds = selectedRelations.map((r) => r.memoId);
+
+          let result;
+          if (mode === 'create') {
+            // 创建 memo
+            result = await memoService.createMemo(
+              content,
+              'text', // type: default to text
+              selectedCategoryId || undefined,
+              attachmentIds.length > 0 ? attachmentIds : undefined,
+              relationIds.length > 0 ? relationIds : undefined,
+              isPublic,
+              selectedTags.length > 0 ? selectedTags : undefined
+            );
+          } else {
+            // 更新 memo
+            if (!initialMemo?.memoId) {
+              throw new Error('编辑模式缺少 memoId');
+            }
+            result = await memoService.updateMemo(
+              initialMemo.memoId,
+              content,
+              'text', // type: default to text
+              selectedCategoryId,
+              attachmentIds.length > 0 ? attachmentIds : undefined,
+              relationIds.length > 0 ? relationIds : undefined,
+              isPublic,
+              selectedTags.length > 0 ? selectedTags : undefined
+            );
+          }
+
+          if (result.success) {
+            // 清除推荐
+            setSuggestions([]);
+            setShowSuggestions(false);
+            // 清除草稿（保存成功后）
+            draftService.clearDraft(mode, initialMemo?.memoId);
+            if (mode === 'create') {
+              // 创建模式：立即清空表单（乐观更新，不等待刷新）
+              setContent('');
+              setAttachments([]);
+              setSelectedRelations([]);
+              setSelectedTags([]);
+              // 重置 textarea 高度到最小值
+              if (textareaRef.current) {
+                textareaRef.current.style.height = '72px';
+              }
+            }
+            // 后台刷新标签列表（更新使用计数），不阻塞用户操作
+            tagService.fetchTags().catch((error) => {
+              console.error('Failed to refresh tags:', error);
+            });
+            // 调用 onSave 回调
+            if (onSave && result.memo) {
+              onSave(result.memo);
+            }
+          } else {
+            setError(result.message || '保存失败');
+          }
+        } catch (err) {
+          console.error('Submit error:', err);
+          setError('保存失败，请重试');
+        } finally {
+          setLoading(false);
+          setIsSubmitting(false);
+        }
+      };
+
+      const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        const value = e.target.value;
+        setContent(value);
+
+        // 根据 scrollHeight 动态调整高度
+        if (textareaRef.current) {
+          // 先重置高度以获取准确的 scrollHeight
+          textareaRef.current.style.height = 'auto';
+          // 设置新高度，最小 5 行，最大 20 行
+          const minHeight = 5 * 24; // 5行 * 行高(约24px)
+          const maxHeight = 20 * 24; // 20行 * 行高
+          const newHeight = Math.min(
+            Math.max(textareaRef.current.scrollHeight, minHeight),
+            maxHeight
+          );
+          textareaRef.current.style.height = `${newHeight}px`;
+        }
+
+        // 清除之前的防抖计时器
+        if (debounceTimerRef.current) {
+          clearTimeout(debounceTimerRef.current);
+        }
+
+        // 当内容变化时，使用防抖获取推荐的相关 memo（仅在启用推荐时）
+        if (enableRecommendations && value.trim().length >= 2) {
+          // 设置新的防抖计时器（延迟 500ms）
+          debounceTimerRef.current = setTimeout(() => {
+            searchRelationSuggestions(value);
+          }, 500);
+        } else {
+          setSuggestions([]);
+          setShowSuggestions(false);
+        }
+      };
+
+      const searchRelationSuggestions = async (query: string) => {
+        // 如果正在提交中，跳过推荐搜索（防止时序问题）
+        if (isSubmitting) {
+          return;
+        }
+        setSearchingRelations(true);
+        try {
+          const response = await memoApi.vectorSearch({
+            query,
+            limit: 10,
+            page: 1,
+          });
+          // 再次检查：如果在请求过程中开始提交了，跳过更新
+          if (isSubmitting) {
+            return;
+          }
+          if (response.code === 0 && response.data) {
+            // 排除已选中的关系和自己（编辑模式）
+            const selectedIds = selectedRelations.map((r) => r.memoId);
+            const currentMemoId = mode === 'edit' && initialMemo ? initialMemo.memoId : null;
+            const filtered = response.data.items.filter(
+              (item) =>
+                !selectedIds.includes(item.memoId) &&
+                (currentMemoId ? item.memoId !== currentMemoId : true)
+            );
+            setSuggestions(filtered);
+            setShowSuggestions(filtered.length > 0);
           }
         } catch (error) {
-          console.error('OCR failed:', error);
-          // 透传后端错误消息
-          const errorMsg = error instanceof Error ? error.message : 'OCR 识别失败，请重试';
-          toastService.show(errorMsg, { type: 'error' });
+          console.error('Failed to search relations:', error);
+        } finally {
+          setSearchingRelations(false);
         }
-      }
+      };
 
-      // 重置 input
-      if (ocrFileInputRef.current) {
-        ocrFileInputRef.current.value = '';
-      }
-    };
-
-    const handleRemoveAttachment = async (attachmentId: string) => {
-      // 如果是正在上传的，不允许删除
-      if (uploadingFiles.has(attachmentId)) {
-        return;
-      }
-
-      // 如果是已上传的附件（不是 temp- 开头），调用 API 删除
-      if (!attachmentId.startsWith('temp-')) {
-        try {
-          await attachmentApi.delete(attachmentId);
-        } catch (error) {
-          console.error('Failed to delete attachment:', error);
-          setError('删除附件失败');
-          return;
+      const handleAddRelation = (memo: MemoListItemDto) => {
+        setSelectedRelations([...selectedRelations, memo]);
+        // 从建议中移除
+        setSuggestions(suggestions.filter((s) => s.memoId !== memo.memoId));
+        if (suggestions.length <= 1) {
+          setShowSuggestions(false);
         }
-      }
+      };
 
-      // 从列表中移除
-      setAttachments((prev) => {
-        const attachment = prev.find((a) => a.attachmentId === attachmentId);
-        if (attachment && attachment.file) {
-          URL.revokeObjectURL(attachment.url);
+      const handleRemoveRelation = (memoId: string) => {
+        setSelectedRelations(selectedRelations.filter((r) => r.memoId !== memoId));
+      };
+
+      const handleFocus = () => {
+        // 聚焦时确保 textarea 高度正确
+        if (textareaRef.current) {
+          textareaRef.current.style.height = 'auto';
+          const minHeight = 5 * 24;
+          const maxHeight = 20 * 24;
+          const newHeight = Math.min(
+            Math.max(textareaRef.current.scrollHeight, minHeight),
+            maxHeight
+          );
+          textareaRef.current.style.height = `${newHeight}px`;
         }
-        return prev.filter((a) => a.attachmentId !== attachmentId);
-      });
-    };
+      };
 
-    const handleCancelEdit = () => {
-      if (onCancel) {
-        onCancel();
-      }
-    };
+      const handleBlur = () => {
+        // 失焦时，如果内容为空则收缩到最小高度（仅创建模式）
+        if (mode === 'create' && !content.trim()) {
+          requestAnimationFrame(() => {
+            const activeElement = document.activeElement;
+            if (!formRef.current?.contains(activeElement) && textareaRef.current) {
+              textareaRef.current.style.height = '72px'; // 3行的高度
+            }
+          });
+        }
+      };
 
-    const handleSelectCategory = (categoryId: string | null) => {
-      setSelectedCategoryId(categoryId);
-      setIsCategoryDropdownOpen(false);
-    };
-
-    const handleOpenCreateCategoryModal = () => {
-      setIsCategoryDropdownOpen(false);
-      setIsCreateCategoryModalOpen(true);
-    };
-
-    const handleCategoryCreated = (categoryId: string) => {
-      // Auto-select the newly created category
-      setSelectedCategoryId(categoryId);
-    };
-
-    // 计算标签建议
-    const tagSuggestions = useMemo(() => {
-      const existingTags = tagService.tags;
-      if (tagInputValue.trim()) {
-        const normalizedInput = tagInputValue.trim().toLowerCase();
-        return existingTags
-          .filter(
-            (tag) =>
-              tag.name.toLowerCase().includes(normalizedInput) &&
-              !selectedTags.some((t) => t.toLowerCase() === tag.name.toLowerCase())
-          )
-          .slice(0, 5);
-      }
-      return existingTags
-        .filter((tag) => !selectedTags.some((t) => t.toLowerCase() === tag.name.toLowerCase()))
-        .slice(0, 5);
-    }, [tagInputValue, tagService.tags, selectedTags]);
-
-    const addTag = (tagName: string) => {
-      const normalizedName = tagName.trim();
-      if (!normalizedName) return;
-
-      const isDuplicate = selectedTags.some(
-        (t) => t.toLowerCase() === normalizedName.toLowerCase()
-      );
-      if (isDuplicate) {
-        setTagInputValue('');
-        return;
-      }
-
-      setSelectedTags([...selectedTags, normalizedName]);
-      setTagInputValue('');
-      setTagHighlightedIndex(-1);
-    };
-
-    const removeTag = (tagToRemove: string) => {
-      setSelectedTags(selectedTags.filter((t) => t !== tagToRemove));
-    };
-
-    const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (tagSuggestions.length > 0) {
-        if (e.key === 'ArrowDown') {
+      // Command+Enter (Mac) 或 Ctrl+Enter (Windows/Linux) 提交表单
+      const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
           e.preventDefault();
-          setTagHighlightedIndex((prev) => (prev < tagSuggestions.length - 1 ? prev + 1 : prev));
-          return;
+          if (content.trim() && !loading) {
+            // 立即清除推荐，避免显示问题
+            setSuggestions([]);
+            setShowSuggestions(false);
+            // 触发表单提交
+            handleSubmit(e as unknown as React.FormEvent);
+          }
         }
-        if (e.key === 'ArrowUp') {
-          e.preventDefault();
-          setTagHighlightedIndex((prev) => (prev > 0 ? prev - 1 : -1));
-          return;
-        }
-        if (e.key === 'Enter' && tagHighlightedIndex >= 0) {
-          e.preventDefault();
-          addTag(tagSuggestions[tagHighlightedIndex].name);
-          setIsTagDropdownOpen(false);
-          return;
-        }
-      }
+      };
 
-      if (e.key === 'Enter') {
+      const handleFormFocus = () => {
+        if (!isEditorActive) {
+          setIsEditorActive(true);
+        }
+      };
+
+      const handleAttachmentMouseDown = (e: React.MouseEvent) => {
+        // 阻止默认的 focus 行为，防止触发展开逻辑
+        // 然后直接触发文件选择
         e.preventDefault();
-        if (tagInputValue.trim()) {
-          addTag(tagInputValue);
-          setIsTagDropdownOpen(false);
+        fileInputRef.current?.click();
+        // 同时展开编辑器
+        if (!isEditorActive) {
+          setIsEditorActive(true);
         }
-        return;
-      }
+      };
 
-      if (e.key === 'Escape') {
-        setIsTagDropdownOpen(false);
+      const handleOCRMouseDown = (e: React.MouseEvent) => {
+        e.preventDefault();
+        ocrFileInputRef.current?.click();
+        if (!isEditorActive) {
+          setIsEditorActive(true);
+        }
+      };
+
+      const handleAIToolMouseDown = (e: React.MouseEvent) => {
+        e.preventDefault();
+        setIsAIDropdownOpen(!isAIDropdownOpen);
+        if (!isEditorActive) {
+          setIsEditorActive(true);
+        }
+      };
+
+      const handleSelectAITool = (toolId: string) => {
+        setIsAIDropdownOpen(false);
+
+        if (toolId === 'generate-tags') {
+          if (mode === 'edit' && initialMemo?.memoId) {
+            // Edit mode: open tool selector with memoId
+            aiToolsService.openToolSelector(initialMemo.memoId, content);
+            aiToolsService.selectTool('generate-tags');
+          } else {
+            // Create mode: open tool selector without memoId, will add tags to local state
+            aiToolsService.openToolSelector('', content);
+            aiToolsService.selectTool('generate-tags');
+          }
+        }
+      };
+
+      // Handle tags received from tag generator (create mode)
+      const handleAITagsConfirm = (tags: string[]) => {
+        // Add tags to editor's selectedTags, avoiding duplicates
+        setSelectedTags((prev) => {
+          const newTags = tags.filter(
+            (tag) => !prev.some((t) => t.toLowerCase() === tag.toLowerCase())
+          );
+          return [...prev, ...newTags];
+        });
+      };
+
+      const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+
+        // 检查数量限制
+        const remainingSlots = 9 - attachments.length;
+        if (remainingSlots <= 0) {
+          setError('最多只能上传 9 个附件');
+          return;
+        }
+
+        const filesToUpload = files.slice(0, remainingSlots);
+
+        // 立即上传每个文件
+        for (const file of filesToUpload) {
+          const tempId = `temp-${Date.now()}-${Math.random()}`;
+          setUploadingFiles((prev) => new Set(prev).add(tempId));
+
+          // 先添加到列表（显示上传中状态）
+          const tempAttachment: AttachmentItem = {
+            attachmentId: tempId,
+            file,
+            url: URL.createObjectURL(file),
+            type: file.type,
+            name: file.name,
+          };
+          setAttachments((prev) => [...prev, tempAttachment]);
+
+          try {
+            // 立即上传
+            const uploadedAttachment = await attachmentApi.upload(file);
+
+            // 更新为已上传的附件
+            setAttachments((prev) =>
+              prev.map((att) =>
+                att.attachmentId === tempId
+                  ? {
+                      attachmentId: uploadedAttachment.attachmentId,
+                      url: uploadedAttachment.url,
+                      type: uploadedAttachment.type,
+                      name: uploadedAttachment.filename,
+                    }
+                  : att
+              )
+            );
+          } catch (error) {
+            console.error('Upload failed:', error);
+            // 上传失败，移除这个附件
+            setAttachments((prev) => prev.filter((att) => att.attachmentId !== tempId));
+            setError(`文件 "${file.name}" 上传失败`);
+          } finally {
+            setUploadingFiles((prev) => {
+              const newSet = new Set(prev);
+              newSet.delete(tempId);
+              return newSet;
+            });
+          }
+        }
+
+        // 重置 input
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      };
+
+      // OCR 专用文件选择处理函数 - 先上传附件，再调用 OCR 服务
+      const handleOCRFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+
+        // 检查剩余空间
+        const remainingSlots = 9 - attachments.length;
+        if (remainingSlots <= 0) {
+          setError('最多只能上传 9 个附件');
+          return;
+        }
+
+        const filesToUpload = files.slice(0, remainingSlots);
+        const uploadedUrls: string[] = [];
+
+        // 上传每个文件
+        for (const file of filesToUpload) {
+          const tempId = `temp-${Date.now()}-${Math.random()}`;
+          setUploadingFiles((prev) => new Set(prev).add(tempId));
+
+          // 先添加到列表（显示上传中状态）
+          const tempAttachment: AttachmentItem = {
+            attachmentId: tempId,
+            file,
+            url: URL.createObjectURL(file),
+            type: file.type,
+            name: file.name,
+          };
+          setAttachments((prev) => [...prev, tempAttachment]);
+
+          try {
+            // 上传文件
+            const uploadedAttachment = await attachmentApi.upload(file);
+            const fileUrl = uploadedAttachment.url;
+
+            // 保存上传后的 URL
+            uploadedUrls.push(fileUrl);
+
+            // 更新为已上传的附件
+            setAttachments((prev) =>
+              prev.map((att) =>
+                att.attachmentId === tempId
+                  ? {
+                      attachmentId: uploadedAttachment.attachmentId,
+                      url: fileUrl,
+                      type: uploadedAttachment.type,
+                      name: uploadedAttachment.filename,
+                    }
+                  : att
+              )
+            );
+          } catch (error) {
+            console.error('Upload failed:', error);
+            // 上传失败，移除这个附件
+            setAttachments((prev) => prev.filter((att) => att.attachmentId !== tempId));
+            setError(`文件 "${file.name}" 上传失败`);
+          } finally {
+            setUploadingFiles((prev) => {
+              const newSet = new Set(prev);
+              newSet.delete(tempId);
+              return newSet;
+            });
+          }
+        }
+
+        // 所有文件上传完成后，调用 OCR 服务
+        if (uploadedUrls.length > 0) {
+          try {
+            // 使用上传后的 URL 调用 OCR
+            const ocrTexts = await ocrApi.parseByUrls(uploadedUrls);
+            // 过滤掉空文本
+            const validTexts = ocrTexts.filter((text) => text.trim().length > 0);
+            if (validTexts.length > 0) {
+              // 将 OCR 识别的文本追加到内容中
+              const ocrContent = validTexts.join('\n\n');
+              setContent((prev) => {
+                if (prev.trim()) {
+                  return prev + '\n\n' + ocrContent;
+                }
+                return ocrContent;
+              });
+              // 如果编辑器未激活，激活它
+              if (!isEditorActive) {
+                setIsEditorActive(true);
+              }
+            }
+          } catch (error) {
+            console.error('OCR failed:', error);
+            // 透传后端错误消息
+            const errorMsg = error instanceof Error ? error.message : 'OCR 识别失败，请重试';
+            toastService.show(errorMsg, { type: 'error' });
+          }
+        }
+
+        // 重置 input
+        if (ocrFileInputRef.current) {
+          ocrFileInputRef.current.value = '';
+        }
+      };
+
+      const handleRemoveAttachment = async (attachmentId: string) => {
+        // 如果是正在上传的，不允许删除
+        if (uploadingFiles.has(attachmentId)) {
+          return;
+        }
+
+        // 如果是已上传的附件（不是 temp- 开头），调用 API 删除
+        if (!attachmentId.startsWith('temp-')) {
+          try {
+            await attachmentApi.delete(attachmentId);
+          } catch (error) {
+            console.error('Failed to delete attachment:', error);
+            setError('删除附件失败');
+            return;
+          }
+        }
+
+        // 从列表中移除
+        setAttachments((prev) => {
+          const attachment = prev.find((a) => a.attachmentId === attachmentId);
+          if (attachment && attachment.file) {
+            URL.revokeObjectURL(attachment.url);
+          }
+          return prev.filter((a) => a.attachmentId !== attachmentId);
+        });
+      };
+
+      const handleCancelEdit = () => {
+        if (onCancel) {
+          onCancel();
+        }
+      };
+
+      const handleSelectCategory = (categoryId: string | null) => {
+        setSelectedCategoryId(categoryId);
+        setIsCategoryDropdownOpen(false);
+      };
+
+      const handleOpenCreateCategoryModal = () => {
+        setIsCategoryDropdownOpen(false);
+        setIsCreateCategoryModalOpen(true);
+      };
+
+      const handleCategoryCreated = (categoryId: string) => {
+        // Auto-select the newly created category
+        setSelectedCategoryId(categoryId);
+      };
+
+      // 计算标签建议
+      const tagSuggestions = useMemo(() => {
+        const existingTags = tagService.tags;
+        if (tagInputValue.trim()) {
+          const normalizedInput = tagInputValue.trim().toLowerCase();
+          return existingTags
+            .filter(
+              (tag) =>
+                tag.name.toLowerCase().includes(normalizedInput) &&
+                !selectedTags.some((t) => t.toLowerCase() === tag.name.toLowerCase())
+            )
+            .slice(0, 5);
+        }
+        return existingTags
+          .filter((tag) => !selectedTags.some((t) => t.toLowerCase() === tag.name.toLowerCase()))
+          .slice(0, 5);
+      }, [tagInputValue, tagService.tags, selectedTags]);
+
+      const addTag = (tagName: string) => {
+        const normalizedName = tagName.trim();
+        if (!normalizedName) return;
+
+        const isDuplicate = selectedTags.some(
+          (t) => t.toLowerCase() === normalizedName.toLowerCase()
+        );
+        if (isDuplicate) {
+          setTagInputValue('');
+          return;
+        }
+
+        setSelectedTags([...selectedTags, normalizedName]);
         setTagInputValue('');
         setTagHighlightedIndex(-1);
-        return;
-      }
+      };
 
-      if (e.key === 'Backspace' && !tagInputValue && selectedTags.length > 0) {
-        removeTag(selectedTags[selectedTags.length - 1]);
-        return;
-      }
-    };
+      const removeTag = (tagToRemove: string) => {
+        setSelectedTags(selectedTags.filter((t) => t !== tagToRemove));
+      };
 
-    const handleTagButtonClick = () => {
-      if (!isEditorActive) {
-        setIsEditorActive(true);
-      }
-      setIsTagDropdownOpen(!isTagDropdownOpen);
-      if (!isTagDropdownOpen) {
-        setTimeout(() => tagInputRef.current?.focus(), 0);
-      }
-    };
+      const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (tagSuggestions.length > 0) {
+          if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            setTagHighlightedIndex((prev) => (prev < tagSuggestions.length - 1 ? prev + 1 : prev));
+            return;
+          }
+          if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            setTagHighlightedIndex((prev) => (prev > 0 ? prev - 1 : -1));
+            return;
+          }
+          if (e.key === 'Enter' && tagHighlightedIndex >= 0) {
+            e.preventDefault();
+            addTag(tagSuggestions[tagHighlightedIndex].name);
+            setIsTagDropdownOpen(false);
+            return;
+          }
+        }
 
-    const showCategorySelector = mode === 'edit' || isEditorActive;
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          if (tagInputValue.trim()) {
+            addTag(tagInputValue);
+            setIsTagDropdownOpen(false);
+          }
+          return;
+        }
 
-    // Get selected category name
-    const selectedCategoryName = selectedCategoryId
-      ? categoryService.getCategoryName(selectedCategoryId) || '选择类别'
-      : '无类别';
+        if (e.key === 'Escape') {
+          setIsTagDropdownOpen(false);
+          setTagInputValue('');
+          setTagHighlightedIndex(-1);
+          return;
+        }
 
-    return (
-      <>
-        <form
-          ref={formRef}
-          onSubmit={handleSubmit}
-          onFocusCapture={handleFormFocus}
-          noValidate
-          className="space-y-2"
-        >
-          {error && (
-            <div
-              className="px-3 py-2 bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-800/30 text-red-700 dark:text-red-400 rounded text-xs animate-slide-up"
-              role="alert"
-            >
-              {error}
-            </div>
-          )}
+        if (e.key === 'Backspace' && !tagInputValue && selectedTags.length > 0) {
+          removeTag(selectedTags[selectedTags.length - 1]);
+          return;
+        }
+      };
 
-          {/* Textarea container with integrated submit button */}
-          <div className="bg-white dark:bg-dark-800 rounded-lg p-3 flex flex-col gap-3 transition-colors">
-            <textarea
-              ref={textareaRef}
-              value={content}
-              onChange={handleContentChange}
-              onFocus={handleFocus}
-              onBlur={handleBlur}
-              onKeyDown={handleKeyDown}
-              placeholder={mode === 'create' ? '记录你的想法... (⌘+Enter)' : '编辑你的笔记...'}
-              className="w-full px-0 py-0 bg-transparent text-gray-900 dark:text-gray-50 rounded-lg focus:outline-none resize-none placeholder-gray-400 dark:placeholder-gray-600 text-sm leading-relaxed"
-              style={{ minHeight: '120px', maxHeight: '480px' }}
-              disabled={loading}
-              aria-label="Memo content"
-            />
+      const handleTagButtonClick = () => {
+        if (!isEditorActive) {
+          setIsEditorActive(true);
+        }
+        setIsTagDropdownOpen(!isTagDropdownOpen);
+        if (!isTagDropdownOpen) {
+          setTimeout(() => tagInputRef.current?.focus(), 0);
+        }
+      };
 
-            {/* 推荐相关 memo 下拉框 */}
-            {showCategorySelector && showSuggestions && suggestions.length > 0 && (
+      const showCategorySelector = mode === 'edit' || isEditorActive;
+
+      // Get selected category name
+      const selectedCategoryName = selectedCategoryId
+        ? categoryService.getCategoryName(selectedCategoryId) || '选择类别'
+        : '无类别';
+
+      return (
+        <>
+          <form
+            ref={formRef}
+            onSubmit={handleSubmit}
+            onFocusCapture={handleFormFocus}
+            noValidate
+            className="space-y-2"
+          >
+            {error && (
               <div
-                ref={suggestionsRef}
-                className="bg-gradient-to-b from-white/95 to-gray-50/95 dark:from-dark-700/95 dark:to-dark-800/95 backdrop-blur-md border border-gray-200/50 dark:border-dark-600/50 rounded-lg p-2 space-y-1 animate-fade-in shadow-md"
+                className="px-3 py-2 bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-800/30 text-red-700 dark:text-red-400 rounded text-xs animate-slide-up"
+                role="alert"
               >
-                <div className="px-2 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
-                  推荐相关笔记
-                </div>
-                {searchingRelations ? (
-                  <div className="px-2 py-2 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary-500"></div>
-                    搜索中...
-                  </div>
-                ) : (
-                  <div className="space-y-1 max-h-40 overflow-y-auto">
-                    {suggestions.slice(0, 5).map((suggestion) => (
-                      <button
-                        key={suggestion.memoId}
-                        type="button"
-                        onClick={() => handleAddRelation(suggestion)}
-                        className="w-full text-left px-2 py-2 rounded text-xs bg-white dark:bg-dark-800 hover:bg-primary-50 dark:hover:bg-primary-950/20 border border-transparent hover:border-primary-300/50 dark:hover:border-primary-900/50 transition-all duration-150 cursor-pointer group"
-                      >
-                        <p className="text-gray-700 dark:text-gray-300 group-hover:text-primary-600 dark:group-hover:text-primary-400 line-clamp-2">
-                          {suggestion.content.substring(0, 100)}...
-                        </p>
-                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                          {new Date(suggestion.createdAt).toLocaleDateString('zh-CN')}
-                        </p>
-                      </button>
-                    ))}
-                  </div>
-                )}
+                {error}
               </div>
             )}
 
-            {/* 已选择的关系标签 */}
-            {showCategorySelector && selectedRelations.length > 0 && (
-              <div className="bg-gradient-to-r from-primary-50/50 to-primary-100/30 dark:from-primary-950/20 dark:to-primary-900/10 border border-primary-200/30 dark:border-primary-900/30 rounded-lg p-2.5 space-y-2">
-                <div className="text-xs font-semibold text-primary-700 dark:text-primary-300 uppercase tracking-wide">
-                  关联笔记 ({selectedRelations.length})
+            {/* Textarea container with integrated submit button */}
+            <div className="bg-white dark:bg-dark-800 rounded-lg p-3 flex flex-col gap-3 transition-colors">
+              <textarea
+                ref={textareaRef}
+                value={content}
+                onChange={handleContentChange}
+                onFocus={handleFocus}
+                onBlur={handleBlur}
+                onKeyDown={handleKeyDown}
+                placeholder={mode === 'create' ? '记录你的想法... (⌘+Enter)' : '编辑你的笔记...'}
+                className="w-full px-0 py-0 bg-transparent text-gray-900 dark:text-gray-50 rounded-lg focus:outline-none resize-none placeholder-gray-400 dark:placeholder-gray-600 text-sm leading-relaxed"
+                style={{ minHeight: '120px', maxHeight: '480px' }}
+                disabled={loading}
+                aria-label="Memo content"
+              />
+
+              {/* 推荐相关 memo 下拉框 */}
+              {showCategorySelector && showSuggestions && suggestions.length > 0 && (
+                <div
+                  ref={suggestionsRef}
+                  className="bg-gradient-to-b from-white/95 to-gray-50/95 dark:from-dark-700/95 dark:to-dark-800/95 backdrop-blur-md border border-gray-200/50 dark:border-dark-600/50 rounded-lg p-2 space-y-1 animate-fade-in shadow-md"
+                >
+                  <div className="px-2 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+                    推荐相关笔记
+                  </div>
+                  {searchingRelations ? (
+                    <div className="px-2 py-2 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary-500"></div>
+                      搜索中...
+                    </div>
+                  ) : (
+                    <div className="space-y-1 max-h-40 overflow-y-auto">
+                      {suggestions.slice(0, 5).map((suggestion) => (
+                        <button
+                          key={suggestion.memoId}
+                          type="button"
+                          onClick={() => handleAddRelation(suggestion)}
+                          className="w-full text-left px-2 py-2 rounded text-xs bg-white dark:bg-dark-800 hover:bg-primary-50 dark:hover:bg-primary-950/20 border border-transparent hover:border-primary-300/50 dark:hover:border-primary-900/50 transition-all duration-150 cursor-pointer group"
+                        >
+                          <p className="text-gray-700 dark:text-gray-300 group-hover:text-primary-600 dark:group-hover:text-primary-400 line-clamp-2">
+                            {suggestion.content.substring(0, 100)}...
+                          </p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                            {new Date(suggestion.createdAt).toLocaleDateString('zh-CN')}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {selectedRelations.map((relation) => (
-                    <div
-                      key={relation.memoId}
-                      className="inline-flex items-center gap-1.5 px-2 py-1 bg-white dark:bg-dark-800 border border-primary-300/50 dark:border-primary-700/50 rounded-full text-xs text-primary-700 dark:text-primary-300 hover:bg-primary-50 dark:hover:bg-dark-700 transition-colors group"
+              )}
+
+              {/* 已选择的关系标签 */}
+              {showCategorySelector && selectedRelations.length > 0 && (
+                <div className="bg-gradient-to-r from-primary-50/50 to-primary-100/30 dark:from-primary-950/20 dark:to-primary-900/10 border border-primary-200/30 dark:border-primary-900/30 rounded-lg p-2.5 space-y-2">
+                  <div className="text-xs font-semibold text-primary-700 dark:text-primary-300 uppercase tracking-wide">
+                    关联笔记 ({selectedRelations.length})
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedRelations.map((relation) => (
+                      <div
+                        key={relation.memoId}
+                        className="inline-flex items-center gap-1.5 px-2 py-1 bg-white dark:bg-dark-800 border border-primary-300/50 dark:border-primary-700/50 rounded-full text-xs text-primary-700 dark:text-primary-300 hover:bg-primary-50 dark:hover:bg-dark-700 transition-colors group"
+                      >
+                        <span className="truncate max-w-[150px]">
+                          {relation.content.substring(0, 50)}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveRelation(relation.memoId)}
+                          className="text-primary-400 hover:text-primary-600 dark:text-primary-600 dark:hover:text-primary-400 transition-colors cursor-pointer"
+                          aria-label="Remove relation"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 附件预览区域 */}
+              {attachments.length > 0 && (
+                <div className="pt-1">
+                  <AttachmentUploader
+                    attachments={attachments}
+                    onAttachmentsChange={setAttachments}
+                    onRemove={handleRemoveAttachment}
+                    uploadingFiles={uploadingFiles}
+                    disabled={loading}
+                  />
+                </div>
+              )}
+
+              {/* 标签展示区域 */}
+              {showCategorySelector && selectedTags.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2">
+                  {selectedTags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-800 rounded-full text-xs text-primary-700 dark:text-primary-300"
                     >
-                      <span className="truncate max-w-[150px]">
-                        {relation.content.substring(0, 50)}
-                      </span>
+                      <Hash className="w-3 h-3" />
+                      <span>{tag}</span>
                       <button
                         type="button"
-                        onClick={() => handleRemoveRelation(relation.memoId)}
-                        className="text-primary-400 hover:text-primary-600 dark:text-primary-600 dark:hover:text-primary-400 transition-colors cursor-pointer"
-                        aria-label="Remove relation"
+                        onClick={() => removeTag(tag)}
+                        disabled={loading}
+                        className="text-primary-400 hover:text-primary-600 dark:text-primary-500 dark:hover:text-primary-300 transition-colors disabled:opacity-50 cursor-pointer"
+                        aria-label={`Remove tag ${tag}`}
                       >
                         <X className="w-3 h-3" />
                       </button>
-                    </div>
+                    </span>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+              {/* 隐藏的文件输入 */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/*,video/*,audio/mp4,audio/mpeg,.m4a,.doc,.docx,.xls,.xlsx,.txt,.md"
+                onChange={handleFileSelect}
+                className="hidden"
+                disabled={loading}
+              />
 
-            {/* 附件预览区域 */}
-            {attachments.length > 0 && (
-              <div className="pt-1">
-                <AttachmentUploader
-                  attachments={attachments}
-                  onAttachmentsChange={setAttachments}
-                  onRemove={handleRemoveAttachment}
-                  uploadingFiles={uploadingFiles}
-                  disabled={loading}
-                />
-              </div>
-            )}
+              {/* OCR 专用文件输入 - 支持图片和 PDF */}
+              <input
+                ref={ocrFileInputRef}
+                type="file"
+                multiple
+                accept="image/*,.pdf"
+                onChange={handleOCRFileSelect}
+                className="hidden"
+                disabled={loading}
+              />
 
-            {/* 标签展示区域 */}
-            {showCategorySelector && selectedTags.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2">
-                {selectedTags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-800 rounded-full text-xs text-primary-700 dark:text-primary-300"
-                  >
-                    <Hash className="w-3 h-3" />
-                    <span>{tag}</span>
-                    <button
-                      type="button"
-                      onClick={() => removeTag(tag)}
-                      disabled={loading}
-                      className="text-primary-400 hover:text-primary-600 dark:text-primary-500 dark:hover:text-primary-300 transition-colors disabled:opacity-50 cursor-pointer"
-                      aria-label={`Remove tag ${tag}`}
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-            {/* 隐藏的文件输入 */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              accept="image/*,video/*,audio/mp4,audio/mpeg,.m4a,.doc,.docx,.xls,.xlsx,.txt,.md"
-              onChange={handleFileSelect}
-              className="hidden"
-              disabled={loading}
-            />
-
-            {/* OCR 专用文件输入 - 支持图片和 PDF */}
-            <input
-              ref={ocrFileInputRef}
-              type="file"
-              multiple
-              accept="image/*,.pdf"
-              onChange={handleOCRFileSelect}
-              className="hidden"
-              disabled={loading}
-            />
-
-            {/* 操作栏：附件按钮和保存按钮 */}
-            <div className="flex items-center justify-between">
-              {/* 左侧：附件按钮和AI工具按钮 */}
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onMouseDown={handleAttachmentMouseDown}
-                  disabled={loading || attachments.length >= 9}
-                  className="p-2 text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-500 hover:bg-gray-100 dark:hover:bg-dark-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  aria-label="添加附件"
-                  title={`添加附件${attachments.length > 0 ? ` (${attachments.length}/9)` : ' (0/9)'}`}
-                >
-                  <Paperclip className="w-5 h-5" />
-                </button>
-
-                {/* 标签按钮 */}
-                <div className="relative" ref={tagDropdownRef}>
+              {/* 操作栏：附件按钮和保存按钮 */}
+              <div className="flex items-center justify-between">
+                {/* 左侧：附件按钮和AI工具按钮 */}
+                <div className="flex items-center gap-1">
                   <button
                     type="button"
-                    onClick={handleTagButtonClick}
-                    disabled={loading}
-                    className={`p-2 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                      isTagDropdownOpen
-                        ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-100 dark:hover:bg-dark-700'
-                    }`}
-                    aria-label="添加标签"
-                    title="添加标签"
-                    aria-expanded={isTagDropdownOpen}
-                    aria-haspopup="listbox"
+                    onMouseDown={handleAttachmentMouseDown}
+                    disabled={loading || attachments.length >= 9}
+                    className="p-2 text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-500 hover:bg-gray-100 dark:hover:bg-dark-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-label="添加附件"
+                    title={`添加附件${attachments.length > 0 ? ` (${attachments.length}/9)` : ' (0/9)'}`}
                   >
-                    <Hash className="w-5 h-5" />
+                    <Paperclip className="w-5 h-5" />
                   </button>
 
-                  {/* 标签下拉框 */}
-                  {isTagDropdownOpen && (
-                    <div className="absolute left-0 top-full mt-1 w-56 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg shadow-lg z-50">
-                      <div className="p-2 border-b border-gray-100 dark:border-dark-700">
-                        <input
-                          ref={tagInputRef}
-                          type="text"
-                          value={tagInputValue}
-                          onChange={(e) => {
-                            setTagInputValue(e.target.value);
-                            setTagHighlightedIndex(-1);
-                          }}
-                          onKeyDown={handleTagInputKeyDown}
-                          placeholder="输入标签名，回车添加..."
-                          className="w-full px-2 py-1.5 text-sm bg-gray-50 dark:bg-dark-700 border border-gray-200 dark:border-dark-600 rounded text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-primary-400 dark:focus-within:border-primary-500"
-                          autoFocus
-                        />
-                      </div>
-                      {tagSuggestions.length > 0 && (
-                        <div className="max-h-40 overflow-y-auto py-1">
-                          <div className="px-3 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-dark-700">
-                            {tagInputValue.trim() ? '建议标签' : '热门标签'}
-                          </div>
-                          {tagSuggestions.map((tag, index) => (
-                            <button
-                              key={tag.tagId}
-                              type="button"
-                              onClick={() => {
-                                addTag(tag.name);
-                                setIsTagDropdownOpen(false);
-                              }}
-                              onMouseEnter={() => setTagHighlightedIndex(index)}
-                              className={`w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors ${
-                                index === tagHighlightedIndex
-                                  ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
-                                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-700'
-                              }`}
-                            >
-                              <span className="flex items-center gap-2">
-                                <span className="text-primary-600 dark:text-primary-400">#</span>
-                                {tag.name}
-                              </span>
-                              {tag.usageCount !== undefined && tag.usageCount > 0 && (
-                                <span className="text-xs text-gray-400 dark:text-gray-500">
-                                  {tag.usageCount}
-                                </span>
-                              )}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                      {tagInputValue.trim() && tagSuggestions.length === 0 && (
-                        <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400 text-center">
-                          按 Enter 创建新标签
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* OCR 识别按钮 */}
-                <button
-                  type="button"
-                  onMouseDown={handleOCRMouseDown}
-                  disabled={loading}
-                  className="p-2 text-gray-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-500 hover:bg-gray-100 dark:hover:bg-dark-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  aria-label="OCR 文字识别"
-                  title="OCR 文字识别"
-                >
-                  <ScanText className="w-5 h-5" />
-                </button>
-
-                {/* AI Tools Dropdown */}
-                <div className="relative" ref={aiDropdownRef}>
-                  <button
-                    type="button"
-                    onMouseDown={handleAIToolMouseDown}
-                    disabled={loading}
-                    className={`p-2 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                      isAIDropdownOpen
-                        ? 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-gray-100 dark:hover:bg-dark-700'
-                    }`}
-                    aria-label="AI工具"
-                    title="AI工具"
-                    aria-expanded={isAIDropdownOpen}
-                    aria-haspopup="listbox"
-                  >
-                    <Sparkles className="w-5 h-5" />
-                  </button>
-
-                  {/* AI Tools Dropdown Menu */}
-                  {isAIDropdownOpen && (
-                    <div className="absolute left-0 bottom-full mb-1 w-48 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg shadow-lg z-50 py-1">
-                      <button
-                        type="button"
-                        onClick={() => handleSelectAITool('generate-tags')}
-                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
-                      >
-                        <Tags className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                        <span>智能生成标签</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* 右侧：操作按钮 */}
-              <div className="flex items-center gap-2">
-                {showCategorySelector && (
-                  <div className="relative" ref={categoryDropdownRef}>
+                  {/* 标签按钮 */}
+                  <div className="relative" ref={tagDropdownRef}>
                     <button
                       type="button"
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        // 确保编辑器展开
-                        if (!isEditorActive) {
-                          setIsEditorActive(true);
-                        }
-                        setIsCategoryDropdownOpen(!isCategoryDropdownOpen);
-                      }}
+                      onClick={handleTagButtonClick}
                       disabled={loading}
-                      className={`flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                        selectedCategoryId
-                          ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
-                          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-700'
-                      } disabled:opacity-50 disabled:cursor-not-allowed`}
-                      aria-expanded={isCategoryDropdownOpen}
+                      className={`p-2 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                        isTagDropdownOpen
+                          ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
+                          : 'text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-100 dark:hover:bg-dark-700'
+                      }`}
+                      aria-label="添加标签"
+                      title="添加标签"
+                      aria-expanded={isTagDropdownOpen}
                       aria-haspopup="listbox"
                     >
-                      <span className="max-w-[100px] truncate">{selectedCategoryName}</span>
-                      <ChevronDown
-                        size={14}
-                        className={`transition-transform duration-200 ${isCategoryDropdownOpen ? 'rotate-180' : ''}`}
-                      />
+                      <Hash className="w-5 h-5" />
                     </button>
 
-                    {/* Category Dropdown Menu */}
-                    {isCategoryDropdownOpen && (
-                      <div className="absolute right-0 bottom-full mb-1 w-48 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg shadow-lg z-50 py-1">
-                        {/* No Category Option */}
-                        <button
-                          type="button"
-                          onClick={() => handleSelectCategory(null)}
-                          className={`w-full flex items-center justify-between px-4 py-2 text-sm transition-colors ${
-                            !selectedCategoryId
-                              ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
-                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700'
-                          }`}
-                        >
-                          <span>无类别</span>
-                          {!selectedCategoryId && <Check size={14} />}
-                        </button>
-
-                        {/* Divider */}
-                        {categoryService.categories.length > 0 && (
-                          <div className="my-1 border-t border-gray-200 dark:border-dark-700" />
-                        )}
-
-                        {/* Category List */}
-                        <div className="max-h-40 overflow-y-auto">
-                          {categoryService.categories.map((category) => (
-                            <button
-                              key={category.categoryId}
-                              type="button"
-                              onClick={() => handleSelectCategory(category.categoryId)}
-                              className={`w-full flex items-center justify-between px-4 py-2 text-sm transition-colors ${
-                                selectedCategoryId === category.categoryId
-                                  ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
-                                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700'
-                              }`}
-                            >
-                              <span className="truncate">{category.name}</span>
-                              {selectedCategoryId === category.categoryId && <Check size={14} />}
-                            </button>
-                          ))}
+                    {/* 标签下拉框 */}
+                    {isTagDropdownOpen && (
+                      <div className="absolute left-0 top-full mt-1 w-56 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg shadow-lg z-50">
+                        <div className="p-2 border-b border-gray-100 dark:border-dark-700">
+                          <input
+                            ref={tagInputRef}
+                            type="text"
+                            value={tagInputValue}
+                            onChange={(e) => {
+                              setTagInputValue(e.target.value);
+                              setTagHighlightedIndex(-1);
+                            }}
+                            onKeyDown={handleTagInputKeyDown}
+                            placeholder="输入标签名，回车添加..."
+                            className="w-full px-2 py-1.5 text-sm bg-gray-50 dark:bg-dark-700 border border-gray-200 dark:border-dark-600 rounded text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-primary-400 dark:focus-within:border-primary-500"
+                            autoFocus
+                          />
                         </div>
-
-                        {/* Empty State */}
-                        {categoryService.categories.length === 0 && !categoryService.loading && (
-                          <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
-                            暂无类别
+                        {tagSuggestions.length > 0 && (
+                          <div className="max-h-40 overflow-y-auto py-1">
+                            <div className="px-3 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-dark-700">
+                              {tagInputValue.trim() ? '建议标签' : '热门标签'}
+                            </div>
+                            {tagSuggestions.map((tag, index) => (
+                              <button
+                                key={tag.tagId}
+                                type="button"
+                                onClick={() => {
+                                  addTag(tag.name);
+                                  setIsTagDropdownOpen(false);
+                                }}
+                                onMouseEnter={() => setTagHighlightedIndex(index)}
+                                className={`w-full flex items-center justify-between px-3 py-2 text-sm text-left transition-colors ${
+                                  index === tagHighlightedIndex
+                                    ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
+                                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-700'
+                                }`}
+                              >
+                                <span className="flex items-center gap-2">
+                                  <span className="text-primary-600 dark:text-primary-400">#</span>
+                                  {tag.name}
+                                </span>
+                                {tag.usageCount !== undefined && tag.usageCount > 0 && (
+                                  <span className="text-xs text-gray-400 dark:text-gray-500">
+                                    {tag.usageCount}
+                                  </span>
+                                )}
+                              </button>
+                            ))}
                           </div>
                         )}
+                        {tagInputValue.trim() && tagSuggestions.length === 0 && (
+                          <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400 text-center">
+                            按 Enter 创建新标签
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
 
-                        {/* Divider */}
-                        <div className="my-1 border-t border-gray-200 dark:border-dark-700" />
+                  {/* OCR 识别按钮 */}
+                  <button
+                    type="button"
+                    onMouseDown={handleOCRMouseDown}
+                    disabled={loading}
+                    className="p-2 text-gray-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-500 hover:bg-gray-100 dark:hover:bg-dark-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-label="OCR 文字识别"
+                    title="OCR 文字识别"
+                  >
+                    <ScanText className="w-5 h-5" />
+                  </button>
 
-                        {/* Create New Category Button */}
+                  {/* AI Tools Dropdown */}
+                  <div className="relative" ref={aiDropdownRef}>
+                    <button
+                      type="button"
+                      onMouseDown={handleAIToolMouseDown}
+                      disabled={loading}
+                      className={`p-2 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                        isAIDropdownOpen
+                          ? 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20'
+                          : 'text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-gray-100 dark:hover:bg-dark-700'
+                      }`}
+                      aria-label="AI工具"
+                      title="AI工具"
+                      aria-expanded={isAIDropdownOpen}
+                      aria-haspopup="listbox"
+                    >
+                      <Sparkles className="w-5 h-5" />
+                    </button>
+
+                    {/* AI Tools Dropdown Menu */}
+                    {isAIDropdownOpen && (
+                      <div className="absolute left-0 bottom-full mb-1 w-48 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg shadow-lg z-50 py-1">
                         <button
                           type="button"
-                          onClick={handleOpenCreateCategoryModal}
-                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                          onClick={() => handleSelectAITool('generate-tags')}
+                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
                         >
-                          <Plus size={14} />
-                          <span>新建类别</span>
+                          <Tags className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                          <span>智能生成标签</span>
                         </button>
                       </div>
                     )}
                   </div>
-                )}
-                {/* Public Toggle */}
-                <button
-                  type="button"
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    // 确保编辑器展开
-                    if (!isEditorActive) {
-                      setIsEditorActive(true);
-                    }
-                    setIsPublic(!isPublic);
-                  }}
-                  disabled={loading}
-                  className={`flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                    isPublic
-                      ? 'text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-900/20'
-                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-700'
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
-                  aria-pressed={isPublic}
-                  title={isPublic ? '此笔记将对其他人公开' : '此笔记仅自己可见'}
-                >
-                  {isPublic ? <Globe size={14} /> : <Lock size={14} />}
-                  <span>{isPublic ? '公开' : '私有'}</span>
-                </button>
-                {/* 推荐相关笔记开关 */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    const newValue = !enableRecommendations;
-                    setEnableRecommendations(newValue);
-                    localStorage.setItem('memo_enableRecommendations', JSON.stringify(newValue));
-                    // 关闭推荐时清除已有推荐
-                    if (!newValue) {
-                      setSuggestions([]);
-                      setShowSuggestions(false);
-                    }
-                  }}
-                  disabled={loading}
-                  className={`flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                    enableRecommendations
-                      ? 'text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/20'
-                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-700'
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
-                  aria-pressed={enableRecommendations}
-                  title={enableRecommendations ? '推荐相关笔记已开启' : '推荐相关笔记已关闭'}
-                >
-                  {enableRecommendations ? <Link size={14} /> : <Link2Off size={14} />}
-                  <span>推荐</span>
-                </button>
-                {/* 取消按钮 - 仅编辑模式显示，紧挨着保存按钮 */}
-                {mode === 'edit' && onCancel && (
+                </div>
+
+                {/* 右侧：操作按钮 */}
+                <div className="flex items-center gap-2">
+                  {showCategorySelector && (
+                    <div className="relative" ref={categoryDropdownRef}>
+                      <button
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          // 确保编辑器展开
+                          if (!isEditorActive) {
+                            setIsEditorActive(true);
+                          }
+                          setIsCategoryDropdownOpen(!isCategoryDropdownOpen);
+                        }}
+                        disabled={loading}
+                        className={`flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                          selectedCategoryId
+                            ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-700'
+                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                        aria-expanded={isCategoryDropdownOpen}
+                        aria-haspopup="listbox"
+                      >
+                        <span className="max-w-[100px] truncate">{selectedCategoryName}</span>
+                        <ChevronDown
+                          size={14}
+                          className={`transition-transform duration-200 ${isCategoryDropdownOpen ? 'rotate-180' : ''}`}
+                        />
+                      </button>
+
+                      {/* Category Dropdown Menu */}
+                      {isCategoryDropdownOpen && (
+                        <div className="absolute right-0 bottom-full mb-1 w-48 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg shadow-lg z-50 py-1">
+                          {/* No Category Option */}
+                          <button
+                            type="button"
+                            onClick={() => handleSelectCategory(null)}
+                            className={`w-full flex items-center justify-between px-4 py-2 text-sm transition-colors ${
+                              !selectedCategoryId
+                                ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700'
+                            }`}
+                          >
+                            <span>无类别</span>
+                            {!selectedCategoryId && <Check size={14} />}
+                          </button>
+
+                          {/* Divider */}
+                          {categoryService.categories.length > 0 && (
+                            <div className="my-1 border-t border-gray-200 dark:border-dark-700" />
+                          )}
+
+                          {/* Category List */}
+                          <div className="max-h-40 overflow-y-auto">
+                            {categoryService.categories.map((category) => (
+                              <button
+                                key={category.categoryId}
+                                type="button"
+                                onClick={() => handleSelectCategory(category.categoryId)}
+                                className={`w-full flex items-center justify-between px-4 py-2 text-sm transition-colors ${
+                                  selectedCategoryId === category.categoryId
+                                    ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700'
+                                }`}
+                              >
+                                <span className="truncate">{category.name}</span>
+                                {selectedCategoryId === category.categoryId && <Check size={14} />}
+                              </button>
+                            ))}
+                          </div>
+
+                          {/* Empty State */}
+                          {categoryService.categories.length === 0 && !categoryService.loading && (
+                            <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
+                              暂无类别
+                            </div>
+                          )}
+
+                          {/* Divider */}
+                          <div className="my-1 border-t border-gray-200 dark:border-dark-700" />
+
+                          {/* Create New Category Button */}
+                          <button
+                            type="button"
+                            onClick={handleOpenCreateCategoryModal}
+                            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                          >
+                            <Plus size={14} />
+                            <span>新建类别</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {/* Public Toggle */}
                   <button
                     type="button"
-                    onClick={handleCancelEdit}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      // 确保编辑器展开
+                      if (!isEditorActive) {
+                        setIsEditorActive(true);
+                      }
+                      setIsPublic(!isPublic);
+                    }}
                     disabled={loading}
-                    className="px-3 py-1.5 border border-gray-200 dark:border-dark-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors disabled:opacity-50 cursor-pointer"
-                    aria-label="Cancel editing"
+                    className={`flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                      isPublic
+                        ? 'text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-900/20'
+                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-700'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    aria-pressed={isPublic}
+                    title={isPublic ? '此笔记将对其他人公开' : '此笔记仅自己可见'}
                   >
-                    取消
+                    {isPublic ? <Globe size={14} /> : <Lock size={14} />}
+                    <span>{isPublic ? '公开' : '私有'}</span>
                   </button>
-                )}
-                <button
-                  type="submit"
-                  disabled={loading || !content.trim()}
-                  className="px-3 py-1.5 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white font-medium text-sm rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                  aria-label={
-                    loading ? 'Saving' : mode === 'create' ? 'Create memo' : 'Update memo'
-                  }
-                >
-                  {loading ? '保存中...' : '保存'}
-                </button>
+                  {/* 推荐相关笔记开关 */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newValue = !enableRecommendations;
+                      setEnableRecommendations(newValue);
+                      localStorage.setItem('memo_enableRecommendations', JSON.stringify(newValue));
+                      // 关闭推荐时清除已有推荐
+                      if (!newValue) {
+                        setSuggestions([]);
+                        setShowSuggestions(false);
+                      }
+                    }}
+                    disabled={loading}
+                    className={`flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                      enableRecommendations
+                        ? 'text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/20'
+                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-700'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    aria-pressed={enableRecommendations}
+                    title={enableRecommendations ? '推荐相关笔记已开启' : '推荐相关笔记已关闭'}
+                  >
+                    {enableRecommendations ? <Link size={14} /> : <Link2Off size={14} />}
+                    <span>推荐</span>
+                  </button>
+                  {/* 取消按钮 - 仅编辑模式显示，紧挨着保存按钮 */}
+                  {mode === 'edit' && onCancel && (
+                    <button
+                      type="button"
+                      onClick={handleCancelEdit}
+                      disabled={loading}
+                      className="px-3 py-1.5 border border-gray-200 dark:border-dark-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors disabled:opacity-50 cursor-pointer"
+                      aria-label="Cancel editing"
+                    >
+                      取消
+                    </button>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={loading || !content.trim()}
+                    className="px-3 py-1.5 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white font-medium text-sm rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    aria-label={
+                      loading ? 'Saving' : mode === 'create' ? 'Create memo' : 'Update memo'
+                    }
+                  >
+                    {loading ? '保存中...' : '保存'}
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        </form>
+          </form>
 
-        {/* Create Category Modal */}
-        <CreateCategoryModal
-          isOpen={isCreateCategoryModalOpen}
-          onClose={() => setIsCreateCategoryModalOpen(false)}
-          onCategoryCreated={handleCategoryCreated}
-        />
+          {/* Create Category Modal */}
+          <CreateCategoryModal
+            isOpen={isCreateCategoryModalOpen}
+            onClose={() => setIsCreateCategoryModalOpen(false)}
+            onCategoryCreated={handleCategoryCreated}
+          />
 
-        {/* AI Tool Selector Modal */}
-        <AIToolSelectorModal
-          isOpen={aiToolsService.modal.isOpen && aiToolsService.modal.toolType === null}
-          onClose={() => aiToolsService.closeModal()}
-          onSelectTool={(toolId) => aiToolsService.selectTool(toolId as 'generate-tags')}
-        />
+          {/* AI Tool Selector Modal */}
+          <AIToolSelectorModal
+            isOpen={aiToolsService.modal.isOpen && aiToolsService.modal.toolType === null}
+            onClose={() => aiToolsService.closeModal()}
+            onSelectTool={(toolId) => aiToolsService.selectTool(toolId as 'generate-tags')}
+          />
 
-        {/* Tag Generator Modal */}
-        <TagGeneratorModal
-          isOpen={aiToolsService.modal.isOpen && aiToolsService.modal.toolType === 'generate-tags'}
-          onClose={() => aiToolsService.closeModal()}
-          onBack={() => aiToolsService.backToToolSelector()}
-          onConfirm={handleAITagsConfirm}
-        />
-      </>
-    );
-  })
+          {/* Tag Generator Modal */}
+          <TagGeneratorModal
+            isOpen={
+              aiToolsService.modal.isOpen && aiToolsService.modal.toolType === 'generate-tags'
+            }
+            onClose={() => aiToolsService.closeModal()}
+            onBack={() => aiToolsService.backToToolSelector()}
+            onConfirm={handleAITagsConfirm}
+          />
+        </>
+      );
+    }
+  )
 );

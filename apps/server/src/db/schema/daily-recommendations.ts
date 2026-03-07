@@ -1,4 +1,12 @@
-import { mysqlTable, varchar, json, bigint, timestamp, uniqueIndex, index } from 'drizzle-orm/mysql-core';
+import {
+  mysqlTable,
+  varchar,
+  json,
+  bigint,
+  timestamp,
+  uniqueIndex,
+  index,
+} from 'drizzle-orm/mysql-core';
 
 /**
  * Daily Recommendations table - stores cached daily memo recommendations per user

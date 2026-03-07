@@ -3,12 +3,14 @@
 ## Test: User Soft Delete
 
 ### Setup
+
 1. Create a test user with `createUser()`
 2. Verify user exists with `findUserByUid()`
 3. Call `deleteUser(uid)` to soft delete the user
 4. Verify user is soft-deleted
 
 ### Expected Behavior
+
 1. **Before deletion**: `findUserByUid()` returns the user object with `deletedAt = 0`
 2. **After deletion**:
    - `deleteUser()` returns `true`
@@ -50,15 +52,18 @@ console.log('DB record still exists:', dbRecord !== undefined); // Should be tru
 ```
 
 ### Key Changes from Previous Implementation
+
 - **Before (US-002)**: `deleteUser()` set `status: 0` (marked inactive)
 - **After (US-005)**: `deleteUser()` sets `deletedAt: Date.now()` (soft delete timestamp)
 
 ### No Cascade Deletes
+
 - User-owned records (memos, categories, tags, etc.) are NOT deleted
 - Only the user record itself is soft-deleted
 - This preserves all user data for potential recovery or audit purposes
 
 ### Authentication Behavior
+
 - Soft-deleted users cannot authenticate
 - Auth middleware checks `user.deletedAt > 0` and returns "Account has been deleted" error
 - This was implemented in US-002 and continues to work with US-005

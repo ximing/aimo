@@ -1,4 +1,13 @@
-import { mysqlTable, varchar, text, json, bigint, timestamp, boolean, index } from 'drizzle-orm/mysql-core';
+import {
+  mysqlTable,
+  varchar,
+  text,
+  json,
+  bigint,
+  timestamp,
+  boolean,
+  index,
+} from 'drizzle-orm/mysql-core';
 
 /**
  * Memos table - stores memo content (scalar fields only, embeddings in LanceDB)

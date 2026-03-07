@@ -81,6 +81,7 @@ The script performs the following checks:
 ### Console Output
 
 The script prints:
+
 - Progress for each validation check
 - Issue details (table, type, count, sample IDs)
 - Summary of critical vs warning issues
@@ -96,6 +97,7 @@ logs/validation/validation-post-2026-03-05T13-45-30-456Z.json
 ```
 
 Each file contains:
+
 - Timestamp
 - Validation mode (pre-deployment or post-deployment)
 - Detailed issue list with counts and sample IDs
@@ -111,13 +113,16 @@ Each file contains:
 ### Recommended Workflow
 
 1. **Pre-deployment validation**:
+
    ```bash
    pnpm validate:data --mode=pre
    ```
+
    - If critical issues found: Fix data before proceeding
    - If warnings found: Review and decide if acceptable
 
 2. **Apply migration**:
+
    ```bash
    pnpm migrate
    ```
@@ -126,6 +131,7 @@ Each file contains:
    ```bash
    pnpm validate:data --mode=post
    ```
+
    - Verify no new issues introduced
    - Confirm data integrity maintained
 
@@ -156,6 +162,7 @@ steps:
 ### Connection Errors
 
 If you see `ECONNREFUSED`:
+
 - Ensure MySQL is running
 - Check environment variables
 - Verify database credentials
@@ -163,6 +170,7 @@ If you see `ECONNREFUSED`:
 ### Performance
 
 For large databases:
+
 - Script may take several minutes
 - Connection pool size: 5 connections
 - Indexes on `deletedAt` columns improve performance
@@ -170,6 +178,7 @@ For large databases:
 ### False Positives
 
 If validation reports issues that seem incorrect:
+
 1. Check the sample IDs in the output
 2. Manually verify in the database
 3. Review recent data changes or migrations

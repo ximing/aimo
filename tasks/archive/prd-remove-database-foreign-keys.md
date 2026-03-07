@@ -18,9 +18,11 @@ This migration will be performed during a planned maintenance window with minima
 ## User Stories
 
 ### US-001: Add soft delete columns to all tables
+
 **Description:** As a developer, I need to add soft delete columns to all tables so we can implement soft delete patterns instead of hard deletes.
 
 **Acceptance Criteria:**
+
 - [ ] Add `deleted_at` bigint column (NOT NULL, default 0) to database tables: users, memos, memo_relations, attachments, ai_conversations, ai_messages, categories, tags, daily_recommendations, push_rules
 - [ ] `deleted_at` stores Unix timestamp in milliseconds (0 = not deleted, >0 = deletion timestamp)
 - [ ] Update Drizzle schema definitions to use `deletedAt: bigint('deleted_at')` (database column name: deleted_at, JS property name: deletedAt)
@@ -30,9 +32,11 @@ This migration will be performed during a planned maintenance window with minima
 - [ ] Verify Drizzle correctly maps `deleted_at` ↔ `deletedAt`
 
 ### US-002: Update query patterns to filter soft-deleted records
+
 **Description:** As a developer, I need to update all existing queries to filter soft-deleted records so the application only works with active data.
 
 **Acceptance Criteria:**
+
 - [ ] Audit all queries in services to add `WHERE deletedAt = 0` filter
 - [ ] Update user queries (UserService)
 - [ ] Update memo queries (MemoService)
@@ -46,9 +50,11 @@ This migration will be performed during a planned maintenance window with minima
 - [ ] Test queries return only non-deleted records
 
 ### US-003: Implement soft delete for users
+
 **Description:** As a system, I need to soft delete users instead of hard deleting them so the account is disabled but all user data is preserved.
 
 **Acceptance Criteria:**
+
 - [ ] Update `UserService.deleteUser()` to set `deletedAt = Date.now()` instead of DELETE
 - [ ] Do NOT cascade delete to user-owned records (memos, attachments, etc. remain accessible)
 - [ ] Update authentication middleware to reject login for soft-deleted users (deletedAt > 0)
@@ -58,9 +64,11 @@ This migration will be performed during a planned maintenance window with minima
 - [ ] Add unit tests for user soft delete and authentication blocking
 
 ### US-004: Implement soft delete for memos
+
 **Description:** As a system, I need to soft delete memos and cascade to related records so data relationships are preserved.
 
 **Acceptance Criteria:**
+
 - [ ] Update `MemoService.deleteMemo()` to set `deletedAt = Date.now()`
 - [ ] Cascade soft delete to memo_relations where `sourceMemoId` or `targetMemoId` matches
 - [ ] Do NOT delete attachments (they may be referenced by other memos)
@@ -71,9 +79,11 @@ This migration will be performed during a planned maintenance window with minima
 - [ ] Add unit tests for memo soft delete
 
 ### US-005: Implement soft delete for categories with memo cleanup
+
 **Description:** As a system, I need to soft delete categories and set related memos' categoryId to NULL so memos become uncategorized.
 
 **Acceptance Criteria:**
+
 - [ ] Update `CategoryService.deleteCategory()` to set `deletedAt = Date.now()`
 - [ ] Scan all memos where `categoryId` matches the deleted category (only non-deleted memos where deletedAt = 0)
 - [ ] Set `categoryId = NULL` for all matching memos
@@ -83,9 +93,11 @@ This migration will be performed during a planned maintenance window with minima
 - [ ] Add unit tests for category soft delete with memo cleanup
 
 ### US-006: Implement soft delete for AI conversations
+
 **Description:** As a system, I need to soft delete AI conversations and cascade to messages.
 
 **Acceptance Criteria:**
+
 - [ ] Update `AIConversationService.deleteConversation()` to set `deletedAt = Date.now()`
 - [ ] Cascade soft delete to all ai_messages with matching conversationId
 - [ ] Use transaction for cascade operations
@@ -94,9 +106,11 @@ This migration will be performed during a planned maintenance window with minima
 - [ ] Add unit tests for conversation soft delete
 
 ### US-007: Implement soft delete for tags with memo cleanup
+
 **Description:** As a system, I need to soft delete tags and remove the tagId from all memos' tagIds arrays.
 
 **Acceptance Criteria:**
+
 - [ ] Update `TagService.deleteTag()` to set `deletedAt = Date.now()`
 - [ ] Scan all memos where `tagIds` JSON array contains the deleted tagId (only non-deleted memos where deletedAt = 0)
 - [ ] Remove the tagId from each memo's `tagIds` array (use JSON array manipulation or read-modify-write)
@@ -106,9 +120,11 @@ This migration will be performed during a planned maintenance window with minima
 - [ ] Add unit tests for tag soft delete with memo cleanup
 
 ### US-008: Implement soft delete for remaining entities
+
 **Description:** As a system, I need to implement soft delete for attachments, daily_recommendations, and push_rules.
 
 **Acceptance Criteria:**
+
 - [ ] Update `AttachmentService.deleteAttachment()` to soft delete (no cascades needed)
 - [ ] Update `DailyRecommendationService` to soft delete (no cascades needed)
 - [ ] Update `PushRuleService` to soft delete (no cascades needed)
@@ -117,9 +133,11 @@ This migration will be performed during a planned maintenance window with minima
 - [ ] Add unit tests for each entity's soft delete
 
 ### US-009: Generate migration to drop foreign keys
+
 **Description:** As a developer, I need a migration script to safely drop all foreign key constraints from the database.
 
 **Acceptance Criteria:**
+
 - [ ] Generate migration script using Drizzle ORM
 - [ ] Remove `.references()` from all schema definitions: memos.uid, memos.categoryId, memo_relations.uid, memo_relations.sourceMemoId, memo_relations.targetMemoId, attachments.uid, ai_conversations.uid, ai_messages.conversationId, categories.uid, tags.uid, daily_recommendations.uid, push_rules.uid
 - [ ] Migration includes rollback script to re-add foreign keys
@@ -128,9 +146,11 @@ This migration will be performed during a planned maintenance window with minima
 - [ ] Typecheck passes after schema update
 
 ### US-010: Create pre-deployment validation script
+
 **Description:** As a DevOps engineer, I need a validation script to run before production deployment to ensure data integrity.
 
 **Acceptance Criteria:**
+
 - [ ] Create `scripts/validate-data-integrity.ts`
 - [ ] Check for memos with non-existent users
 - [ ] Check for memo_relations with non-existent or soft-deleted memos
@@ -147,9 +167,11 @@ This migration will be performed during a planned maintenance window with minima
 - [ ] Test script on staging database with known issues
 
 ### US-011: Create deployment runbook
+
 **Description:** As a DevOps engineer, I need a detailed deployment runbook so the migration can be executed safely during maintenance window.
 
 **Acceptance Criteria:**
+
 - [ ] Create `docs/deployment-runbook-remove-fk.md`
 - [ ] Include pre-deployment checklist (backup, validation, maintenance mode)
 - [ ] Include step-by-step deployment commands with expected output
@@ -160,9 +182,11 @@ This migration will be performed during a planned maintenance window with minima
 - [ ] Include contact information for escalation
 
 ### US-012: Execute production migration
+
 **Description:** As a DevOps engineer, I need to execute the migration during maintenance window following the runbook.
 
 **Acceptance Criteria:**
+
 - [ ] Announce maintenance window to users (24h advance notice)
 - [ ] Create full database backup before migration
 - [ ] Enable maintenance mode (block new writes)
@@ -179,6 +203,7 @@ This migration will be performed during a planned maintenance window with minima
 ## Functional Requirements
 
 ### Data Model Changes
+
 - **FR-1**: All tables must have a `deleted_at` bigint column (NOT NULL, default 0) storing Unix timestamp in milliseconds
 - **FR-2**: Drizzle schema must map `deleted_at` (database) to `deletedAt` (JavaScript) using `bigint('deleted_at')` syntax
 - **FR-3**: All foreign key constraints must be removed from database schema
@@ -186,6 +211,7 @@ This migration will be performed during a planned maintenance window with minima
 - **FR-5**: Add index on `deleted_at` column for all tables to optimize soft delete queries
 
 ### Soft Delete Behavior
+
 - **FR-6**: Soft deleted records must have `deletedAt` (JavaScript) set to current Unix timestamp in milliseconds (Date.now())
 - **FR-7**: All SELECT queries for user-facing data must filter `WHERE deletedAt = 0` by default to exclude deleted records
 - **FR-8**: User soft delete must NOT cascade to owned records - all user data (memos, attachments, etc.) remains intact
@@ -197,6 +223,7 @@ This migration will be performed during a planned maintenance window with minima
 - **FR-14**: Soft delete operations with cascades or memo cleanup must use transactions to ensure atomicity
 
 ### Referential Integrity Management
+
 - **FR-15**: Delete operations must properly cascade or cleanup dependent records in the same transaction
 - **FR-16**: Category delete must clear categoryId from all related memos
 - **FR-17**: Tag delete must remove tagId from all related memos' tagIds arrays
@@ -205,12 +232,14 @@ This migration will be performed during a planned maintenance window with minima
 - **FR-20**: All cascade/cleanup operations must complete atomically within a transaction
 
 ### Data Validation
+
 - **FR-21**: Pre-deployment validation script must check for existing referential integrity issues
 - **FR-22**: Post-deployment validation must verify no orphaned records were created during migration
 - **FR-23**: Validation scripts must check all foreign key relationships (user → memos, memo → relations, etc.)
 - **FR-24**: Validation failures must be logged with record counts and sample IDs for investigation
 
 ### Migration Safety
+
 - **FR-25**: All schema changes must be reversible via rollback migrations
 - **FR-26**: Migration must preserve all existing data (zero data loss)
 - **FR-27**: Migration must preserve all indexes for query performance
@@ -236,6 +265,7 @@ This migration will be performed during a planned maintenance window with minima
 ### Database Schema Changes
 
 **SQL (snake_case):**
+
 ```sql
 -- Add soft delete column (database uses snake_case: deleted_at)
 ALTER TABLE users ADD COLUMN deleted_at BIGINT NOT NULL DEFAULT 0;
@@ -268,6 +298,7 @@ ALTER TABLE memos DROP FOREIGN KEY memos_category_id_categories_category_id_fk;
 ```
 
 **Drizzle Schema (camelCase in JS, maps to snake_case in DB):**
+
 ```typescript
 // Example: apps/server/src/db/schema/users.ts
 import { mysqlTable, varchar, bigint, timestamp } from 'drizzle-orm/mysql-core';
@@ -289,6 +320,7 @@ export type User = typeof users.$inferSelect;
 ### Service Layer Pattern
 
 **User Soft Delete (No Cascade):**
+
 ```typescript
 async softDeleteUser(uid: string): Promise<void> {
   const db = getDatabase();
@@ -306,6 +338,7 @@ async softDeleteUser(uid: string): Promise<void> {
 ```
 
 **Authentication Middleware:**
+
 ```typescript
 async authenticate(token: string): Promise<User> {
   const user = await verifyToken(token);
@@ -320,6 +353,7 @@ async authenticate(token: string): Promise<User> {
 ```
 
 **Category Soft Delete with Memo Cleanup:**
+
 ```typescript
 async softDeleteCategory(categoryId: string, uid: string): Promise<void> {
   const db = getDatabase();
@@ -348,6 +382,7 @@ async softDeleteCategory(categoryId: string, uid: string): Promise<void> {
 ```
 
 **Tag Soft Delete with Memo Cleanup:**
+
 ```typescript
 async softDeleteTag(tagId: string, uid: string): Promise<void> {
   const db = getDatabase();
@@ -385,6 +420,7 @@ async softDeleteTag(tagId: string, uid: string): Promise<void> {
 ```
 
 **Entity Soft Delete with Cascade (Memos, Conversations, etc.):**
+
 ```typescript
 async softDelete(id: string, uid: string): Promise<void> {
   const db = getDatabase();
@@ -413,22 +449,28 @@ async softDelete(id: string, uid: string): Promise<void> {
 ```
 
 ### Query Pattern
+
 All queries must filter soft-deleted records:
+
 ```typescript
 // Before
 const memos = await db.select().from(memos).where(eq(memos.uid, uid));
 
 // After
 // deletedAt in code maps to deleted_at in database
-const memos = await db.select()
+const memos = await db
+  .select()
   .from(memos)
-  .where(and(
-    eq(memos.uid, uid),
-    eq(memos.deletedAt, 0)  // Filter soft-deleted records
-  ));
+  .where(
+    and(
+      eq(memos.uid, uid),
+      eq(memos.deletedAt, 0) // Filter soft-deleted records
+    )
+  );
 ```
 
 ### Pre/Post-Deployment Validation
+
 ```typescript
 // Validation script to check referential integrity before and after migration
 // Note: Use deletedAt in Drizzle queries (maps to deleted_at in DB)
@@ -436,93 +478,88 @@ async function validateDataIntegrity(): Promise<ValidationReport> {
   const issues: ValidationIssue[] = [];
 
   // Check for memos with missing users
-  const memosWithMissingUsers = await db.select()
+  const memosWithMissingUsers = await db
+    .select()
     .from(memos)
     .leftJoin(users, eq(memos.uid, users.uid))
-    .where(and(
-      eq(memos.deletedAt, 0),
-      isNull(users.uid)
-    ));
+    .where(and(eq(memos.deletedAt, 0), isNull(users.uid)));
   if (memosWithMissingUsers.length > 0) {
     issues.push({
       type: 'orphaned_memos',
       count: memosWithMissingUsers.length,
-      samples: memosWithMissingUsers.slice(0, 5).map(m => m.memoId)
+      samples: memosWithMissingUsers.slice(0, 5).map((m) => m.memoId),
     });
   }
 
   // Check for memo_relations with missing memos
-  const relationsWithMissingMemos = await db.select()
+  const relationsWithMissingMemos = await db
+    .select()
     .from(memoRelations)
     .leftJoin(memos, eq(memoRelations.sourceMemoId, memos.memoId))
-    .where(and(
-      eq(memoRelations.deletedAt, 0),
-      or(
-        isNull(memos.memoId),
-        gt(memos.deletedAt, 0)
-      )
-    ));
+    .where(and(eq(memoRelations.deletedAt, 0), or(isNull(memos.memoId), gt(memos.deletedAt, 0))));
   if (relationsWithMissingMemos.length > 0) {
     issues.push({
       type: 'orphaned_relations',
       count: relationsWithMissingMemos.length,
-      samples: relationsWithMissingMemos.slice(0, 5).map(r => r.relationId)
+      samples: relationsWithMissingMemos.slice(0, 5).map((r) => r.relationId),
     });
   }
 
   // Check for memos with invalid categoryId
-  const memosWithInvalidCategory = await db.select()
+  const memosWithInvalidCategory = await db
+    .select()
     .from(memos)
     .leftJoin(categories, eq(memos.categoryId, categories.categoryId))
-    .where(and(
-      eq(memos.deletedAt, 0),
-      isNotNull(memos.categoryId),
-      or(
-        isNull(categories.categoryId),
-        gt(categories.deletedAt, 0)
+    .where(
+      and(
+        eq(memos.deletedAt, 0),
+        isNotNull(memos.categoryId),
+        or(isNull(categories.categoryId), gt(categories.deletedAt, 0))
       )
-    ));
+    );
   if (memosWithInvalidCategory.length > 0) {
     issues.push({
       type: 'invalid_category_refs',
       count: memosWithInvalidCategory.length,
-      samples: memosWithInvalidCategory.slice(0, 5).map(m => m.memoId)
+      samples: memosWithInvalidCategory.slice(0, 5).map((m) => m.memoId),
     });
   }
 
   // Check for ai_messages with missing conversations
-  const messagesWithMissingConversations = await db.select()
+  const messagesWithMissingConversations = await db
+    .select()
     .from(aiMessages)
     .leftJoin(aiConversations, eq(aiMessages.conversationId, aiConversations.conversationId))
-    .where(and(
-      eq(aiMessages.deletedAt, 0),
-      or(
-        isNull(aiConversations.conversationId),
-        gt(aiConversations.deletedAt, 0)
+    .where(
+      and(
+        eq(aiMessages.deletedAt, 0),
+        or(isNull(aiConversations.conversationId), gt(aiConversations.deletedAt, 0))
       )
-    ));
+    );
   if (messagesWithMissingConversations.length > 0) {
     issues.push({
       type: 'orphaned_messages',
       count: messagesWithMissingConversations.length,
-      samples: messagesWithMissingConversations.slice(0, 5).map(m => m.messageId)
+      samples: messagesWithMissingConversations.slice(0, 5).map((m) => m.messageId),
     });
   }
 
   return {
     timestamp: new Date(),
     totalIssues: issues.length,
-    issues
+    issues,
   };
 }
 ```
 
 ### Rollback Strategy
+
 - **Code rollback**: Revert to previous version via git/CI/CD (keeps soft delete columns, re-adds foreign keys via migration)
 - **Schema rollback**: Rollback migration re-adds foreign key constraints (safe because data is unchanged)
 - **Data rollback**: Database backup restoration (last resort, requires maintenance window)
 
 ### Performance Considerations
+
 - **Index preservation**: All existing indexes on foreign key columns must be retained
 - **Index addition**: Add index on `deleted_at` column (database) for all tables to optimize `WHERE deletedAt = 0` queries
 - **Query overhead**: `deletedAt = 0` filter adds minimal overhead with proper indexing (equality check on indexed column)
@@ -534,6 +571,7 @@ async function validateDataIntegrity(): Promise<ValidationReport> {
 - **Validation script performance**: Pre/post-deployment validation should use indexed columns and LIMIT results for large tables
 
 ### Testing Strategy
+
 - **Unit tests**: Each service's soft delete, cascade, and cleanup logic
 - **Integration tests**: End-to-end delete flows with transaction verification
 - **Tag cleanup tests**: Verify tagId removal from memos with various tagIds array states (empty, single tag, multiple tags)
@@ -553,12 +591,14 @@ async function validateDataIntegrity(): Promise<ValidationReport> {
 ## Deployment Plan
 
 ### Phase 1: Pre-Migration (Week 1)
+
 1. Add `deletedAt` columns to all tables (backward compatible)
 2. Deploy application code with soft delete logic (foreign keys still enforced)
 3. Run for 1 week to validate soft delete behavior in production
 4. Monitor for any issues with cascade logic
 
 ### Phase 2: Migration (Maintenance Window)
+
 1. Announce maintenance window (24h notice)
 2. Create full database backup
 3. Enable maintenance mode (read-only)
@@ -569,6 +609,7 @@ async function validateDataIntegrity(): Promise<ValidationReport> {
 8. Monitor for 24 hours
 
 ### Phase 3: Post-Migration (Week 2)
+
 1. Run post-deployment validation daily for first week
 2. Monitor error logs for referential integrity issues
 3. Monitor application metrics for anomalies
@@ -588,11 +629,13 @@ async function validateDataIntegrity(): Promise<ValidationReport> {
 ## Risk Assessment
 
 ### High Risks
+
 - **Data corruption during migration**: Mitigated by full backup + rollback plan + pre/post validation
 - **Orphaned data after migration**: Mitigated by pre/post-deployment validation + careful cascade/cleanup implementation
 - **Performance degradation**: Mitigated by preserving indexes + load testing
 
 ### Medium Risks
+
 - **Cascade logic bugs**: Mitigated by unit tests + 1-week pre-migration validation
 - **Query bugs (missing deletedAt filter)**: Mitigated by code review + integration tests
 - **Extended maintenance window**: Mitigated by practice runs on staging
@@ -601,12 +644,14 @@ async function validateDataIntegrity(): Promise<ValidationReport> {
 - **JSON array manipulation bugs**: tagIds cleanup requires careful testing; mitigated by comprehensive unit tests
 
 ### Low Risks
+
 - **Rollback failure**: Mitigated by multiple rollback options (code, schema, data)
 - **User confusion during maintenance**: Mitigated by clear communication + status page
 
 ## Appendix: Affected Tables and Foreign Keys
 
 ### Tables Requiring Soft Delete (deleted_at column)
+
 All tables will have `deleted_at` bigint column in database, mapped to `deletedAt` in JavaScript/TypeScript:
 
 1. `users` (root entity, no parent)
@@ -621,12 +666,14 @@ All tables will have `deleted_at` bigint column in database, mapped to `deletedA
 10. `push_rules` (parent: users)
 
 ### Naming Convention
+
 - **Database (MySQL)**: `deleted_at` (snake_case)
 - **Drizzle Schema**: `deletedAt: bigint('deleted_at', { mode: 'number' })`
 - **TypeScript/JavaScript**: `deletedAt` (camelCase)
 - **Drizzle automatically maps**: `deletedAt` ↔ `deleted_at`
 
 ### Foreign Keys to Remove
+
 1. `memos.uid` → `users.uid` (CASCADE)
 2. `memos.categoryId` → `categories.categoryId` (SET NULL)
 3. `memo_relations.uid` → `users.uid` (CASCADE)

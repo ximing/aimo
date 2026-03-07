@@ -500,9 +500,8 @@ export class MemoService {
         return [];
       }
 
-      const referenceTimestamp = sortBy === 'createdAt'
-        ? referenceMemo[0].createdAt
-        : referenceMemo[0].updatedAt;
+      const referenceTimestamp =
+        sortBy === 'createdAt' ? referenceMemo[0].createdAt : referenceMemo[0].updatedAt;
 
       // Query for memos with timestamp greater than reference
       const sortColumn = sortBy === 'createdAt' ? memos.createdAt : memos.updatedAt;

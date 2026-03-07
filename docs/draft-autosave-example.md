@@ -5,6 +5,7 @@
 ### 用户操作流程
 
 1. **打开应用并开始创建笔记**
+
    ```
    用户在编辑器中输入：
    "今天学习了 React 19 的新特性..."
@@ -20,6 +21,7 @@
    - 页面重新加载
 
 4. **系统检测并恢复草稿**
+
    ```
    弹窗提示：
    "检测到未保存的草稿，是否恢复？
@@ -42,6 +44,7 @@
 ### 用户操作流程
 
 1. **打开一个已有笔记进行编辑**
+
    ```
    原始内容：
    "React 基础知识"
@@ -77,6 +80,7 @@
 ### 用户操作流程
 
 1. **开始创建笔记**
+
    ```
    输入了一些测试内容：
    "test test test"
@@ -86,6 +90,7 @@
    - 用户意识到输入的是测试内容，想重新开始
 
 3. **拒绝恢复草稿**
+
    ```
    弹窗提示：
    "检测到未保存的草稿，是否恢复？"
@@ -103,11 +108,13 @@
 ### 场景
 
 1. **7 天前创建了草稿**
+
    ```
    用户在 2026-02-24 创建了一个草稿但没有保存
    ```
 
 2. **今天打开应用**
+
    ```
    当前日期：2026-03-03
    应用启动时自动清理过期草稿
@@ -121,6 +128,7 @@
 ## localStorage 数据结构示例
 
 ### 创建模式草稿
+
 ```json
 {
   "key": "memo_draft_create",
@@ -150,6 +158,7 @@
 ```
 
 ### 编辑模式草稿
+
 ```json
 {
   "key": "memo_draft_edit_abc123",
@@ -168,39 +177,42 @@
 ## 开发者调试
 
 ### 查看当前草稿
+
 ```javascript
 // 在浏览器控制台执行
-localStorage.getItem('memo_draft_create')
-localStorage.getItem('memo_draft_edit_abc123')
+localStorage.getItem('memo_draft_create');
+localStorage.getItem('memo_draft_edit_abc123');
 ```
 
 ### 手动清除草稿
+
 ```javascript
 // 清除创建模式草稿
-localStorage.removeItem('memo_draft_create')
+localStorage.removeItem('memo_draft_create');
 
 // 清除特定笔记的编辑草稿
-localStorage.removeItem('memo_draft_edit_abc123')
+localStorage.removeItem('memo_draft_edit_abc123');
 
 // 清除所有草稿
 Object.keys(localStorage)
-  .filter(key => key.startsWith('memo_draft_'))
-  .forEach(key => localStorage.removeItem(key))
+  .filter((key) => key.startsWith('memo_draft_'))
+  .forEach((key) => localStorage.removeItem(key));
 ```
 
 ### 模拟过期草稿
+
 ```javascript
 // 创建一个 8 天前的草稿
 const oldDraft = {
-  content: "旧草稿",
+  content: '旧草稿',
   categoryId: null,
   isPublic: false,
   tags: [],
   attachments: [],
   relations: [],
-  timestamp: Date.now() - (8 * 24 * 60 * 60 * 1000) // 8 天前
-}
-localStorage.setItem('memo_draft_create', JSON.stringify(oldDraft))
+  timestamp: Date.now() - 8 * 24 * 60 * 60 * 1000, // 8 天前
+};
+localStorage.setItem('memo_draft_create', JSON.stringify(oldDraft));
 
 // 刷新页面，系统会自动清除这个过期草稿
 ```

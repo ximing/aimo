@@ -66,7 +66,10 @@ export const addDeletedAtMigration: Migration = {
           ) {
             logger.info(`Index on deletedAt already exists for ${tableName} table, skipping`);
           } else {
-            logger.warn(`Warning: Could not create index on deletedAt for ${tableName}:`, indexError.message);
+            logger.warn(
+              `Warning: Could not create index on deletedAt for ${tableName}:`,
+              indexError.message
+            );
           }
         }
       } catch (error: any) {

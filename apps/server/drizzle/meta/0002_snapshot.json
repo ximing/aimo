@@ -92,23 +92,17 @@
       "indexes": {
         "email_idx": {
           "name": "email_idx",
-          "columns": [
-            "email"
-          ],
+          "columns": ["email"],
           "isUnique": false
         },
         "phone_idx": {
           "name": "phone_idx",
-          "columns": [
-            "phone"
-          ],
+          "columns": ["phone"],
           "isUnique": false
         },
         "deleted_at_idx": {
           "name": "deleted_at_idx",
-          "columns": [
-            "deleted_at"
-          ],
+          "columns": ["deleted_at"],
           "isUnique": false
         }
       },
@@ -116,9 +110,7 @@
       "compositePrimaryKeys": {
         "users_uid": {
           "name": "users_uid",
-          "columns": [
-            "uid"
-          ]
+          "columns": ["uid"]
         }
       },
       "uniqueConstraints": {},
@@ -183,16 +175,12 @@
       "indexes": {
         "uid_idx": {
           "name": "uid_idx",
-          "columns": [
-            "uid"
-          ],
+          "columns": ["uid"],
           "isUnique": false
         },
         "deleted_at_idx": {
           "name": "deleted_at_idx",
-          "columns": [
-            "deleted_at"
-          ],
+          "columns": ["deleted_at"],
           "isUnique": false
         }
       },
@@ -201,12 +189,8 @@
           "name": "categories_uid_users_uid_fk",
           "tableFrom": "categories",
           "tableTo": "users",
-          "columnsFrom": [
-            "uid"
-          ],
-          "columnsTo": [
-            "uid"
-          ],
+          "columnsFrom": ["uid"],
+          "columnsTo": ["uid"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -214,9 +198,7 @@
       "compositePrimaryKeys": {
         "categories_category_id": {
           "name": "categories_category_id",
-          "columns": [
-            "category_id"
-          ]
+          "columns": ["category_id"]
         }
       },
       "uniqueConstraints": {},
@@ -289,16 +271,12 @@
       "indexes": {
         "uid_idx": {
           "name": "uid_idx",
-          "columns": [
-            "uid"
-          ],
+          "columns": ["uid"],
           "isUnique": false
         },
         "deleted_at_idx": {
           "name": "deleted_at_idx",
-          "columns": [
-            "deleted_at"
-          ],
+          "columns": ["deleted_at"],
           "isUnique": false
         }
       },
@@ -307,12 +285,8 @@
           "name": "tags_uid_users_uid_fk",
           "tableFrom": "tags",
           "tableTo": "users",
-          "columnsFrom": [
-            "uid"
-          ],
-          "columnsTo": [
-            "uid"
-          ],
+          "columnsFrom": ["uid"],
+          "columnsTo": ["uid"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -320,9 +294,7 @@
       "compositePrimaryKeys": {
         "tags_tag_id": {
           "name": "tags_tag_id",
-          "columns": [
-            "tag_id"
-          ]
+          "columns": ["tag_id"]
         }
       },
       "uniqueConstraints": {},
@@ -424,30 +396,22 @@
       "indexes": {
         "uid_idx": {
           "name": "uid_idx",
-          "columns": [
-            "uid"
-          ],
+          "columns": ["uid"],
           "isUnique": false
         },
         "category_id_idx": {
           "name": "category_id_idx",
-          "columns": [
-            "category_id"
-          ],
+          "columns": ["category_id"],
           "isUnique": false
         },
         "created_at_idx": {
           "name": "created_at_idx",
-          "columns": [
-            "created_at"
-          ],
+          "columns": ["created_at"],
           "isUnique": false
         },
         "deleted_at_idx": {
           "name": "deleted_at_idx",
-          "columns": [
-            "deleted_at"
-          ],
+          "columns": ["deleted_at"],
           "isUnique": false
         }
       },
@@ -456,12 +420,8 @@
           "name": "memos_uid_users_uid_fk",
           "tableFrom": "memos",
           "tableTo": "users",
-          "columnsFrom": [
-            "uid"
-          ],
-          "columnsTo": [
-            "uid"
-          ],
+          "columnsFrom": ["uid"],
+          "columnsTo": ["uid"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -469,12 +429,8 @@
           "name": "memos_category_id_categories_category_id_fk",
           "tableFrom": "memos",
           "tableTo": "categories",
-          "columnsFrom": [
-            "category_id"
-          ],
-          "columnsTo": [
-            "category_id"
-          ],
+          "columnsFrom": ["category_id"],
+          "columnsTo": ["category_id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -482,9 +438,7 @@
       "compositePrimaryKeys": {
         "memos_memo_id": {
           "name": "memos_memo_id",
-          "columns": [
-            "memo_id"
-          ]
+          "columns": ["memo_id"]
         }
       },
       "uniqueConstraints": {},
@@ -541,38 +495,27 @@
       "indexes": {
         "uid_idx": {
           "name": "uid_idx",
-          "columns": [
-            "uid"
-          ],
+          "columns": ["uid"],
           "isUnique": false
         },
         "source_memo_id_idx": {
           "name": "source_memo_id_idx",
-          "columns": [
-            "source_memo_id"
-          ],
+          "columns": ["source_memo_id"],
           "isUnique": false
         },
         "target_memo_id_idx": {
           "name": "target_memo_id_idx",
-          "columns": [
-            "target_memo_id"
-          ],
+          "columns": ["target_memo_id"],
           "isUnique": false
         },
         "deleted_at_idx": {
           "name": "deleted_at_idx",
-          "columns": [
-            "deleted_at"
-          ],
+          "columns": ["deleted_at"],
           "isUnique": false
         },
         "source_target_unique": {
           "name": "source_target_unique",
-          "columns": [
-            "source_memo_id",
-            "target_memo_id"
-          ],
+          "columns": ["source_memo_id", "target_memo_id"],
           "isUnique": true
         }
       },
@@ -581,12 +524,8 @@
           "name": "memo_relations_uid_users_uid_fk",
           "tableFrom": "memo_relations",
           "tableTo": "users",
-          "columnsFrom": [
-            "uid"
-          ],
-          "columnsTo": [
-            "uid"
-          ],
+          "columnsFrom": ["uid"],
+          "columnsTo": ["uid"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -594,12 +533,8 @@
           "name": "memo_relations_source_memo_id_memos_memo_id_fk",
           "tableFrom": "memo_relations",
           "tableTo": "memos",
-          "columnsFrom": [
-            "source_memo_id"
-          ],
-          "columnsTo": [
-            "memo_id"
-          ],
+          "columnsFrom": ["source_memo_id"],
+          "columnsTo": ["memo_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -607,12 +542,8 @@
           "name": "memo_relations_target_memo_id_memos_memo_id_fk",
           "tableFrom": "memo_relations",
           "tableTo": "memos",
-          "columnsFrom": [
-            "target_memo_id"
-          ],
-          "columnsTo": [
-            "memo_id"
-          ],
+          "columnsFrom": ["target_memo_id"],
+          "columnsTo": ["memo_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -620,9 +551,7 @@
       "compositePrimaryKeys": {
         "memo_relations_relation_id": {
           "name": "memo_relations_relation_id",
-          "columns": [
-            "relation_id"
-          ]
+          "columns": ["relation_id"]
         }
       },
       "uniqueConstraints": {},
@@ -749,16 +678,12 @@
       "indexes": {
         "uid_idx": {
           "name": "uid_idx",
-          "columns": [
-            "uid"
-          ],
+          "columns": ["uid"],
           "isUnique": false
         },
         "deleted_at_idx": {
           "name": "deleted_at_idx",
-          "columns": [
-            "deleted_at"
-          ],
+          "columns": ["deleted_at"],
           "isUnique": false
         }
       },
@@ -767,12 +692,8 @@
           "name": "attachments_uid_users_uid_fk",
           "tableFrom": "attachments",
           "tableTo": "users",
-          "columnsFrom": [
-            "uid"
-          ],
-          "columnsTo": [
-            "uid"
-          ],
+          "columnsFrom": ["uid"],
+          "columnsTo": ["uid"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -780,9 +701,7 @@
       "compositePrimaryKeys": {
         "attachments_attachment_id": {
           "name": "attachments_attachment_id",
-          "columns": [
-            "attachment_id"
-          ]
+          "columns": ["attachment_id"]
         }
       },
       "uniqueConstraints": {},
@@ -840,16 +759,12 @@
       "indexes": {
         "uid_idx": {
           "name": "uid_idx",
-          "columns": [
-            "uid"
-          ],
+          "columns": ["uid"],
           "isUnique": false
         },
         "deleted_at_idx": {
           "name": "deleted_at_idx",
-          "columns": [
-            "deleted_at"
-          ],
+          "columns": ["deleted_at"],
           "isUnique": false
         }
       },
@@ -858,12 +773,8 @@
           "name": "ai_conversations_uid_users_uid_fk",
           "tableFrom": "ai_conversations",
           "tableTo": "users",
-          "columnsFrom": [
-            "uid"
-          ],
-          "columnsTo": [
-            "uid"
-          ],
+          "columnsFrom": ["uid"],
+          "columnsTo": ["uid"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -871,9 +782,7 @@
       "compositePrimaryKeys": {
         "ai_conversations_conversation_id": {
           "name": "ai_conversations_conversation_id",
-          "columns": [
-            "conversation_id"
-          ]
+          "columns": ["conversation_id"]
         }
       },
       "uniqueConstraints": {},
@@ -937,16 +846,12 @@
       "indexes": {
         "conversation_id_idx": {
           "name": "conversation_id_idx",
-          "columns": [
-            "conversation_id"
-          ],
+          "columns": ["conversation_id"],
           "isUnique": false
         },
         "deleted_at_idx": {
           "name": "deleted_at_idx",
-          "columns": [
-            "deleted_at"
-          ],
+          "columns": ["deleted_at"],
           "isUnique": false
         }
       },
@@ -955,12 +860,8 @@
           "name": "ai_messages_conversation_id_ai_conversations_conversation_id_fk",
           "tableFrom": "ai_messages",
           "tableTo": "ai_conversations",
-          "columnsFrom": [
-            "conversation_id"
-          ],
-          "columnsTo": [
-            "conversation_id"
-          ],
+          "columnsFrom": ["conversation_id"],
+          "columnsTo": ["conversation_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -968,9 +869,7 @@
       "compositePrimaryKeys": {
         "ai_messages_message_id": {
           "name": "ai_messages_message_id",
-          "columns": [
-            "message_id"
-          ]
+          "columns": ["message_id"]
         }
       },
       "uniqueConstraints": {},
@@ -1027,24 +926,17 @@
       "indexes": {
         "uid_idx": {
           "name": "uid_idx",
-          "columns": [
-            "uid"
-          ],
+          "columns": ["uid"],
           "isUnique": false
         },
         "deleted_at_idx": {
           "name": "deleted_at_idx",
-          "columns": [
-            "deleted_at"
-          ],
+          "columns": ["deleted_at"],
           "isUnique": false
         },
         "uid_date_unique": {
           "name": "uid_date_unique",
-          "columns": [
-            "uid",
-            "date"
-          ],
+          "columns": ["uid", "date"],
           "isUnique": true
         }
       },
@@ -1053,12 +945,8 @@
           "name": "daily_recommendations_uid_users_uid_fk",
           "tableFrom": "daily_recommendations",
           "tableTo": "users",
-          "columnsFrom": [
-            "uid"
-          ],
-          "columnsTo": [
-            "uid"
-          ],
+          "columnsFrom": ["uid"],
+          "columnsTo": ["uid"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1066,9 +954,7 @@
       "compositePrimaryKeys": {
         "daily_recommendations_recommendation_id": {
           "name": "daily_recommendations_recommendation_id",
-          "columns": [
-            "recommendation_id"
-          ]
+          "columns": ["recommendation_id"]
         }
       },
       "uniqueConstraints": {},
@@ -1155,16 +1041,12 @@
       "indexes": {
         "uid_idx": {
           "name": "uid_idx",
-          "columns": [
-            "uid"
-          ],
+          "columns": ["uid"],
           "isUnique": false
         },
         "deleted_at_idx": {
           "name": "deleted_at_idx",
-          "columns": [
-            "deleted_at"
-          ],
+          "columns": ["deleted_at"],
           "isUnique": false
         }
       },
@@ -1173,12 +1055,8 @@
           "name": "push_rules_uid_users_uid_fk",
           "tableFrom": "push_rules",
           "tableTo": "users",
-          "columnsFrom": [
-            "uid"
-          ],
-          "columnsTo": [
-            "uid"
-          ],
+          "columnsFrom": ["uid"],
+          "columnsTo": ["uid"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1186,9 +1064,7 @@
       "compositePrimaryKeys": {
         "push_rules_id": {
           "name": "push_rules_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -1225,9 +1101,7 @@
       "compositePrimaryKeys": {
         "table_migrations_table_name": {
           "name": "table_migrations_table_name",
-          "columns": [
-            "table_name"
-          ]
+          "columns": ["table_name"]
         }
       },
       "uniqueConstraints": {},

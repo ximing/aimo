@@ -214,10 +214,7 @@ export class MemoRelationService {
         .where(
           and(
             eq(memoRelations.uid, uid),
-            or(
-              eq(memoRelations.sourceMemoId, memoId),
-              eq(memoRelations.targetMemoId, memoId)
-            ),
+            or(eq(memoRelations.sourceMemoId, memoId), eq(memoRelations.targetMemoId, memoId)),
             eq(memoRelations.deletedAt, 0)
           )
         );

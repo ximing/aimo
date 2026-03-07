@@ -100,7 +100,10 @@ export class MemoV1Controller {
       }
 
       if (!latestMemoId || !sortBy) {
-        return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'latestMemoId and sortBy are required');
+        return ResponseUtility.error(
+          ErrorCode.PARAMS_ERROR,
+          'latestMemoId and sortBy are required'
+        );
       }
 
       const items = await this.memoService.getNewMemosAfter(user.uid, latestMemoId, sortBy);

@@ -139,7 +139,9 @@ async function main() {
         sampleIds: relationsWithInvalidSource.slice(0, 5).map((r) => r.relationId),
         severity: 'critical',
       });
-      console.log(`  ⚠️  Found ${relationsWithInvalidSource.length} relations with invalid source memos`);
+      console.log(
+        `  ⚠️  Found ${relationsWithInvalidSource.length} relations with invalid source memos`
+      );
     } else {
       console.log(`  ✅ No issues found`);
     }
@@ -167,7 +169,9 @@ async function main() {
         sampleIds: relationsWithInvalidTarget.slice(0, 5).map((r) => r.relationId),
         severity: 'critical',
       });
-      console.log(`  ⚠️  Found ${relationsWithInvalidTarget.length} relations with invalid target memos`);
+      console.log(
+        `  ⚠️  Found ${relationsWithInvalidTarget.length} relations with invalid target memos`
+      );
     } else {
       console.log(`  ✅ No issues found`);
     }
@@ -191,7 +195,9 @@ async function main() {
         sampleIds: attachmentsWithInvalidUsers.slice(0, 5).map((a) => a.attachmentId),
         severity: 'critical',
       });
-      console.log(`  ⚠️  Found ${attachmentsWithInvalidUsers.length} attachments with invalid users`);
+      console.log(
+        `  ⚠️  Found ${attachmentsWithInvalidUsers.length} attachments with invalid users`
+      );
     } else {
       console.log(`  ✅ No issues found`);
     }
@@ -220,7 +226,9 @@ async function main() {
         sampleIds: messagesWithInvalidConversations.slice(0, 5).map((m) => m.messageId),
         severity: 'critical',
       });
-      console.log(`  ⚠️  Found ${messagesWithInvalidConversations.length} messages with invalid conversations`);
+      console.log(
+        `  ⚠️  Found ${messagesWithInvalidConversations.length} messages with invalid conversations`
+      );
     } else {
       console.log(`  ✅ No issues found`);
     }
@@ -292,7 +300,9 @@ async function main() {
         sampleIds: recommendationsWithInvalidUsers.slice(0, 5).map((r) => r.recommendationId),
         severity: 'critical',
       });
-      console.log(`  ⚠️  Found ${recommendationsWithInvalidUsers.length} recommendations with invalid users`);
+      console.log(
+        `  ⚠️  Found ${recommendationsWithInvalidUsers.length} recommendations with invalid users`
+      );
     } else {
       console.log(`  ✅ No issues found`);
     }
@@ -340,7 +350,9 @@ async function main() {
         sampleIds: conversationsWithInvalidUsers.slice(0, 5).map((c) => c.conversationId),
         severity: 'critical',
       });
-      console.log(`  ⚠️  Found ${conversationsWithInvalidUsers.length} conversations with invalid users`);
+      console.log(
+        `  ⚠️  Found ${conversationsWithInvalidUsers.length} conversations with invalid users`
+      );
     } else {
       console.log(`  ✅ No issues found`);
     }

@@ -112,7 +112,9 @@ export const PushRulesList = view(({ onAddRule, onEditRule }: PushRulesListProps
                     className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     title="测试推送"
                   >
-                    <Send className={`w-4 h-4 ${testingRuleId === rule.id ? 'animate-pulse' : ''}`} />
+                    <Send
+                      className={`w-4 h-4 ${testingRuleId === rule.id ? 'animate-pulse' : ''}`}
+                    />
                   </button>
                   <button
                     onClick={() => onEditRule(rule)}

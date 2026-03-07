@@ -115,6 +115,7 @@ Expected: No foreign key constraints should exist.
 Run the same index query from pre-migration verification. All indexes should still exist.
 
 Expected index counts per table:
+
 - users: 3 indexes (PRIMARY, email_idx, phone_idx, deleted_at_idx)
 - categories: 3 indexes (PRIMARY, uid_idx, deleted_at_idx)
 - tags: 3 indexes (PRIMARY, uid_idx, deleted_at_idx)

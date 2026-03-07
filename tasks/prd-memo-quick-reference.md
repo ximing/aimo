@@ -20,6 +20,7 @@
 **Description:** 作为用户，我希望在悬浮 Memo 卡片时能看到一个引用按钮，以便我知道可以快速创建关联笔记。
 
 **Acceptance Criteria:**
+
 - [ ] 鼠标悬浮在 Memo 卡片上时，操作区域出现一个"引用"按钮（使用 `Quote` 或 `Link` 图标，与现有操作按钮风格一致）
 - [ ] 引用按钮仅在悬浮时显示（`group-hover` 控制），不占用常驻空间
 - [ ] 按钮有 tooltip 提示文字"引用此笔记"
@@ -31,6 +32,7 @@
 **Description:** 作为用户，我希望点击引用按钮后，该 Memo 自动出现在创建表单的"已选关联"区域，这样我无需手动搜索就能建立关联。
 
 **Acceptance Criteria:**
+
 - [ ] 点击引用按钮后，该 Memo 被添加到 `MemoEditorForm` 的 `selectedRelations` 状态中
 - [ ] 若该 Memo 已在 `selectedRelations` 中，则不重复添加（幂等）
 - [ ] 添加后创建表单的关联标签区域（pill 样式）正确显示该 Memo 的摘要内容
@@ -42,6 +44,7 @@
 **Description:** 作为用户，我希望点击引用按钮后页面自动滚动到创建区域并聚焦输入框，这样我可以立即开始输入新笔记内容。
 
 **Acceptance Criteria:**
+
 - [ ] 点击引用按钮后，页面平滑滚动至 `MemoEditorForm` 所在位置
 - [ ] 输入框（textarea）获得焦点，光标出现在文本末尾
 - [ ] 滚动和聚焦在添加关联操作完成后执行
@@ -53,6 +56,7 @@
 **Description:** 作为用户，我希望通过快速引用创建的笔记在提交后，能在 memo_relations 表中正确建立与被引用笔记的关联关系。
 
 **Acceptance Criteria:**
+
 - [ ] 通过快速引用添加的 Memo ID 出现在提交时的 `relationIds` 数组中
 - [ ] 提交后新建 Memo 的卡片上显示对应的关联笔记（复用现有 `memo.relations` 展示逻辑）
 - [ ] 被引用 Memo 的 backlinks 中能查到新建的 Memo
