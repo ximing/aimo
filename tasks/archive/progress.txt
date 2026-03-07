@@ -1,228 +1,33 @@
 ## Codebase Patterns
-- This project uses BOTH LanceDB (vector database) and MySQL (via Drizzle ORM) in a hybrid architecture
-- LanceDB schemas are defined in `apps/server/src/models/db/schema.ts` using Apache Arrow types
-- Drizzle/MySQL schemas are defined in `apps/server/src/db/schema/*.ts`
-- When adding fields to tables, BOTH schemas must be updated
-- LanceDB migrations are in `apps/server/src/migrations/scripts/` and run automatically on startup
-- Drizzle migrations are generated via `pnpm migrate:generate` after building
-- For bigint fields: LanceDB uses `Int64()`, Drizzle uses `bigint('field_name', { mode: 'number' })`
-- Type interfaces for LanceDB records use `bigint` TypeScript type (not `number`)
-- **Soft delete pattern**: All queries must filter `deletedAt = 0` using `and(eq(table.field, value), eq(table.deletedAt, 0))`
-- Authentication middleware: Check `user.deletedAt > 0` and return "Account has been deleted" error
+- `view()` from `@rabjs/react` wraps components for reactive state; to use `forwardRef`, wrap with `forwardRef(...)` inside `view(forwardRef(...))` and close with `}))`
+- `selectedRelations` state in MemoEditorForm uses `MemoListItemDto[]`; `memoId` is the unique identifier
+- `textareaRef` is already declared in MemoEditorForm at line ~83; use it for `focusTextarea`
+- MemoCard uses Tailwind `group-hover` classes for hover-visible action buttons
 
 ---
 
-## 2026-03-05 - US-001
-- What was implemented: Added soft delete support by adding deletedAt bigint column (default 0) to all 10 tables
-- Files changed:
-  - `apps/server/src/models/db/schema.ts` - Added Int64 import and deletedAt field to all LanceDB schemas (users, memos, memo_relations, categories, tags, attachments, ai_conversations, ai_messages, daily_recommendations, push_rules)
-  - Updated all TypeScript interfaces to include `deletedAt: bigint`
-  - `apps/server/src/migrations/scripts/019-add-deleted-at.ts` - Created migration to add deletedAt column and indexes to all tables
-  - `apps/server/src/migrations/scripts/index.ts` - Registered migration 019
-  - `apps/server/src/db/schema/*.ts` - Added deletedAt bigint field and indexes to all 10 Drizzle schemas
-  - `apps/server/src/services/memo-relation.service.ts` - Updated createRelation return value to include deletedAt field
+## 2026-03-07 - US-001
+- Implemented: Added `forwardRef` + `useImperativeHandle` to `MemoEditorForm`
+- Exported `MemoEditorFormRef` interface with `addRelation(memo: MemoListItemDto)` and `focusTextarea()` methods
+- Files changed: `apps/web/src/components/memo-editor-form.tsx`
 - **Learnings for future iterations:**
-  - The project has a dual-database architecture: LanceDB for vectors + MySQL for relational data
-  - When adding fields, must update BOTH LanceDB schema (Apache Arrow) AND Drizzle schema (MySQL)
-  - LanceDB uses Int64() for bigint, Drizzle uses bigint('name', { mode: 'number' })
-  - Type interfaces must use TypeScript `bigint` type, not `number`
-  - LanceDB migration adds columns using `addColumns()` with `valueSql: 'CAST(0 AS BIGINT)'`
-  - Indexes are created using `lancedb.Index.btree()` API
-  - Drizzle migrations are auto-generated after schema changes and building
+  - `view(forwardRef<Ref, Props>((props, ref) => { ... }))` is the pattern; closing is `}))` not `})`
+  - `useImperativeHandle` placed after all `useRef`/`useService` declarations, before `useEffect` hooks
+  - Typecheck passes with no issues
 ---
 
-## 2026-03-05 - US-002
-- What was implemented: Updated UserService to filter soft-deleted records (deletedAt = 0) in all queries and authentication
-- Files changed:
-  - `apps/server/src/services/user.service.ts` - Added `and(eq(users.deletedAt, 0))` filter to all SELECT queries (findUserByEmail, findUserByUid, findUserByPhone, createUser fetch, updateUser, deleteUser)
-  - `apps/server/src/middlewares/auth-handler.ts` - Added check for `user.deletedAt > 0` to reject soft-deleted users with "Account has been deleted" error
-  - `apps/server/src/db/schema/ai-conversations.ts` - Fixed deletedAtIdx to point to deletedAt column (was incorrectly pointing to uid)
-  - `apps/server/src/db/schema/ai-messages.ts` - Fixed deletedAtIdx to point to deletedAt column (was incorrectly pointing to conversationId)
-  - `apps/server/src/db/schema/attachments.ts` - Fixed deletedAtIdx to point to deletedAt column (was incorrectly pointing to uid)
-  - `apps/server/src/db/schema/daily-recommendations.ts` - Fixed deletedAtIdx to point to deletedAt column (was incorrectly pointing to uid)
-  - `apps/server/src/db/schema/push-rules.ts` - Fixed deletedAtIdx to point to deletedAt column (was incorrectly pointing to uid)
-  - `apps/server/src/services/USER_SERVICE_SOFT_DELETE_TEST.md` - Created manual test documentation
-- **Learnings for future iterations:**
-  - Use Drizzle ORM's `and()` operator to combine multiple WHERE conditions: `and(eq(table.field, value), eq(table.deletedAt, 0))`
-  - Import `and` from 'drizzle-orm' alongside `eq`
-  - Authentication middleware gets user from database, so UserService filtering automatically applies
-  - Add explicit deletedAt check in auth middleware for clarity and proper error messaging
-  - Index definitions in Drizzle schemas were copy-pasted incorrectly in US-001 - always verify index column references
-  - Manual test documentation is acceptable when Jest ESM setup is complex (package.json has "type": "module")
+## 2026-03-07 - US-002
+- Implemented: Added `onQuote?: (memo: MemoDto) => void` prop to `MemoCard`
+- Added `Quote` icon button from `lucide-react` in the `group-hover` action area
+- Button renders only when `onQuote` is provided; calls `onQuote(memo)` with `e.stopPropagation()`
+- Files changed: `apps/web/src/components/memo-card.tsx`
+- Browser verified: Quote button visible, clicking adds relation to editor
 ---
 
-## 2026-03-05 - US-003
-- What was implemented: Updated all MemoService queries to filter soft-deleted records (deletedAt = 0) in both MySQL and LanceDB
-- Files changed:
-  - `apps/server/src/services/memo.service.ts` - Added `eq(memos.deletedAt, 0)` filter to all SELECT queries (20+ queries including getMemos, getMemoById, getAllMemosByUid, getMemoCount, getMemoByOffset, getMemosByIds, getMemoActivityStats, getOnThisDayMemos, getPublicMemos, getRandomPublicMemo, getPublicMemoById, getNewMemosAfter, findRelatedMemos, semanticSearch)
-  - Updated all UPDATE queries to include deletedAt = 0 filter (updateMemo, updateMemoTags, updateMemoCategory)
-  - Updated DELETE query to include deletedAt = 0 filter (deleteMemo)
-  - Updated LanceDB vector search queries to filter `deletedAt = 0` in WHERE clauses (semanticSearch, findRelatedMemos)
-- **Learnings for future iterations:**
-  - MemoService has 20+ query methods that all need soft delete filtering
-  - Use `and()` operator to combine multiple WHERE conditions: `and(eq(memos.uid, uid), eq(memos.deletedAt, 0))`
-  - LanceDB WHERE clauses use SQL-like syntax: `uid = '${uid}' AND deletedAt = 0`
-  - Both MySQL (Drizzle) and LanceDB queries must be updated for consistency
-  - UPDATE and DELETE queries also need deletedAt = 0 filter to prevent operating on soft-deleted records
-  - Vector search in LanceDB supports filtering with .where() method on both .search() and .query() operations
-  - The semantic search builds a filterStr variable that concatenates multiple conditions
+## 2026-03-07 - US-003
+- Implemented: Home page holds `MemoEditorFormRef` ref pointing to `MemoEditorForm`
+- Added `handleQuoteMemo(memo: MemoDto)`: calls `ref.current.addRelation(memo)`, scrolls editor into view smoothly, then calls `ref.current.focusTextarea()`
+- Passed `handleQuoteMemo` as `onQuote` prop to each `MemoCard`
+- Files changed: Home page component
+- Browser verified: Clicking "引用此笔记" adds relation (showed "关联笔记 (1)") and focuses textarea
 ---
-
-## 2026-03-05 - US-004
-- What was implemented: Updated all remaining service queries to filter soft-deleted records (deletedAt = 0)
-- Files changed:
-  - `apps/server/src/services/category.service.ts` - Added deletedAt = 0 filter to 5 queries (getCategoriesByUid, getCategoryByName, getCategoryById, updateCategory SELECT + UPDATE, deleteCategory SELECT + DELETE)
-  - `apps/server/src/services/tag.service.ts` - Added deletedAt = 0 filter to 9 queries (getTagsByUser, getTagById, getTagsByIds, findTagByName, updateTag SELECT + UPDATE, deleteTag SELECT + DELETE, incrementUsageCount, decrementUsageCount)
-  - `apps/server/src/services/attachment.service.ts` - Added deletedAt = 0 filter to 6 queries (getAttachment, updateAttachmentProperties SELECT + UPDATE, getAttachmentsByUser count + SELECT, deleteAttachment SELECT + DELETE, getAttachmentsByIds, getAttachmentBuffer)
-  - `apps/server/src/services/ai-conversation.service.ts` - Added deletedAt = 0 filter to 8 queries (getConversations, getConversation, updateConversation SELECT + UPDATE, deleteConversation SELECT + DELETE, getMessages, getMessageCount, addMessage SELECT + UPDATE, getMostRecentConversation)
-  - `apps/server/src/services/recommendation.service.ts` - Added deletedAt = 0 filter to 2 queries (getCachedRecommendations, clearCachedRecommendations)
-  - `apps/server/src/services/push-rule.service.ts` - Added deletedAt = 0 filter to 5 queries (findByUid, findById, update SELECT + UPDATE, delete SELECT + DELETE, findAllEnabled)
-  - `apps/server/src/services/memo-relation.service.ts` - Added deletedAt = 0 filter to 5 queries (getRelatedMemos, deleteRelation, deleteRelationsBySourceMemo, deleteRelationsByTargetMemo, getBacklinks)
-- **Learnings for future iterations:**
-  - Completed soft delete filtering across ALL service layers (7 services, 40+ queries total)
-  - Pattern is consistent: add `eq(table.deletedAt, 0)` to all WHERE clauses using `and()` operator
-  - Both SELECT queries AND UPDATE/DELETE operations need deletedAt filter to prevent operating on soft-deleted records
-  - AIConversationService includes both conversation and message queries - messages filter by deletedAt even though they're accessed via conversationId
-  - MemoRelationService filters relations by deletedAt for both forward relations (getRelatedMemos) and backlinks (getBacklinks)
-  - All services now follow the soft delete pattern established in US-001/002/003
----
-
-## 2026-03-05 - US-005
-- What was implemented: Implemented soft delete for users by updating UserService.deleteUser() to set deletedAt timestamp
-- Files changed:
-  - `apps/server/src/services/user.service.ts` - Changed deleteUser() from setting `status: 0` to `deletedAt: Date.now()`
-  - `apps/server/src/services/USER_SERVICE_SOFT_DELETE_US005_TEST.md` - Created manual test documentation
-- **Learnings for future iterations:**
-  - Soft delete pattern: Set `deletedAt: Date.now()` instead of hard DELETE or status flags
-  - No cascade deletes needed for user deletion - user-owned records remain intact
-  - The WHERE `deletedAt = 0` condition (added in US-002) ensures soft-deleted users cannot be updated again
-  - Authentication middleware (from US-002) automatically rejects soft-deleted users
-  - This change preserves all user data for audit/recovery purposes
----
-
-## 2026-03-05 - US-006
-- What was implemented: Implemented soft delete for memos with cascade to memo_relations
-- Files changed:
-  - `apps/server/src/services/memo.service.ts` - Updated deleteMemo() to set `deletedAt = Date.now()` instead of hard delete. Removed tag usage count decrement logic. Changed from DELETE to UPDATE in both MySQL and LanceDB.
-  - `apps/server/src/services/memo-relation.service.ts` - Added softDeleteRelationsByMemo() method to cascade soft delete to relations where memoId is either source or target. Uses `or()` operator to match both directions in a single query. Accepts optional transaction context for atomicity.
-  - `apps/server/src/services/MEMO_SERVICE_SOFT_DELETE_US006_TEST.md` - Created manual test documentation
-- **Learnings for future iterations:**
-  - Cascade soft delete pattern: Create a dedicated method that accepts transaction context (tx?: any) for atomic operations
-  - Use `or()` operator from drizzle-orm to match multiple conditions: `or(eq(table.field1, value), eq(table.field2, value))`
-  - Single query is more efficient than multiple queries for cascade operations
-  - LanceDB update() accepts number values for Int64 fields, not BigInt
-  - Transaction pattern: Pass `tx` parameter to service methods to include them in the same transaction
-  - Attachments are NOT cascaded - they remain intact when memos are deleted (preserves files)
-  - Removed tag usage count decrement - soft delete doesn't affect tag statistics
----
-
-## 2026-03-05 - US-007
-- What was implemented: Implemented soft delete for categories with memo cleanup
-- Files changed:
-  - `apps/server/src/services/category.service.ts` - Added LanceDB connection initialization (initLanceDb, getLanceDb, openMemosTable). Updated deleteCategory() to set deletedAt = Date.now() instead of hard delete. Added transaction to soft delete category and set categoryId = NULL for all matching memos in both MySQL and LanceDB.
-  - `apps/server/src/services/CATEGORY_SERVICE_SOFT_DELETE_US007_TEST.md` - Created manual test documentation
-  - `apps/server/drizzle/0002_thankful_aaron_stack.sql` - Auto-generated Drizzle migration for deletedAt columns (from US-001)
-- **Learnings for future iterations:**
-  - CategoryService now follows same pattern as MemoService for LanceDB access (private connection, initLanceDb, openMemosTable)
-  - Transaction pattern for soft delete with cleanup: soft delete entity + update related records in same transaction
-  - LanceDB update uses WHERE clause to filter: `categoryId = 'xxx' AND deletedAt = 0`
-  - Must update both MySQL (via Drizzle transaction) and LanceDB (outside transaction) for consistency
-  - Import pattern: `import * as lancedb from '@lancedb/lancedb'` and `import type { Connection, Table } from '@lancedb/lancedb'`
-  - Drizzle migrations are auto-generated after schema changes - include them in commits
----
-
-## 2026-03-05 - US-008
-- What was implemented: Implemented soft delete for tags with memo cleanup
-- Files changed:
-  - `apps/server/src/services/tag.service.ts` - Added LanceDB connection initialization (initLanceDb, getLanceDb, openMemosTable). Updated deleteTag() to set deletedAt = Date.now() instead of hard delete. Added transaction to soft delete tag and remove tagId from all matching memos' tagIds arrays in both MySQL and LanceDB. Handles empty arrays by setting to NULL. Removed old removeTagFromAllMemos() method as logic is now integrated into deleteTag().
-  - `apps/server/src/services/TAG_SERVICE_SOFT_DELETE_US008_TEST.md` - Created manual test documentation
-- **Learnings for future iterations:**
-  - TagService now follows same pattern as CategoryService for LanceDB access (private connection, initLanceDb, openMemosTable)
-  - Transaction pattern for soft delete with cleanup: soft delete entity + update related records in same transaction
-  - For JSON array fields in MySQL: Use array filter operations to remove specific values from arrays
-  - When filtering memos by tagIds array: Fetch all memos with deletedAt = 0, then filter in-memory for array contains
-  - LanceDB array handling: Empty arrays must be set to NULL using `arrow_cast(NULL, 'List(Utf8)')`
-  - Both MySQL and LanceDB must be updated for consistency - MySQL uses transaction, LanceDB updates happen after
-  - Import pattern consistent: `import * as lancedb from '@lancedb/lancedb'` and `import type { Connection, Table } from '@lancedb/lancedb'`
-  - Config import path: Use `../config/config.js` not `../config/index.js`
----
-
-## 2026-03-05 - US-009
-- What was implemented: Implemented soft delete for AI conversations with cascade to messages
-- Files changed:
-  - `apps/server/src/services/ai-conversation.service.ts` - Updated deleteConversation() to set deletedAt = Date.now() instead of hard delete. Added cascade soft delete to all ai_messages with matching conversationId. Used withTransaction() for atomicity. Both conversation and all messages are soft deleted in a single transaction.
-  - `apps/server/src/services/AI_CONVERSATION_SERVICE_SOFT_DELETE_US009_TEST.md` - Created manual test documentation
-- **Learnings for future iterations:**
-  - AIConversationService follows the same cascade soft delete pattern as MemoService
-  - Transaction pattern: soft delete parent entity + cascade to child entities in same transaction
-  - Use `withTransaction()` to ensure atomicity - both conversation and messages are updated together or rolled back together
-  - Cascade to messages uses simple `eq(aiMessages.conversationId, conversationId)` filter (no need for `or()` like memo_relations)
-  - Both conversation and messages must filter by `deletedAt = 0` to prevent operating on already soft-deleted records
-  - No LanceDB updates needed - AI conversations and messages are only stored in MySQL
----
-
-## 2026-03-05 - US-010
-- What was implemented: Implemented soft delete for remaining entities (attachments, daily_recommendations, push_rules)
-- Files changed:
-  - `apps/server/src/services/attachment.service.ts` - Updated deleteAttachment() to set deletedAt = Date.now() instead of hard delete. Soft deletes in both MySQL and LanceDB. Physical files are preserved in storage (not deleted).
-  - `apps/server/src/services/recommendation.service.ts` - Updated clearCachedRecommendations() to use UPDATE instead of DELETE. Added new public deleteRecommendation() method for explicit soft delete.
-  - `apps/server/src/services/push-rule.service.ts` - Updated delete() to set deletedAt = Date.now() instead of hard delete.
-- **Learnings for future iterations:**
-  - AttachmentService soft delete preserves physical files in storage - only database records are soft deleted
-  - LanceDB attachments table is also soft deleted for consistency
-  - RecommendationService had a private clearCachedRecommendations() method that was updated, plus a new public deleteRecommendation() method was added
-  - PushRuleService delete() is straightforward soft delete - no cascades needed
-  - All three services now follow the same soft delete pattern: set deletedAt = Date.now() with WHERE deletedAt = 0 condition
-  - No cascade operations needed for these entities - they are leaf nodes in the data model
----
-
-## 2026-03-05 - US-011
-- What was implemented: Generated migration to drop all foreign key constraints from database
-- Files changed:
-  - `apps/server/src/db/schema/memos.ts` - Removed .references() for uid and categoryId foreign keys. Removed unused imports for users and categories.
-  - `apps/server/src/db/schema/memo-relations.ts` - Removed .references() for uid, sourceMemoId, and targetMemoId foreign keys. Removed unused imports for users and memos.
-  - `apps/server/src/db/schema/attachments.ts` - Removed .references() for uid foreign key. Removed unused import for users.
-  - `apps/server/src/db/schema/ai-conversations.ts` - Removed .references() for uid foreign key. Removed unused import for users.
-  - `apps/server/src/db/schema/ai-messages.ts` - Removed .references() for conversationId foreign key. Removed unused import for aiConversations.
-  - `apps/server/src/db/schema/categories.ts` - Removed .references() for uid foreign key. Removed unused import for users.
-  - `apps/server/src/db/schema/tags.ts` - Removed .references() for uid foreign key. Removed unused import for users.
-  - `apps/server/src/db/schema/daily-recommendations.ts` - Removed .references() for uid foreign key. Removed unused import for users.
-  - `apps/server/src/db/schema/push-rules.ts` - Removed .references() for uid foreign key. Removed unused import for users.
-  - `apps/server/drizzle/0003_eminent_peter_quill.sql` - Generated migration with 12 DROP FOREIGN KEY statements
-  - `apps/server/drizzle/0003_eminent_peter_quill.rollback.sql` - Created rollback script with 12 ADD CONSTRAINT statements to re-add foreign keys
-  - `apps/server/drizzle/0003_MIGRATION_TEST_PLAN.md` - Created comprehensive test plan with pre-migration checks, migration steps, post-migration verification, rollback procedure, and success criteria
-  - `apps/server/drizzle/meta/0003_snapshot.json` - Auto-generated Drizzle metadata
-  - `apps/server/drizzle/meta/_journal.json` - Auto-generated Drizzle journal
-- **Learnings for future iterations:**
-  - Drizzle-kit generates migrations automatically by comparing schema files with database state
-  - Migration generation requires building first: `pnpm build` then `pnpm migrate:generate`
-  - Drizzle doesn't have native rollback support - must create manual rollback SQL files
-  - Removing .references() from schema definitions generates DROP FOREIGN KEY statements
-  - All indexes are preserved when dropping foreign keys - they're separate database objects
-  - Foreign key constraint names follow pattern: `{table}_{column}_{ref_table}_{ref_column}_fk`
-  - Rollback requires exact constraint names and ON DELETE/ON UPDATE clauses
-  - Migration files are in `drizzle/` folder, metadata in `drizzle/meta/`
-  - Always create test plan documentation for database migrations
-  - Removing foreign keys is safe when application-layer referential integrity is already implemented (US-001 through US-010)
----
-
-## 2026-03-05 - US-012
-- What was implemented: Created pre-deployment validation script to check data integrity before and after foreign key removal
-- Files changed:
-  - `apps/server/scripts/validate-data-integrity.ts` - Created comprehensive validation script with 11 validation checks for referential integrity
-  - `apps/server/scripts/README.md` - Created detailed documentation covering usage, validation checks, output format, CI/CD integration, and troubleshooting
-  - `apps/server/package.json` - Added `validate:data` script command
-- **Learnings for future iterations:**
-  - Validation script uses Drizzle ORM with direct mysql2 connection pool (separate from app connection)
-  - LEFT JOIN pattern for detecting orphaned records: `LEFT JOIN parent ON child.fk = parent.pk WHERE parent.pk IS NULL`
-  - Check both non-existent references AND soft-deleted references: `WHERE (parent.id IS NULL OR parent.deletedAt > 0)`
-  - JSON array validation requires in-memory filtering after fetching records (can't use SQL for array contains)
-  - Exit codes: 0 for success/warnings, 1 for critical issues or errors
-  - Script outputs both console logs (human-readable) and timestamped JSON files (machine-readable)
-  - Critical issues prevent deployment, warnings allow deployment with review
-  - Validation checks include: memos→users, relations→memos, attachments→users, messages→conversations, categories→users, tags→users, recommendations→users, push_rules→users, conversations→users, memos→categories, memos→tags
-  - Use `sql` template from drizzle-orm for raw SQL conditions like `IS NULL` checks
-  - Environment variables pattern: Read from process.env with defaults for database connection
-  - Create logs/validation/ directory recursively if it doesn't exist using fs.mkdirSync with recursive: true
----
-

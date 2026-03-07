@@ -1,18 +1,17 @@
 {
   "project": "AIMO",
-  "branchName": "ralph/lancedb-mysql-migration",
-  "description": "Migrate scalar data from LanceDB to MySQL using Drizzle ORM while keeping vector embeddings in LanceDB",
+  "branchName": "ralph/memo-quick-reference",
+  "description": "Memo 快速引用功能 - 在卡片悬浮时提供一键引用入口，复用现有 relations 系统快速创建关联笔记",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Install and configure Drizzle ORM dependencies",
-      "description": "As a developer, I need Drizzle ORM and MySQL client installed so I can define schemas and run migrations.",
+      "title": "MemoEditorForm 暴露 addRelation 和 focusTextarea 方法",
+      "description": "As a developer, I need MemoEditorForm to expose addRelation and focusTextarea methods via useImperativeHandle so that the parent component can programmatically add a relation and focus the input.",
       "acceptanceCriteria": [
-        "Install drizzle-orm and drizzle-kit packages",
-        "Install mysql2 as MySQL client",
-        "Add Drizzle config file at apps/server/drizzle.config.ts",
-        "Add MySQL connection configuration to apps/server/src/config/config.ts",
-        "Update .env.example with MySQL connection variables (host, port, user, password, database)",
+        "MemoEditorForm 使用 forwardRef 包装，暴露 ref 接口",
+        "useImperativeHandle 暴露 addRelation(memo: MemoListItemDto) 方法：将 memo 添加到 selectedRelations，若已存在则跳过",
+        "useImperativeHandle 暴露 focusTextarea() 方法：聚焦 textarea 并将光标移至末尾",
+        "不改变组件现有 props 接口和内部提交逻辑",
         "Typecheck passes"
       ],
       "priority": 1,
@@ -21,25 +20,17 @@
     },
     {
       "id": "US-002",
-      "title": "Define Drizzle schema for all scalar tables",
-      "description": "As a developer, I need Drizzle schema definitions for all tables so MySQL can store relational data.",
+      "title": "memo-card.tsx 新增引用按钮",
+      "description": "As a user, I want to see a quote button when hovering over a memo card so that I can quickly create a related note.",
       "acceptanceCriteria": [
-        "Create apps/server/src/db/schema/ directory",
-        "Define schema for users table (all fields except embeddings)",
-        "Define schema for memos table (excluding embedding field)",
-        "Define schema for categories table",
-        "Define schema for tags table",
-        "Define schema for memo_relations table",
-        "Define schema for attachments table (excluding multimodalEmbedding field)",
-        "Define schema for ai_conversations table",
-        "Define schema for ai_messages table (excluding sources vector references)",
-        "Define schema for daily_recommendations table (store as JSON array)",
-        "Define schema for push_rules table",
-        "Define schema for table_migrations table (for migration tracking)",
-        "Add proper indexes (primary keys, foreign keys, unique constraints)",
-        "Add timestamps with default values (createdAt, updatedAt)",
-        "Export all schemas from apps/server/src/db/schema/index.ts",
-        "Typecheck passes"
+        "在卡片操作按钮区域（group-hover 显示区）新增引用按钮，使用 lucide-react 的 Quote 图标",
+        "按钮样式与现有编辑/删除按钮一致，仅悬浮时可见",
+        "按钮有 title 属性提示文字「引用此笔记」",
+        "MemoCard 组件接受新 prop：onQuote?: (memo: MemoDto) => void",
+        "点击按钮调用 onQuote(memo)，并阻止事件冒泡（e.stopPropagation()）",
+        "若 onQuote 未传入，按钮不渲染",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 2,
       "passes": true,
@@ -47,403 +38,18 @@
     },
     {
       "id": "US-003",
-      "title": "Create database connection service with pooling",
-      "description": "As a developer, I need a database connection service so services can query MySQL with connection pooling.",
+      "title": "Home 页面串联引用逻辑：添加关联并聚焦输入框",
+      "description": "As a user, I want clicking the quote button to automatically add the memo as a relation in the editor and scroll/focus the input so I can start writing immediately.",
       "acceptanceCriteria": [
-        "Create apps/server/src/db/connection.ts with Drizzle connection setup",
-        "Configure MySQL connection pool (min: 2, max: 10 connections)",
-        "Export db instance (Drizzle client) as singleton",
-        "Add graceful shutdown handler to close pool on app termination",
-        "Add connection health check method",
-        "Log connection pool status on initialization",
-        "Typecheck passes"
+        "Home 页面持有 MemoEditorForm 的 ref（类型为 MemoEditorFormRef）",
+        "实现 handleQuoteMemo(memo: MemoDto) 函数：调用 ref.current.addRelation(memo) 添加关联",
+        "handleQuoteMemo 调用后执行 scrollIntoView({ behavior: 'smooth', block: 'start' }) 滚动至编辑区",
+        "滚动后调用 ref.current.focusTextarea() 聚焦输入框",
+        "将 handleQuoteMemo 作为 onQuote prop 传递给每个 MemoCard",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-004",
-      "title": "Generate and run initial Drizzle migrations",
-      "description": "As a developer, I need initial database migrations so MySQL schema matches Drizzle definitions.",
-      "acceptanceCriteria": [
-        "Run drizzle-kit generate to create initial migration files in apps/server/drizzle/",
-        "Review generated SQL for correctness (tables, indexes, constraints)",
-        "Create migration runner script at apps/server/src/db/migrate.ts",
-        "Run migrations automatically on server startup (after MySQL connection)",
-        "Add pnpm migrate script to package.json for manual migration runs",
-        "Verify all tables created in MySQL database",
-        "Typecheck passes"
-      ],
-      "priority": 4,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-005",
-      "title": "Refactor UserService to use Drizzle",
-      "description": "As a developer, I need UserService to query MySQL so user data is stored in relational database.",
-      "acceptanceCriteria": [
-        "Replace LanceDB queries with Drizzle queries in user.service.ts",
-        "Implement createUser() with MySQL insert",
-        "Implement getUserByUid() with Drizzle query",
-        "Implement getUserByEmail() with Drizzle query",
-        "Implement getUserByPhone() with Drizzle query",
-        "Implement updateUser() with Drizzle update",
-        "Remove LanceDB table references from UserService",
-        "Ensure all existing user controller endpoints work unchanged",
-        "Typecheck passes"
-      ],
-      "priority": 5,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-006",
-      "title": "Refactor CategoryService to use Drizzle",
-      "description": "As a developer, I need CategoryService to query MySQL so category data benefits from relational constraints.",
-      "acceptanceCriteria": [
-        "Replace LanceDB queries with Drizzle queries in category.service.ts",
-        "Implement createCategory() with MySQL insert",
-        "Implement getCategoriesByUid() with Drizzle query",
-        "Implement getCategoryById() with Drizzle query",
-        "Implement updateCategory() with Drizzle update",
-        "Implement deleteCategory() with Drizzle delete",
-        "Add foreign key constraint: categories.uid → users.uid",
-        "Remove LanceDB table references from CategoryService",
-        "Ensure all existing category controller endpoints work unchanged",
-        "Typecheck passes"
-      ],
-      "priority": 6,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-007",
-      "title": "Refactor TagService to use Drizzle",
-      "description": "As a developer, I need TagService to query MySQL so tag usage counts are accurately maintained.",
-      "acceptanceCriteria": [
-        "Replace LanceDB queries with Drizzle queries in tag.service.ts",
-        "Implement createTag() with MySQL insert",
-        "Implement getTagsByUid() with Drizzle query",
-        "Implement getTagById() with Drizzle query",
-        "Implement updateTag() with Drizzle update (including usageCount)",
-        "Implement deleteTag() with Drizzle delete",
-        "Implement incrementUsageCount() with atomic update",
-        "Add foreign key constraint: tags.uid → users.uid",
-        "Remove LanceDB table references from TagService",
-        "Ensure all existing tag controller endpoints work unchanged",
-        "Typecheck passes"
-      ],
-      "priority": 7,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-008",
-      "title": "Refactor MemoRelationService to use Drizzle",
-      "description": "As a developer, I need MemoRelationService to query MySQL so memo relations leverage relational database features.",
-      "acceptanceCriteria": [
-        "Replace LanceDB queries with Drizzle queries in memo-relation.service.ts",
-        "Implement createRelation() with MySQL insert",
-        "Implement getRelatedMemos() with Drizzle join query",
-        "Implement getBacklinks() with Drizzle reverse join query",
-        "Implement deleteRelation() with Drizzle delete",
-        "Add foreign key constraints: memo_relations.sourceMemoId → memos.memoId, targetMemoId → memos.memoId",
-        "Add composite unique index on (sourceMemoId, targetMemoId)",
-        "Remove LanceDB table references from MemoRelationService",
-        "Ensure all existing memo relation controller endpoints work unchanged",
-        "Typecheck passes"
-      ],
-      "priority": 8,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-016",
-      "title": "Create LanceDB vector-only tables",
-      "description": "As a developer, I need separate vector-only tables in LanceDB so embeddings are stored efficiently.",
-      "acceptanceCriteria": [
-        "Create memo_vectors table schema in LanceDB with fields: memoId (string), embedding (vector)",
-        "Create attachment_vectors table schema in LanceDB with fields: attachmentId (string), multimodalEmbedding (vector)",
-        "Keep embedding_cache table in LanceDB (unchanged)",
-        "Keep multimodal_embedding_cache table in LanceDB (unchanged)",
-        "Create indexes on vector fields for similarity search",
-        "Update apps/server/src/models/db/schema.ts to reflect new vector-only schemas",
-        "Typecheck passes"
-      ],
-      "priority": 9,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-018",
-      "title": "Implement transaction support for multi-table operations",
-      "description": "As a developer, I need transaction support so operations spanning multiple tables are atomic.",
-      "acceptanceCriteria": [
-        "Create transaction helper in apps/server/src/db/transaction.ts",
-        "Add rollback handling for failed transactions",
-        "Log transaction errors with context",
-        "Typecheck passes"
-      ],
-      "priority": 10,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-009",
-      "title": "Refactor AttachmentService to use Drizzle",
-      "description": "As a developer, I need AttachmentService to query MySQL so attachment metadata is stored relationally.",
-      "acceptanceCriteria": [
-        "Replace LanceDB scalar queries with Drizzle queries in attachment.service.ts",
-        "Implement createAttachment() with MySQL insert (excluding multimodalEmbedding)",
-        "Store multimodalEmbedding in LanceDB attachment_vectors table",
-        "Implement getAttachmentById() with Drizzle query",
-        "Implement getAttachmentsByUid() with Drizzle query",
-        "Implement deleteAttachment() with Drizzle delete and remove from attachment_vectors",
-        "Add foreign key constraint: attachments.uid → users.uid",
-        "Remove scalar field queries from LanceDB in AttachmentService",
-        "Ensure all existing attachment controller endpoints work unchanged",
-        "Typecheck passes"
-      ],
-      "priority": 11,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-010",
-      "title": "Create hybrid MemoService with MySQL + LanceDB",
-      "description": "As a developer, I need MemoService to store scalar data in MySQL and vectors in LanceDB so data is properly separated.",
-      "acceptanceCriteria": [
-        "Replace scalar field queries with Drizzle in memo.service.ts",
-        "Implement createMemo(): insert scalar fields to MySQL, embedding to LanceDB memo_vectors table",
-        "Implement getMemoById(): query MySQL for scalar data",
-        "Implement getMemosByUid(): query MySQL with pagination",
-        "Implement updateMemo(): update MySQL scalar fields, regenerate embedding in LanceDB if content changed",
-        "Implement deleteMemo(): delete from both MySQL and LanceDB memo_vectors",
-        "Add foreign key constraints: memos.uid → users.uid, memos.categoryId → categories.categoryId",
-        "Handle attachments and tagIds as JSON arrays in MySQL",
-        "Use transactions for operations spanning multiple tables",
-        "Remove scalar field queries from LanceDB in MemoService",
-        "Ensure all existing memo controller endpoints work unchanged",
-        "Typecheck passes"
-      ],
-      "priority": 12,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-011",
-      "title": "Refactor SearchService for hybrid vector search",
-      "description": "As a developer, I need SearchService to perform vector search in LanceDB then enrich with MySQL data.",
-      "acceptanceCriteria": [
-        "Update semanticSearch() in search.service.ts to query LanceDB memo_vectors for top K memo IDs",
-        "Implement batch query to MySQL: fetch full memo records by IDs in single query",
-        "Preserve similarity scores from LanceDB in results",
-        "Implement full-text search using LanceDB (keep existing implementation)",
-        "Ensure search results include all scalar fields from MySQL",
-        "Maintain search result ordering by similarity score",
-        "Remove direct scalar field access from LanceDB search results",
-        "Ensure all existing search/explore controller endpoints work unchanged",
-        "Typecheck passes"
-      ],
-      "priority": 13,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-012",
-      "title": "Refactor AIConversationService to use Drizzle",
-      "description": "As a developer, I need AIConversationService to query MySQL so conversation history is stored relationally.",
-      "acceptanceCriteria": [
-        "Replace LanceDB queries with Drizzle queries in ai-conversation.service.ts",
-        "Implement createConversation() with MySQL insert",
-        "Implement getConversationsByUid() with Drizzle query",
-        "Implement getConversationById() with Drizzle query",
-        "Implement updateConversation() with Drizzle update",
-        "Implement deleteConversation() with cascade delete to ai_messages",
-        "Add foreign key constraint: ai_conversations.uid → users.uid",
-        "Remove LanceDB table references from AIConversationService",
-        "Ensure all existing AI conversation controller endpoints work unchanged",
-        "Typecheck passes"
-      ],
-      "priority": 14,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-013",
-      "title": "Refactor AIMessageService to use Drizzle",
-      "description": "As a developer, I need AIMessageService to query MySQL so messages are stored with proper foreign keys.",
-      "acceptanceCriteria": [
-        "Create ai-message.service.ts if not exists, or refactor existing message handling",
-        "Replace LanceDB queries with Drizzle queries",
-        "Implement createMessage() with MySQL insert (store sources as JSON)",
-        "Implement getMessagesByConversationId() with Drizzle query",
-        "Implement deleteMessage() with Drizzle delete",
-        "Add foreign key constraint: ai_messages.conversationId → ai_conversations.conversationId",
-        "Store sources array as JSON column in MySQL",
-        "Remove LanceDB table references from message handling",
-        "Ensure all existing AI message controller endpoints work unchanged",
-        "Typecheck passes"
-      ],
-      "priority": 15,
-      "passes": true,
-      "notes": "Completed as part of US-012 - message handling is integrated into AIConversationService"
-    },
-    {
-      "id": "US-014",
-      "title": "Refactor RecommendationService to use Drizzle",
-      "description": "As a developer, I need RecommendationService to query MySQL so daily recommendations are cached relationally.",
-      "acceptanceCriteria": [
-        "Replace LanceDB queries with Drizzle queries in recommendation.service.ts",
-        "Implement createRecommendation() with MySQL insert (store memoIds as JSON array)",
-        "Implement getRecommendationByDate() with Drizzle query",
-        "Implement deleteRecommendation() with Drizzle delete",
-        "Store memoIds as JSON column in MySQL",
-        "Add foreign key constraint: daily_recommendations.uid → users.uid",
-        "Add unique constraint on (uid, date)",
-        "Remove LanceDB table references from RecommendationService",
-        "Ensure all existing recommendation controller endpoints work unchanged",
-        "Typecheck passes"
-      ],
-      "priority": 16,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-015",
-      "title": "Refactor PushRuleService to use Drizzle",
-      "description": "As a developer, I need PushRuleService to query MySQL so push rules are managed in relational database.",
-      "acceptanceCriteria": [
-        "Replace LanceDB queries with Drizzle queries in push-rule.service.ts",
-        "Implement createPushRule() with MySQL insert",
-        "Implement getPushRulesByUid() with Drizzle query",
-        "Implement getPushRuleById() with Drizzle query",
-        "Implement updatePushRule() with Drizzle update",
-        "Implement deletePushRule() with Drizzle delete",
-        "Store channels as JSON column in MySQL",
-        "Add foreign key constraint: push_rules.uid → users.uid",
-        "Remove LanceDB table references from PushRuleService",
-        "Ensure all existing push rule controller endpoints work unchanged",
-        "Typecheck passes"
-      ],
-      "priority": 17,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-017",
-      "title": "Update DTOs for client-facing data structures",
-      "description": "As a developer, I need all client-facing data defined in @aimo/dto so contracts are explicit and versioned.",
-      "acceptanceCriteria": [
-        "Review existing DTOs in packages/dto/src/ for completeness",
-        "Add missing DTOs for any controller responses not yet defined",
-        "Ensure MemoDto includes all scalar fields returned by controllers",
-        "Ensure AttachmentDto includes all scalar fields (no embeddings)",
-        "Ensure CategoryDto, TagDto, UserDto match controller responses",
-        "Ensure AIConversationDto and AIMessageDto are complete",
-        "Add JSDoc comments to all DTO fields",
-        "Rebuild DTO package: pnpm --filter @aimo/dto build",
-        "Typecheck passes in both server and web packages"
-      ],
-      "priority": 18,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-020",
-      "title": "Update LanceDbService for vector-only operations",
-      "description": "As a developer, I need LanceDbService to only handle vector operations so responsibilities are clear.",
-      "acceptanceCriteria": [
-        "Remove scalar table initialization from lancedb.ts",
-        "Add memo_vectors table initialization",
-        "Add attachment_vectors table initialization",
-        "Keep embedding_cache and multimodal_embedding_cache initialization",
-        "Update getTable() method to only return vector tables",
-        "Remove methods for scalar data queries",
-        "Add methods for vector CRUD: insertVector(), deleteVector(), searchVectors()",
-        "Typecheck passes"
-      ],
-      "priority": 19,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-021",
-      "title": "Update environment configuration and documentation",
-      "description": "As a developer, I need updated configuration so MySQL connection is properly documented.",
-      "acceptanceCriteria": [
-        "Add MySQL config section to apps/server/src/config/config.ts",
-        "Update .env.example with MySQL variables: MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE",
-        "Update apps/server/README.md with MySQL setup instructions",
-        "Add migration guide in apps/server/MIGRATION.md",
-        "Document Drizzle commands: pnpm drizzle-kit generate, pnpm drizzle-kit migrate, pnpm drizzle-kit studio",
-        "Update Docker Compose file to include MySQL service",
-        "Update main README.md in project root to mention MySQL requirement",
-        "Typecheck passes"
-      ],
-      "priority": 20,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-023",
-      "title": "Update graceful shutdown to close MySQL connections",
-      "description": "As a developer, I need graceful shutdown to close MySQL connections so no connections leak on restart.",
-      "acceptanceCriteria": [
-        "Add MySQL connection pool shutdown to apps/server/src/index.ts shutdown handler",
-        "Ensure MySQL closes before LanceDB in shutdown sequence",
-        "Log MySQL connection pool closed on successful shutdown",
-        "Test graceful shutdown with Ctrl+C during development",
-        "Typecheck passes"
-      ],
-      "priority": 21,
-      "passes": true,
-      "notes": "Completed in US-003 - graceful shutdown already implemented with proper sequence"
-    },
-    {
-      "id": "US-024",
-      "title": "Performance optimization and indexing",
-      "description": "As a developer, I need proper indexes so queries perform well at scale.",
-      "acceptanceCriteria": [
-        "Add index on memos.uid for user-specific queries",
-        "Add index on memos.categoryId for category filtering",
-        "Add index on memos.createdAt for time-based sorting",
-        "Add composite index on memo_relations(sourceMemoId, targetMemoId)",
-        "Add index on attachments.uid for user-specific queries",
-        "Add index on ai_messages.conversationId for conversation queries",
-        "Add index on daily_recommendations(uid, date) for cache lookups",
-        "Run EXPLAIN on critical queries to verify index usage",
-        "Document index strategy in apps/server/MIGRATION.md",
-        "Typecheck passes"
-      ],
-      "priority": 22,
-      "passes": true,
-      "notes": "Indexes were already added in US-002 schema definitions. Verified and documented."
-    },
-    {
-      "id": "US-019",
-      "title": "Create data migration script from LanceDB to MySQL",
-      "description": "As a developer, I need a one-time migration script so existing LanceDB data is transferred to MySQL.",
-      "acceptanceCriteria": [
-        "Create apps/server/src/scripts/migrate-lancedb-to-mysql.ts",
-        "Migrate users table: read from LanceDB, insert into MySQL",
-        "Migrate categories table with foreign key handling",
-        "Migrate tags table with foreign key handling",
-        "Migrate memos table: scalar fields to MySQL, embeddings to memo_vectors in LanceDB",
-        "Migrate memo_relations table with foreign key handling",
-        "Migrate attachments table: scalar fields to MySQL, embeddings to attachment_vectors in LanceDB",
-        "Migrate ai_conversations and ai_messages tables",
-        "Migrate daily_recommendations and push_rules tables",
-        "Add progress logging (e.g., Migrated 1000/5000 memos)",
-        "Add error handling and retry logic for failed records",
-        "Add dry-run mode to preview migration without writing",
-        "Add pnpm migrate:data script to package.json",
-        "Document migration steps in apps/server/MIGRATION.md",
-        "Typecheck passes"
-      ],
-      "priority": 23,
       "passes": true,
       "notes": ""
     }
