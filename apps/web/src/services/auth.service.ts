@@ -46,7 +46,7 @@ export class AuthService extends Service {
    * Save authentication state to localStorage
    * Note: Token is stored in HTTP Only Cookie, only user info is saved here
    */
-  saveAuthState(token: string, user: UserInfoDto) {
+  saveAuthState(_token: string, user: UserInfoDto) {
     this.user = user;
     this.isAuthenticated = true;
 
