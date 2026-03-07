@@ -1,5 +1,6 @@
+import { forwardRef } from 'react';
 import { view, useService } from '@rabjs/react';
-import { MemoEditorForm } from '../../../components/memo-editor-form';
+import { MemoEditorForm, type MemoEditorFormRef } from '../../../components/memo-editor-form';
 import { MemoService, UNCATEGORIZED_CATEGORY_ID } from '../../../services/memo.service';
 
 /**
@@ -7,11 +8,13 @@ import { MemoService, UNCATEGORIZED_CATEGORY_ID } from '../../../services/memo.s
  * 这是 MemoEditorForm 的简单包装器，专门用于创建模式
  * 自动传入当前筛选的类别作为默认类别
  */
-export const MemoEditor = view(() => {
-  const memoService = useService(MemoService);
+export const MemoEditor = view(
+  forwardRef<MemoEditorFormRef>((_, ref) => {
+    const memoService = useService(MemoService);
 
-  const defaultCategoryId =
-    memoService.categoryFilter === UNCATEGORIZED_CATEGORY_ID ? null : memoService.categoryFilter;
+    const defaultCategoryId =
+      memoService.categoryFilter === UNCATEGORIZED_CATEGORY_ID ? null : memoService.categoryFilter;
 
-  return <MemoEditorForm mode="create" defaultCategoryId={defaultCategoryId} />;
-});
+    return <MemoEditorForm ref={ref} mode="create" defaultCategoryId={defaultCategoryId} />;
+  })
+);

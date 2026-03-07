@@ -4,6 +4,10 @@ import { MemoService } from '../../../services/memo.service';
 import type { MemoListItemDto, MemoListItemWithScoreDto } from '@aimo/dto';
 import { MemoCard } from './memo-card';
 
+interface MemoListProps {
+  onQuote?: (memo: MemoListItemDto) => void;
+}
+
 /**
  * Group memos by date
  */
@@ -30,7 +34,7 @@ const groupMemosByDate = (
   return grouped;
 };
 
-export const MemoList = view(() => {
+export const MemoList = view(({ onQuote }: MemoListProps) => {
   const memoService = useService(MemoService);
 
   if (memoService.loading && memoService.memos.length === 0) {
@@ -127,7 +131,7 @@ export const MemoList = view(() => {
           <div>
             <div className="space-y-3">
               {memoService.memos.map((memo) => (
-                <MemoCard key={memo.memoId} memo={memo} />
+                <MemoCard key={memo.memoId} memo={memo} onQuote={onQuote} />
               ))}
             </div>
           </div>
@@ -157,7 +161,7 @@ export const MemoList = view(() => {
                     {/* Memos for this date */}
                     <div className="space-y-3">
                       {memos.map((memo) => (
-                        <MemoCard key={memo.memoId} memo={memo} />
+                        <MemoCard key={memo.memoId} memo={memo} onQuote={onQuote} />
                       ))}
                     </div>
                   </div>

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { view, useService } from '@rabjs/react';
 import { useSearchParams } from 'react-router';
 import { ArrowUp, ChevronLeft, ChevronRight, X, Calendar, Filter } from 'lucide-react';
@@ -6,6 +6,8 @@ import { MemoService } from '../../services/memo.service';
 import { MemoPollingService } from '../../services/memo-polling.service';
 import { MemoEditor } from './components/memo-editor';
 import { MemoList } from './components/memo-list';
+import type { MemoEditorFormRef } from '../../components/memo-editor-form';
+import type { MemoListItemDto } from '@aimo/dto';
 import { SearchSortBar } from './components/search-sort-bar';
 import { CategoryFilter } from './components/category-filter';
 import { Layout } from '../../components/layout';
@@ -53,6 +55,7 @@ export const HomePage = view(() => {
   const pollingService = useService(MemoPollingService);
   const [, setSearchParams] = useSearchParams();
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const memoEditorRef = useRef<MemoEditorFormRef>(null);
   const [isCompact, setIsCompact] = useState(getIsCompactLayout);
   const [isCollapsed, setIsCollapsed] = useState(() =>
     getIsCompactLayout() ? true : loadCollapsedState()
@@ -181,6 +184,17 @@ export const HomePage = view(() => {
       saveCollapsedState(newValue);
       return newValue;
     });
+  }, []);
+
+  const handleQuoteMemo = useCallback((memo: MemoListItemDto) => {
+    memoEditorRef.current?.addRelation(memo);
+    const editorEl = document.querySelector('[aria-label="Create new memo"]');
+    if (editorEl) {
+      editorEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    setTimeout(() => {
+      memoEditorRef.current?.focusTextarea();
+    }, 300);
   }, []);
 
   const toggleButton = (
@@ -351,7 +365,7 @@ export const HomePage = view(() => {
               {/* Memo Editor - Fixed */}
               <div className="px-4 pb-0 flex-shrink-0 mt-0.5">
                 <section aria-label="Create new memo">
-                  <MemoEditor />
+                  <MemoEditor ref={memoEditorRef} />
                 </section>
               </div>
 
@@ -362,7 +376,7 @@ export const HomePage = view(() => {
                 onScroll={handleScroll}
               >
                 <section aria-label="Your memos">
-                  <MemoList />
+                  <MemoList onQuote={handleQuoteMemo} />
                 </section>
 
                 {/* Scroll to Top Button */}
