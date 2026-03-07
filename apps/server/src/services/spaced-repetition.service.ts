@@ -1,5 +1,5 @@
 import { Service } from 'typedi';
-import { eq, and, lte } from 'drizzle-orm';
+import { eq, and, lte, inArray } from 'drizzle-orm';
 
 import { getDatabase } from '../db/connection.js';
 import { spacedRepetitionCards, spacedRepetitionRules } from '../db/schema/index.js';
@@ -399,6 +399,58 @@ export class SpacedRepetitionService {
       .where(eq(spacedRepetitionRules.ruleId, ruleId))
       .limit(1);
     return results[0];
+  }
+
+  /**
+   * Get all due cards grouped by userId for all SR-enabled users.
+   * Returns a map of userId -> { cards, srDailyLimit }.
+   * Only returns users with srEnabled=true who have at least one due card.
+   */
+  async getDueCardsForAllSREnabledUsers(): Promise<
+    Map<string, { cards: SpacedRepetitionCard[]; srDailyLimit: number }>
+  > {
+    const db = getDatabase();
+    const now = new Date();
+
+    // Get all SR-enabled users
+    const srUsers = await db
+      .select({ uid: users.uid, srDailyLimit: users.srDailyLimit })
+      .from(users)
+      .where(and(eq(users.srEnabled, true), eq(users.deletedAt, 0)));
+
+    if (srUsers.length === 0) {
+      return new Map();
+    }
+
+    const userIds = srUsers.map((u) => u.uid);
+
+    // Get all due cards for these users
+    const dueCards = await db
+      .select()
+      .from(spacedRepetitionCards)
+      .where(
+        and(
+          inArray(spacedRepetitionCards.userId, userIds),
+          lte(spacedRepetitionCards.nextReviewAt, now)
+        )
+      )
+      .orderBy(spacedRepetitionCards.nextReviewAt);
+
+    // Group by userId
+    const result = new Map<string, { cards: SpacedRepetitionCard[]; srDailyLimit: number }>();
+    const userLimitMap = new Map<string, number>(srUsers.map((u) => [u.uid, u.srDailyLimit as number]));
+
+    for (const card of dueCards) {
+      if (!result.has(card.userId)) {
+        result.set(card.userId, {
+          cards: [],
+          srDailyLimit: userLimitMap.get(card.userId) ?? 5,
+        });
+      }
+      result.get(card.userId)!.cards.push(card);
+    }
+
+    return result;
   }
 
   /**

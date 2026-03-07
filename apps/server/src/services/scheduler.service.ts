@@ -7,7 +7,12 @@ import { logger } from '../utils/logger.js';
 
 import { ChannelFactory } from './channels/channel.factory.js';
 import { DailyContentGenerator } from './channels/daily-content.generator.js';
+import { NotificationService } from './notification.service.js';
 import { PushRuleService } from './push-rule.service.js';
+import { SpacedRepetitionService } from './spaced-repetition.service.js';
+import { getDatabase } from '../db/connection.js';
+import { memos } from '../db/schema/memos.js';
+import { eq, and } from 'drizzle-orm';
 
 import type { PushRuleDto } from '@aimo/dto';
 
@@ -24,7 +29,9 @@ export class SchedulerService {
     private lanceDatabaseService: LanceDatabaseService,
     @Inject() private pushRuleService: PushRuleService,
     @Inject() private contentGenerator: DailyContentGenerator,
-    @Inject() private channelFactory: ChannelFactory
+    @Inject() private channelFactory: ChannelFactory,
+    @Inject() private spacedRepetitionService: SpacedRepetitionService,
+    @Inject() private notificationService: NotificationService
   ) {}
 
   /**
@@ -43,6 +50,9 @@ export class SchedulerService {
 
     // 注册推送通知任务
     this.registerPushNotificationTask();
+
+    // 注册间隔重复推送任务
+    this.registerSpacedRepetitionPushTask();
 
     this.isInitialized = true;
     logger.info('Scheduler service initialized successfully');
@@ -173,6 +183,111 @@ export class SchedulerService {
         // Continue with other channels
       }
     }
+  }
+
+  /**
+   * 注册间隔重复推送任务（每日 08:00）
+   */
+  private registerSpacedRepetitionPushTask(): void {
+    const task = cron.schedule(
+      '0 8 * * *',
+      async () => {
+        try {
+          await this.sendSpacedRepetitionPush();
+        } catch (error) {
+          logger.error('Error sending spaced repetition push:', error);
+        }
+      },
+      {
+        timezone: config.locale.timezone || 'Asia/Shanghai',
+      }
+    );
+
+    this.tasks.push(task);
+    logger.info('Spaced repetition push task scheduled: daily at 08:00');
+  }
+
+  /**
+   * 发送间隔重复推送通知
+   * 查询所有 srEnabled=true 用户中 nextReviewAt <= now 的卡片，按用户分组，每用户取最多 srDailyLimit 条
+   */
+  private async sendSpacedRepetitionPush(): Promise<void> {
+    logger.info('Starting spaced repetition push...');
+
+    const userDueCardsMap = await this.spacedRepetitionService.getDueCardsForAllSREnabledUsers();
+
+    if (userDueCardsMap.size === 0) {
+      logger.info('No due cards found for any SR-enabled user');
+      return;
+    }
+
+    const db = getDatabase();
+    const appBaseUrl = config.cors.origin[0] || 'http://localhost:3000';
+
+    for (const [userId, { cards, srDailyLimit }] of userDueCardsMap) {
+      // Limit to srDailyLimit cards per user
+      const limitedCards = cards.slice(0, srDailyLimit);
+
+      // Get push rules for this user (external channels)
+      const pushRules = await this.pushRuleService.findByUid(userId);
+      const enabledRules = pushRules.filter((r) => r.enabled);
+
+      for (const card of limitedCards) {
+        try {
+          // Fetch memo info
+          const memoResults = await db
+            .select({ content: memos.content })
+            .from(memos)
+            .where(and(eq(memos.memoId, card.memoId), eq(memos.deletedAt, 0)))
+            .limit(1);
+
+          if (memoResults.length === 0) {
+            continue; // Memo was deleted, skip
+          }
+
+          const memoContent = memoResults[0].content;
+          const memoTitle = memoContent.split('\n')[0].slice(0, 50) || '无标题';
+          const memoPreview = memoContent.slice(0, 100);
+          const memoLink = `${appBaseUrl}/review`;
+
+          const pushTitle = '📚 复习提醒';
+          const pushBody = `《${memoTitle}》\n${memoPreview}\n查看笔记：${memoLink}`;
+
+          // Send via external push channels if configured
+          for (const rule of enabledRules) {
+            for (const channelConfig of rule.channels) {
+              try {
+                const channel = this.channelFactory.getChannel(channelConfig);
+                await channel.send({ title: pushTitle, msg: pushBody });
+                logger.info(
+                  `SR push sent for user ${userId}, card ${card.cardId} via ${channelConfig.type}`
+                );
+              } catch (channelError) {
+                logger.error(
+                  `Failed to send SR push via channel ${channelConfig.type} for user ${userId}:`,
+                  channelError
+                );
+              }
+            }
+          }
+
+          // Always write to in_app_notifications
+          await this.notificationService.createNotification({
+            userId,
+            type: 'spaced_repetition',
+            title: pushTitle,
+            body: pushBody,
+            memoId: card.memoId,
+          });
+        } catch (cardError) {
+          logger.error(`Failed to process SR push for card ${card.cardId}:`, cardError);
+        }
+      }
+
+      logger.info(`SR push completed for user ${userId}: ${limitedCards.length} card(s) processed`);
+    }
+
+    logger.info('Spaced repetition push completed');
   }
 
   /**
