@@ -13,6 +13,7 @@ import { MemoV1Controller } from './v1/memo.controller.js';
 import { OcrV1Controller } from './v1/ocr.controller.js';
 import { PushRuleV1Controller } from './v1/push-rule.controller.js';
 import { ReviewController } from './v1/review.controller.js';
+import { NotificationController } from './v1/notification.controller.js';
 import { SpacedRepetitionController } from './v1/spaced-repetition.controller.js';
 import { TagV1Controller } from './v1/tag.controller.js';
 import { UserV1Controller } from './v1/user.controller.js';
@@ -39,6 +40,7 @@ export const controllers = [
   AIV1Controller,
   PushRuleV1Controller,
   ReviewController,
+  NotificationController,
   SpacedRepetitionController,
   SystemController,
   StaticController,

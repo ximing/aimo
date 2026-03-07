@@ -73,6 +73,9 @@ export const generateTypeId = (type: (typeof OBJECT_TYPE)[keyof typeof OBJECT_TY
     case OBJECT_TYPE.SR_RULE: {
       return `srr${typeid()}`;
     }
+    case OBJECT_TYPE.NOTIFICATION: {
+      return `notif${typeid()}`;
+    }
   }
   throw new Error(`Invalid type: ${type}`);
 };
