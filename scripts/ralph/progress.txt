@@ -21,6 +21,22 @@ Started: 2026年 2月15日 星期日 23时33分46秒 CST
 - Timestamps in Drizzle: `timestamp('col', { mode: 'date', fsp: 3 }).notNull().defaultNow()`
 - VARCHAR(191) for PK/FK columns (MySQL utf8mb4 index limit)
 
+## 2026-03-08 - SR US-002
+- Added srEnabled (BOOLEAN DEFAULT false) and srDailyLimit (INT DEFAULT 5) to the users table
+- Built server and generated migration: drizzle/0007_abnormal_black_crow.sql
+- Typecheck passes
+- Files changed:
+  - apps/server/src/db/schema/users.ts (added srEnabled, srDailyLimit fields + boolean import)
+  - apps/server/drizzle/0007_abnormal_black_crow.sql (generated migration)
+  - apps/server/drizzle/meta/_journal.json (updated)
+  - apps/server/drizzle/meta/0006_snapshot.json (new)
+  - apps/server/drizzle/meta/0007_snapshot.json (new)
+- **Learnings for future iterations:**
+  - SR settings live in the `users` table (no separate user_settings table exists)
+  - Use `boolean()` from drizzle-orm/mysql-core for BOOLEAN columns
+  - Adding fields to existing tables generates ALTER TABLE statements in migrations
+---
+
 ## 2026-03-08 - SR US-001
 - Created spaced_repetition_cards and spaced_repetition_rules MySQL tables via Drizzle ORM
 - Fixed pre-existing TypeScript errors in user-model.controller.ts (userDto.id → userDto.uid) and added EXTERNAL_SERVICE_ERROR to ErrorCode
@@ -184,4 +200,18 @@ Started: 2026年 2月15日 星期日 23时33分46秒 CST
   - Use `stopPropagation()` on menu buttons to prevent triggering the parent button click
   - Keyboard shortcuts in modals: Enter to submit, Escape to cancel for better UX
   - Position dropdown menus with `absolute right-0 top-full mt-1` for proper alignment
+---
+
+## 2026-03-08 - SR US-003
+- Created apps/server/src/services/spaced-repetition.service.ts with SpacedRepetitionService (@Service() decorated)
+- Implemented calculateNextReview(card, quality: 1|3|4|5) following SM-2 algorithm spec
+- Created apps/server/src/__tests__/spaced-repetition.service.test.ts with 21 tests covering all quality levels
+- All tests pass, typecheck passes
+- Files changed:
+  - apps/server/src/services/spaced-repetition.service.ts (new)
+  - apps/server/src/__tests__/spaced-repetition.service.test.ts (new)
+- **Learnings for future iterations:**
+  - SM-2 special rule: after repetitions reset (forgot), 1st=1day, 2nd=6days, then formula — this applies to ALL quality levels (3/4/5), not just after "forgot"
+  - The service has no external dependencies (no DB, no config) — it's pure computation, making it easy to test without mocks
+  - SpacedRepetitionService exported interfaces: SRCardState (input), SRNextReview (output) — import these for type safety in US-004+
 ---
