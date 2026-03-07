@@ -1001,3 +1001,1599 @@ git add apps/web/src/api/review.ts apps/web/src/pages/review/index.tsx apps/web/
 git commit -m "feat: add Review page and API client"
 ```
 
+
+---
+
+# 功能二：间隔重复推送（Spaced Repetition）
+
+---
+
+### Task 7: DB Schema — spaced_repetition_cards & spaced_repetition_rules
+
+**Files:**
+- Modify: `apps/server/src/models/constant/type.ts`
+- Create: `apps/server/src/db/schema/spaced-repetition-cards.ts`
+- Create: `apps/server/src/db/schema/spaced-repetition-rules.ts`
+- Modify: `apps/server/src/db/schema/index.ts`
+- Modify: `apps/server/src/utils/id.ts`
+- Test: `apps/server/src/__tests__/spaced-repetition-schema.test.ts`
+
+**Step 1: Write the failing test**
+
+```typescript
+// apps/server/src/__tests__/spaced-repetition-schema.test.ts
+import { spacedRepetitionCards } from '../db/schema/spaced-repetition-cards.js';
+import { spacedRepetitionRules } from '../db/schema/spaced-repetition-rules.js';
+
+describe('Spaced repetition schemas', () => {
+  it('spacedRepetitionCards has SM-2 columns', () => {
+    expect(spacedRepetitionCards.cardId).toBeDefined();
+    expect(spacedRepetitionCards.easeFactor).toBeDefined();
+    expect(spacedRepetitionCards.interval).toBeDefined();
+    expect(spacedRepetitionCards.nextReviewAt).toBeDefined();
+  });
+
+  it('spacedRepetitionRules has filter columns', () => {
+    expect(spacedRepetitionRules.mode).toBeDefined();
+    expect(spacedRepetitionRules.filterType).toBeDefined();
+    expect(spacedRepetitionRules.filterValue).toBeDefined();
+  });
+});
+```
+
+**Step 2: Run test to verify it fails**
+
+```bash
+cd apps/server && pnpm test -- apps/server/src/__tests__/spaced-repetition-schema.test.ts
+```
+Expected: FAIL
+
+**Step 3: Add OBJECT_TYPE constants and ID generators**
+
+In `apps/server/src/models/constant/type.ts`:
+```typescript
+SR_CARD: 'SR_CARD',
+SR_RULE: 'SR_RULE',
+```
+
+In `apps/server/src/utils/id.ts` switch:
+```typescript
+case OBJECT_TYPE.SR_CARD: {
+  return `src${typeid()}`;
+}
+case OBJECT_TYPE.SR_RULE: {
+  return `srr${typeid()}`;
+}
+```
+
+**Step 4: Create spaced-repetition-cards schema**
+
+```typescript
+// apps/server/src/db/schema/spaced-repetition-cards.ts
+import {
+  mysqlTable, varchar, float, int, timestamp, index, unique
+} from 'drizzle-orm/mysql-core';
+
+export const spacedRepetitionCards = mysqlTable(
+  'spaced_repetition_cards',
+  {
+    cardId: varchar('card_id', { length: 191 }).primaryKey().notNull(),
+    uid: varchar('uid', { length: 191 }).notNull(),
+    memoId: varchar('memo_id', { length: 191 }).notNull(),
+    easeFactor: float('ease_factor').notNull().default(2.5),
+    interval: int('interval').notNull().default(1),
+    repetitions: int('repetitions').notNull().default(0),
+    nextReviewAt: timestamp('next_review_at', { mode: 'date', fsp: 3 }).notNull(),
+    lastReviewAt: timestamp('last_review_at', { mode: 'date', fsp: 3 }),
+    createdAt: timestamp('created_at', { mode: 'date', fsp: 3 }).notNull().defaultNow(),
+  },
+  (table) => ({
+    uidIdx: index('uid_idx').on(table.uid),
+    nextReviewIdx: index('next_review_at_idx').on(table.nextReviewAt),
+    uidMemoUnique: unique('uid_memo_unique').on(table.uid, table.memoId),
+  })
+);
+
+export type SpacedRepetitionCard = typeof spacedRepetitionCards.$inferSelect;
+export type NewSpacedRepetitionCard = typeof spacedRepetitionCards.$inferInsert;
+```
+
+**Step 5: Create spaced-repetition-rules schema**
+
+```typescript
+// apps/server/src/db/schema/spaced-repetition-rules.ts
+import {
+  mysqlTable, varchar, mysqlEnum, timestamp, index
+} from 'drizzle-orm/mysql-core';
+
+export const spacedRepetitionRules = mysqlTable(
+  'spaced_repetition_rules',
+  {
+    ruleId: varchar('rule_id', { length: 191 }).primaryKey().notNull(),
+    uid: varchar('uid', { length: 191 }).notNull(),
+    mode: mysqlEnum('mode', ['include', 'exclude']).notNull(),
+    filterType: mysqlEnum('filter_type', ['category', 'tag']).notNull(),
+    filterValue: varchar('filter_value', { length: 255 }).notNull(),
+    createdAt: timestamp('created_at', { mode: 'date', fsp: 3 }).notNull().defaultNow(),
+  },
+  (table) => ({
+    uidIdx: index('uid_idx').on(table.uid),
+  })
+);
+
+export type SpacedRepetitionRule = typeof spacedRepetitionRules.$inferSelect;
+export type NewSpacedRepetitionRule = typeof spacedRepetitionRules.$inferInsert;
+```
+
+**Step 6: Export from schema/index.ts**
+
+```typescript
+export * from './spaced-repetition-cards.js';
+export * from './spaced-repetition-rules.js';
+```
+
+**Step 7: Run test, build, generate migration**
+
+```bash
+cd apps/server && pnpm test -- apps/server/src/__tests__/spaced-repetition-schema.test.ts
+cd apps/server && pnpm build && pnpm migrate:generate
+```
+
+**Step 8: Commit**
+
+```bash
+git add apps/server/src/models/constant/type.ts \
+        apps/server/src/utils/id.ts \
+        apps/server/src/db/schema/spaced-repetition-cards.ts \
+        apps/server/src/db/schema/spaced-repetition-rules.ts \
+        apps/server/src/db/schema/index.ts \
+        apps/server/src/__tests__/spaced-repetition-schema.test.ts \
+        apps/server/drizzle/
+git commit -m "feat: add spaced_repetition_cards and rules DB schemas"
+```
+
+---
+
+### Task 8: SpacedRepetitionService — SM-2 algorithm
+
+**Files:**
+- Create: `apps/server/src/services/spaced-repetition.service.ts`
+- Test: `apps/server/src/__tests__/spaced-repetition.service.test.ts`
+
+**Step 1: Write the failing tests**
+
+```typescript
+// apps/server/src/__tests__/spaced-repetition.service.test.ts
+import { SpacedRepetitionService } from '../services/spaced-repetition.service.js';
+
+describe('SpacedRepetitionService SM-2', () => {
+  let service: SpacedRepetitionService;
+  beforeEach(() => { service = new (SpacedRepetitionService as any)(); });
+
+  it('remembered: increases interval and keeps easeFactor >= 1.3', () => {
+    const card = { easeFactor: 2.5, interval: 1, repetitions: 0 };
+    const updated = (service as any).applyReview(card, 'remembered');
+    expect(updated.interval).toBeGreaterThan(1);
+    expect(updated.easeFactor).toBeGreaterThanOrEqual(1.3);
+    expect(updated.repetitions).toBe(1);
+  });
+
+  it('forgot: resets interval to 1 and repetitions to 0', () => {
+    const card = { easeFactor: 2.5, interval: 10, repetitions: 5 };
+    const updated = (service as any).applyReview(card, 'forgot');
+    expect(updated.interval).toBe(1);
+    expect(updated.repetitions).toBe(0);
+  });
+
+  it('fuzzy: increases interval slowly', () => {
+    const card = { easeFactor: 2.5, interval: 4, repetitions: 3 };
+    const remembered = (service as any).applyReview(card, 'remembered');
+    const fuzzy = (service as any).applyReview(card, 'fuzzy');
+    expect(fuzzy.interval).toBeLessThan(remembered.interval);
+    expect(fuzzy.interval).toBeGreaterThan(1);
+  });
+
+  it('easeFactor never drops below 1.3', () => {
+    let card = { easeFactor: 1.4, interval: 1, repetitions: 0 };
+    for (let i = 0; i < 10; i++) {
+      card = (service as any).applyReview(card, 'forgot');
+    }
+    expect(card.easeFactor).toBeGreaterThanOrEqual(1.3);
+  });
+});
+```
+
+**Step 2: Run test to verify it fails**
+
+```bash
+cd apps/server && pnpm test -- apps/server/src/__tests__/spaced-repetition.service.test.ts
+```
+Expected: FAIL
+
+**Step 3: Implement SpacedRepetitionService**
+
+```typescript
+// apps/server/src/services/spaced-repetition.service.ts
+import { Service } from 'typedi';
+import { eq, and, lte } from 'drizzle-orm';
+
+import { getDatabase } from '../db/connection.js';
+import { spacedRepetitionCards } from '../db/schema/spaced-repetition-cards.js';
+import { spacedRepetitionRules } from '../db/schema/spaced-repetition-rules.js';
+import { memos } from '../db/schema/memos.js';
+import { OBJECT_TYPE } from '../models/constant/type.js';
+import { generateTypeId } from '../utils/id.js';
+import { logger } from '../utils/logger.js';
+
+import type { MasteryLevel } from '@aimo/dto';
+
+interface SM2State {
+  easeFactor: number;
+  interval: number;
+  repetitions: number;
+}
+
+const QUALITY_MAP: Record<MasteryLevel, number> = {
+  remembered: 5,
+  fuzzy: 3,
+  forgot: 1,
+};
+
+@Service()
+export class SpacedRepetitionService {
+  /**
+   * Apply SM-2 algorithm to update card state based on review quality.
+   * SM-2 spec: https://www.supermemo.com/en/blog/application-of-a-computer-to-improve-the-results-obtained-in-working-with-the-supermemo-method
+   */
+  private applyReview(card: SM2State, mastery: MasteryLevel): SM2State {
+    const q = QUALITY_MAP[mastery];
+    let { easeFactor, interval, repetitions } = card;
+
+    if (q < 3) {
+      // Failed — reset
+      interval = 1;
+      repetitions = 0;
+    } else {
+      // Passed
+      if (repetitions === 0) {
+        interval = 1;
+      } else if (repetitions === 1) {
+        interval = 6;
+      } else {
+        interval = Math.round(interval * easeFactor);
+      }
+      repetitions += 1;
+    }
+
+    // Update ease factor: EF' = EF + (0.1 - (5-q) * (0.08 + (5-q) * 0.02))
+    easeFactor = easeFactor + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02));
+    easeFactor = Math.max(1.3, easeFactor);
+
+    return { easeFactor, interval, repetitions };
+  }
+
+  async createCardForMemo(uid: string, memoId: string): Promise<void> {
+    if (!(await this.shouldTrackMemo(uid, memoId))) return;
+
+    const db = getDatabase();
+    // Check if card already exists
+    const [existing] = await db.select({ cardId: spacedRepetitionCards.cardId })
+      .from(spacedRepetitionCards)
+      .where(and(eq(spacedRepetitionCards.uid, uid), eq(spacedRepetitionCards.memoId, memoId)));
+    if (existing) return;
+
+    const tomorrow = new Date(Date.now() + 86400000);
+    await db.insert(spacedRepetitionCards).values({
+      cardId: generateTypeId(OBJECT_TYPE.SR_CARD),
+      uid,
+      memoId,
+      easeFactor: 2.5,
+      interval: 1,
+      repetitions: 0,
+      nextReviewAt: tomorrow,
+    });
+  }
+
+  async updateCard(uid: string, memoId: string, mastery: MasteryLevel): Promise<void> {
+    const db = getDatabase();
+    const [card] = await db.select()
+      .from(spacedRepetitionCards)
+      .where(and(eq(spacedRepetitionCards.uid, uid), eq(spacedRepetitionCards.memoId, memoId)));
+    if (!card) return;
+
+    const updated = this.applyReview(
+      { easeFactor: card.easeFactor, interval: card.interval, repetitions: card.repetitions },
+      mastery
+    );
+
+    const nextReviewAt = new Date(Date.now() + updated.interval * 86400000);
+
+    await db.update(spacedRepetitionCards)
+      .set({ ...updated, nextReviewAt, lastReviewAt: new Date() })
+      .where(eq(spacedRepetitionCards.cardId, card.cardId));
+  }
+
+  async getDueCards(uid: string, limit = 5) {
+    const db = getDatabase();
+    const now = new Date();
+    const cards = await db.select()
+      .from(spacedRepetitionCards)
+      .where(and(eq(spacedRepetitionCards.uid, uid), lte(spacedRepetitionCards.nextReviewAt, now)))
+      .limit(limit);
+
+    // Enrich with memo content
+    const result = [];
+    for (const card of cards) {
+      const [memo] = await db.select().from(memos).where(eq(memos.memoId, card.memoId));
+      if (memo) result.push({ card, memo });
+    }
+    return result;
+  }
+
+  async shouldTrackMemo(uid: string, memoId: string): Promise<boolean> {
+    const db = getDatabase();
+    const rules = await db.select().from(spacedRepetitionRules).where(eq(spacedRepetitionRules.uid, uid));
+    if (rules.length === 0) return true; // No rules = track everything
+
+    const [memo] = await db.select().from(memos).where(eq(memos.memoId, memoId));
+    if (!memo) return false;
+
+    const hasInclude = rules.some((r) => r.mode === 'include');
+    const excludeRules = rules.filter((r) => r.mode === 'exclude');
+    const includeRules = rules.filter((r) => r.mode === 'include');
+
+    // Check excludes first (black list wins)
+    for (const rule of excludeRules) {
+      if (rule.filterType === 'category' && memo.categoryId === rule.filterValue) return false;
+      if (rule.filterType === 'tag' && (memo.tagIds as string[] ?? []).includes(rule.filterValue)) return false;
+    }
+
+    // If there are include rules, memo must match at least one
+    if (hasInclude) {
+      return includeRules.some((rule) => {
+        if (rule.filterType === 'category') return memo.categoryId === rule.filterValue;
+        if (rule.filterType === 'tag') return (memo.tagIds as string[] ?? []).includes(rule.filterValue);
+        return false;
+      });
+    }
+
+    return true;
+  }
+
+  async getRules(uid: string) {
+    return getDatabase().select().from(spacedRepetitionRules).where(eq(spacedRepetitionRules.uid, uid));
+  }
+
+  async addRule(uid: string, mode: 'include' | 'exclude', filterType: 'category' | 'tag', filterValue: string) {
+    await getDatabase().insert(spacedRepetitionRules).values({
+      ruleId: generateTypeId(OBJECT_TYPE.SR_RULE),
+      uid, mode, filterType, filterValue,
+    });
+  }
+
+  async removeRule(uid: string, ruleId: string) {
+    await getDatabase().delete(spacedRepetitionRules)
+      .where(and(eq(spacedRepetitionRules.ruleId, ruleId), eq(spacedRepetitionRules.uid, uid)));
+  }
+}
+```
+
+**Step 4: Run test to verify it passes**
+
+```bash
+cd apps/server && pnpm test -- apps/server/src/__tests__/spaced-repetition.service.test.ts
+```
+Expected: PASS
+
+**Step 5: Commit**
+
+```bash
+git add apps/server/src/services/spaced-repetition.service.ts \
+        apps/server/src/__tests__/spaced-repetition.service.test.ts
+git commit -m "feat: implement SpacedRepetitionService with SM-2 algorithm"
+```
+
+
+---
+
+### Task 9: Hook SpacedRepetition into ReviewService and MemoService
+
+**Files:**
+- Modify: `apps/server/src/services/review.service.ts`
+- Modify: `apps/server/src/services/memo.service.ts`
+
+**Step 1: Update ReviewService.completeSession to update SR cards**
+
+In `apps/server/src/services/review.service.ts`:
+- Add `SpacedRepetitionService` to constructor
+- After calculating score in `completeSession`, loop through items and call `spacedRepetitionService.updateCard(uid, item.memoId, item.mastery)` for each item that has a mastery value
+
+```typescript
+// Add to constructor:
+constructor(
+  private memoService: MemoService,
+  private spacedRepetitionService: SpacedRepetitionService
+) { ... }
+
+// In completeSession, after calculating score:
+for (const item of items) {
+  if (item.mastery) {
+    await this.spacedRepetitionService.updateCard(uid, item.memoId, item.mastery).catch((e) =>
+      logger.warn(`Failed to update SR card for memo ${item.memoId}:`, e)
+    );
+  }
+}
+```
+
+**Step 2: Update MemoService.createMemo to create SR card**
+
+In `apps/server/src/services/memo.service.ts`:
+- Add `SpacedRepetitionService` to constructor (use `@Inject()`)
+- After successfully inserting the memo, call `this.spacedRepetitionService.createCardForMemo(uid, memoId)` — wrap in try/catch so SR failure doesn't break memo creation
+
+```typescript
+// After memo insert succeeds:
+this.spacedRepetitionService.createCardForMemo(uid, newMemo.memoId).catch((e) =>
+  logger.warn('Failed to create SR card for memo:', e)
+);
+```
+
+**Step 3: Commit**
+
+```bash
+git add apps/server/src/services/review.service.ts apps/server/src/services/memo.service.ts
+git commit -m "feat: hook spaced repetition into review completion and memo creation"
+```
+
+---
+
+### Task 10: Add SpacedRepetition daily push scheduler task
+
+**Files:**
+- Modify: `apps/server/src/services/scheduler.service.ts`
+
+**Step 1: Add SpacedRepetitionService and UserService to SchedulerService constructor**
+
+In `apps/server/src/services/scheduler.service.ts`:
+```typescript
+// Add to imports:
+import { SpacedRepetitionService } from './spaced-repetition.service.js';
+import { UserService } from './user.service.js';
+
+// Add to constructor:
+@Inject() private spacedRepetitionService: SpacedRepetitionService,
+@Inject() private userService: UserService,
+```
+
+**Step 2: Add registerSpacedRepetitionTask() method and call it in init()**
+
+```typescript
+private registerSpacedRepetitionTask(): void {
+  const task = cron.schedule(
+    '0 8 * * *', // Every day at 8:00
+    async () => {
+      try {
+        await this.processSpacedRepetitionPushes();
+      } catch (error) {
+        logger.error('Error processing spaced repetition pushes:', error);
+      }
+    },
+    { timezone: config.locale.timezone || 'Asia/Shanghai' }
+  );
+  this.tasks.push(task);
+  logger.info('Spaced repetition push task scheduled: daily at 08:00');
+}
+
+private async processSpacedRepetitionPushes(): Promise<void> {
+  const allRules = await this.getAllEnabledRules();
+  // Get unique user IDs from push rules
+  const userIds = [...new Set(allRules.map((r) => r.uid))];
+
+  for (const uid of userIds) {
+    try {
+      const dueItems = await this.spacedRepetitionService.getDueCards(uid, 5);
+      if (dueItems.length === 0) continue;
+
+      const userRules = allRules.filter((r) => r.uid === uid && r.enabled);
+      if (userRules.length === 0) continue;
+
+      for (const rule of userRules) {
+        const messages = dueItems.map(({ memo }, i) => {
+          const preview = memo.content.slice(0, 100);
+          return `${i + 1}. ${preview}${memo.content.length > 100 ? '...' : ''}`;
+        });
+
+        const content = {
+          title: `📚 今日复习提醒 (${dueItems.length} 条)`,
+          msg: messages.join('\n\n'),
+        };
+
+        for (const channelConfig of rule.channels) {
+          try {
+            const channel = this.channelFactory.getChannel(channelConfig);
+            await channel.send(content);
+          } catch (e) {
+            logger.error(`SR push failed for user ${uid}:`, e);
+          }
+        }
+      }
+    } catch (e) {
+      logger.error(`SR push processing failed for user ${uid}:`, e);
+    }
+  }
+}
+```
+
+In `init()`, add: `this.registerSpacedRepetitionTask();`
+
+**Step 3: Commit**
+
+```bash
+git add apps/server/src/services/scheduler.service.ts
+git commit -m "feat: add daily spaced repetition push scheduler task"
+```
+
+---
+
+### Task 11: SpacedRepetition API controller and frontend settings
+
+**Files:**
+- Create: `apps/server/src/controllers/v1/spaced-repetition.controller.ts`
+- Create: `apps/web/src/api/spaced-repetition.ts`
+- Create: `apps/web/src/pages/settings/components/spaced-repetition-settings.tsx`
+- Modify: `apps/web/src/main.tsx`
+
+**Step 1: Create SpacedRepetitionController**
+
+```typescript
+// apps/server/src/controllers/v1/spaced-repetition.controller.ts
+import { JsonController, Get, Post, Delete, Body, Param, CurrentUser } from 'routing-controllers';
+import { Service } from 'typedi';
+import { ErrorCode } from '../../constants/error-codes.js';
+import { SpacedRepetitionService } from '../../services/spaced-repetition.service.js';
+import { ResponseUtil } from '../../utils/response.js';
+import type { UserInfoDto } from '@aimo/dto';
+
+@Service()
+@JsonController('/api/v1/spaced-repetition')
+export class SpacedRepetitionController {
+  constructor(private srService: SpacedRepetitionService) {}
+
+  @Get('/rules')
+  async getRules(@CurrentUser() user: UserInfoDto) {
+    if (!user?.uid) return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
+    const rules = await this.srService.getRules(user.uid);
+    return ResponseUtil.success({ items: rules, total: rules.length });
+  }
+
+  @Post('/rules')
+  async addRule(
+    @Body() body: { mode: 'include' | 'exclude'; filterType: 'category' | 'tag'; filterValue: string },
+    @CurrentUser() user: UserInfoDto
+  ) {
+    if (!user?.uid) return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
+    await this.srService.addRule(user.uid, body.mode, body.filterType, body.filterValue);
+    return ResponseUtil.success(null);
+  }
+
+  @Delete('/rules/:id')
+  async removeRule(@Param('id') ruleId: string, @CurrentUser() user: UserInfoDto) {
+    if (!user?.uid) return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
+    await this.srService.removeRule(user.uid, ruleId);
+    return ResponseUtil.success(null);
+  }
+}
+```
+
+**Step 2: Create frontend API client**
+
+```typescript
+// apps/web/src/api/spaced-repetition.ts
+import request from '../utils/request';
+
+export const getSRRules = () =>
+  request.get<unknown, { code: number; data: { items: any[]; total: number } }>(
+    '/api/v1/spaced-repetition/rules'
+  );
+
+export const addSRRule = (data: { mode: 'include' | 'exclude'; filterType: 'category' | 'tag'; filterValue: string }) =>
+  request.post<unknown, { code: number; data: null }>('/api/v1/spaced-repetition/rules', data);
+
+export const deleteSRRule = (ruleId: string) =>
+  request.delete<unknown, { code: number; data: null }>(`/api/v1/spaced-repetition/rules/${ruleId}`);
+```
+
+**Step 3: Create settings component**
+
+Create `apps/web/src/pages/settings/components/spaced-repetition-settings.tsx` — a simple settings panel showing:
+- Explanation text about spaced repetition
+- List of current rules (mode badge + filterType + filterValue + delete button)
+- Form to add new rule (mode select, filterType select, filterValue input, add button)
+
+**Step 4: Add route to main.tsx**
+
+```typescript
+import { SpacedRepetitionSettings } from './pages/settings/components/spaced-repetition-settings';
+
+// Inside /settings Routes:
+<Route path="spaced-repetition" element={<SpacedRepetitionSettings />} />
+```
+
+**Step 5: Commit**
+
+```bash
+git add apps/server/src/controllers/v1/spaced-repetition.controller.ts \
+        apps/web/src/api/spaced-repetition.ts \
+        apps/web/src/pages/settings/components/spaced-repetition-settings.tsx \
+        apps/web/src/main.tsx
+git commit -m "feat: add SpacedRepetition controller and settings UI"
+```
+
+
+---
+
+# 功能三：周期摘要报告（Digest Report）
+
+---
+
+### Task 12: DB Schema — digest_reports
+
+**Files:**
+- Modify: `apps/server/src/models/constant/type.ts`
+- Create: `apps/server/src/db/schema/digest-reports.ts`
+- Modify: `apps/server/src/db/schema/index.ts`
+- Modify: `apps/server/src/utils/id.ts`
+- Test: `apps/server/src/__tests__/digest-schema.test.ts`
+
+**Step 1: Write the failing test**
+
+```typescript
+// apps/server/src/__tests__/digest-schema.test.ts
+import { digestReports } from '../db/schema/digest-reports.js';
+
+describe('Digest reports schema', () => {
+  it('has required columns', () => {
+    expect(digestReports.reportId).toBeDefined();
+    expect(digestReports.period).toBeDefined();
+    expect(digestReports.topTopics).toBeDefined();
+    expect(digestReports.summary).toBeDefined();
+    expect(digestReports.status).toBeDefined();
+  });
+});
+```
+
+**Step 2: Run test to verify it fails**
+
+```bash
+cd apps/server && pnpm test -- apps/server/src/__tests__/digest-schema.test.ts
+```
+
+**Step 3: Add OBJECT_TYPE.DIGEST_REPORT and ID generator**
+
+In `type.ts`: `DIGEST_REPORT: 'DIGEST_REPORT'`
+In `id.ts` switch: `case OBJECT_TYPE.DIGEST_REPORT: return \`dr${typeid()}\`;`
+
+**Step 4: Create digest-reports schema**
+
+```typescript
+// apps/server/src/db/schema/digest-reports.ts
+import {
+  mysqlTable, varchar, int, text, json, date, mysqlEnum, timestamp, index
+} from 'drizzle-orm/mysql-core';
+
+export const digestReports = mysqlTable(
+  'digest_reports',
+  {
+    reportId: varchar('report_id', { length: 191 }).primaryKey().notNull(),
+    uid: varchar('uid', { length: 191 }).notNull(),
+    period: mysqlEnum('period', ['weekly', 'monthly']).notNull(),
+    startDate: date('start_date', { mode: 'string' }).notNull(),
+    endDate: date('end_date', { mode: 'string' }).notNull(),
+    memoCount: int('memo_count').notNull().default(0),
+    topTopics: json('top_topics').$type<Array<{ topic: string; count: number; memoIds: string[] }>>(),
+    topTags: json('top_tags').$type<Array<{ tag: string; count: number }>>(),
+    topCategories: json('top_categories').$type<Array<{ category: string; count: number }>>(),
+    highlights: json('highlights').$type<string[]>(),
+    summary: text('summary'),
+    status: mysqlEnum('status', ['generating', 'ready', 'failed']).notNull().default('generating'),
+    createdAt: timestamp('created_at', { mode: 'date', fsp: 3 }).notNull().defaultNow(),
+  },
+  (table) => ({
+    uidIdx: index('uid_idx').on(table.uid),
+    statusIdx: index('status_idx').on(table.status),
+  })
+);
+
+export type DigestReport = typeof digestReports.$inferSelect;
+export type NewDigestReport = typeof digestReports.$inferInsert;
+```
+
+**Step 5: Export from schema/index.ts, run test, build, generate migration**
+
+```bash
+cd apps/server && pnpm test -- apps/server/src/__tests__/digest-schema.test.ts
+cd apps/server && pnpm build && pnpm migrate:generate
+```
+
+**Step 6: Commit**
+
+```bash
+git add apps/server/src/models/constant/type.ts \
+        apps/server/src/utils/id.ts \
+        apps/server/src/db/schema/digest-reports.ts \
+        apps/server/src/db/schema/index.ts \
+        apps/server/src/__tests__/digest-schema.test.ts \
+        apps/server/drizzle/
+git commit -m "feat: add digest_reports DB schema"
+```
+
+---
+
+### Task 13: DigestService — report generation
+
+**Files:**
+- Create: `apps/server/src/services/digest.service.ts`
+- Test: `apps/server/src/__tests__/digest.service.test.ts`
+
+**Step 1: Write the failing tests**
+
+```typescript
+// apps/server/src/__tests__/digest.service.test.ts
+import { DigestService } from '../services/digest.service.js';
+
+describe('DigestService', () => {
+  describe('getPeriodDates', () => {
+    it('returns correct weekly date range for a Monday', () => {
+      // 2026-03-02 is a Monday
+      const service = new (DigestService as any)();
+      const { startDate, endDate } = (service as any).getPreviousPeriodDates('weekly');
+      expect(startDate).toBeDefined();
+      expect(endDate).toBeDefined();
+      expect(new Date(startDate) < new Date(endDate)).toBe(true);
+    });
+
+    it('returns correct monthly date range', () => {
+      const service = new (DigestService as any)();
+      const { startDate, endDate } = (service as any).getPreviousPeriodDates('monthly');
+      expect(startDate).toMatch(/^\d{4}-\d{2}-01$/); // starts on 1st
+    });
+  });
+});
+```
+
+**Step 2: Run test to verify it fails**
+
+```bash
+cd apps/server && pnpm test -- apps/server/src/__tests__/digest.service.test.ts
+```
+
+**Step 3: Implement DigestService**
+
+```typescript
+// apps/server/src/services/digest.service.ts
+import { Service } from 'typedi';
+import { eq, and, desc, gte, lte } from 'drizzle-orm';
+import { ChatOpenAI } from '@langchain/openai';
+
+import { config } from '../config/config.js';
+import { getDatabase } from '../db/connection.js';
+import { digestReports } from '../db/schema/digest-reports.js';
+import { memos } from '../db/schema/memos.js';
+import { OBJECT_TYPE } from '../models/constant/type.js';
+import { generateTypeId } from '../utils/id.js';
+import { logger } from '../utils/logger.js';
+
+@Service()
+export class DigestService {
+  private model: ChatOpenAI;
+
+  constructor() {
+    this.model = new ChatOpenAI({
+      modelName: config.openai.model || 'gpt-4o-mini',
+      apiKey: config.openai.apiKey,
+      configuration: { baseURL: config.openai.baseURL },
+      temperature: 0.5,
+    });
+  }
+
+  async generateReport(uid: string, period: 'weekly' | 'monthly'): Promise<string> {
+    const db = getDatabase();
+    const { startDate, endDate } = this.getPreviousPeriodDates(period);
+    const reportId = generateTypeId(OBJECT_TYPE.DIGEST_REPORT);
+
+    // Insert placeholder
+    await db.insert(digestReports).values({
+      reportId, uid, period, startDate, endDate, status: 'generating',
+    });
+
+    try {
+      // Query memos for period
+      const periodMemos = await db.select().from(memos).where(
+        and(
+          eq(memos.uid, uid),
+          eq(memos.deletedAt, 0),
+          gte(memos.createdAt, new Date(startDate)),
+          lte(memos.createdAt, new Date(endDate + 'T23:59:59'))
+        )
+      );
+
+      if (periodMemos.length === 0) {
+        await db.update(digestReports).set({ status: 'ready', memoCount: 0 }).where(eq(digestReports.reportId, reportId));
+        return reportId;
+      }
+
+      // Compute tag/category stats
+      const tagCounts: Record<string, number> = {};
+      const categoryCounts: Record<string, number> = {};
+      for (const memo of periodMemos) {
+        for (const tagId of (memo.tagIds as string[] ?? [])) {
+          tagCounts[tagId] = (tagCounts[tagId] ?? 0) + 1;
+        }
+        if (memo.categoryId) categoryCounts[memo.categoryId] = (categoryCounts[memo.categoryId] ?? 0) + 1;
+      }
+
+      const topTags = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([tag, count]) => ({ tag, count }));
+      const topCategories = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([category, count]) => ({ category, count }));
+
+      // AI topic clustering and summary
+      const contentSample = periodMemos.slice(0, 30).map((m) => m.content.slice(0, 200)).join('\n---\n');
+      const aiResponse = await this.model.invoke([
+        { role: 'system', content: '你是一个知识管理助手。分析用户的笔记内容，提取主题并生成摘要。\n\n输出格式（严格JSON）：\n{"topics": [{"topic": "主题名", "count": 数量}], "highlights": ["memoId1", "memoId2", "memoId3"], "summary": "100-200字总结"}\n\ntopics 最多5个，highlights 选3个最有价值的笔记的索引（0-based）。' },
+        { role: 'user', content: `笔记数量：${periodMemos.length}\n\n笔记内容样本：\n${contentSample}` },
+      ]);
+
+      let topTopics: any[] = [];
+      let highlights: string[] = [];
+      let summary = '';
+
+      try {
+        const parsed = JSON.parse(aiResponse.content as string);
+        topTopics = parsed.topics ?? [];
+        highlights = (parsed.highlights ?? []).map((idx: number) => periodMemos[idx]?.memoId).filter(Boolean);
+        summary = parsed.summary ?? '';
+      } catch {
+        summary = aiResponse.content as string;
+      }
+
+      await db.update(digestReports).set({
+        memoCount: periodMemos.length,
+        topTopics,
+        topTags,
+        topCategories,
+        highlights,
+        summary,
+        status: 'ready',
+      }).where(eq(digestReports.reportId, reportId));
+
+    } catch (error) {
+      logger.error('Digest report generation failed:', error);
+      await db.update(digestReports).set({ status: 'failed' }).where(eq(digestReports.reportId, reportId));
+    }
+
+    return reportId;
+  }
+
+  async getReports(uid: string, period?: 'weekly' | 'monthly') {
+    const db = getDatabase();
+    const conditions = [eq(digestReports.uid, uid)];
+    if (period) conditions.push(eq(digestReports.period, period));
+    return db.select().from(digestReports).where(and(...conditions)).orderBy(desc(digestReports.createdAt)).limit(24);
+  }
+
+  async getReport(uid: string, reportId: string) {
+    const db = getDatabase();
+    const [report] = await db.select().from(digestReports)
+      .where(and(eq(digestReports.reportId, reportId), eq(digestReports.uid, uid)));
+    return report ?? null;
+  }
+
+  private getPreviousPeriodDates(period: 'weekly' | 'monthly'): { startDate: string; endDate: string } {
+    const now = new Date();
+    if (period === 'weekly') {
+      const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon...
+      const daysToLastMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      const lastMonday = new Date(now);
+      lastMonday.setDate(now.getDate() - daysToLastMonday - 7);
+      const lastSunday = new Date(lastMonday);
+      lastSunday.setDate(lastMonday.getDate() + 6);
+      return {
+        startDate: lastMonday.toISOString().split('T')[0],
+        endDate: lastSunday.toISOString().split('T')[0],
+      };
+    } else {
+      const firstOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const lastOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+      return {
+        startDate: firstOfLastMonth.toISOString().split('T')[0],
+        endDate: lastOfLastMonth.toISOString().split('T')[0],
+      };
+    }
+  }
+}
+```
+
+**Step 4: Run test, verify pass, commit**
+
+```bash
+cd apps/server && pnpm test -- apps/server/src/__tests__/digest.service.test.ts
+git add apps/server/src/services/digest.service.ts apps/server/src/__tests__/digest.service.test.ts
+git commit -m "feat: implement DigestService with AI topic clustering"
+```
+
+---
+
+### Task 14: Digest scheduler task and controller
+
+**Files:**
+- Modify: `apps/server/src/services/scheduler.service.ts`
+- Create: `apps/server/src/controllers/v1/digest.controller.ts`
+
+**Step 1: Add digest tasks to SchedulerService**
+
+Add `DigestService` to constructor and add `registerDigestTask()`:
+
+```typescript
+private registerDigestTask(): void {
+  // Weekly: every Monday at 9:00
+  const weeklyTask = cron.schedule('0 9 * * 1', async () => {
+    try {
+      const userIds = await this.getAllUserIds();
+      for (const uid of userIds) {
+        await this.digestService.generateReport(uid, 'weekly').catch((e) =>
+          logger.error(`Weekly digest failed for ${uid}:`, e)
+        );
+      }
+    } catch (e) { logger.error('Weekly digest task error:', e); }
+  }, { timezone: config.locale.timezone || 'Asia/Shanghai' });
+
+  // Monthly: 1st of each month at 9:00
+  const monthlyTask = cron.schedule('0 9 1 * *', async () => {
+    try {
+      const userIds = await this.getAllUserIds();
+      for (const uid of userIds) {
+        await this.digestService.generateReport(uid, 'monthly').catch((e) =>
+          logger.error(`Monthly digest failed for ${uid}:`, e)
+        );
+      }
+    } catch (e) { logger.error('Monthly digest task error:', e); }
+  }, { timezone: config.locale.timezone || 'Asia/Shanghai' });
+
+  this.tasks.push(weeklyTask, monthlyTask);
+  logger.info('Digest tasks scheduled: weekly Monday 09:00 + monthly 1st 09:00');
+}
+```
+
+Add `getAllUserIds()` helper: query distinct UIDs from users table.
+Call `this.registerDigestTask()` in `init()`.
+
+**Step 2: Create DigestController**
+
+```typescript
+// apps/server/src/controllers/v1/digest.controller.ts
+import { JsonController, Get, Param, QueryParam, CurrentUser } from 'routing-controllers';
+import { Service } from 'typedi';
+import { ErrorCode } from '../../constants/error-codes.js';
+import { DigestService } from '../../services/digest.service.js';
+import { ResponseUtil } from '../../utils/response.js';
+import type { UserInfoDto } from '@aimo/dto';
+
+@Service()
+@JsonController('/api/v1/digest')
+export class DigestController {
+  constructor(private digestService: DigestService) {}
+
+  @Get('/reports')
+  async getReports(
+    @QueryParam('period') period: 'weekly' | 'monthly' | undefined,
+    @CurrentUser() user: UserInfoDto
+  ) {
+    if (!user?.uid) return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
+    const reports = await this.digestService.getReports(user.uid, period);
+    return ResponseUtil.success({ items: reports, total: reports.length });
+  }
+
+  @Get('/reports/:id')
+  async getReport(@Param('id') reportId: string, @CurrentUser() user: UserInfoDto) {
+    if (!user?.uid) return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
+    const report = await this.digestService.getReport(user.uid, reportId);
+    if (!report) return ResponseUtil.error(ErrorCode.NOT_FOUND);
+    return ResponseUtil.success(report);
+  }
+}
+```
+
+**Step 3: Commit**
+
+```bash
+git add apps/server/src/services/scheduler.service.ts \
+        apps/server/src/controllers/v1/digest.controller.ts
+git commit -m "feat: add digest scheduler tasks and DigestController"
+```
+
+---
+
+### Task 15: Frontend — Digest API and Insights page extension
+
+**Files:**
+- Create: `apps/web/src/api/digest.ts`
+- Modify or create: `apps/web/src/pages/insights/index.tsx` (check if insights page exists, if not create it)
+- Modify: `apps/web/src/main.tsx`
+
+**Step 1: Create API client**
+
+```typescript
+// apps/web/src/api/digest.ts
+import request from '../utils/request';
+
+export const getDigestReports = (period?: 'weekly' | 'monthly') =>
+  request.get<unknown, { code: number; data: { items: any[]; total: number } }>(
+    '/api/v1/digest/reports', { params: period ? { period } : {} }
+  );
+
+export const getDigestReport = (reportId: string) =>
+  request.get<unknown, { code: number; data: any }>(`/api/v1/digest/reports/${reportId}`);
+```
+
+**Step 2: Create Insights page with digest reports**
+
+Check if `apps/web/src/pages/insights/` exists. If not, create `apps/web/src/pages/insights/index.tsx` showing:
+- Tab selector: 周报 / 月报
+- Report list (card per report: period label, date range, memoCount, status badge, click to expand)
+- Expanded report: AI summary, top topics chips, highlighted memos (3 cards), top tags
+
+**Step 3: Add /insights route to main.tsx**
+
+```typescript
+import InsightsPage from './pages/insights';
+
+<Route path="/insights" element={<ProtectedRoute><InsightsPage /></ProtectedRoute>} />
+```
+
+**Step 4: Commit**
+
+```bash
+git add apps/web/src/api/digest.ts apps/web/src/pages/insights/ apps/web/src/main.tsx
+git commit -m "feat: add Insights page with digest report viewer"
+```
+
+
+---
+
+# 功能四：知识图谱可视化（Knowledge Graph）
+
+---
+
+### Task 16: GraphService — build graph data
+
+**Files:**
+- Create: `apps/server/src/services/graph.service.ts`
+- Test: `apps/server/src/__tests__/graph.service.test.ts`
+
+**Step 1: Write the failing tests**
+
+```typescript
+// apps/server/src/__tests__/graph.service.test.ts
+import { GraphService } from '../services/graph.service.js';
+
+describe('GraphService', () => {
+  describe('buildSemanticEdges', () => {
+    it('filters out edges below similarity threshold', () => {
+      const service = new (GraphService as any)();
+      const similarities = [
+        { memoId: 'a', targetId: 'b', score: 0.9 },
+        { memoId: 'a', targetId: 'c', score: 0.7 }, // below 0.8
+        { memoId: 'a', targetId: 'd', score: 0.85 },
+      ];
+      const edges = (service as any).filterSemanticEdges(similarities, 0.8);
+      expect(edges).toHaveLength(2);
+      expect(edges.every((e: any) => e.score >= 0.8)).toBe(true);
+    });
+  });
+});
+```
+
+**Step 2: Run test to verify it fails**
+
+```bash
+cd apps/server && pnpm test -- apps/server/src/__tests__/graph.service.test.ts
+```
+
+**Step 3: Implement GraphService**
+
+```typescript
+// apps/server/src/services/graph.service.ts
+import { Service } from 'typedi';
+import { eq, and } from 'drizzle-orm';
+
+import { getDatabase } from '../db/connection.js';
+import { memos } from '../db/schema/memos.js';
+import { memoRelations } from '../db/schema/memo-relations.js';
+import { logger } from '../utils/logger.js';
+
+import { MemoService } from './memo.service.js';
+import { EmbeddingService } from './embedding.service.js';
+
+interface GraphNode {
+  id: string;
+  label: string;
+  category?: string;
+  tags: string[];
+  linkCount: number;
+  createdAt: string;
+}
+
+interface GraphEdge {
+  source: string;
+  target: string;
+  type: 'reference' | 'semantic';
+  weight: number;
+}
+
+interface GraphData {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+}
+
+// In-memory cache for semantic edges (TTL: 1 hour)
+const semanticEdgeCache = new Map<string, { data: GraphEdge[]; expiresAt: number }>();
+
+@Service()
+export class GraphService {
+  constructor(
+    private memoService: MemoService,
+    private embeddingService: EmbeddingService
+  ) {}
+
+  async buildGraph(uid: string, limit = 200): Promise<GraphData> {
+    const db = getDatabase();
+
+    // Get memos
+    const userMemos = await db.select().from(memos)
+      .where(and(eq(memos.uid, uid), eq(memos.deletedAt, 0)))
+      .orderBy(memos.createdAt)
+      .limit(limit);
+
+    if (userMemos.length === 0) return { nodes: [], edges: [] };
+
+    const memoIds = new Set(userMemos.map((m) => m.memoId));
+
+    // Get reference edges from memo_relations
+    const relations = await db.select().from(memoRelations)
+      .where(eq(memoRelations.uid, uid));
+
+    const referenceEdges: GraphEdge[] = relations
+      .filter((r) => memoIds.has(r.sourceMemoId) && memoIds.has(r.targetMemoId))
+      .map((r) => ({ source: r.sourceMemoId, target: r.targetMemoId, type: 'reference' as const, weight: 1 }));
+
+    // Count incoming references for node sizing
+    const linkCounts: Record<string, number> = {};
+    for (const edge of referenceEdges) {
+      linkCounts[edge.target] = (linkCounts[edge.target] ?? 0) + 1;
+    }
+
+    // Build nodes
+    const nodes: GraphNode[] = userMemos.map((m) => ({
+      id: m.memoId,
+      label: m.content.slice(0, 20),
+      category: m.categoryId ?? undefined,
+      tags: (m.tagIds as string[] ?? []),
+      linkCount: linkCounts[m.memoId] ?? 0,
+      createdAt: m.createdAt.toISOString(),
+    }));
+
+    // Get semantic edges (from cache or compute)
+    const semanticEdges = await this.getSemanticEdges(uid, userMemos);
+
+    return { nodes, edges: [...referenceEdges, ...semanticEdges] };
+  }
+
+  private async getSemanticEdges(uid: string, userMemos: any[]): Promise<GraphEdge[]> {
+    const cacheKey = uid;
+    const cached = semanticEdgeCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.data;
+    }
+
+    const edges: GraphEdge[] = [];
+    // Sample up to 50 memos for semantic similarity (performance)
+    const sample = userMemos.slice(0, 50);
+
+    for (const memo of sample) {
+      try {
+        const similar = await this.memoService.vectorSearchMemos({
+          uid,
+          query: memo.content.slice(0, 500),
+          limit: 4,
+        });
+
+        for (const result of similar.items) {
+          if (result.memoId === memo.memoId) continue;
+          const score = (result as any).score ?? 0;
+          if (score >= 0.8) {
+            edges.push({ source: memo.memoId, target: result.memoId, type: 'semantic', weight: score });
+          }
+        }
+      } catch (e) {
+        logger.warn(`Failed to get semantic edges for memo ${memo.memoId}:`, e);
+      }
+    }
+
+    // Cache for 1 hour
+    semanticEdgeCache.set(cacheKey, { data: edges, expiresAt: Date.now() + 3600000 });
+    return edges;
+  }
+
+  private filterSemanticEdges(similarities: Array<{ memoId: string; targetId: string; score: number }>, threshold: number) {
+    return similarities.filter((s) => s.score >= threshold);
+  }
+}
+```
+
+**Step 4: Run test to verify it passes**
+
+```bash
+cd apps/server && pnpm test -- apps/server/src/__tests__/graph.service.test.ts
+```
+
+**Step 5: Commit**
+
+```bash
+git add apps/server/src/services/graph.service.ts apps/server/src/__tests__/graph.service.test.ts
+git commit -m "feat: implement GraphService with reference and semantic edges"
+```
+
+---
+
+### Task 17: GraphController — REST endpoint
+
+**Files:**
+- Create: `apps/server/src/controllers/v1/graph.controller.ts`
+
+**Step 1: Implement GraphController**
+
+```typescript
+// apps/server/src/controllers/v1/graph.controller.ts
+import { JsonController, Get, QueryParam, CurrentUser } from 'routing-controllers';
+import { Service } from 'typedi';
+import { ErrorCode } from '../../constants/error-codes.js';
+import { GraphService } from '../../services/graph.service.js';
+import { ResponseUtil } from '../../utils/response.js';
+import { logger } from '../../utils/logger.js';
+import type { UserInfoDto } from '@aimo/dto';
+
+@Service()
+@JsonController('/api/v1/graph')
+export class GraphController {
+  constructor(private graphService: GraphService) {}
+
+  @Get('/')
+  async getGraph(
+    @QueryParam('limit') limit: number = 200,
+    @CurrentUser() user: UserInfoDto
+  ) {
+    try {
+      if (!user?.uid) return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
+      const validLimit = Math.min(Math.max(limit, 10), 500);
+      const graph = await this.graphService.buildGraph(user.uid, validLimit);
+      return ResponseUtil.success(graph);
+    } catch (error) {
+      logger.error('Get graph error:', error);
+      return ResponseUtil.error(ErrorCode.SYSTEM_ERROR);
+    }
+  }
+}
+```
+
+**Step 2: Commit**
+
+```bash
+git add apps/server/src/controllers/v1/graph.controller.ts
+git commit -m "feat: add GraphController GET /api/v1/graph"
+```
+
+---
+
+### Task 18: Frontend — Knowledge Graph page with Cytoscape.js
+
+**Files:**
+- Create: `apps/web/src/api/graph.ts`
+- Create: `apps/web/src/pages/graph/index.tsx`
+- Modify: `apps/web/src/main.tsx`
+
+**Step 1: Install Cytoscape.js**
+
+```bash
+cd apps/web && pnpm add cytoscape @types/cytoscape
+```
+
+**Step 2: Create API client**
+
+```typescript
+// apps/web/src/api/graph.ts
+import request from '../utils/request';
+
+export interface GraphNode {
+  id: string;
+  label: string;
+  category?: string;
+  tags: string[];
+  linkCount: number;
+  createdAt: string;
+}
+
+export interface GraphEdge {
+  source: string;
+  target: string;
+  type: 'reference' | 'semantic';
+  weight: number;
+}
+
+export interface GraphData {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+}
+
+export const getGraph = (limit = 200) =>
+  request.get<unknown, { code: number; data: GraphData }>('/api/v1/graph', { params: { limit } });
+```
+
+**Step 3: Create Graph page**
+
+```typescript
+// apps/web/src/pages/graph/index.tsx
+import { useEffect, useRef, useState } from 'react';
+import cytoscape from 'cytoscape';
+import { getGraph, type GraphNode } from '../../api/graph';
+
+export function GraphPage() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const cyRef = useRef<cytoscape.Core | null>(null);
+  const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [highlightMode, setHighlightMode] = useState<'none' | 'islands' | 'hubs'>('none');
+
+  useEffect(() => {
+    let isMounted = true;
+    getGraph(200).then((res) => {
+      if (!isMounted || !containerRef.current || res.code !== 0) return;
+      const { nodes, edges } = res.data;
+
+      // Build category color map
+      const categories = [...new Set(nodes.map((n) => n.category).filter(Boolean))];
+      const colors = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#06b6d4'];
+      const categoryColor: Record<string, string> = {};
+      categories.forEach((c, i) => { if (c) categoryColor[c] = colors[i % colors.length]; });
+
+      const cy = cytoscape({
+        container: containerRef.current,
+        elements: [
+          ...nodes.map((n) => ({
+            data: {
+              id: n.id,
+              label: n.label,
+              category: n.category,
+              tags: n.tags,
+              linkCount: n.linkCount,
+              createdAt: n.createdAt,
+              color: n.category ? (categoryColor[n.category] ?? '#94a3b8') : '#94a3b8',
+              size: Math.max(20, Math.min(60, 20 + n.linkCount * 8)),
+            },
+          })),
+          ...edges.map((e, i) => ({
+            data: {
+              id: `e${i}`,
+              source: e.source,
+              target: e.target,
+              edgeType: e.type,
+              weight: e.weight,
+            },
+          })),
+        ],
+        style: [
+          {
+            selector: 'node',
+            style: {
+              'background-color': 'data(color)',
+              'width': 'data(size)',
+              'height': 'data(size)',
+              'label': 'data(label)',
+              'font-size': '10px',
+              'color': '#374151',
+              'text-valign': 'bottom',
+              'text-margin-y': 4,
+            },
+          },
+          {
+            selector: 'edge[edgeType = "reference"]',
+            style: { 'line-color': '#6366f1', 'width': 2, 'line-style': 'solid', 'opacity': 0.7 },
+          },
+          {
+            selector: 'edge[edgeType = "semantic"]',
+            style: { 'line-color': '#10b981', 'width': 1, 'line-style': 'dashed', 'opacity': 0.4 },
+          },
+          {
+            selector: '.highlighted',
+            style: { 'border-width': 3, 'border-color': '#f59e0b' },
+          },
+          {
+            selector: '.dimmed',
+            style: { 'opacity': 0.2 },
+          },
+        ],
+        layout: { name: 'cose', animate: true, randomize: true } as any,
+      });
+
+      cy.on('tap', 'node', (evt) => {
+        const nodeData = evt.target.data();
+        setSelectedNode({
+          id: nodeData.id,
+          label: nodeData.label,
+          category: nodeData.category,
+          tags: nodeData.tags,
+          linkCount: nodeData.linkCount,
+          createdAt: nodeData.createdAt,
+        });
+      });
+
+      cy.on('tap', (evt) => {
+        if (evt.target === cy) setSelectedNode(null);
+      });
+
+      cyRef.current = cy;
+      setLoading(false);
+    });
+
+    return () => { isMounted = false; cyRef.current?.destroy(); };
+  }, []);
+
+  const highlightIslands = () => {
+    const cy = cyRef.current;
+    if (!cy) return;
+    cy.nodes().removeClass('highlighted dimmed');
+    if (highlightMode === 'islands') { setHighlightMode('none'); return; }
+    const islands = cy.nodes().filter((n) => n.connectedEdges().length === 0);
+    cy.nodes().not(islands).addClass('dimmed');
+    islands.addClass('highlighted');
+    setHighlightMode('islands');
+  };
+
+  const highlightHubs = () => {
+    const cy = cyRef.current;
+    if (!cy) return;
+    cy.nodes().removeClass('highlighted dimmed');
+    if (highlightMode === 'hubs') { setHighlightMode('none'); return; }
+    const sorted = cy.nodes().sort((a, b) => b.data('linkCount') - a.data('linkCount'));
+    const hubs = sorted.slice(0, 10);
+    cy.nodes().not(hubs).addClass('dimmed');
+    hubs.addClass('highlighted');
+    setHighlightMode('hubs');
+  };
+
+  return (
+    <div className="flex h-screen">
+      <div className="flex-1 relative">
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white z-10">
+            <span className="text-gray-500">加载知识图谱中...</span>
+          </div>
+        )}
+        <div className="absolute top-4 left-4 z-10 flex gap-2">
+          <button
+            className={`px-3 py-1 rounded text-sm ${highlightMode === 'islands' ? 'bg-yellow-500 text-white' : 'bg-white border text-gray-700'}`}
+            onClick={highlightIslands}
+          >
+            孤岛笔记
+          </button>
+          <button
+            className={`px-3 py-1 rounded text-sm ${highlightMode === 'hubs' ? 'bg-yellow-500 text-white' : 'bg-white border text-gray-700'}`}
+            onClick={highlightHubs}
+          >
+            枢纽笔记
+          </button>
+        </div>
+        <div ref={containerRef} className="w-full h-full" />
+      </div>
+
+      {selectedNode && (
+        <div className="w-80 border-l bg-white p-4 overflow-y-auto">
+          <button className="text-gray-400 text-sm mb-3" onClick={() => setSelectedNode(null)}>✕ 关闭</button>
+          <p className="font-medium text-sm mb-2">{selectedNode.label}</p>
+          <p className="text-xs text-gray-500 mb-1">被引用：{selectedNode.linkCount} 次</p>
+          {selectedNode.category && <p className="text-xs text-gray-500 mb-1">分类：{selectedNode.category}</p>}
+          {selectedNode.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {selectedNode.tags.map((t) => (
+                <span key={t} className="text-xs bg-gray-100 rounded px-2 py-0.5">{t}</span>
+              ))}
+            </div>
+          )}
+          <a href={`/home?memoId=${selectedNode.id}`} className="mt-4 block text-xs text-blue-600 hover:underline">
+            查看完整笔记 →
+          </a>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default GraphPage;
+```
+
+**Step 4: Add /graph route to main.tsx**
+
+```typescript
+import GraphPage from './pages/graph';
+
+// Inside <Routes>:
+<Route
+  path="/graph"
+  element={
+    <ProtectedRoute>
+      <GraphPage />
+    </ProtectedRoute>
+  }
+/>
+```
+
+**Step 5: Commit**
+
+```bash
+git add apps/web/src/api/graph.ts apps/web/src/pages/graph/index.tsx apps/web/src/main.tsx
+git commit -m "feat: add Knowledge Graph page with Cytoscape.js"
+```
+
+---
+
+# 完成检查清单
+
+实现完所有功能后，运行以下检查：
+
+```bash
+# 1. 所有测试通过
+cd apps/server && pnpm test
+
+# 2. 类型检查通过
+cd apps/server && pnpm typecheck
+cd apps/web && pnpm typecheck
+
+# 3. Lint 检查
+pnpm lint
+
+# 4. 构建成功
+pnpm build
+```
+
+## 新增文件汇总
+
+**后端 DB Schemas:**
+- `apps/server/src/db/schema/review-sessions.ts`
+- `apps/server/src/db/schema/review-items.ts`
+- `apps/server/src/db/schema/spaced-repetition-cards.ts`
+- `apps/server/src/db/schema/spaced-repetition-rules.ts`
+- `apps/server/src/db/schema/digest-reports.ts`
+
+**后端 Services:**
+- `apps/server/src/services/review.service.ts`
+- `apps/server/src/services/spaced-repetition.service.ts`
+- `apps/server/src/services/digest.service.ts`
+- `apps/server/src/services/graph.service.ts`
+
+**后端 Controllers:**
+- `apps/server/src/controllers/v1/review.controller.ts`
+- `apps/server/src/controllers/v1/spaced-repetition.controller.ts`
+- `apps/server/src/controllers/v1/digest.controller.ts`
+- `apps/server/src/controllers/v1/graph.controller.ts`
+
+**前端:**
+- `apps/web/src/api/review.ts`
+- `apps/web/src/api/spaced-repetition.ts`
+- `apps/web/src/api/digest.ts`
+- `apps/web/src/api/graph.ts`
+- `apps/web/src/pages/review/index.tsx`
+- `apps/web/src/pages/insights/index.tsx`
+- `apps/web/src/pages/graph/index.tsx`
+- `apps/web/src/pages/settings/components/spaced-repetition-settings.tsx`
+
+**DTO:**
+- `packages/dto/src/review.ts`
+
