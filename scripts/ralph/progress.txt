@@ -2,6 +2,23 @@
 Started: 2026年 2月15日 星期日 23时33分46秒 CST
 ---
 
+## 2026-03-08 - SR US-006
+- Added GET /api/v1/spaced-repetition/due endpoint to SpacedRepetitionController
+- Added POST /api/v1/spaced-repetition/cards/:cardId/review endpoint
+- Due cards endpoint fetches memo content inline (title from first line, content truncated to 200 chars)
+- Review endpoint maps quality strings (mastered/remembered/fuzzy/forgot/skip) to SM-2 numeric values
+- Skip returns current card unchanged; other qualities update via calculateNextReview + updateCardAfterReview
+- Cards whose memos have been deleted are filtered out from due list
+- All 30 tests pass, typecheck passes
+- Files changed:
+  - apps/server/src/controllers/v1/spaced-repetition.controller.ts (added 2 endpoints + imports)
+- **Learnings for future iterations:**
+  - Memo title is derived from first line of content (truncated to 50 chars) — no dedicated title field in memos table
+  - Due cards endpoint fetches memo data inline with Promise.all for parallel DB queries
+  - Quality string→number mapping: mastered=5, remembered=4, fuzzy=3, forgot=1
+  - Skip quality returns card as-is without any DB update
+---
+
 ## 2026-03-08 - SR US-005
 - Created apps/server/src/controllers/v1/spaced-repetition.controller.ts with 5 endpoints
 - Added settings and rules management methods to SpacedRepetitionService
