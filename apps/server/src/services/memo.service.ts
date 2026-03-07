@@ -15,6 +15,7 @@ import { AttachmentService } from './attachment.service.js';
 import { EmbeddingService } from './embedding.service.js';
 import { MemoRelationService } from './memo-relation.service.js';
 import { TagService } from './tag.service.js';
+import { SpacedRepetitionService } from './spaced-repetition.service.js';
 
 import type { Memo, NewMemo } from '../db/schema/memos.js';
 import type {
@@ -73,7 +74,8 @@ export class MemoService {
     private embeddingService: EmbeddingService,
     private attachmentService: AttachmentService,
     private memoRelationService: MemoRelationService,
-    private tagService: TagService
+    private tagService: TagService,
+    private spacedRepetitionService: SpacedRepetitionService
   ) {
     // Initialize local LanceDB instance for vector operations
     this.initLanceDb().catch((error) => {
@@ -325,6 +327,11 @@ export class MemoService {
         .limit(1);
 
       const record = results[0]!;
+
+      // Create SR card if eligible (fire-and-forget, non-critical)
+      this.spacedRepetitionService.createCardIfEligible(uid, memoId).catch((error) => {
+        logger.warn('Failed to create SR card for memo:', { memoId, error });
+      });
 
       return {
         memoId: record.memoId,
@@ -817,6 +824,15 @@ export class MemoService {
       const itemsWithTags = await this.enrichTags(uid, [updatedMemo]);
       const enrichedItems = await this.enrichMemosWithRelations(uid, itemsWithTags);
 
+      // Re-evaluate SR card if categoryId or tags changed (fire-and-forget, non-critical)
+      const categoryChanged = categoryId !== undefined && categoryId !== existingMemo.categoryId;
+      const tagsChanged = tags !== undefined || tagIds !== undefined;
+      if (categoryChanged || tagsChanged) {
+        this.spacedRepetitionService.reevaluateCard(uid, memoId).catch((error) => {
+          logger.warn('Failed to re-evaluate SR card for memo:', { memoId, error });
+        });
+      }
+
       return {
         ...enrichedItems[0],
       } as MemoWithAttachmentsDto;
@@ -845,6 +861,9 @@ export class MemoService {
       }
 
       const deletedAt = Date.now();
+
+      // Delete SR cards for this memo before deleting the memo
+      await this.spacedRepetitionService.deleteCardsByMemo(memoId);
 
       // Use transaction for soft delete with cascade
       await withTransaction(async (tx) => {

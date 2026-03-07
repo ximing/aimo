@@ -1,3 +1,15 @@
+// Mock DB dependencies so the pure calculateNextReview logic can be tested without a real DB
+jest.mock('../db/connection.js', () => ({
+  getDatabase: jest.fn(),
+}));
+
+jest.mock('../config/config.js', () => ({
+  config: {
+    lancedb: { storageType: 'local', path: './lancedb_data' },
+    mysql: {},
+  },
+}));
+
 import { SpacedRepetitionService } from '../services/spaced-repetition.service.js';
 
 describe('SpacedRepetitionService', () => {
