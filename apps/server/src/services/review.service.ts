@@ -73,7 +73,7 @@ export class ReviewService {
         order: i,
       });
 
-      items.push({ itemId, sessionId, memoId: memo.memoId, question, order: i });
+      items.push({ itemId, sessionId, memoId: memo.memoId, memoContent: memo.content, question, order: i });
     }
 
     return { sessionId, uid, scope: dto.scope, scopeValue: dto.scopeValue, status: 'active', items, createdAt: new Date().toISOString() };
@@ -89,7 +89,7 @@ export class ReviewService {
       .where(eq(reviewItems.sessionId, sessionId))
       .orderBy(reviewItems.order);
 
-    return this.toSessionDto(session, items);
+    return await this.toSessionDto(session, items);
   }
 
   async submitAnswer(uid: string, sessionId: string, dto: SubmitAnswerDto): Promise<SubmitAnswerResponseDto> {
@@ -121,12 +121,24 @@ export class ReviewService {
       .set({ status: 'completed', score, completedAt: new Date() })
       .where(eq(reviewSessions.sessionId, sessionId));
 
-    const itemDtos = items.map((i) => ({
-      itemId: i.itemId, sessionId: i.sessionId, memoId: i.memoId,
-      question: i.question, userAnswer: i.userAnswer ?? undefined,
-      aiFeedback: i.aiFeedback ?? undefined, mastery: i.mastery ?? undefined,
-      order: i.order,
-    }));
+    // Fetch memo content for each item
+    const itemDtos = await Promise.all(
+      items.map(async (i) => {
+        const [memo] = await db.select({ content: memos.content })
+          .from(memos).where(eq(memos.memoId, i.memoId));
+        return {
+          itemId: i.itemId,
+          sessionId: i.sessionId,
+          memoId: i.memoId,
+          memoContent: memo?.content,
+          question: i.question,
+          userAnswer: i.userAnswer ?? undefined,
+          aiFeedback: i.aiFeedback ?? undefined,
+          mastery: i.mastery ?? undefined,
+          order: i.order,
+        };
+      })
+    );
 
     return { sessionId, score, items: itemDtos };
   }
@@ -204,17 +216,34 @@ export class ReviewService {
     return `笔记内容：${content}`;
   }
 
-  private toSessionDto(session: any, items: any[]): ReviewSessionDto {
+  private async toSessionDto(session: any, items: any[]): Promise<ReviewSessionDto> {
+    const db = getDatabase();
+    // Fetch memo content for each item
+    const itemsWithContent = await Promise.all(
+      items.map(async (i) => {
+        const [memo] = await db.select({ content: memos.content })
+          .from(memos).where(eq(memos.memoId, i.memoId));
+        return {
+          itemId: i.itemId,
+          sessionId: i.sessionId,
+          memoId: i.memoId,
+          memoContent: memo?.content,
+          question: i.question,
+          userAnswer: i.userAnswer ?? undefined,
+          aiFeedback: i.aiFeedback ?? undefined,
+          mastery: i.mastery ?? undefined,
+          order: i.order,
+        };
+      })
+    );
     return {
-      sessionId: session.sessionId, uid: session.uid, scope: session.scope,
-      scopeValue: session.scopeValue ?? undefined, status: session.status,
+      sessionId: session.sessionId,
+      uid: session.uid,
+      scope: session.scope,
+      scopeValue: session.scopeValue ?? undefined,
+      status: session.status,
       score: session.score ?? undefined,
-      items: items.map((i) => ({
-        itemId: i.itemId, sessionId: i.sessionId, memoId: i.memoId,
-        question: i.question, userAnswer: i.userAnswer ?? undefined,
-        aiFeedback: i.aiFeedback ?? undefined, mastery: i.mastery ?? undefined,
-        order: i.order,
-      })),
+      items: itemsWithContent,
       createdAt: session.createdAt.toISOString(),
       completedAt: session.completedAt?.toISOString(),
     };
