@@ -1,11 +1,12 @@
-import { useState, useRef, useEffect, useMemo, forwardRef, useImperativeHandle } from 'react';
+import { Fragment, useState, useRef, useEffect, useMemo, forwardRef, useImperativeHandle } from 'react';
 import { view, useService } from '@rabjs/react';
+import { Dialog, Transition } from '@headlessui/react';
 import { MemoService } from '../services/memo.service';
 import { CategoryService } from '../services/category.service';
 import { TagService } from '../services/tag.service';
 import { AIToolsService } from '../services/ai-tools.service';
 import { ToastService } from '../services/toast.service';
-import { DraftService } from '../services/draft.service';
+import { DraftService, type DraftData } from '../services/draft.service';
 import { AttachmentUploader, type AttachmentItem } from './attachment-uploader';
 import { attachmentApi } from '../api/attachment';
 import { ocrApi } from '../api/ocr';
@@ -24,6 +25,7 @@ import {
   Hash,
   Link,
   Link2Off,
+  AlertTriangle,
 } from 'lucide-react';
 import type { MemoListItemDto, MemoWithAttachmentsDto } from '@aimo/dto';
 import { CreateCategoryModal } from '../pages/home/components/create-category-modal';
@@ -46,6 +48,8 @@ export const MemoEditorForm = view(
   forwardRef<MemoEditorFormRef, MemoEditorFormProps>(
     ({ mode, initialMemo, onSave, onCancel, defaultCategoryId }, ref) => {
       const [draftRestored, setDraftRestored] = useState(false); // 标记草稿是否已恢复
+      const [showDraftRestoreModal, setShowDraftRestoreModal] = useState(false); // 显示草稿恢复确认对话框
+      const [pendingDraft, setPendingDraft] = useState<DraftData | null>(null); // 待恢复的草稿数据
       const [content, setContent] = useState(initialMemo?.content || '');
       const [loading, setLoading] = useState(false);
       const [error, setError] = useState('');
@@ -120,24 +124,12 @@ export const MemoEditorForm = view(
         if (!draftRestored) {
           const draft = draftService.getDraft(mode, initialMemo?.memoId);
           if (draft) {
-            // 如果存在草稿，询问用户是否恢复
-            const shouldRestore = window.confirm(
-              '检测到未保存的草稿，是否恢复？\n\n点击"确定"恢复草稿，点击"取消"丢弃草稿。'
-            );
-            if (shouldRestore) {
-              setContent(draft.content);
-              setSelectedCategoryId(draft.categoryId);
-              setIsPublic(draft.isPublic);
-              setSelectedTags(draft.tags);
-              setAttachments(draft.attachments);
-              setSelectedRelations(draft.relations);
-              toastService.show('草稿已恢复', { type: 'success' });
-            } else {
-              // 用户选择不恢复，清除草稿
-              draftService.clearDraft(mode, initialMemo?.memoId);
-            }
+            // 如果存在草稿，显示确认对话框让用户选择是否恢复
+            setPendingDraft(draft);
+            setShowDraftRestoreModal(true);
+          } else {
+            setDraftRestored(true);
           }
-          setDraftRestored(true);
         }
 
         // 初始化编辑模式的数据（仅在编辑模式且未恢复草稿时）
@@ -168,7 +160,31 @@ export const MemoEditorForm = view(
             setSelectedTags(initialMemo.tags.map((t) => t.name));
           }
         }
-      }, [mode, initialMemo, draftRestored, draftService, toastService]);
+      }, [mode, initialMemo, draftRestored, draftService]);
+
+      // 处理草稿恢复确认
+      const handleDraftRestoreConfirm = () => {
+        if (pendingDraft) {
+          setContent(pendingDraft.content);
+          setSelectedCategoryId(pendingDraft.categoryId);
+          setIsPublic(pendingDraft.isPublic);
+          setSelectedTags(pendingDraft.tags);
+          setAttachments(pendingDraft.attachments);
+          setSelectedRelations(pendingDraft.relations);
+          toastService.show('草稿已恢复', { type: 'success' });
+        }
+        setShowDraftRestoreModal(false);
+        setPendingDraft(null);
+        setDraftRestored(true);
+      };
+
+      // 处理草稿丢弃
+      const handleDraftDiscard = () => {
+        draftService.clearDraft(mode, initialMemo?.memoId);
+        setShowDraftRestoreModal(false);
+        setPendingDraft(null);
+        setDraftRestored(true);
+      };
 
       // 获取类别列表
       useEffect(() => {
@@ -1384,6 +1400,79 @@ export const MemoEditorForm = view(
             onBack={() => aiToolsService.backToToolSelector()}
             onConfirm={handleAITagsConfirm}
           />
+
+          {/* 草稿恢复确认对话框 */}
+          <Transition appear show={showDraftRestoreModal} as={Fragment}>
+            <Dialog
+              as="div"
+              className="relative z-50"
+              onClose={handleDraftDiscard}
+            >
+              {/* Backdrop */}
+              <Transition.Child
+                as={Fragment}
+                enter="ease-out duration-200"
+                enterFrom="opacity-0"
+                enterTo="opacity-100"
+                leave="ease-in duration-150"
+                leaveFrom="opacity-100"
+                leaveTo="opacity-0"
+              >
+                <div className="fixed inset-0 bg-black bg-opacity-25 dark:bg-opacity-40" />
+              </Transition.Child>
+
+              {/* Modal content */}
+              <div className="fixed inset-0 overflow-y-auto">
+                <div className="flex min-h-full items-center justify-center p-4">
+                  <Transition.Child
+                    as={Fragment}
+                    enter="ease-out duration-200"
+                    enterFrom="opacity-0 scale-95"
+                    enterTo="opacity-100 scale-100"
+                    leave="ease-in duration-150"
+                    leaveFrom="opacity-100 scale-100"
+                    leaveTo="opacity-0 scale-95"
+                  >
+                    <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-lg bg-white dark:bg-dark-800 shadow-lg transition-all">
+                      {/* Header */}
+                      <div className="flex items-start gap-4 px-6 py-5">
+                        {/* Warning Icon */}
+                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                          <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                        </div>
+
+                        {/* Title and Message */}
+                        <div className="flex-1 min-w-0">
+                          <Dialog.Title className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                            检测到未保存的草稿
+                          </Dialog.Title>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                            是否恢复之前的编辑内容？点击"恢复"继续编辑，点击"丢弃"删除草稿。
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="bg-gray-50 dark:bg-dark-700/50 px-6 py-4 flex items-center justify-end gap-3">
+                        <button
+                          onClick={handleDraftDiscard}
+                          className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-dark-800 border border-gray-300 dark:border-dark-600 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors cursor-pointer"
+                        >
+                          丢弃
+                        </button>
+                        <button
+                          onClick={handleDraftRestoreConfirm}
+                          className="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 active:bg-primary-800 rounded-lg transition-colors cursor-pointer"
+                        >
+                          恢复
+                        </button>
+                      </div>
+                    </Dialog.Panel>
+                  </Transition.Child>
+                </div>
+              </div>
+            </Dialog>
+          </Transition>
         </>
       );
     }
