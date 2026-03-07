@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router';
 import { view, useService } from '@rabjs/react';
 import { AuthService } from '../services/auth.service';
 import { ThemeService } from '../services/theme.service';
-import { Zap, Sun, Moon, LogOut, Settings, Sparkles, Images } from 'lucide-react';
+import { Zap, Sun, Moon, LogOut, Settings, Sparkles, Images, Brain } from 'lucide-react';
 import logoUrl from '../assets/logo.png';
 import logoDarkUrl from '../assets/logo-dark.png';
 import { isElectron, isMacOS } from '../electron/isElectron';
@@ -24,6 +24,7 @@ export const Layout = view(({ children }: LayoutProps) => {
   const isHomePage = location.pathname === '/home';
   const isAIExplorePage = location.pathname === '/ai-explore';
   const isGalleryPage = location.pathname === '/gallery';
+  const isReviewPage = location.pathname === '/review';
   const isSettingsPage = location.pathname.startsWith('/settings');
 
   // Close menu when clicking outside
@@ -125,6 +126,23 @@ export const Layout = view(({ children }: LayoutProps) => {
             aria-label="AI探索"
           >
             <Sparkles className="w-6 h-6" />
+          </button>
+
+          {/* Review Navigation */}
+          <button
+            onClick={() => {
+              const search = location.search;
+              navigate(`/review${search}`);
+            }}
+            className={`w-12 h-12 rounded-lg flex items-center justify-center transition-colors ${
+              isReviewPage
+                ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-800'
+            }`}
+            title="知识回顾"
+            aria-label="知识回顾"
+          >
+            <Brain className="w-6 h-6" />
           </button>
 
           {/* Gallery Navigation */}
