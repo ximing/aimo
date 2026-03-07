@@ -36,3 +36,6 @@ export * from './tag.js';
 
 // Push Rule DTOs
 export * from './push-rule.js';
+
+// Review DTOs
+export * from './review.js';
