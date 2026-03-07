@@ -1,203 +1,57 @@
 {
   "project": "AIMO",
-  "branchName": "ralph/remove-foreign-keys",
-  "description": "Remove database foreign keys and implement application-layer referential integrity with soft delete pattern",
+  "branchName": "ralph/memo-quick-reference",
+  "description": "Memo 快速引用功能 - 在卡片悬浮时提供一键引用入口，复用现有 relations 系统快速创建关联笔记",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Add soft delete columns to all tables",
-      "description": "As a developer, I need to add deleted_at bigint columns to all tables so we can implement soft delete patterns instead of hard deletes.",
+      "title": "MemoEditorForm 暴露 addRelation 和 focusTextarea 方法",
+      "description": "As a developer, I need MemoEditorForm to expose addRelation and focusTextarea methods via useImperativeHandle so that the parent component can programmatically add a relation and focus the input.",
       "acceptanceCriteria": [
-        "Add deleted_at bigint column (NOT NULL, default 0) to 10 tables: users, memos, memo_relations, attachments, ai_conversations, ai_messages, categories, tags, daily_recommendations, push_rules",
-        "Update Drizzle schema definitions to use deletedAt: bigint('deleted_at', { mode: 'number' })",
-        "Generate migration script with up and down methods",
-        "Migration adds indexes on deleted_at for all tables",
-        "Test migration on local database successfully",
+        "MemoEditorForm 使用 forwardRef 包装，暴露 ref 接口",
+        "useImperativeHandle 暴露 addRelation(memo: MemoListItemDto) 方法：将 memo 添加到 selectedRelations，若已存在则跳过",
+        "useImperativeHandle 暴露 focusTextarea() 方法：聚焦 textarea 并将光标移至末尾",
+        "不改变组件现有 props 接口和内部提交逻辑",
         "Typecheck passes"
       ],
       "priority": 1,
-      "passes": true,
-      "notes": "Completed - Added deletedAt bigint column to all 10 tables in both LanceDB and Drizzle schemas. Created migration 019. Typecheck passes."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-002",
-      "title": "Update UserService queries to filter soft-deleted records",
-      "description": "As a developer, I need to update all UserService queries to filter soft-deleted records so the application only works with active users.",
+      "title": "memo-card.tsx 新增引用按钮",
+      "description": "As a user, I want to see a quote button when hovering over a memo card so that I can quickly create a related note.",
       "acceptanceCriteria": [
-        "Add WHERE deletedAt = 0 filter to all UserService SELECT queries",
-        "Update authentication middleware to check deletedAt > 0 and reject soft-deleted users",
-        "Return error message 'Account has been deleted' for soft-deleted users",
+        "在卡片操作按钮区域（group-hover 显示区）新增引用按钮，使用 lucide-react 的 Quote 图标",
+        "按钮样式与现有编辑/删除按钮一致，仅悬浮时可见",
+        "按钮有 title 属性提示文字「引用此笔记」",
+        "MemoCard 组件接受新 prop：onQuote?: (memo: MemoDto) => void",
+        "点击按钮调用 onQuote(memo)，并阻止事件冒泡（e.stopPropagation()）",
+        "若 onQuote 未传入，按钮不渲染",
         "Typecheck passes",
-        "Add unit tests for soft-deleted user filtering"
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 2,
-      "passes": true,
-      "notes": "Completed - Added deletedAt = 0 filter to all UserService queries (findUserByEmail, findUserByUid, findUserByPhone, createUser, updateUser, deleteUser). Updated auth-handler.ts to check deletedAt > 0 and return 'Account has been deleted' error. Created manual test documentation. Fixed index definitions in schema files. Typecheck passes."
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-003",
-      "title": "Update MemoService queries to filter soft-deleted records",
-      "description": "As a developer, I need to update all MemoService queries to filter soft-deleted records so the application only works with active memos.",
+      "title": "Home 页面串联引用逻辑：添加关联并聚焦输入框",
+      "description": "As a user, I want clicking the quote button to automatically add the memo as a relation in the editor and scroll/focus the input so I can start writing immediately.",
       "acceptanceCriteria": [
-        "Add WHERE deletedAt = 0 filter to all MemoService SELECT queries",
-        "Update search queries to filter deletedAt = 0",
-        "Update LanceDB queries to filter soft-deleted memos",
+        "Home 页面持有 MemoEditorForm 的 ref（类型为 MemoEditorFormRef）",
+        "实现 handleQuoteMemo(memo: MemoDto) 函数：调用 ref.current.addRelation(memo) 添加关联",
+        "handleQuoteMemo 调用后执行 scrollIntoView({ behavior: 'smooth', block: 'start' }) 滚动至编辑区",
+        "滚动后调用 ref.current.focusTextarea() 聚焦输入框",
+        "将 handleQuoteMemo 作为 onQuote prop 传递给每个 MemoCard",
         "Typecheck passes",
-        "Add unit tests for soft-deleted memo filtering"
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": "Completed - Added deletedAt = 0 filter to all MemoService SELECT queries (20+ queries), UPDATE queries, and DELETE queries. Updated LanceDB vector search queries to filter deletedAt = 0 in both semantic search and related memo queries. Typecheck passes."
-    },
-    {
-      "id": "US-004",
-      "title": "Update remaining service queries to filter soft-deleted records",
-      "description": "As a developer, I need to update all remaining service queries to filter soft-deleted records.",
-      "acceptanceCriteria": [
-        "Add WHERE deletedAt = 0 filter to CategoryService queries",
-        "Add WHERE deletedAt = 0 filter to TagService queries",
-        "Add WHERE deletedAt = 0 filter to AttachmentService queries",
-        "Add WHERE deletedAt = 0 filter to AIConversationService and AIMessageService queries",
-        "Add WHERE deletedAt = 0 filter to DailyRecommendationService queries",
-        "Add WHERE deletedAt = 0 filter to PushRuleService queries",
-        "Typecheck passes"
-      ],
-      "priority": 4,
-      "passes": true,
-      "notes": "Completed - Added deletedAt = 0 filter to all queries in CategoryService (5 queries), TagService (9 queries), AttachmentService (6 queries), AIConversationService (8 queries + AIMessageService 2 queries), RecommendationService (2 queries), PushRuleService (5 queries), and MemoRelationService (5 queries). All SELECT, UPDATE, and DELETE queries now filter soft-deleted records. Typecheck passes."
-    },
-    {
-      "id": "US-005",
-      "title": "Implement soft delete for users",
-      "description": "As a system, I need to soft delete users instead of hard deleting them so the account is disabled but all user data is preserved.",
-      "acceptanceCriteria": [
-        "Update UserService.deleteUser() to set deletedAt = Date.now() instead of DELETE",
-        "Do NOT cascade delete to user-owned records",
-        "Use WHERE deletedAt = 0 in update condition",
-        "Typecheck passes",
-        "Add unit tests for user soft delete"
-      ],
-      "priority": 5,
-      "passes": true,
-      "notes": "Completed - Updated UserService.deleteUser() to set deletedAt = Date.now() instead of status = 0. No cascade deletes to user-owned records. WHERE deletedAt = 0 condition already present. Created manual test documentation. Typecheck passes."
-    },
-    {
-      "id": "US-006",
-      "title": "Implement soft delete for memos with cascade",
-      "description": "As a system, I need to soft delete memos and cascade to related memo_relations so data relationships are preserved.",
-      "acceptanceCriteria": [
-        "Update MemoService.deleteMemo() to set deletedAt = Date.now()",
-        "Cascade soft delete to memo_relations where sourceMemoId OR targetMemoId matches",
-        "Use transaction to ensure atomicity",
-        "Do NOT delete attachments",
-        "Typecheck passes",
-        "Add unit tests for memo soft delete with cascade"
-      ],
-      "priority": 6,
-      "passes": true,
-      "notes": "Completed - Updated MemoService.deleteMemo() to set deletedAt = Date.now() instead of hard delete. Added MemoRelationService.softDeleteRelationsByMemo() to cascade soft delete to memo_relations using or() operator for both source and target. Used transaction to ensure atomicity. Attachments are NOT deleted. Both MySQL and LanceDB updated. Created manual test documentation. Typecheck passes."
-    },
-    {
-      "id": "US-007",
-      "title": "Implement soft delete for categories with memo cleanup",
-      "description": "As a system, I need to soft delete categories and set related memos' categoryId to NULL so memos become uncategorized.",
-      "acceptanceCriteria": [
-        "Update CategoryService.deleteCategory() to set deletedAt = Date.now()",
-        "Find all memos where categoryId matches (deletedAt = 0)",
-        "Set categoryId = NULL for all matching memos",
-        "Use transaction to ensure atomicity",
-        "Typecheck passes",
-        "Add unit tests for category soft delete with memo cleanup"
-      ],
-      "priority": 7,
-      "passes": true,
-      "notes": "Completed - Updated CategoryService.deleteCategory() to set deletedAt = Date.now(). Added logic to find all memos with matching categoryId (deletedAt = 0) and set categoryId = NULL in both MySQL and LanceDB. Used withTransaction() for atomicity. Added LanceDB connection to CategoryService. Created manual test documentation. Typecheck passes."
-    },
-    {
-      "id": "US-008",
-      "title": "Implement soft delete for tags with memo cleanup",
-      "description": "As a system, I need to soft delete tags and remove the tagId from all memos' tagIds arrays.",
-      "acceptanceCriteria": [
-        "Update TagService.deleteTag() to set deletedAt = Date.now()",
-        "Find all memos where tagIds contains the deleted tagId (deletedAt = 0)",
-        "Remove tagId from each memo's tagIds array",
-        "Use transaction to ensure atomicity",
-        "Typecheck passes",
-        "Add unit tests for tag soft delete with memo cleanup"
-      ],
-      "priority": 8,
-      "passes": true,
-      "notes": "Completed - Added LanceDB connection to TagService (initLanceDb, getLanceDb, openMemosTable). Updated deleteTag() to set deletedAt = Date.now(). Added transaction to soft delete tag and remove tagId from all matching memos' tagIds arrays in both MySQL and LanceDB. Handles empty arrays by setting to NULL. Created manual test documentation. Typecheck passes."
-    },
-    {
-      "id": "US-009",
-      "title": "Implement soft delete for AI conversations with cascade",
-      "description": "As a system, I need to soft delete AI conversations and cascade to messages.",
-      "acceptanceCriteria": [
-        "Update AIConversationService.deleteConversation() to set deletedAt = Date.now()",
-        "Cascade soft delete to all ai_messages with matching conversationId",
-        "Use transaction for cascade operations",
-        "Typecheck passes",
-        "Add unit tests for conversation soft delete"
-      ],
-      "priority": 9,
-      "passes": true,
-      "notes": "Completed - Updated AIConversationService.deleteConversation() to set deletedAt = Date.now() instead of hard delete. Added cascade soft delete to all ai_messages with matching conversationId using transaction. Used withTransaction() for atomicity. Created manual test documentation. Typecheck passes."
-    },
-    {
-      "id": "US-010",
-      "title": "Implement soft delete for remaining entities",
-      "description": "As a system, I need to implement soft delete for attachments, daily_recommendations, and push_rules.",
-      "acceptanceCriteria": [
-        "Update AttachmentService.deleteAttachment() to set deletedAt = Date.now()",
-        "Update DailyRecommendationService delete method to set deletedAt = Date.now()",
-        "Update PushRuleService delete method to set deletedAt = Date.now()",
-        "No cascades needed for these entities",
-        "Typecheck passes",
-        "Add unit tests for each entity's soft delete"
-      ],
-      "priority": 10,
-      "passes": true,
-      "notes": "Completed - Updated AttachmentService.deleteAttachment() to set deletedAt = Date.now() in both MySQL and LanceDB (physical files preserved). Updated RecommendationService clearCachedRecommendations() and added new deleteRecommendation() method. Updated PushRuleService.delete() to set deletedAt = Date.now(). No cascades needed for these entities. Typecheck passes."
-    },
-    {
-      "id": "US-011",
-      "title": "Generate migration to drop foreign keys",
-      "description": "As a developer, I need a migration script to safely drop all foreign key constraints from the database.",
-      "acceptanceCriteria": [
-        "Remove .references() from all schema definitions: memos.uid, memos.categoryId, memo_relations.uid, memo_relations.sourceMemoId, memo_relations.targetMemoId, attachments.uid, ai_conversations.uid, ai_messages.conversationId, categories.uid, tags.uid, daily_recommendations.uid, push_rules.uid",
-        "Generate migration script using pnpm migrate:generate",
-        "Migration includes rollback script to re-add foreign keys",
-        "Test migration on local database copy",
-        "Verify indexes are preserved after foreign key removal",
-        "Typecheck passes"
-      ],
-      "priority": 11,
-      "passes": true,
-      "notes": "Completed - Removed .references() from all 12 foreign key definitions in Drizzle schema files. Removed unused imports (users, categories, memos, aiConversations). Generated migration 0003_eminent_peter_quill.sql with DROP FOREIGN KEY statements. Created rollback script 0003_eminent_peter_quill.rollback.sql with ADD CONSTRAINT statements. Created comprehensive test plan documentation. All indexes preserved. Typecheck passes."
-    },
-    {
-      "id": "US-012",
-      "title": "Create pre-deployment validation script",
-      "description": "As a DevOps engineer, I need a validation script to run before production deployment to ensure data integrity.",
-      "acceptanceCriteria": [
-        "Create scripts/validate-data-integrity.ts",
-        "Check for memos with non-existent users",
-        "Check for memo_relations with non-existent or soft-deleted memos",
-        "Check for attachments with non-existent users",
-        "Check for ai_messages with non-existent or soft-deleted conversations",
-        "Check for categories/tags/push_rules/daily_recommendations with non-existent users",
-        "Check for memos with invalid categoryId references",
-        "Check for memos with invalid tagIds in JSON array",
-        "Report counts and sample IDs (first 5) for any issues found",
-        "Exit with error code if critical issues detected",
-        "Log validation results to timestamped JSON file",
-        "Support both pre-deployment and post-deployment modes via CLI flag",
-        "Typecheck passes"
-      ],
-      "priority": 12,
-      "passes": true,
-      "notes": "Completed - Created scripts/validate-data-integrity.ts with comprehensive validation checks. Script performs 11 validation checks for referential integrity: orphaned records, soft-deleted references, invalid JSON array references. Supports both pre-deployment and post-deployment modes via --mode flag. Reports critical issues (exit 1) vs warnings (exit 0). Outputs detailed console logs and timestamped JSON files to logs/validation/. Added pnpm validate:data script to package.json. Created comprehensive README.md with usage documentation, CI/CD integration examples, and troubleshooting guide. Typecheck passes."
+      "passes": false,
+      "notes": ""
     }
   ]
 }
