@@ -5,6 +5,7 @@ import HomePage from './pages/home';
 import LandingPage from './pages/landing';
 import SettingsPage from './pages/settings';
 import { AccountSettings } from './pages/settings/components/account-settings';
+import { ModelSettings } from './pages/settings/components/model-settings';
 import { ImportData } from './pages/settings/components/import-data';
 import { ExportData } from './pages/settings/components/export-data';
 import { About } from './pages/settings/components/about';
@@ -75,6 +76,7 @@ function App() {
           <Route index element={<Navigate to="/settings/account" replace />} />
           <Route path="account" element={<AccountSettings />} />
           <Route path="push-rules" element={<PushRulesSettings />} />
+          <Route path="models" element={<ModelSettings />} />
           <Route path="import" element={<ImportData />} />
           <Route path="export" element={<ExportData />} />
           <Route path="about" element={<About />} />

@@ -49,6 +49,21 @@ export class ToastService extends Service {
 
     this.toasts = this.toasts.filter((toast) => toast.id !== id);
   }
+  success(message: string, options?: Omit<ToastOptions, 'type'>) {
+    return this.show(message, { ...options, type: 'success' });
+  }
+
+  error(message: string, options?: Omit<ToastOptions, 'type'>) {
+    return this.show(message, { ...options, type: 'error' });
+  }
+
+  warning(message: string, options?: Omit<ToastOptions, 'type'>) {
+    return this.show(message, { ...options, type: 'warning' });
+  }
+
+  info(message: string, options?: Omit<ToastOptions, 'type'>) {
+    return this.show(message, { ...options, type: 'info' });
+  }
 
   clear() {
     this.timers.forEach((timer) => window.clearTimeout(timer));

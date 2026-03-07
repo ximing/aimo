@@ -16,3 +16,4 @@ export * from './push-rules.js';
 export * from './review-sessions.js';
 export * from './review-items.js';
 export * from './table-migrations.js';
+export * from './user-models.js';

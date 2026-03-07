@@ -15,6 +15,7 @@ import { PushRuleV1Controller } from './v1/push-rule.controller.js';
 import { ReviewController } from './v1/review.controller.js';
 import { TagV1Controller } from './v1/tag.controller.js';
 import { UserV1Controller } from './v1/user.controller.js';
+import { UserModelController } from './v1/user-model.controller.js';
 import { SystemController } from './v1/system.controller.js';
 import { StaticController } from './static.controller.js';
 
@@ -25,6 +26,7 @@ export const controllers = [
   InsightsController,
   AuthV1Controller,
   UserV1Controller,
+  UserModelController,
   CategoryV1Controller,
   DebugBAController,
   TagV1Controller,

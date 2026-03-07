@@ -4,7 +4,7 @@ import { UserModelService } from './user-model.service.js';
 import { logger } from '../utils/logger.js';
 
 import type { UserModel } from '../db/schema/user-models.js';
-import type { LLMProvider } from '@x-console/dto';
+import type { LLMProvider } from '@aimo/dto';
 
 /**
  * Message format for LLM chat
