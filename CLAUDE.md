@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-AIMO is a full-stack AI-powered note-taking and knowledge management system. It's a pnpm monorepo with a React 19 frontend and Express.js backend using LanceDB for vector search.
+AIMO is a full-stack AI-powered note-taking and knowledge management system. It's a pnpm monorepo with a React 19 frontend and Express.js backend using a dual-database architecture: MySQL (via Drizzle ORM) for relational data and LanceDB for vector search.
 
 ## Development Commands
 
@@ -16,7 +16,7 @@ pnpm install
 
 # Copy environment variables
 cp .env.example .env
-# Edit .env - required: JWT_SECRET (32+ chars), OPENAI_API_KEY
+# Edit .env - required: JWT_SECRET (32+ chars), OPENAI_API_KEY, MySQL credentials
 ```
 
 ### Development
@@ -29,7 +29,7 @@ pnpm dev
 pnpm dev:web      # Frontend only - Vite dev server at http://localhost:5173
 pnpm dev:server   # Backend only - Express at http://localhost:3000
 
-# Start Docker dependencies (if needed)
+# Start Docker dependencies (MySQL, etc.)
 pnpm dev:env
 ```
 
@@ -65,6 +65,17 @@ cd apps/server && pnpm test -- path/to/test.ts
 cd apps/server && pnpm test -- --testNamePattern="pattern"
 ```
 
+### Database (Drizzle ORM)
+
+```bash
+# Must build first before generating migrations
+cd apps/server && pnpm build
+cd apps/server && pnpm migrate:generate   # Generate migration from schema changes
+cd apps/server && pnpm migrate            # Run migrations manually
+cd apps/server && pnpm migrate:studio     # Open Drizzle Studio
+cd apps/server && pnpm migrate:data       # Migrate data from LanceDB to MySQL (one-time script)
+```
+
 ### Cleanup
 
 ```bash
@@ -90,14 +101,7 @@ aimo/
     └── rollup-config/    # Shared Rollup configs
 ```
 
-### Build Dependencies
-
-Turbo orchestrates the build order:
-
-1. `@aimo/dto` builds first (shared types)
-2. `@aimo/web` and `@aimo/server` can build in parallel after DTO
-
-Always import from `@aimo/dto` for shared types between frontend and backend.
+Turbo orchestrates build order: `@aimo/dto` first, then `@aimo/web` and `@aimo/server` in parallel. Always import from `@aimo/dto` for shared types.
 
 ## Backend Architecture (apps/server)
 
@@ -105,31 +109,61 @@ Always import from `@aimo/dto` for shared types between frontend and backend.
 
 - **Express.js** with routing-controllers (decorator-based routing)
 - **TypeDI** for dependency injection
-- **LanceDB** for vector database (semantic search)
-- **OpenAI** for embeddings (text-embedding-3-small default)
+- **MySQL** via Drizzle ORM for relational data (users, memos, AI conversations, etc.)
+- **LanceDB** for vector database (semantic search, embeddings)
+- **OpenAI** for text embeddings (text-embedding-3-small default)
 - **JWT** authentication with bcrypt
 - **Multer** for file uploads
-- **Zod** for validation
 
-### Service Layer Pattern
+### Dual Database Architecture
 
-Business logic lives in `src/services/`:
+The backend uses two databases with distinct responsibilities:
 
-- `memo.service.ts` - CRUD + embedding generation
-- `search.service.ts` - Vector similarity search
-- `attachment.service.ts` - File storage (local/S3/OSS)
-- `user.service.ts` - User management
+- **MySQL (Drizzle ORM)** — relational data: users, memos, attachments, categories, tags, AI conversations/messages, push rules, daily recommendations, memo relations
+  - Schema in `src/db/schema/` — one file per table, all exported from `schema/index.ts`
+  - Access via `getDatabase()` singleton from `src/db/connection.ts`
+  - Migrations in `drizzle/` folder, auto-run on startup
+  - **Always build before generating migrations** (drizzle-kit reads from `dist/`)
+  - VARCHAR(191) limit for keys (MySQL utf8mb4 index limit)
 
-### Storage Adapters (Multi-adapter Pattern)
+- **LanceDB** — vector data: memo embeddings for semantic search
+  - Abstraction in `src/sources/lancedb.ts`
+  - Embeddings auto-generated via `EmbeddingService` on memo create/update
+  - Supports local or S3 storage backends
 
-Located in `src/sources/`:
+### Server Startup Sequence
 
-- `lancedb.ts` - Vector database abstraction
-- `storage/` - File storage adapters (local, S3, OSS)
+1. IOC container (TypeDI)
+2. MySQL connection pool
+3. Drizzle migrations
+4. LanceDB initialization
+5. Scheduler service
+6. Express server
+
+### Service Layer
+
+Business logic in `src/services/`:
+
+- `memo.service.ts` — CRUD + embedding generation
+- `search.service.ts` — Vector similarity search via LanceDB
+- `attachment.service.ts` — File storage (local/S3/OSS)
+- `user.service.ts` — User management
+- `ai.service.ts` / `ai-conversation.service.ts` — AI chat with conversation persistence
+- `embedding.service.ts` — Text embedding generation (OpenAI)
+- `multimodal-embedding.service.ts` — Image/video embeddings (DashScope/Qwen)
+- `memo-relation.service.ts` — Directed memo relations and backlinks
+- `category.service.ts`, `tag.service.ts` — Organization
+- `recommendation.service.ts` — Daily content recommendations
+- `scheduler.service.ts` — Cron jobs (DB optimization, push notifications)
+- `push-rule.service.ts` — Push notification rules
+- `ocr/` — OCR providers (Zhipu, etc.)
+- `channels/` — Push notification channels (Feishu, Meow)
+- `asr.service.ts` — Automatic speech recognition
+- `explore.service.ts` — AI-powered content exploration
 
 ### Controllers
 
-Located in `src/controllers/v1/` - REST endpoints using routing-controllers decorators:
+Located in `src/controllers/v1/` — auto-registered via `src/controllers/index.ts` glob import.
 
 ```typescript
 @JsonController('/memos')
@@ -141,15 +175,19 @@ export class MemoController {
 }
 ```
 
+Notable controllers: `memo`, `memo.ba` (bulk actions), `attachment`, `attachment.ba`, `auth`, `user`, `ai`, `asr`, `ocr`, `category`, `tag`, `explore`, `insights`, `push-rule`, `system`, `debug.ba`
+
 ### Important Backend Conventions
 
-- All services are decorated with `@Service()` for TypeDI injection
-- Controllers auto-register via `src/controllers/index.ts` glob import
-- LanceDB auto-generates embeddings on memo create/update via `EmbeddingService`
-- Graceful shutdown handles LanceDB cleanup and scheduler stop
-- Public endpoints (no auth): Omit `@CurrentUser()` decorator from method parameters
-- Protected endpoints: Use `@CurrentUser() user: UserInfoDto` to get authenticated user
-- Error codes: Import from `ErrorCode` constants in `constants/error-codes.ts`
+- All services decorated with `@Service()` for TypeDI injection
+- Public endpoints: omit `@CurrentUser()` from method parameters
+- Protected endpoints: use `@CurrentUser() user: UserInfoDto`
+- Error codes: import from `ErrorCode` in `constants/error-codes.ts`
+- Graceful shutdown closes MySQL pool, stops scheduler, closes LanceDB
+
+### Storage Adapters
+
+Located in `src/sources/unified-storage-adapter/` — adapters for local, S3, and OSS file storage via `UnifiedStorageAdapterFactory`.
 
 ## Frontend Architecture (apps/web)
 
@@ -169,19 +207,19 @@ src/
 │   ├── home/        # Memo list (main interface)
 │   ├── gallery/     # Image gallery
 │   ├── ai-explore/  # AI content exploration
-│   └── settings/    # User settings
+│   ├── settings/    # User settings
+│   └── share/       # Public share pages
 ├── components/      # Reusable components
-├── services/        # API abstraction layer
+├── services/        # API abstraction layer (observable state)
 ├── api/             # Raw API calls
 └── utils/           # Helper utilities
 ```
 
 ### State Management Pattern
 
-Uses @rabjs/react - stores in `src/services/`:
+Uses @rabjs/react — stores in `src/services/`:
 
 ```typescript
-// services/memo.service.ts
 export class MemoService {
   memos = observable<Memo[]>([]);
 
@@ -199,6 +237,11 @@ export class MemoService {
 JWT_SECRET=your-super-secret-key-at-least-32-characters-long
 OPENAI_API_KEY=sk-xxx...
 CORS_ORIGIN=http://localhost:3000
+MYSQL_HOST=localhost
+MYSQL_PORT=3306
+MYSQL_USER=root
+MYSQL_PASSWORD=your-mysql-password
+MYSQL_DATABASE=aimo
 ```
 
 ### Storage Configuration
@@ -209,89 +252,59 @@ LANCEDB_STORAGE_TYPE=local  # or s3
 LANCEDB_PATH=./lancedb_data
 
 # File attachments
-ATTACHMENT_STORAGE_TYPE=local  # or s3
+ATTACHMENT_STORAGE_TYPE=local  # or s3 or oss
 ATTACHMENT_LOCAL_PATH=./attachments
 ```
 
-### S3 Configuration (when using cloud storage)
+### Optional Features
 
 ```env
-AWS_ACCESS_KEY_ID=xxx
-AWS_SECRET_ACCESS_KEY=xxx
-AWS_REGION=us-east-1
-# Plus service-specific bucket/prefix settings
+# Multimodal embeddings (images/video via DashScope/Qwen)
+MULTIMODAL_EMBEDDING_ENABLED=false
+DASHSCOPE_API_KEY=your-key
+
+# OCR
+OCR_ENABLED=true
+OCR_DEFAULT_PROVIDER=zhipu
+ZHIPU_API_KEY=your-key
+
+# User registration
+ALLOW_REGISTRATION=true
 ```
-
-## Database Migrations
-
-The project has a migration system in `apps/server/src/migrations/`:
-
-- Migrations run automatically on startup
-- Each migration has `up()` and `down()` methods
-- Migration state tracked in `_migrations` meta table
-
-## Docker Deployment
-
-### Pre-built Image
-
-```bash
-docker pull ghcr.io/ximing/aimo:stable
-```
-
-### Local Build
-
-```bash
-make build-docker    # Build production image
-make docker-run      # Run container
-```
-
-The Dockerfile is multi-stage:
-
-1. Builder: Compiles DTO → Web → Server
-2. Production: Minimal image with only runtime deps
 
 ## Common Tasks
 
 ### Adding a New API Endpoint
 
 1. Create controller method in `apps/server/src/controllers/v1/`
-2. Use routing-controllers decorators (@Get, @Post, etc.)
+2. Use routing-controllers decorators (`@Get`, `@Post`, etc.)
 3. Inject services via constructor
 4. Add corresponding frontend API call in `apps/web/src/api/`
 
-### Adding a Database Field
+### Adding a MySQL Table
 
-1. Update DTO in `packages/dto/src/`
-2. Rebuild DTO: `pnpm --filter @aimo/dto build`
-3. Update LanceDB schema in `apps/server/src/sources/lancedb.ts`
-4. Create migration if needed
-5. Update frontend types (auto-imported from DTO)
+1. Create schema file in `apps/server/src/db/schema/`
+2. Export from `apps/server/src/db/schema/index.ts`
+3. Build server: `cd apps/server && pnpm build`
+4. Generate migration: `cd apps/server && pnpm migrate:generate`
+5. Migration runs automatically on next server start
 
-### Adding New DTOs for API Response Types
+### Adding New DTOs
 
 1. Create DTO file in `packages/dto/src/<feature>.ts`
 2. Export from `packages/dto/src/index.ts`
-3. Rebuild DTO package: `pnpm --filter @aimo/dto build`
+3. Rebuild: `pnpm --filter @aimo/dto build`
 4. Import in server code from `@aimo/dto`
-5. Run typecheck to verify: `cd apps/server && pnpm typecheck`
-
-### Working with Vector Search
-
-Embeddings are auto-generated via `EmbeddingService`. The flow:
-
-1. Memo created/updated → `MemoService` calls `EmbeddingService.generateEmbedding()`
-2. Vector stored in LanceDB alongside memo data
-3. Search uses `SearchService.semanticSearch()` to query by vector similarity
+5. Verify: `cd apps/server && pnpm typecheck`
 
 ### Working with Memo Relations
 
-Memo relations are stored in a separate `memo_relations` table in LanceDB:
+Memo relations stored in MySQL `memo_relations` table:
 
-- `sourceMemoId` → `targetMemoId` (directed relation)
-- Use `MemoRelationService` for relation operations
-- **Forward relations**: `getRelatedMemos()` returns targets of a source memo
-- **Backlinks**: `getBacklinks()` returns sources that target a memo (reverse lookup)
-- Relations are enriched on read in `enrichMemosWithRelations()`
+- `sourceMemoId` → `targetMemoId` (directed)
+- Use `MemoRelationService` for operations
+- `getRelatedMemos()` — forward relations; `getBacklinks()` — reverse lookup
+- Relations enriched on read via `enrichMemosWithRelations()`
 
 ## TypeScript Configuration
 
@@ -302,8 +315,6 @@ Memo relations are stored in a separate `memo_relations` table in LanceDB:
 
 ## Code Style
 
-Prettier configuration:
-
 ```javascript
 {
   singleQuote: true,
@@ -313,6 +324,16 @@ Prettier configuration:
   arrowParens: 'always'
 }
 ```
+
+## Docker Deployment
+
+```bash
+docker pull ghcr.io/ximing/aimo:stable
+make build-docker    # Build production image
+make docker-run      # Run container
+```
+
+Multi-stage Dockerfile: Builder (DTO → Web → Server), then minimal production image.
 
 ## License
 
