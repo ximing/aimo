@@ -14,6 +14,8 @@ export interface ReviewItemDto {
   itemId: string;
   sessionId: string;
   memoId: string;
+  /** Original memo content for reference during review */
+  memoContent?: string;
   question: string;
   userAnswer?: string;
   aiFeedback?: string;
