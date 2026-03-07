@@ -1,0 +1,33 @@
+## Codebase Patterns
+- `view()` from `@rabjs/react` wraps components for reactive state; to use `forwardRef`, wrap with `forwardRef(...)` inside `view(forwardRef(...))` and close with `}))`
+- `selectedRelations` state in MemoEditorForm uses `MemoListItemDto[]`; `memoId` is the unique identifier
+- `textareaRef` is already declared in MemoEditorForm at line ~83; use it for `focusTextarea`
+- MemoCard uses Tailwind `group-hover` classes for hover-visible action buttons
+
+---
+
+## 2026-03-07 - US-001
+- Implemented: Added `forwardRef` + `useImperativeHandle` to `MemoEditorForm`
+- Exported `MemoEditorFormRef` interface with `addRelation(memo: MemoListItemDto)` and `focusTextarea()` methods
+- Files changed: `apps/web/src/components/memo-editor-form.tsx`
+- **Learnings for future iterations:**
+  - `view(forwardRef<Ref, Props>((props, ref) => { ... }))` is the pattern; closing is `}))` not `})`
+  - `useImperativeHandle` placed after all `useRef`/`useService` declarations, before `useEffect` hooks
+  - Typecheck passes with no issues
+---
+
+## 2026-03-07 - US-002
+- Implemented: Added `onQuote?: (memo: MemoDto) => void` prop to `MemoCard`
+- Added `Quote` icon button from `lucide-react` in the `group-hover` action area
+- Button renders only when `onQuote` is provided; calls `onQuote(memo)` with `e.stopPropagation()`
+- Files changed: `apps/web/src/components/memo-card.tsx`
+- Browser verified: Quote button visible, clicking adds relation to editor
+---
+
+## 2026-03-07 - US-003
+- Implemented: Home page holds `MemoEditorFormRef` ref pointing to `MemoEditorForm`
+- Added `handleQuoteMemo(memo: MemoDto)`: calls `ref.current.addRelation(memo)`, scrolls editor into view smoothly, then calls `ref.current.focusTextarea()`
+- Passed `handleQuoteMemo` as `onQuote` prop to each `MemoCard`
+- Files changed: Home page component
+- Browser verified: Clicking "引用此笔记" adds relation (showed "关联笔记 (1)") and focuses textarea
+---
