@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { view } from '@rabjs/react';
 import { Layout } from '../../components/layout';
 import * as reviewApi from '../../api/review';
-import type { ReviewSessionDto, SubmitAnswerResponseDto, CompleteSessionResponseDto, ReviewHistoryItemDto } from '@aimo/dto';
-import { Brain, Clock, Loader2 } from 'lucide-react';
+import type { ReviewSessionDto, SubmitAnswerResponseDto, CompleteSessionResponseDto, ReviewHistoryItemDto, ReviewItemDto } from '@aimo/dto';
+import { Brain, Clock, Loader2, ChevronLeft, ChevronRight, CheckCircle, Circle, XCircle } from 'lucide-react';
 
 type Step = 'setup' | 'quiz' | 'summary';
 type Scope = 'all' | 'category' | 'tag' | 'recent';
@@ -35,6 +35,16 @@ const scopeLabels: Record<Scope, string> = {
   category: '按分类',
   tag: '按标签',
   recent: '最近 N 天',
+};
+
+/**
+ * Get item status icon
+ */
+const getItemStatus = (item: ReviewItemDto): 'remembered' | 'fuzzy' | 'forgot' | 'pending' => {
+  if (item.mastery === 'remembered') return 'remembered';
+  if (item.mastery === 'fuzzy') return 'fuzzy';
+  if (item.mastery === 'forgot') return 'forgot';
+  return 'pending';
 };
 
 export const ReviewPage = view(() => {
@@ -71,6 +81,10 @@ export const ReviewPage = view(() => {
     }
   };
 
+  // Calculate progress - count items that have been answered
+  const answeredCount = session?.items.filter(item => item.mastery !== undefined).length || 0;
+  const totalCount = session?.items.length || 0;
+
   const handleStart = async () => {
     setLoading(true);
     try {
@@ -79,8 +93,9 @@ export const ReviewPage = view(() => {
         setSession(res.data);
         setStep('quiz');
         setCurrentIndex(0);
+        setAnswer('');
+        setFeedback(null);
         setSelectedHistorySession(null);
-        // Refresh history after creating new session
         loadHistory();
       }
     } finally {
@@ -94,22 +109,31 @@ export const ReviewPage = view(() => {
     try {
       const res = await reviewApi.getReviewSession(sessionId);
       if (res.code === 0 && res.data) {
-        // Only allow reviewing completed sessions
+        // Find first unanswered item
+        const firstUnanswered = res.data.items.findIndex(item => item.mastery === undefined);
         if (res.data.status === 'completed') {
           setSession(res.data);
           setStep('summary');
           setFinalScore(res.data.score ?? 0);
-          // Convert to CompleteSessionResponseDto format
           setFinalSession({
             sessionId: res.data.sessionId,
             score: res.data.score ?? 0,
             items: res.data.items,
           });
+        } else if (firstUnanswered !== -1) {
+          // Active session - continue from first unanswered
+          setSession(res.data);
+          setStep('quiz');
+          setCurrentIndex(firstUnanswered);
+          setAnswer('');
+          setFeedback(null);
         } else {
-          // Active session - continue from where left off
+          // All answered, go to summary
           setSession(res.data);
           setStep('quiz');
           setCurrentIndex(0);
+          setAnswer('');
+          setFeedback(null);
         }
       }
     } finally {
@@ -122,10 +146,20 @@ export const ReviewPage = view(() => {
     setLoading(true);
     try {
       const item = session.items[currentIndex];
-      // If skipping (forgot button), submit empty answer
       const answerText = skipAnswer ? '' : answer;
       const res = await reviewApi.submitAnswer(session.sessionId, { itemId: item.itemId, answer: answerText });
-      if (res.code === 0) setFeedback(res.data);
+      if (res.code === 0) {
+        setFeedback(res.data);
+        // Update session with the new answer/mastery
+        const updatedItems = [...session.items];
+        updatedItems[currentIndex] = {
+          ...updatedItems[currentIndex],
+          userAnswer: answerText,
+          aiFeedback: res.data.aiFeedback,
+          mastery: res.data.mastery,
+        };
+        setSession({ ...session, items: updatedItems });
+      }
     } finally {
       setLoading(false);
     }
@@ -137,12 +171,46 @@ export const ReviewPage = view(() => {
 
   const handleNext = () => {
     if (!session) return;
-    setAnswer('');
-    setFeedback(null);
     if (currentIndex + 1 >= session.items.length) {
       handleComplete();
     } else {
       setCurrentIndex(currentIndex + 1);
+      // Check if next item already has an answer
+      const nextItem = session.items[currentIndex + 1];
+      if (nextItem.mastery !== undefined) {
+        setFeedback({ itemId: nextItem.itemId, aiFeedback: nextItem.aiFeedback || '', mastery: nextItem.mastery });
+        setAnswer(nextItem.userAnswer || '');
+      } else {
+        setAnswer('');
+        setFeedback(null);
+      }
+    }
+  };
+
+  const handlePrev = () => {
+    if (!session || currentIndex === 0) return;
+    setCurrentIndex(currentIndex - 1);
+    // Check if previous item has an answer
+    const prevItem = session.items[currentIndex - 1];
+    if (prevItem.mastery !== undefined) {
+      setFeedback({ itemId: prevItem.itemId, aiFeedback: prevItem.aiFeedback || '', mastery: prevItem.mastery });
+      setAnswer(prevItem.userAnswer || '');
+    } else {
+      setAnswer('');
+      setFeedback(null);
+    }
+  };
+
+  const handleJumpToItem = (index: number) => {
+    if (!session) return;
+    setCurrentIndex(index);
+    const item = session.items[index];
+    if (item.mastery !== undefined) {
+      setFeedback({ itemId: item.itemId, aiFeedback: item.aiFeedback || '', mastery: item.mastery });
+      setAnswer(item.userAnswer || '');
+    } else {
+      setAnswer('');
+      setFeedback(null);
     }
   };
 
@@ -153,7 +221,6 @@ export const ReviewPage = view(() => {
       setFinalScore(res.data.score);
       setFinalSession(res.data);
       setStep('summary');
-      // Refresh history
       loadHistory();
     }
   };
@@ -285,28 +352,74 @@ export const ReviewPage = view(() => {
 
               {step === 'quiz' && session && currentItem && (
                 <div className="space-y-4">
-                  {/* Progress */}
+                  {/* Progress Bar */}
                   <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-4">
                     <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400 mb-2">
-                      <span>第 {currentIndex + 1} / {session.items.length} 题</span>
-                      <span>{Math.round(((currentIndex + 1) / session.items.length) * 100)}%</span>
+                      <span>进度: {answeredCount} / {totalCount}</span>
+                      <span>{Math.round((answeredCount / totalCount) * 100)}%</span>
                     </div>
                     <div className="w-full bg-gray-200 dark:bg-dark-700 rounded-full h-2">
                       <div
                         className="bg-primary-600 h-2 rounded-full transition-all"
-                        style={{ width: `${((currentIndex + 1) / session.items.length) * 100}%` }}
+                        style={{ width: `${(answeredCount / totalCount) * 100}%` }}
                       />
+                    </div>
+                    {/* Question dots */}
+                    <div className="flex justify-center gap-1 mt-3 flex-wrap">
+                      {session.items.map((item, idx) => {
+                        const status = getItemStatus(item);
+                        return (
+                          <button
+                            key={item.itemId}
+                            onClick={() => handleJumpToItem(idx)}
+                            className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
+                              idx === currentIndex
+                                ? 'ring-2 ring-primary-500 ring-offset-1'
+                                : ''
+                            } ${
+                              status === 'remembered' ? 'bg-green-100 dark:bg-green-900/30' :
+                              status === 'fuzzy' ? 'bg-yellow-100 dark:bg-yellow-900/30' :
+                              status === 'forgot' ? 'bg-red-100 dark:bg-red-900/30' :
+                              'bg-gray-100 dark:bg-dark-700'
+                            }`}
+                            title={`第${idx + 1}题`}
+                          >
+                            {status === 'remembered' ? (
+                              <CheckCircle className="w-3 h-3 text-green-600 dark:text-green-400" />
+                            ) : status === 'fuzzy' ? (
+                              <Circle className="w-3 h-3 text-yellow-600 dark:text-yellow-400" />
+                            ) : status === 'forgot' ? (
+                              <XCircle className="w-3 h-3 text-red-600 dark:text-red-400" />
+                            ) : (
+                              <span className="text-xs text-gray-500 dark:text-gray-400">{idx + 1}</span>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
-                  {/* Original Memo Content */}
-                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
-                    <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2">
-                      原始笔记
-                    </h3>
-                    <p className="text-sm text-blue-700 dark:text-blue-400 whitespace-pre-wrap line-clamp-6">
-                      {currentItem.memoContent || '暂无内容'}
-                    </p>
+                  {/* Navigation */}
+                  <div className="flex items-center justify-between">
+                    <button
+                      onClick={handlePrev}
+                      disabled={currentIndex === 0}
+                      className="flex items-center gap-1 px-3 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      上一题
+                    </button>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      第 {currentIndex + 1} / {session.items.length} 题
+                    </span>
+                    <button
+                      onClick={handleNext}
+                      disabled={currentIndex + 1 >= session.items.length && !session.items[currentIndex]?.mastery}
+                      className="flex items-center gap-1 px-3 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {currentIndex + 1 >= session.items.length ? '完成' : '下一题'}
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
                   </div>
 
                   {/* Question */}
@@ -314,6 +427,18 @@ export const ReviewPage = view(() => {
                     <p className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
                       {currentItem.question}
                     </p>
+
+                    {/* Original Memo Content - only show after answering */}
+                    {feedback && (
+                      <div className="mb-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+                        <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2">
+                          原始笔记
+                        </h3>
+                        <p className="text-sm text-blue-700 dark:text-blue-400 whitespace-pre-wrap">
+                          {currentItem.memoContent || '暂无内容'}
+                        </p>
+                      </div>
+                    )}
 
                     {!feedback ? (
                       <>
@@ -349,7 +474,7 @@ export const ReviewPage = view(() => {
                         <div className="text-sm bg-gray-50 dark:bg-dark-700 rounded-lg p-3 text-gray-700 dark:text-gray-300">
                           {feedback.aiFeedback}
                         </div>
-                        {currentItem.userAnswer && (
+                        {currentItem.userAnswer && currentItem.userAnswer !== '' && (
                           <div className="text-sm border-t border-gray-200 dark:border-dark-700 pt-3 mt-3">
                             <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">你的回答:</p>
                             <p className="text-gray-700 dark:text-gray-300">{currentItem.userAnswer}</p>
