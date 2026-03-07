@@ -1,13 +1,15 @@
 // Mock dependencies
-jest.mock('../services/memo.service', () => ({
-  MemoService: jest.fn().mockImplementation(() => ({
-    listMemos: jest.fn().mockResolvedValue({
-      items: [
-        { memoId: 'm1', content: 'Test memo 1' },
-        { memoId: 'm2', content: 'Test memo 2' },
-      ],
-    }),
-  })),
+const mockMemoService = {
+  getMemos: jest.fn().mockResolvedValue({
+    items: [
+      { memoId: 'm1', content: 'Test memo 1' },
+      { memoId: 'm2', content: 'Test memo 2' },
+    ],
+  }),
+};
+
+jest.mock('../services/memo.service.js', () => ({
+  MemoService: jest.fn().mockImplementation(() => mockMemoService),
 }));
 
 // Mock ChatOpenAI
@@ -18,7 +20,7 @@ jest.mock('@langchain/openai', () => ({
 }));
 
 // Mock config
-jest.mock('../config/config', () => ({
+jest.mock('../config/config.js', () => ({
   config: {
     openai: {
       model: 'gpt-4o-mini',
@@ -28,13 +30,13 @@ jest.mock('../config/config', () => ({
   },
 }));
 
-import { ReviewService } from '../services/review.service';
+import { ReviewService } from '../services/review.service.js';
 
 describe('ReviewService', () => {
   let service: ReviewService;
 
   beforeEach(() => {
-    service = new ReviewService();
+    service = new ReviewService({} as any);
   });
 
   describe('calculateScore', () => {
