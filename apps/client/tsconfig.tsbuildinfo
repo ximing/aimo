@@ -1,1 +1,1 @@
-{"root":["./src/main/index.ts","./src/preload/index.ts"],"version":"5.9.3"}
+{"root":["./src/main/constants.ts","./src/main/index.ts","./src/main/ipc-handlers.ts","./src/main/menu-manager.ts","./src/main/shared-state.ts","./src/main/shortcut-manager.ts","./src/main/tray-manager.ts","./src/main/updater.ts","./src/main/window-manager.ts","./src/main/window-state.ts","./src/preload/index.ts"],"version":"5.9.3"}
