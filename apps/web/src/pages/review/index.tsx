@@ -3,7 +3,7 @@ import { view } from '@rabjs/react';
 import { Layout } from '../../components/layout';
 import * as reviewApi from '../../api/review';
 import type { ReviewSessionDto, SubmitAnswerResponseDto, CompleteSessionResponseDto, ReviewHistoryItemDto, ReviewItemDto } from '@aimo/dto';
-import { Brain, Clock, Loader2, ChevronLeft, ChevronRight, CheckCircle, Circle, XCircle } from 'lucide-react';
+import { Brain, Clock, Loader2, ChevronLeft, ChevronRight, CheckCircle, Circle, XCircle, Plus } from 'lucide-react';
 
 type Step = 'setup' | 'quiz' | 'summary';
 type Scope = 'all' | 'category' | 'tag' | 'recent';
@@ -64,9 +64,51 @@ export const ReviewPage = view(() => {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [selectedHistorySession, setSelectedHistorySession] = useState<string | null>(null);
 
-  // Load history on mount
+  const STORAGE_KEY = 'aimo-review-session';
+
+  // Load history and restore selected session on mount
   useEffect(() => {
     loadHistory();
+    // Restore last selected session from localStorage
+    const savedSessionId = localStorage.getItem(STORAGE_KEY);
+    if (savedSessionId) {
+      // Restore session directly without triggering localStorage save again
+      const restoreSession = async () => {
+        setLoading(true);
+        setSelectedHistorySession(savedSessionId);
+        try {
+          const res = await reviewApi.getReviewSession(savedSessionId);
+          if (res.code === 0 && res.data) {
+            const firstUnanswered = res.data.items.findIndex(item => item.mastery === undefined);
+            if (res.data.status === 'completed') {
+              setSession(res.data);
+              setStep('summary');
+              setFinalScore(res.data.score ?? 0);
+              setFinalSession({
+                sessionId: res.data.sessionId,
+                score: res.data.score ?? 0,
+                items: res.data.items,
+              });
+            } else if (firstUnanswered !== -1) {
+              setSession(res.data);
+              setStep('quiz');
+              setCurrentIndex(firstUnanswered);
+              setAnswer('');
+              setFeedback(null);
+            } else {
+              setSession(res.data);
+              setStep('quiz');
+              setCurrentIndex(0);
+              setAnswer('');
+              setFeedback(null);
+            }
+          }
+        } finally {
+          setLoading(false);
+        }
+      };
+      restoreSession();
+    }
   }, []);
 
   const loadHistory = async () => {
@@ -95,7 +137,9 @@ export const ReviewPage = view(() => {
         setCurrentIndex(0);
         setAnswer('');
         setFeedback(null);
-        setSelectedHistorySession(null);
+        const newSessionId = res.data.sessionId;
+        setSelectedHistorySession(newSessionId);
+        localStorage.setItem(STORAGE_KEY, newSessionId);
         loadHistory();
       }
     } finally {
@@ -106,6 +150,8 @@ export const ReviewPage = view(() => {
   const handleSelectHistorySession = async (sessionId: string) => {
     setLoading(true);
     setSelectedHistorySession(sessionId);
+    // Save to localStorage
+    localStorage.setItem(STORAGE_KEY, sessionId);
     try {
       const res = await reviewApi.getReviewSession(sessionId);
       if (res.code === 0 && res.data) {
@@ -248,6 +294,14 @@ export const ReviewPage = view(() => {
                 </div>
                 <h1 className="text-base font-semibold text-gray-900 dark:text-gray-50">知识回顾</h1>
               </div>
+              <button
+                onClick={handleStart}
+                disabled={loading}
+                className="p-2 text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors disabled:opacity-50"
+                title="新建回顾"
+              >
+                <Plus className="w-5 h-5" />
+              </button>
             </div>
           </div>
 
