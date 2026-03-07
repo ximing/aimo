@@ -2,6 +2,23 @@
 Started: 2026年 2月15日 星期日 23时33分46秒 CST
 ---
 
+## 2026-03-08 - SR US-009
+- Added `getDueCardsForAllSREnabledUsers()` to SpacedRepetitionService: queries all SR-enabled users, fetches their due cards (nextReviewAt <= now), groups by userId with srDailyLimit
+- Added `registerSpacedRepetitionPushTask()` to SchedulerService: registers daily 08:00 cron task
+- Added `sendSpacedRepetitionPush()` to SchedulerService: processes due cards per user, sends via external channels (Feishu/Meow) if push rules configured, always creates in-app notifications (type='spaced_repetition')
+- Push content format: `📚 复习提醒：《{memo.title}》\n{memo.content前100字}\n查看笔记：{appBaseUrl}/review`
+- All 30 tests pass, typecheck passes
+- Files changed:
+  - apps/server/src/services/spaced-repetition.service.ts (added getDueCardsForAllSREnabledUsers)
+  - apps/server/src/services/scheduler.service.ts (added SR push task + sendSpacedRepetitionPush)
+- **Learnings for future iterations:**
+  - `inArray()` from drizzle-orm is used for `WHERE col IN (...)` queries — import from 'drizzle-orm'
+  - When DB query returns a column with ambiguous type, use explicit `Map<string, number>` typing + `as number` cast
+  - SchedulerService injects services via `@Inject()` decorator — add new services to constructor params
+  - The appBaseUrl for push links comes from `config.cors.origin[0]`
+  - Push rules are fetched per-user via `pushRuleService.findByUid(userId)` — filter by `enabled` flag
+---
+
 ## 2026-03-08 - SR US-008
 - Created apps/server/src/services/notification.service.ts with NotificationService (@Service() decorated)
 - Implemented getNotifications(userId): returns 50 most recent notifications, sorted by createdAt desc
