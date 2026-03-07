@@ -6,10 +6,8 @@ import { config } from '../config/config.js';
 import { UserService } from '../services/user.service.js';
 import { logger } from '../utils/logger.js';
 
-import type { UserInfoDto } from '@aimo/dto';
-
 // Paths that require authentication
-const PROTECTED_PATHS = ['/api', '/home', '/ai-explore', '/gallery', '/settings'];
+// const PROTECTED_PATHS = ['/api', '/home', '/ai-explore', '/gallery', '/settings'];
 
 // Paths that don't require authentication even if they match protected prefixes
 const AUTH_EXCLUDED_PATHS = [
@@ -30,8 +28,9 @@ const requiresAuth = (path: string): boolean => {
   if (AUTH_EXCLUDED_PATHS.some((excluded) => path === excluded || path.startsWith(excluded))) {
     return false;
   }
+  return true;
   // Then check if path requires authentication
-  return PROTECTED_PATHS.some((prefix) => path.startsWith(prefix));
+  // return PROTECTED_PATHS.some((prefix) => path.startsWith(prefix));
 };
 
 /**

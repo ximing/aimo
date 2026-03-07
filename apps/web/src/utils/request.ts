@@ -18,15 +18,11 @@ const request: AxiosInstance = axios.create({
 
 /**
  * Request interceptor
- * Add token to headers if available and serialize Date objects to timestamps
+ * Serialize Date objects to timestamps
  */
 request.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // Get token from localStorage
-    const token = localStorage.getItem('aimo_token');
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    // Token is handled by HTTP Only Cookie, no need to add Authorization header manually
 
     // Serialize Date objects in query parameters to timestamps
     if (config.params) {
@@ -62,7 +58,6 @@ request.interceptors.response.use(
       switch (status) {
         case 401: {
           // Unauthorized - clear auth data and redirect to login
-          localStorage.removeItem('aimo_token');
           localStorage.removeItem('aimo_user');
 
           // Only redirect if not already on auth page (check both pathname and hash for compatibility)

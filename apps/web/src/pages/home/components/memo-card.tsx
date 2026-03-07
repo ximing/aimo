@@ -28,6 +28,7 @@ import { downloadFileFromUrl } from '../../../utils/download';
 import { toast } from '../../../services/toast.service';
 import { AudioItem } from './audio-item';
 import { AIToolsService } from '../../../services/ai-tools.service';
+import videoPlaceholder from '../../../assets/icons/video.webp';
 
 interface MemoCardProps {
   memo: MemoListItemDto | MemoListItemWithScoreDto;
@@ -232,14 +233,10 @@ export const MemoCard = view(({ memo, onQuote }: MemoCardProps) => {
                 ) : isVideo ? (
                   <>
                     <img
-                      src={attachment.coverUrl || ''}
+                      src={attachment.coverUrl || videoPlaceholder}
                       alt={attachment.filename}
                       className="w-full h-full object-cover"
                       loading="lazy"
-                      onError={(e) => {
-                        // Hide the img element if coverUrl is invalid or empty
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
                     />
                     {/* Show film icon as fallback when no valid cover */}
                     <div className="absolute inset-0 flex items-center justify-center">

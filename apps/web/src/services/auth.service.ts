@@ -12,10 +12,10 @@ import * as userApi from '../api/user';
 /**
  * Authentication Service
  * Manages user authentication state and operations
+ * Uses HTTP Only Cookie for token authentication
  */
 export class AuthService extends Service {
   // State
-  token: string | null = null;
   user: UserInfoDto | null = null;
   isAuthenticated = false;
 
@@ -29,12 +29,10 @@ export class AuthService extends Service {
    * Load authentication state from localStorage
    */
   loadAuthState() {
-    const savedToken = localStorage.getItem('aimo_token');
     const savedUser = localStorage.getItem('aimo_user');
 
-    if (savedToken && savedUser) {
+    if (savedUser) {
       try {
-        this.token = savedToken;
         this.user = JSON.parse(savedUser);
         this.isAuthenticated = true;
       } catch (error) {
@@ -46,13 +44,13 @@ export class AuthService extends Service {
 
   /**
    * Save authentication state to localStorage
+   * Note: Token is stored in HTTP Only Cookie, only user info is saved here
    */
   saveAuthState(token: string, user: UserInfoDto) {
-    this.token = token;
     this.user = user;
     this.isAuthenticated = true;
 
-    localStorage.setItem('aimo_token', token);
+    // Only save user info to localStorage (token is in HTTP Only Cookie)
     localStorage.setItem('aimo_user', JSON.stringify(user));
   }
 
@@ -60,11 +58,9 @@ export class AuthService extends Service {
    * Clear authentication state
    */
   clearAuthState() {
-    this.token = null;
     this.user = null;
     this.isAuthenticated = false;
 
-    localStorage.removeItem('aimo_token');
     localStorage.removeItem('aimo_user');
   }
 
@@ -128,10 +124,6 @@ export class AuthService extends Service {
    * Check if user is authenticated and fetch user info
    */
   async checkAuth() {
-    if (!this.token) {
-      return false;
-    }
-
     try {
       const response = await userApi.getUserInfo();
 
