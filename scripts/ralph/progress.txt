@@ -2,6 +2,48 @@
 Started: 2026年 2月15日 星期日 23时33分46秒 CST
 ---
 
+## 2026-03-08 - SR US-008
+- Created apps/server/src/services/notification.service.ts with NotificationService (@Service() decorated)
+- Implemented getNotifications(userId): returns 50 most recent notifications, sorted by createdAt desc
+- Implemented markAsRead(notificationId, userId): verifies ownership, updates isRead=true, returns false if not found
+- Implemented getUnreadCount(userId): uses sql<number>`count(*)` aggregate query
+- Implemented createNotification(params): generates `notif` prefix ID, inserts and returns new record
+- Created apps/server/src/controllers/v1/notification.controller.ts with 3 endpoints
+- Added NOTIFICATION to OBJECT_TYPE constant and generateTypeId (generates `notif` prefix IDs)
+- Registered NotificationController in controllers/index.ts
+- All 30 tests pass, typecheck passes
+- Files changed:
+  - apps/server/src/services/notification.service.ts (new)
+  - apps/server/src/controllers/v1/notification.controller.ts (new)
+  - apps/server/src/controllers/index.ts (added NotificationController)
+  - apps/server/src/models/constant/type.ts (added NOTIFICATION)
+  - apps/server/src/utils/id.ts (added NOTIFICATION case generating `notif` prefix)
+- **Learnings for future iterations:**
+  - Notification IDs use `notif` prefix (e.g., `notif` + 23-char nanoid)
+  - GET /unread-count must be registered BEFORE /:id/read route to avoid route conflict (routing-controllers resolves routes in order)
+  - sql<number>`count(*)` template returns a string from MySQL — wrap with Number() for correct type
+  - Ownership check pattern: SELECT first, then UPDATE — avoids updating wrong user's records
+---
+
+## 2026-03-08 - SR US-007
+- Created apps/server/src/db/schema/in-app-notifications.ts with inAppNotifications table
+- Table fields: notificationId (PK), userId, type, title, body (TEXT), memoId (nullable), isRead (BOOLEAN DEFAULT false), createdAt
+- Added indexes: ian_user_id_idx on userId, ian_user_created_at_idx on (userId, createdAt)
+- Exported from apps/server/src/db/schema/index.ts
+- Generated migration: drizzle/0008_jazzy_stick.sql
+- Build and typecheck pass
+- Files changed:
+  - apps/server/src/db/schema/in-app-notifications.ts (new)
+  - apps/server/src/db/schema/index.ts (added export)
+  - apps/server/drizzle/0008_jazzy_stick.sql (generated migration)
+  - apps/server/drizzle/meta/_journal.json (updated)
+  - apps/server/drizzle/meta/0008_snapshot.json (new)
+- **Learnings for future iterations:**
+  - Index naming: use table prefix abbreviations (e.g., `ian_` for in_app_notifications) to avoid conflicts across tables
+  - TEXT columns use `text('col_name')` in Drizzle (no length parameter needed)
+  - Nullable columns: simply omit `.notNull()` — Drizzle treats columns as nullable by default
+---
+
 ## 2026-03-08 - SR US-006
 - Added GET /api/v1/spaced-repetition/due endpoint to SpacedRepetitionController
 - Added POST /api/v1/spaced-repetition/cards/:cardId/review endpoint
