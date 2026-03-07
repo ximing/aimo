@@ -13,6 +13,7 @@ import AIExplorePage from './pages/ai-explore';
 import GalleryPage from './pages/gallery';
 import SharePage from './pages/share';
 import NotFoundPage from './pages/not-found';
+import ReviewPage from './pages/review';
 import { ProtectedRoute } from './components/protected-route';
 import { ToastContainer } from './components/toast';
 import { setNavigate } from './utils/navigation';
@@ -95,6 +96,14 @@ function App() {
           }
         />
         <Route path="/share/:memoId" element={<SharePage />} />
+        <Route
+          path="/review"
+          element={
+            <ProtectedRoute>
+              <ReviewPage />
+            </ProtectedRoute>
+          }
+        />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Router>
