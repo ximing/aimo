@@ -1,6 +1,6 @@
 import { customAlphabet } from 'nanoid';
 
-import { OBJECT_TYPE } from '../models/constant/type';
+import { OBJECT_TYPE } from '../models/constant/type.js';
 const typeid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 23);
 
 export const generateUid = () => {
