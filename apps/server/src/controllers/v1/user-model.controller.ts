@@ -58,7 +58,7 @@ export class UserModelController {
   @Post('/test')
   async testModel(@CurrentUser() userDto: UserInfoDto, @Body() testData: CreateUserModelDto) {
     try {
-      if (!userDto?.id) {
+      if (!userDto?.uid) {
         return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
       }
 
@@ -154,7 +154,7 @@ export class UserModelController {
   @Post('/')
   async createModel(@CurrentUser() userDto: UserInfoDto, @Body() createData: CreateUserModelDto) {
     try {
-      if (!userDto?.id) {
+      if (!userDto?.uid) {
         return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
       }
 
@@ -175,7 +175,7 @@ export class UserModelController {
         return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'Model name is required');
       }
 
-      const model = await this.userModelService.createModel(userDto.id, {
+      const model = await this.userModelService.createModel(userDto.uid, {
         name: createData.name.trim(),
         provider: createData.provider,
         apiBaseUrl: createData.apiBaseUrl,
@@ -197,11 +197,11 @@ export class UserModelController {
   @Get('/')
   async getModels(@CurrentUser() userDto: UserInfoDto) {
     try {
-      if (!userDto?.id) {
+      if (!userDto?.uid) {
         return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
       }
 
-      const models = await this.userModelService.getModels(userDto.id);
+      const models = await this.userModelService.getModels(userDto.uid);
       const modelDtos = models.map(convertToDto);
 
       const response: UserModelListDto = {
@@ -221,11 +221,11 @@ export class UserModelController {
   @Get('/:id')
   async getModel(@CurrentUser() userDto: UserInfoDto, @Param('id') id: string) {
     try {
-      if (!userDto?.id) {
+      if (!userDto?.uid) {
         return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
       }
 
-      const model = await this.userModelService.getModel(id, userDto.id);
+      const model = await this.userModelService.getModel(id, userDto.uid);
       if (!model) {
         return ResponseUtility.error(ErrorCode.NOT_FOUND, 'Model not found');
       }
@@ -247,7 +247,7 @@ export class UserModelController {
     @Body() updateData: UpdateUserModelDto
   ) {
     try {
-      if (!userDto?.id) {
+      if (!userDto?.uid) {
         return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
       }
 
@@ -256,7 +256,7 @@ export class UserModelController {
         return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'No fields to update');
       }
 
-      const updatedModel = await this.userModelService.updateModel(id, userDto.id, updateData);
+      const updatedModel = await this.userModelService.updateModel(id, userDto.uid, updateData);
       if (!updatedModel) {
         return ResponseUtility.error(ErrorCode.NOT_FOUND, 'Model not found');
       }
@@ -274,11 +274,11 @@ export class UserModelController {
   @Delete('/:id')
   async deleteModel(@CurrentUser() userDto: UserInfoDto, @Param('id') id: string) {
     try {
-      if (!userDto?.id) {
+      if (!userDto?.uid) {
         return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
       }
 
-      const deleted = await this.userModelService.deleteModel(id, userDto.id);
+      const deleted = await this.userModelService.deleteModel(id, userDto.uid);
       if (!deleted) {
         return ResponseUtility.error(ErrorCode.NOT_FOUND, 'Model not found');
       }
@@ -296,11 +296,11 @@ export class UserModelController {
   @Patch('/:id/set-default')
   async setDefault(@CurrentUser() userDto: UserInfoDto, @Param('id') id: string) {
     try {
-      if (!userDto?.id) {
+      if (!userDto?.uid) {
         return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
       }
 
-      const updatedModel = await this.userModelService.setDefaultModel(id, userDto.id);
+      const updatedModel = await this.userModelService.setDefaultModel(id, userDto.uid);
       if (!updatedModel) {
         return ResponseUtility.error(ErrorCode.NOT_FOUND, 'Model not found');
       }

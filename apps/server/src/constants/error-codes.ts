@@ -28,6 +28,9 @@ export const ErrorCode = {
   ATTACHMENT_NOT_FOUND: 4002,
   STORAGE_ERROR: 4003,
   FILE_UPLOAD_ERROR: 4004,
+
+  // 外部服务相关错误: 5000-5999
+  EXTERNAL_SERVICE_ERROR: 5000,
 } as const;
 
 export const ErrorMessage = {
@@ -51,4 +54,5 @@ export const ErrorMessage = {
   [ErrorCode.ATTACHMENT_NOT_FOUND]: '附件不存在',
   [ErrorCode.STORAGE_ERROR]: '存储错误',
   [ErrorCode.FILE_UPLOAD_ERROR]: '文件上传失败',
+  [ErrorCode.EXTERNAL_SERVICE_ERROR]: '外部服务错误',
 } as const;
