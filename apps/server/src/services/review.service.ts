@@ -22,6 +22,7 @@ import type {
   CompleteSessionResponseDto,
   ReviewHistoryItemDto,
   MasteryLevel,
+  MemoSearchOptionsDto,
 } from '@aimo/dto';
 
 @Service()
@@ -151,14 +152,14 @@ export class ReviewService {
   }
 
   private async selectMemos(uid: string, scope: string, scopeValue?: string, count: number = 7) {
-    const options: any = { uid, limit: 50, page: 1 };
+    const options: MemoSearchOptionsDto = { uid, limit: 50, page: 1 };
     if (scope === 'category' && scopeValue) options.categoryId = scopeValue;
     if (scope === 'tag' && scopeValue) options.tags = [scopeValue];
     if (scope === 'recent' && scopeValue) {
       const days = parseInt(scopeValue, 10) || 7;
       options.startDate = new Date(Date.now() - days * 86400000);
     }
-    const result = await this.memoService.listMemos(options);
+    const result = await this.memoService.getMemos(options);
     const all = result.items;
     // Shuffle and pick count
     for (let i = all.length - 1; i > 0; i--) {
