@@ -1,4 +1,4 @@
-import { mysqlTable, varchar, int, bigint, timestamp, index } from 'drizzle-orm/mysql-core';
+import { mysqlTable, varchar, int, bigint, timestamp, index, boolean } from 'drizzle-orm/mysql-core';
 
 /**
  * Users table - stores user account information
@@ -16,6 +16,8 @@ export const users = mysqlTable(
     avatar: varchar('avatar', { length: 500 }),
     status: int('status').notNull().default(1),
     deletedAt: bigint('deleted_at', { mode: 'number' }).notNull().default(0),
+    srEnabled: boolean('sr_enabled').notNull().default(false),
+    srDailyLimit: int('sr_daily_limit').notNull().default(5),
     createdAt: timestamp('created_at', { mode: 'date', fsp: 3 }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { mode: 'date', fsp: 3 })
       .notNull()
