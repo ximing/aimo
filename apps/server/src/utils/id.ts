@@ -1,6 +1,6 @@
 import { customAlphabet } from 'nanoid';
 
-import { OBJECT_TYPE } from '../models/constant/type.js';
+import { OBJECT_TYPE } from '../models/constant/type';
 const typeid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 23);
 
 export const generateUid = () => {
@@ -63,6 +63,12 @@ export const generateTypeId = (type: (typeof OBJECT_TYPE)[keyof typeof OBJECT_TY
     }
     case OBJECT_TYPE.PUSH_RULE: {
       return `push${typeid()}`;
+    }
+    case OBJECT_TYPE.REVIEW_SESSION: {
+      return `rev${typeid()}`;
+    }
+    case OBJECT_TYPE.REVIEW_ITEM: {
+      return `ri${typeid()}`;
     }
   }
   throw new Error(`Invalid type: ${type}`);

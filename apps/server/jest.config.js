@@ -6,6 +6,7 @@ export default {
   collectCoverageFrom: ['src/**/*.ts', '!src/**/*.d.ts', '!src/**/__tests__/**'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    '^nanoid$': '<rootDir>/__mocks__/nanoid.js',
   },
   transform: {
     '^.+\\.tsx?$': [
