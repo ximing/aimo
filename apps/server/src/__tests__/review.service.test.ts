@@ -28,7 +28,7 @@ jest.mock('../config/config', () => ({
   },
 }));
 
-import { ReviewService } from '../services/review.service';
+import { ReviewService } from '../services/review.service.js';
 
 describe('ReviewService', () => {
   let service: ReviewService;
