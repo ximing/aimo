@@ -146,7 +146,7 @@ export const ReviewPage = view(() => {
     setLoading(true);
     try {
       const item = session.items[currentIndex];
-      const answerText = skipAnswer ? '' : answer;
+      const answerText = skipAnswer ? '我忘记了' : answer;
       const res = await reviewApi.submitAnswer(session.sessionId, { itemId: item.itemId, answer: answerText });
       if (res.code === 0) {
         setFeedback(res.data);
