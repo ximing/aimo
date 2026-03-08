@@ -3,7 +3,8 @@ import { useNavigate, useLocation } from 'react-router';
 import { view, useService } from '@rabjs/react';
 import { AuthService } from '../services/auth.service';
 import { ThemeService } from '../services/theme.service';
-import { Zap, Sun, Moon, LogOut, Settings, Sparkles, Images, Brain } from 'lucide-react';
+import { NotificationService } from '../services/notification.service';
+import { Zap, Sun, Moon, LogOut, Settings, Sparkles, Images, Brain, Bell } from 'lucide-react';
 import logoUrl from '../assets/logo.png';
 import logoDarkUrl from '../assets/logo-dark.png';
 import { isElectron, isMacOS } from '../electron/isElectron';
@@ -15,10 +16,13 @@ interface LayoutProps {
 export const Layout = view(({ children }: LayoutProps) => {
   const authService = useService(AuthService);
   const themeService = useService(ThemeService);
+  const notificationService = useService(NotificationService);
   const navigate = useNavigate();
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const notificationRef = useRef<HTMLDivElement>(null);
 
   // Check active routes
   const isHomePage = location.pathname === '/home';
@@ -33,13 +37,27 @@ export const Layout = view(({ children }: LayoutProps) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsMenuOpen(false);
       }
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setIsNotificationOpen(false);
+      }
     };
 
-    if (isMenuOpen) {
+    if (isMenuOpen || isNotificationOpen) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [isMenuOpen]);
+  }, [isMenuOpen, isNotificationOpen]);
+
+  // Start polling for notifications on mount
+  useEffect(() => {
+    notificationService.fetchUnreadCount();
+    notificationService.fetchNotifications();
+    notificationService.startPolling(60000);
+
+    return () => {
+      notificationService.stopPolling();
+    };
+  }, [notificationService]);
 
   const handleThemeToggle = () => {
     themeService.toggleTheme();
@@ -194,6 +212,81 @@ export const Layout = view(({ children }: LayoutProps) => {
           >
             {themeService.isDark() ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </button>
+
+          {/* Notification Bell Button */}
+          <div className="relative" ref={notificationRef}>
+            <button
+              onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+              className="w-12 h-12 rounded-lg flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors"
+              title="通知"
+              aria-label="通知"
+              aria-expanded={isNotificationOpen}
+            >
+              <Bell className="w-5 h-5" />
+              {notificationService.unreadCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-dark-800" />
+              )}
+            </button>
+
+            {/* Notification Dropdown */}
+            {isNotificationOpen && (
+              <div className="absolute left-full ml-2 bottom-0 w-80 max-h-96 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg shadow-lg z-50 overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-200 dark:border-dark-700 flex items-center justify-between">
+                  <p className="font-medium text-gray-900 dark:text-white text-sm">通知</p>
+                  {notificationService.unreadCount > 0 && (
+                    <span className="text-xs text-red-500">{notificationService.unreadCount} 未读</span>
+                  )}
+                </div>
+                <div className="overflow-y-auto max-h-80">
+                  {notificationService.notifications.length === 0 ? (
+                    <p className="px-4 py-6 text-sm text-gray-500 dark:text-gray-400 text-center">
+                      暂无通知
+                    </p>
+                  ) : (
+                    notificationService.notifications.slice(0, 50).map((notification) => (
+                      <button
+                        key={notification.notificationId}
+                        onClick={async () => {
+                          if (!notification.isRead) {
+                            await notificationService.markAsRead(notification.notificationId);
+                          }
+                          if (notification.memoId) {
+                            navigate(`/home?memo=${notification.memoId}`);
+                          } else {
+                            navigate('/review');
+                          }
+                          setIsNotificationOpen(false);
+                        }}
+                        className={`w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors flex flex-col gap-1 ${
+                          !notification.isRead ? 'bg-primary-50 dark:bg-primary-900/10' : ''
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-sm font-medium text-gray-900 dark:text-white line-clamp-1">
+                            {notification.title}
+                          </p>
+                          {!notification.isRead && (
+                            <span className="w-2 h-2 bg-primary-500 rounded-full flex-shrink-0 mt-1.5" />
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
+                          {notification.body}
+                        </p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">
+                          {new Date(notification.createdAt).toLocaleString('zh-CN', {
+                            month: 'numeric',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </p>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* User Menu */}
           <div className="relative w-full" ref={menuRef}>

@@ -22,5 +22,17 @@
 - Verified in browser at /review
 - Updated PRD passes: true
 
-Next: US-013 (前端 — 导航栏站内通知入口) is the highest priority remaining story
+## 2026-03-08 - US-013
+- Implemented US-013 (前端 — 导航栏站内通知入口)
+- Added notification bell button to layout sidebar
+- Red dot indicator shows when there are unread notifications
+- Dropdown shows recent 50 notifications with title, body, time, read/unread status
+- Click notification to navigate to memo or /review and mark as read
+- Polling for unread count every 60 seconds + on visibilitychange
+- Registered NotificationService in main.tsx
+- Typecheck passes, lint passes (no errors)
+- Verified in browser at /home - dropdown shows "暂无通知" (no notifications yet)
+- Updated PRD passes: true
+
+Next: US-014 (后端 — 通知 API) is the highest priority remaining story
 ---
