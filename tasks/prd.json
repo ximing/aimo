@@ -197,6 +197,37 @@
     },
     {
       "id": "US-013",
+      "title": "后端 — 历史 Memo 批量迁移 API",
+      "description": "As a user, I want to trigger a one-time import of my existing memos into the spaced repetition pool so I don't miss historical notes.",
+      "acceptanceCriteria": [
+        "POST /api/v1/spaced-repetition/import-existing 触发批量迁移，需 JWT 认证",
+        "遍历当前用户所有 Memo，对每条 Memo 执行 createCardIfEligible（复用过滤规则逻辑，已有卡片的 Memo 跳过）",
+        "nextReviewAt 设为明天 08:00（与新建 Memo 一致）",
+        "返回结果：{ imported: number, skipped: number }（imported=新建卡片数，skipped=已有卡片或被规则排除数）",
+        "Typecheck passes"
+      ],
+      "priority": 13,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-014",
+      "title": "前端 — Settings 页面历史 Memo 迁移入口",
+      "description": "As a user, I want a button in Settings to import my existing memos into the review pool so I can start reviewing historical notes.",
+      "acceptanceCriteria": [
+        "Settings SR 区块内新增「导入历史笔记」按钮，仅在 srEnabled=true 时可点击",
+        "点击后弹出确认 dialog：「将把所有符合过滤规则的现有笔记加入复习池，已在复习池中的笔记不受影响，确认导入？」",
+        "确认后调用 POST /api/v1/spaced-repetition/import-existing，显示 loading 状态",
+        "完成后显示结果提示：「已导入 X 条笔记，跳过 Y 条（已在复习池或被规则排除）」",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 14,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-015",
       "title": "前端 — 导航栏站内通知入口",
       "description": "As a user, I want to see in-app notifications for review reminders in the nav bar so I can access them without external push channels.",
       "acceptanceCriteria": [
@@ -206,7 +237,7 @@
         "页面加载及每60秒（或 visibilitychange 时）调用 GET /api/v1/notifications/unread-count 刷新未读数",
         "Typecheck passes"
       ],
-      "priority": 13,
+      "priority": 15,
       "passes": true,
       "notes": ""
     }

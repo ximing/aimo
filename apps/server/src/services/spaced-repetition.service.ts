@@ -481,4 +481,75 @@ export class SpacedRepetitionService {
       );
     return true;
   }
+
+  /**
+   * Import all existing memos for a user into the SR pool.
+   * Returns the count of imported and skipped memos.
+   */
+  async importExistingMemos(userId: string): Promise<{ imported: number; skipped: number }> {
+    const db = getDatabase();
+
+    // Get all non-deleted memos for this user
+    const userMemos = await db
+      .select({ memoId: memos.memoId })
+      .from(memos)
+      .where(and(eq(memos.uid, userId), eq(memos.deletedAt, 0)));
+
+    let imported = 0;
+    let skipped = 0;
+
+    for (const memo of userMemos) {
+      try {
+        const eligible = await this.isMemoEligible(userId, memo.memoId);
+
+        if (!eligible) {
+          skipped++;
+          continue;
+        }
+
+        // Check if card already exists
+        const existing = await db
+          .select({ cardId: spacedRepetitionCards.cardId })
+          .from(spacedRepetitionCards)
+          .where(
+            and(
+              eq(spacedRepetitionCards.userId, userId),
+              eq(spacedRepetitionCards.memoId, memo.memoId)
+            )
+          )
+          .limit(1);
+
+        if (existing.length > 0) {
+          skipped++;
+          continue;
+        }
+
+        // Create new card with nextReviewAt = tomorrow 08:00
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(8, 0, 0, 0);
+
+        const cardId = generateTypeId(OBJECT_TYPE.REVIEW_ITEM);
+
+        await db.insert(spacedRepetitionCards).values({
+          cardId,
+          userId,
+          memoId: memo.memoId,
+          easeFactor: 2.5,
+          interval: 1,
+          repetitions: 0,
+          nextReviewAt: tomorrow,
+        });
+
+        imported++;
+        logger.info('Imported SR card from existing memo:', { cardId, userId, memoId: memo.memoId });
+      } catch (error) {
+        logger.error('Error importing memo to SR:', { memoId: memo.memoId, error });
+        skipped++;
+      }
+    }
+
+    logger.info('SR import completed:', { userId, imported, skipped });
+    return { imported, skipped };
+  }
 }

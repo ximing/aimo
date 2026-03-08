@@ -311,4 +311,24 @@ export class SpacedRepetitionController {
       return ResponseUtility.error(ErrorCode.DB_ERROR, 'Failed to submit review');
     }
   }
+
+  /**
+   * POST /api/v1/spaced-repetition/import-existing
+   * Import all existing memos into the SR pool
+   */
+  @Post('/import-existing')
+  async importExistingMemos(@CurrentUser() user: UserInfoDto) {
+    try {
+      if (!user?.uid) {
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
+      }
+
+      const result = await this.spacedRepetitionService.importExistingMemos(user.uid);
+
+      return ResponseUtility.success(result);
+    } catch (error) {
+      logger.error('Import existing memos error:', error);
+      return ResponseUtility.error(ErrorCode.DB_ERROR, 'Failed to import existing memos');
+    }
+  }
 }

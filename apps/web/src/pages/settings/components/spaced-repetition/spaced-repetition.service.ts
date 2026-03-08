@@ -7,6 +7,7 @@ export class SpacedRepetitionService extends Service {
   rules: SRRule[] = [];
   loading = false;
   savingSettings = false;
+  importing = false;
   error: string | null = null;
 
   async fetchSettings(): Promise<void> {
@@ -81,6 +82,22 @@ export class SpacedRepetitionService extends Service {
     } catch (e) {
       console.error('Delete SR rule error:', e);
       return { success: false };
+    }
+  }
+
+  async importExistingMemos(): Promise<{ success: boolean; imported?: number; skipped?: number }> {
+    this.importing = true;
+    try {
+      const res = await srApi.importExistingMemos();
+      if (res.code === 0 && res.data) {
+        return { success: true, imported: res.data.imported, skipped: res.data.skipped };
+      }
+      return { success: false };
+    } catch (e) {
+      console.error('Import existing memos error:', e);
+      return { success: false };
+    } finally {
+      this.importing = false;
     }
   }
 }

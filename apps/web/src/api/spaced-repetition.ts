@@ -70,3 +70,8 @@ export const reviewCard = (
     `/api/v1/spaced-repetition/cards/${cardId}/review`,
     { quality }
   );
+
+export const importExistingMemos = () =>
+  request.post<unknown, { code: number; data: { imported: number; skipped: number } }>(
+    '/api/v1/spaced-repetition/import-existing'
+  );

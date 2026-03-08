@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { bindServices, useService } from '@rabjs/react';
-import { BrainCircuit, Plus, Trash2 } from 'lucide-react';
+import { BrainCircuit, Plus, Trash2, Upload } from 'lucide-react';
 import { SpacedRepetitionService } from './spaced-repetition.service';
 import { toast } from '../../../../services/toast.service';
 
 export const SpacedRepetitionSettings = bindServices(() => {
   const srService = useService(SpacedRepetitionService);
-  const { settings, rules, loading, savingSettings } = srService;
+  const { settings, rules, loading, savingSettings, importing } = srService;
   const dailyLimitDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Add rule form state
@@ -73,6 +73,22 @@ export const SpacedRepetitionSettings = bindServices(() => {
     const result = await srService.deleteRule(ruleId);
     if (!result.success) {
       toast.error('删除规则失败');
+    }
+  };
+
+  const handleImportExisting = async () => {
+    if (
+      !confirm(
+        '将把所有符合过滤规则的现有笔记加入复习池，已在复习池中的笔记不受影响，确认导入？'
+      )
+    ) {
+      return;
+    }
+    const result = await srService.importExistingMemos();
+    if (result.success) {
+      toast.success(`已导入 ${result.imported} 条笔记，跳过 ${result.skipped} 条（已在复习池或被规则排除）`);
+    } else {
+      toast.error('导入失败');
     }
   };
 
@@ -162,6 +178,19 @@ export const SpacedRepetitionSettings = bindServices(() => {
             disabled={!settings.srEnabled || savingSettings}
             className="w-32 px-3 py-2 border border-gray-200 dark:border-dark-700 rounded-lg bg-white dark:bg-dark-900 text-gray-900 dark:text-gray-50 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           />
+        </div>
+
+        {/* Import Existing Button */}
+        <div className={settings.srEnabled ? '' : 'opacity-50 pointer-events-none'}>
+          <button
+            type="button"
+            onClick={handleImportExisting}
+            disabled={!settings.srEnabled || importing}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-dark-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-600 transition-colors text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            <Upload className="w-4 h-4" />
+            {importing ? '导入中...' : '导入历史笔记'}
+          </button>
         </div>
       </div>
 
