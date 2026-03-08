@@ -1,0 +1,1 @@
+ALTER TABLE `spaced_repetition_cards` ADD `lapse_count` int DEFAULT 0 NOT NULL;

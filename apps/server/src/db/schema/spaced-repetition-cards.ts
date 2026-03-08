@@ -12,6 +12,7 @@ export const spacedRepetitionCards = mysqlTable(
     easeFactor: float('ease_factor').notNull().default(2.5),
     interval: int('interval').notNull().default(1),
     repetitions: int('repetitions').notNull().default(0),
+    lapseCount: int('lapse_count').notNull().default(0),
     nextReviewAt: timestamp('next_review_at', { mode: 'date', fsp: 3 }).notNull(),
     lastReviewAt: timestamp('last_review_at', { mode: 'date', fsp: 3 }),
     createdAt: timestamp('created_at', { mode: 'date', fsp: 3 }).notNull().defaultNow(),

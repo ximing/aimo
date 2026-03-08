@@ -227,6 +227,7 @@ export class SpacedRepetitionController {
             easeFactor: card.easeFactor,
             interval: card.interval,
             repetitions: card.repetitions,
+            lapseCount: card.lapseCount,
             nextReviewAt: card.nextReviewAt,
           };
         })
@@ -320,6 +321,7 @@ export class SpacedRepetitionController {
           easeFactor: nextReview.easeFactor,
           interval: nextReview.interval,
           repetitions: nextReview.repetitions,
+          lapseCount: nextReview.lapseCount,
           nextReviewAt: nextReview.nextReviewAt,
           lastReviewAt: new Date(),
         }

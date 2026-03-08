@@ -71,6 +71,13 @@
       "when": 1772936243190,
       "tag": "0009_dusty_firelord",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1772954817469,
+      "tag": "0010_mean_barracuda",
+      "breakpoints": true
     }
   ]
 }

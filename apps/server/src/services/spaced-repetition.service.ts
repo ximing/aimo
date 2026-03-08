@@ -19,12 +19,14 @@ export interface SRCardState {
   easeFactor: number;
   interval: number;
   repetitions: number;
+  lapseCount: number;
 }
 
 export interface SRNextReview {
   easeFactor: number;
   interval: number;
   repetitions: number;
+  lapseCount: number;
   nextReviewAt: Date;
 }
 
@@ -41,7 +43,7 @@ export class SpacedRepetitionService {
    * @returns Updated card state with nextReviewAt
    */
   calculateNextReview(card: SRCardState, quality: 1 | 3 | 4 | 5): SRNextReview {
-    let { easeFactor, interval, repetitions } = card;
+    let { easeFactor, interval, repetitions, lapseCount } = card;
 
     // SM-2 standard formula for easeFactor
     // EF' = max(1.3, EF + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02)))
@@ -49,9 +51,10 @@ export class SpacedRepetitionService {
     const newEaseFactor = Math.max(1.3, easeFactor + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02)));
 
     if (quality === 1) {
-      // Forgot: reset repetitions, interval back to 1
+      // Forgot: reset repetitions, interval back to 1, increment lapseCount
       repetitions = 0;
       interval = 1;
+      lapseCount = lapseCount + 1;
     } else {
       // Remembered (quality >= 3): increment repetitions, update interval
       const nextRepetitions = repetitions + 1;
@@ -83,7 +86,7 @@ export class SpacedRepetitionService {
     const nextReviewAt = new Date();
     nextReviewAt.setDate(nextReviewAt.getDate() + interval);
 
-    return { easeFactor, interval, repetitions, nextReviewAt };
+    return { easeFactor, interval, repetitions, lapseCount, nextReviewAt };
   }
 
   /**
@@ -335,7 +338,7 @@ export class SpacedRepetitionService {
   async updateCardAfterReview(
     cardId: string,
     userId: string,
-    updates: { easeFactor: number; interval: number; repetitions: number; nextReviewAt: Date; lastReviewAt: Date }
+    updates: { easeFactor: number; interval: number; repetitions: number; lapseCount: number; nextReviewAt: Date; lastReviewAt: Date }
   ): Promise<SpacedRepetitionCard | null> {
     const db = getDatabase();
     await db
