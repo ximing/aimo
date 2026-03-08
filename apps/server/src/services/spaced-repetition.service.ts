@@ -317,6 +317,18 @@ export class SpacedRepetitionService {
   }
 
   /**
+   * Get total card count for a user.
+   */
+  async getTotalCardCount(userId: string): Promise<number> {
+    const db = getDatabase();
+    const result = await db
+      .select({ count: spacedRepetitionCards.cardId })
+      .from(spacedRepetitionCards)
+      .where(eq(spacedRepetitionCards.userId, userId));
+    return result.length;
+  }
+
+  /**
    * Update a card after review.
    */
   async updateCardAfterReview(

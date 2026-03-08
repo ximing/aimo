@@ -243,6 +243,26 @@ export class SpacedRepetitionController {
   }
 
   /**
+   * GET /api/v1/spaced-repetition/stats
+   * Returns total card count for the user
+   */
+  @Get('/stats')
+  async getStats(@CurrentUser() user: UserInfoDto) {
+    try {
+      if (!user?.uid) {
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
+      }
+
+      const totalCards = await this.spacedRepetitionService.getTotalCardCount(user.uid);
+
+      return ResponseUtility.success({ totalCards });
+    } catch (error) {
+      logger.error('Get SR stats error:', error);
+      return ResponseUtility.error(ErrorCode.DB_ERROR, 'Failed to get SR stats');
+    }
+  }
+
+  /**
    * POST /api/v1/spaced-repetition/cards/:cardId/review
    * Submit a review result for a card
    * quality: 'mastered'|'remembered'|'fuzzy'|'forgot'|'skip'

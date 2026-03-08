@@ -62,6 +62,11 @@ export const getDueCards = () =>
     '/api/v1/spaced-repetition/due'
   );
 
+export const getSRStats = () =>
+  request.get<unknown, { code: number; data: { totalCards: number } }>(
+    '/api/v1/spaced-repetition/stats'
+  );
+
 export const reviewCard = (
   cardId: string,
   quality: 'mastered' | 'remembered' | 'fuzzy' | 'forgot' | 'skip'

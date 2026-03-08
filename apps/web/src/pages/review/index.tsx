@@ -75,6 +75,8 @@ export const ReviewPage = view(() => {
     fuzzy: 0,
     forgot: 0,
   });
+  const [srTotalCards, setSrTotalCards] = useState(0);
+  const [srImporting, setSrImporting] = useState(false);
 
   // History sidebar state
   const [history, setHistory] = useState<ReviewHistoryItemDto[]>([]);
@@ -423,9 +425,19 @@ export const ReviewPage = view(() => {
     setSkippedCards([]);
     setSrStats({ mastered: 0, remembered: 0, fuzzy: 0, forgot: 0 });
     try {
-      const res = await srApi.getDueCards();
-      if (res.code === 0 && res.data?.cards) {
-        if (res.data.cards.length === 0) {
+      // Fetch both due cards and total count in parallel
+      const [dueRes, statsRes] = await Promise.all([
+        srApi.getDueCards(),
+        srApi.getSRStats(),
+      ]);
+
+      if (dueRes.code === 0 && dueRes.data?.cards) {
+        // Update total cards count
+        if (statsRes.code === 0 && statsRes.data) {
+          setSrTotalCards(statsRes.data.totalCards);
+        }
+
+        if (dueRes.data.cards.length === 0) {
           // No cards due - show summary directly
           setSrCards([]);
           setSrCurrentIndex(0);
@@ -433,13 +445,29 @@ export const ReviewPage = view(() => {
           setFinalSession(null);
           setStep('summary');
         } else {
-          setSrCards(res.data.cards);
+          setSrCards(dueRes.data.cards);
           setSrCurrentIndex(0);
           setStep('quiz');
         }
       }
     } finally {
       setSrLoading(false);
+    }
+  };
+
+  const handleImportExistingMemos = async () => {
+    setSrImporting(true);
+    try {
+      const res = await srApi.importExistingMemos();
+      if (res.code === 0 && res.data) {
+        // Show success message and refresh
+        const { imported, skipped } = res.data;
+        alert(`已导入 ${imported} 条笔记，跳过 ${skipped} 条`);
+        // Refresh the due cards
+        await handleStartSR();
+      }
+    } finally {
+      setSrImporting(false);
     }
   };
 
@@ -1229,10 +1257,22 @@ export const ReviewPage = view(() => {
               {step === 'summary' && reviewType === 'sr' && srCards.length === 0 && (
                 <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-6 text-center">
                   <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-2">今天没有需要复习的笔记</h2>
-                  <p className="text-gray-500 dark:text-gray-400 mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-2">今日无需复习，继续保持！</h2>
+                  <p className="text-gray-500 dark:text-gray-400 mb-4">
                     全部笔记都已复习完毕，记得明天再来！
                   </p>
+
+                  {/* Import button - only show if no cards have been imported yet */}
+                  {srTotalCards === 0 && (
+                    <button
+                      onClick={handleImportExistingMemos}
+                      disabled={srImporting}
+                      className="mb-4 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg px-4 py-2.5 transition-colors disabled:opacity-50"
+                    >
+                      {srImporting ? '导入中...' : '导入现有笔记'}
+                    </button>
+                  )}
+
                   <button
                     className="bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg px-4 py-2.5 transition-colors"
                     onClick={() => {

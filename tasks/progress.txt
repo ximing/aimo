@@ -168,6 +168,18 @@
 - Verified in browser: empty state shows (no due cards), flip card UI code complete
 - Updated PRD passes: true
 
+## 2026-03-08 - US-019
+- Implemented US-019 (间隔重复 - 无卡片时的引导页)
+- Added GET /api/v1/spaced-repetition/stats endpoint returning total card count
+- Added getSRStats() to frontend API
+- Added srTotalCards and srImporting state to track total cards and import status
+- Empty state shows "今日无需复习，继续保持！" (changed from previous message)
+- Import button shows only when srTotalCards === 0 (user never imported any cards)
+- handleImportExistingMemos() calls import API, shows alert with imported/skipped counts, then refreshes
+- Typecheck passes (server and web), lint passes
+- Browser verified: empty state shows correctly, stats API returns totalCards=2
+- Updated PRD passes: true
+
 ---
 ## Codebase Patterns
 - Use @rabjs/react for frontend state management with observable stores
