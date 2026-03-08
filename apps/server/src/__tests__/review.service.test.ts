@@ -30,6 +30,13 @@ jest.mock('../config/config.js', () => ({
   },
 }));
 
+// Mock getModelClient
+jest.mock('../services/model-client.helper.js', () => ({
+  getModelClient: jest.fn().mockResolvedValue({
+    invoke: jest.fn().mockResolvedValue({ content: 'Mocked response' }),
+  }),
+}));
+
 import { ReviewService } from '../services/review.service.js';
 
 describe('ReviewService', () => {
@@ -57,13 +64,6 @@ describe('ReviewService', () => {
       const items = [{ mastery: 'fuzzy' }, { mastery: 'fuzzy' }];
       const score = (service as any).calculateScore(items);
       expect(score).toBe(50);
-    });
-  });
-
-  describe('buildQuestionPrompt', () => {
-    it('includes memo content in prompt', () => {
-      const prompt = (service as any).buildQuestionPrompt('Today I learned about React hooks.');
-      expect(prompt).toContain('React hooks');
     });
   });
 });

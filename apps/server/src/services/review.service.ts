@@ -4,15 +4,16 @@ import { ChatOpenAI } from '@langchain/openai';
 
 import { config } from '../config/config.js';
 import { getDatabase } from '../db/connection.js';
-import { reviewSessions } from '../db/schema/review-sessions.js';
 import { reviewItems } from '../db/schema/review-items.js';
 import { reviewProfiles } from '../db/schema/review-profiles.js';
+import { reviewSessions } from '../db/schema/review-sessions.js';
 import { memos } from '../db/schema/memos.js';
 import { OBJECT_TYPE } from '../models/constant/type.js';
 import { generateTypeId } from '../utils/id.js';
 import { logger } from '../utils/logger.js';
 
 import { MemoService } from './memo.service.js';
+import { getModelClient } from './model-client.helper.js';
 
 import type {
   CreateReviewSessionDto,
@@ -31,16 +32,7 @@ import type {
 
 @Service()
 export class ReviewService {
-  private model: ChatOpenAI;
-
-  constructor(private memoService: MemoService) {
-    this.model = new ChatOpenAI({
-      modelName: config.openai.model || 'gpt-4o-mini',
-      apiKey: config.openai.apiKey,
-      configuration: { baseURL: config.openai.baseURL },
-      temperature: 0.5,
-    });
-  }
+  constructor(private memoService: MemoService) {}
 
   async createSession(uid: string, dto: CreateReviewSessionDto): Promise<ReviewSessionDto> {
     const db = getDatabase();
@@ -50,11 +42,15 @@ export class ReviewService {
     let filterRules: ProfileFilterRule[] | undefined;
 
     // If profileId is provided, use profile settings
+    let profileId: string | undefined;
+    let userModelId: string | null = null;
     if (dto.profileId) {
       const profile = await this.getProfileById(uid, dto.profileId);
       if (!profile) {
         throw new Error('Review profile not found');
       }
+      profileId = dto.profileId;
+      userModelId = profile.userModelId ?? null;
       count = Math.min(Math.max(profile.questionCount, 5), 20);
       filterRules = profile.filterRules;
       // For DB storage, keep scope/scopeValue for backward compat
@@ -75,6 +71,7 @@ export class ReviewService {
     await db.insert(reviewSessions).values({
       sessionId,
       uid,
+      profileId,
       scope,
       scopeValue,
       status: 'active',
@@ -84,7 +81,7 @@ export class ReviewService {
     const items: ReviewItemDto[] = [];
     for (let i = 0; i < selectedMemos.length; i++) {
       const memo = selectedMemos[i];
-      const question = await this.generateQuestion(memo.content);
+      const question = await this.generateQuestion(uid, userModelId, memo.content);
       const itemId = generateTypeId(OBJECT_TYPE.REVIEW_ITEM);
 
       await db.insert(reviewItems).values({
@@ -145,7 +142,23 @@ export class ReviewService {
     const [memo] = await db.select().from(memos).where(eq(memos.memoId, item.memoId));
     if (!memo) throw new Error('Memo not found');
 
+    // Get session to find profileId and userModelId
+    const [session] = await db
+      .select()
+      .from(reviewSessions)
+      .where(eq(reviewSessions.sessionId, sessionId));
+
+    let userModelId: string | null = null;
+    if (session?.profileId) {
+      const profile = await this.getProfileById(uid, session.profileId);
+      if (profile) {
+        userModelId = profile.userModelId ?? null;
+      }
+    }
+
     const { feedback, mastery } = await this.evaluateAnswer(
+      uid,
+      userModelId,
       dto.answer,
       memo.content,
       item.question
@@ -416,9 +429,15 @@ export class ReviewService {
     };
   }
 
-  private async generateQuestion(content: string): Promise<string> {
+  private async generateQuestion(
+    userId: string,
+    userModelId: string | null,
+    content: string
+  ): Promise<string> {
+    const db = getDatabase();
+    const model = await getModelClient(db, userId, userModelId);
     const truncated = content.slice(0, 1000);
-    const response = await this.model.invoke([
+    const response = await model.invoke([
       {
         role: 'system',
         content:
@@ -430,11 +449,15 @@ export class ReviewService {
   }
 
   private async evaluateAnswer(
+    userId: string,
+    userModelId: string | null,
     answer: string,
     memoContent: string,
     question: string
   ): Promise<{ feedback: string; mastery: MasteryLevel }> {
-    const response = await this.model.invoke([
+    const db = getDatabase();
+    const model = await getModelClient(db, userId, userModelId);
+    const response = await model.invoke([
       {
         role: 'system',
         content:

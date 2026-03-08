@@ -5,6 +5,7 @@ export const reviewSessions = mysqlTable(
   {
     sessionId: varchar('session_id', { length: 191 }).primaryKey().notNull(),
     uid: varchar('uid', { length: 191 }).notNull(),
+    profileId: varchar('profile_id', { length: 191 }),
     scope: mysqlEnum('scope', ['all', 'category', 'tag', 'recent']).notNull().default('all'),
     scopeValue: varchar('scope_value', { length: 255 }),
     status: mysqlEnum('status', ['active', 'completed', 'abandoned']).notNull().default('active'),
@@ -15,6 +16,7 @@ export const reviewSessions = mysqlTable(
   (table) => ({
     uidIdx: index('uid_idx').on(table.uid),
     statusIdx: index('status_idx').on(table.status),
+    profileIdIdx: index('profile_id_idx').on(table.profileId),
   })
 );
 
