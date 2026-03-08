@@ -21,6 +21,7 @@ export const reviewProfiles = mysqlTable(
     filterValues: json('filter_values').$type<string[]>(),
     recentDays: int('recent_days'),
     questionCount: int('question_count').notNull().default(10),
+    userModelId: varchar('user_model_id', { length: 191 }),
     createdAt: timestamp('created_at', { mode: 'date', fsp: 3 }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { mode: 'date', fsp: 3 }).notNull().defaultNow(),
   },

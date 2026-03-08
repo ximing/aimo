@@ -1,0 +1,1 @@
+ALTER TABLE `review_profiles` ADD `user_model_id` varchar(191);
