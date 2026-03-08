@@ -1,132 +1,137 @@
 {
   "project": "AIMO",
-  "branchName": "ralph/sm2-ebbinghaus-fixes",
-  "description": "SM-2 算法修复 —— 使间隔重复功能符合艾宾浩斯记忆习惯，包括标准公式替换、模糊评分双重惩罚修复、lapseCount 追踪、最大间隔上限、时间维度过滤规则、每日限制应用到 API",
+  "branchName": "ralph/feature-model-config",
+  "description": "功能级 LLM 模型配置 - 允许用户为回顾模式、AI 探索、标签生成分别指定使用哪个 LLM 模型，未配置时回退系统默认",
   "userStories": [
     {
       "id": "US-001",
-      "title": "使用 SM-2 标准公式更新难度因子",
-      "description": "作为系统，我需要使用 SM-2 原始公式计算 easeFactor，使卡片难度能平滑适应用户的真实记忆能力。",
+      "title": "新建 user_feature_configs 数据库表",
+      "description": "作为开发者，我需要一张表来持久化每个用户对每个 AI 功能的模型选择。",
       "acceptanceCriteria": [
-        "移除 calculateNextReview 中所有硬编码的 easeFactor 偏移量（+0.15 / +0.1 / -0.08 / -0.2）",
-        "改为使用公式：EF' = max(1.3, EF + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02)))，其中 q 为质量分（0-5）",
-        "UI 评分到质量分的映射保持不变：mastered→5、remembered→4、fuzzy→3、forgot→1",
-        "质量分 < 3 时（即 forgot），repetitions 重置为 0（保持现有行为）",
-        "验证 mastered(q=5): EF' = max(1.3, 2.5 + (0.1 - 0*0.08)) = 2.6",
-        "验证 remembered(q=4): EF' = max(1.3, 2.5 + (0.1 - 1*(0.08+0.02))) = 2.5",
-        "验证 fuzzy(q=3): EF' = max(1.3, 2.5 + (0.1 - 2*(0.08+0.08))) = max(1.3, 2.5 - 0.14) = 2.36",
-        "验证 forgot(q=1): EF' = max(1.3, 2.5 + (0.1 - 4*(0.08+0.32))) = max(1.3, 2.5 - 1.5) = 1.3",
+        "在 apps/server/src/db/schema/ 下新建 user-feature-configs.ts，包含字段：id VARCHAR(191) PRIMARY KEY、userId VARCHAR(191) NOT NULL、feature VARCHAR(50) NOT NULL（枚举：review | explore | tag_generation）、modelId VARCHAR(191) 可为 NULL、createdAt TIMESTAMP、updatedAt TIMESTAMP",
+        "在 (userId, feature) 上建唯一索引",
+        "从 apps/server/src/db/schema/index.ts 导出新 schema",
+        "pnpm build 后 pnpm migrate:generate 生成迁移文件，SQL 正确",
         "Typecheck passes"
       ],
       "priority": 1,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-002",
-      "title": "修复模糊评分的双重惩罚",
-      "description": "作为系统，我需要在计算下次复习间隔时使用旧的 easeFactor，只在计算完间隔后才更新 easeFactor，避免对模糊评分造成复利惩罚。",
+      "title": "新建 UserFeatureConfigService",
+      "description": "作为开发者，我需要一个 Service 来读写用户功能配置，并能在没有配置时提供系统默认模型信息。",
       "acceptanceCriteria": [
-        "calculateNextReview 中，interval 的计算始终基于更新前的 easeFactor（保存为 oldEaseFactor）",
-        "easeFactor 的更新（使用 US-001 的标准公式）在 interval 计算之后进行",
-        "验证：quality=3，easeFactor=2.5，interval=6，repetitions>=2 时，新 interval = round(6 * 2.5) = 15（而非之前用新 easeFactor 计算的更小值）",
+        "在 apps/server/src/services/user-feature-config.service.ts 实现 UserFeatureConfigService，装饰 @Service()",
+        "提供 getConfig(userId, feature): Promise<string | null> 方法，返回用户配置的 modelId 或 null",
+        "提供 setConfig(userId, feature, modelId: string | null): Promise<void> 方法，使用 Drizzle onDuplicateKeyUpdate 实现 upsert",
+        "提供 getModelForFeature(userId, feature): Promise<FeatureModelConfig> 方法：若 modelId 非 null 则从 UserModelService.getModel() 获取配置并返回；若 null 则返回基于 config.openai.* 的默认配置对象 { apiKey, baseURL, modelName, provider: 'openai' }",
+        "FeatureModelConfig 接口定义在同文件中，包含 apiKey: string、baseURL: string、modelName: string、provider: string",
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-003",
-      "title": "设置最大复习间隔上限",
-      "description": "作为系统，我需要限制复习间隔不超过 365 天，防止卡片因间隔过长而实际上永远不会再出现。",
+      "title": "新建 UserFeatureConfig API 端点",
+      "description": "作为前端，我需要 REST API 来读取和更新用户的功能模型配置。",
       "acceptanceCriteria": [
-        "在 apps/server/src/services/spaced-repetition.service.ts 中定义常量 MAX_INTERVAL_DAYS = 365",
-        "calculateNextReview 计算出的 interval 在写入前，执行 Math.min(interval, MAX_INTERVAL_DAYS)",
-        "验证：easeFactor=3.0、interval=300 的卡片，mastered 评分后 interval = min(round(300*3.0*1.3), 365) = 365（被截断）",
-        "验证：easeFactor=3.0、interval=80 的卡片，mastered 评分后 interval = min(round(80*3.0*1.3), 365) = 312（未截断）",
+        "在 apps/server/src/controllers/v1/ 新建 user-feature-config.controller.ts",
+        "GET /api/v1/user-feature-configs 返回当前用户三个功能的配置列表，每项包含 feature 和 modelId（null 表示系统默认）",
+        "PUT /api/v1/user-feature-configs/:feature 接受 body { modelId: string | null }，更新指定功能的模型配置",
+        "所有端点使用 @CurrentUser() user 认证",
+        "feature 参数校验：只接受 review | explore | tag_generation，非法值返回 400",
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": "Completed - MAX_INTERVAL_DAYS = 365 implemented and tested"
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-004",
-      "title": "添加 lapseCount 数据库字段",
-      "description": "作为系统，我需要在数据库中独立追踪每张卡片的遗忘次数，供后续统计和展示使用。",
+      "title": "改造 ReviewService 使用动态模型配置",
+      "description": "作为用户，我希望回顾模式使用我配置的模型来生成问题和评估答案。",
       "acceptanceCriteria": [
-        "在 apps/server/src/db/schema/spaced-repetition-cards.ts 中添加 lapseCount INT 字段，默认值 0，NOT NULL",
-        "执行 cd apps/server && pnpm build 构建成功",
-        "执行 cd apps/server && pnpm migrate:generate 生成迁移文件成功",
-        "迁移文件内容包含 ALTER TABLE spaced_repetition_cards ADD COLUMN lapse_count int NOT NULL DEFAULT 0",
+        "ReviewService 移除 private model: ChatOpenAI 字段和构造函数中的硬编码 ChatOpenAI 初始化",
+        "注入 UserFeatureConfigService",
+        "私有方法 generateQuestion 和 evaluateAnswer 增加 userId: string 参数",
+        "两个方法内部通过 UserFeatureConfigService.getModelForFeature(userId, 'review') 获取 FeatureModelConfig，动态构造 ChatOpenAI 实例后调用",
+        "createSession、submitAnswer 等调用 generateQuestion/evaluateAnswer 的公共方法同步传入 userId（uid 参数已有）",
+        "若用户未配置模型（getModelForFeature 返回系统默认配置），行为与改造前一致",
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": true,
-      "notes": "Completed - lapseCount field added to schema, migration generated"
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-005",
-      "title": "实现 lapseCount 遗忘计数逻辑",
-      "description": "作为系统，当用户评分为「忘了」时，我需要递增 lapseCount 并在 /due API 响应中返回该字段。",
+      "title": "改造 ExploreService 使用动态模型配置",
+      "description": "作为用户，我希望 AI 探索功能使用我配置的模型来分析和生成内容。",
       "acceptanceCriteria": [
-        "calculateNextReview 在 quality=1（forgot）时，返回值中包含 lapseCount: card.lapseCount + 1",
-        "calculateNextReview 在 quality>=3 时，返回值中包含 lapseCount: card.lapseCount（不变）",
-        "updateCardAfterReview 将 lapseCount 持久化到数据库",
-        "在 packages/dto/src/review.ts 的 SpacedRepetitionCardDto（或对应 DTO）中添加 lapseCount: number 字段",
-        "getDueCards 返回的卡片数据中包含 lapseCount 字段",
+        "ExploreService 移除构造函数中的硬编码 ChatOpenAI 初始化（this.model = new ChatOpenAI(...)）",
+        "注入 UserFeatureConfigService",
+        "explore() 方法确认已有 userId 参数（若无则添加）",
+        "initializeWorkflow() 或等效位置改为接受 FeatureModelConfig 参数，动态构造 ChatOpenAI 实例",
+        "explore() 调用时通过 UserFeatureConfigService.getModelForFeature(userId, 'explore') 获取配置后传入",
+        "若用户未配置模型，回退到 config.openai.*，行为与改造前一致",
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": true,
-      "notes": "Completed - lapseCount logic implemented, returned in /due API"
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-006",
-      "title": "实现 recent_days 和 date_range 时间维度过滤规则",
-      "description": "作为用户，我希望能够设置按时间范围过滤哪些 Memo 进入 SR 池，让间隔重复聚焦于特定时间段的内容。",
+      "title": "改造 AIService（标签生成）使用动态模型配置",
+      "description": "作为用户，我希望标签生成功能使用我配置的模型。",
       "acceptanceCriteria": [
-        "SpacedRepetitionService.isMemoEligible() 中处理 filterType === 'recent_days' 的规则：查询 memo 的 createdAt，若 createdAt >= now - N days 则该规则匹配，N 从 filterValue 解析为整数",
-        "SpacedRepetitionService.isMemoEligible() 中处理 filterType === 'date_range' 的规则：filterValue 格式为 'startISO,endISO'，若 startISO <= memo.createdAt <= endISO 则该规则匹配",
-        "两种规则均可与 mode: 'include' 或 mode: 'exclude' 组合使用，与现有 category/tag 规则逻辑一致",
-        "isMemoEligible 需要查询 memo 的 createdAt 时，从 memos 表获取（已有 memoId 参数）",
+        "AIService 移除构造函数中的硬编码 ChatOpenAI 初始化",
+        "注入 UserFeatureConfigService",
+        "generateTags(content, userId) 增加 userId: string 参数",
+        "方法内部通过 UserFeatureConfigService.getModelForFeature(userId, 'tag_generation') 获取配置，动态构造 ChatOpenAI 实例后调用",
+        "找到所有调用 AIService.generateTags 的上游代码（controller 或 service），同步传入 userId",
+        "若用户未配置模型，回退到 config.openai.*，行为与改造前一致",
         "Typecheck passes"
       ],
       "priority": 6,
-      "passes": true,
-      "notes": "Completed - recent_days and date_range filter types implemented"
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-007",
-      "title": "将每日限制应用到 /due API",
-      "description": "作为用户，我希望 /due 接口返回的卡片数量不超过我设置的每日上限，同时告知我总的到期数量。",
+      "title": "前端回顾页面添加模型选择下拉",
+      "description": "作为用户，我希望在回顾功能页面能选择使用哪个 AI 模型。",
       "acceptanceCriteria": [
-        "SpacedRepetitionController 的 getDueCards 方法获取用户的 srDailyLimit 设置",
-        "getDueCards 在返回前将卡片列表截断为 srDailyLimit 条（取 nextReviewAt 最早的前 N 张）",
-        "API 响应格式改为 { cards: SRCard[], totalDue: number, dailyLimit: number }，totalDue 为截断前的总数量",
-        "更新 apps/web/src/api/spaced-repetition.ts 中 getDueCards 的返回类型，添加 totalDue: number 和 dailyLimit: number 字段",
-        "Typecheck passes"
+        "在回顾页面（apps/web/src/pages/ 中回顾相关页面）的配置/设置区域添加「AI 模型」下拉选择器",
+        "下拉列表选项：第一项为「系统默认」（值为 null），其余从 GET /api/v1/user-models 获取用户配置的模型列表",
+        "页面加载时从 GET /api/v1/user-feature-configs 读取 review 功能的当前配置并设为选中值",
+        "用户选择后调用 PUT /api/v1/user-feature-configs/review 保存，保存成功后显示成功反馈",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 7,
-      "passes": true,
-      "notes": "Already implemented in backend controller and frontend API"
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-008",
-      "title": "前端展示每日限制超出提示",
-      "description": "作为用户，我希望在复习页看到「今日已加载 N 张，还有 X 张待复习」的提示，了解全部到期情况。",
+      "title": "前端 AI 探索页面添加模型选择下拉",
+      "description": "作为用户，我希望在 AI 探索页面能选择使用哪个 AI 模型。",
       "acceptanceCriteria": [
-        "apps/web/src/pages/review/index.tsx 中，getDueCards 返回的 totalDue 和 dailyLimit 存入组件状态",
-        "SR 模式下，当 totalDue > dailyLimit 时，在卡片区域上方展示提示：「今日已加载 {dailyLimit} 张，还有 {totalDue - dailyLimit} 张待复习」",
-        "提示样式使用 info 风格（蓝色或灰色背景，小字）",
-        "当 totalDue <= dailyLimit 时，不展示该提示",
+        "在 AI 探索页面（apps/web/src/pages/ai-explore/）的配置/设置区域添加「AI 模型」下拉选择器",
+        "下拉列表选项：第一项为「系统默认」（值为 null），其余从 GET /api/v1/user-models 获取用户配置的模型列表",
+        "页面加载时从 GET /api/v1/user-feature-configs 读取 explore 功能的当前配置并设为选中值",
+        "用户选择后调用 PUT /api/v1/user-feature-configs/explore 保存，保存成功后显示成功反馈",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 8,
-      "passes": true,
-      "notes": "Implemented with blue info box below progress bar"
+      "passes": false,
+      "notes": ""
     }
   ]
 }

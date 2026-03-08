@@ -1,0 +1,225 @@
+{
+  "skill_name": "reactive-state-react",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "我需要创建一个计数器组件，用户可以点击按钮增加或减少数字。请使用 @rabjs/react 实现。",
+      "expected_output": "应该创建一个 CounterService 继承自 Service，包含 count 属性和 increment/decrement 方法。组件使用 observer 包裹，通过 useService 获取服务，使用 bindServices 导出。",
+      "files": [],
+      "assertions": [
+        {
+          "name": "创建了 Service 类",
+          "description": "检查是否创建了继承自 Service 的类"
+        },
+        {
+          "name": "使用了 observer",
+          "description": "检查组件是否使用 observer 包裹"
+        },
+        {
+          "name": "使用了 useService",
+          "description": "检查是否使用 useService 获取服务实例"
+        },
+        {
+          "name": "使用了 bindServices",
+          "description": "检查是否使用 bindServices 导出组件"
+        },
+        {
+          "name": "没有解构 observable",
+          "description": "检查是否直接访问 service.count 而不是解构"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "我需要实现一个用户列表页面，从 API 加载数据。加载时显示 loading 状态，出错时显示错误信息。请用 @rabjs/react 实现。",
+      "expected_output": "应该创建 UserService 包含 users 数组和 async fetchUsers 方法。组件中通过 service.$model.fetchUsers.loading 和 service.$model.fetchUsers.error 访问异步状态。",
+      "files": [],
+      "assertions": [
+        {
+          "name": "定义了异步方法",
+          "description": "Service 中有 async 方法用于数据加载"
+        },
+        {
+          "name": "使用 $model 访问异步状态",
+          "description": "通过 service.$model.methodName.loading 和 .error 访问状态"
+        },
+        {
+          "name": "正确处理 loading 状态",
+          "description": "在 loading 时显示加载提示"
+        },
+        {
+          "name": "正确处理 error 状态",
+          "description": "在 error 时显示错误信息"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "我有一个全局的主题服务 ThemeService，需要在整个应用中使用。同时有一个页面级的 TodoService 只在 TodoPage 中使用。请告诉我如何正确注册这两个服务。",
+      "expected_output": "ThemeService 应该使用 register() 全局注册，TodoService 应该在 TodoPage 组件中使用 bindServices 注册。明确说明全局单例禁止使用 bindServices。",
+      "files": [],
+      "assertions": [
+        {
+          "name": "全局服务使用 register",
+          "description": "ThemeService 使用 register() 注册"
+        },
+        {
+          "name": "页面服务使用 bindServices",
+          "description": "TodoService 使用 bindServices 注册"
+        },
+        {
+          "name": "明确说明全局服务禁止 bindServices",
+          "description": "明确指出全局单例服务不应该使用 bindServices"
+        },
+        {
+          "name": "解释生命周期差异",
+          "description": "说明两种注册方式的生命周期区别"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "我的 UserService 需要使用 LoggerService 来记录日志，LoggerService 是全局注册的。UserService 是页面级的。请告诉我如何在 UserService 中访问 LoggerService？",
+      "expected_output": "应该在 UserService 中使用 getter + resolve() 方式获取 LoggerService。说明 resolve 可以访问全局注册的服务和父级容器的服务。",
+      "files": [],
+      "assertions": [
+        {
+          "name": "使用 getter + resolve 模式",
+          "description": "使用 get loggerService() { return this.resolve(LoggerService) }"
+        },
+        {
+          "name": "说明 resolve 的作用域规则",
+          "description": "解释 resolve 可以访问全局和父级容器的服务"
+        },
+        {
+          "name": "提到可选的 @Inject 装饰器",
+          "description": "提及可以使用 @Inject 装饰器作为替代方案"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "我的组件不更新，代码是这样的：\n```tsx\nconst UserList = () => {\n  const service = useService(UserService);\n  const { users } = service;\n  return <ul>{users.map(u => <li>{u.name}</li>)}</ul>;\n};\n```\n请帮我找出问题。",
+      "expected_output": "应该指出两个问题：1. 组件没有使用 observer 包裹 2. 解构了 observable 对象破坏了响应性。提供正确的修复方案。",
+      "files": [],
+      "assertions": [
+        {
+          "name": "识别缺少 observer",
+          "description": "指出组件需要使用 observer 包裹"
+        },
+        {
+          "name": "识别解构问题",
+          "description": "指出解构 service 会破坏响应性"
+        },
+        {
+          "name": "提供正确的修复代码",
+          "description": "给出使用 observer 和直接访问 service.users 的正确代码"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "我需要实现一个搜索功能，用户输入时自动搜索，但要防抖 300ms。使用 @rabjs/react 如何实现？",
+      "expected_output": "应该创建 SearchService，使用 @Debounce(300) 装饰器装饰搜索方法。如果用户不熟悉装饰器，也应该提到可以查看 decorators.md 参考文档。",
+      "files": [],
+      "assertions": [
+        {
+          "name": "使用 @Debounce 装饰器",
+          "description": "在搜索方法上使用 @Debounce(300) 装饰器"
+        },
+        {
+          "name": "正确的 Service 结构",
+          "description": "包含 query 属性和 search 方法"
+        },
+        {
+          "name": "提到参考文档",
+          "description": "提及可以查看 references/decorators.md 了解更多装饰器"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "我有一个应用级的 AppService 和一个页面级的 PageService，在 PageService 中需要访问 AppService 的数据。如何实现？",
+      "expected_output": "在 PageService 中使用 get appService() { return this.resolve(AppService) } 访问。说明子级容器可以访问父级容器的服务，这是作用域链的特性。",
+      "files": [],
+      "assertions": [
+        {
+          "name": "使用 resolve 访问父级服务",
+          "description": "使用 this.resolve(AppService) 获取父级服务"
+        },
+        {
+          "name": "解释作用域链",
+          "description": "说明子级可以访问父级容器的服务"
+        },
+        {
+          "name": "提到领域架构文档",
+          "description": "建议查看 references/domain-architecture.md 了解更多"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "我想在一个组件中只追踪 UserService 的 users.length 变化，不想整个组件都重渲染。怎么做？",
+      "expected_output": "应该使用 useObserverService hook，传入 selector 函数只追踪特定字段。提到这是细粒度状态追踪的方式，可以查看 hooks-api.md 了解更多 hooks。",
+      "files": [],
+      "assertions": [
+        {
+          "name": "使用 useObserverService",
+          "description": "使用 useObserverService(UserService, s => s.users.length)"
+        },
+        {
+          "name": "解释细粒度追踪",
+          "description": "说明这样可以只在特定字段变化时重渲染"
+        },
+        {
+          "name": "提到 hooks 参考文档",
+          "description": "建议查看 references/hooks-api.md 了解更多 hooks"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "prompt": "我需要在两个不同页面的 Service 之间通信，它们不在同一个父容器下。如何实现？",
+      "expected_output": "应该使用全局事件系统，通过 this.emit('event', data, 'global') 发送全局事件，通过 this.on('event', handler, 'global') 监听全局事件。提到可以查看 event-system.md 了解更多。",
+      "files": [],
+      "assertions": [
+        {
+          "name": "使用全局事件",
+          "description": "使用 emit 和 on 的第三个参数 'global'"
+        },
+        {
+          "name": "区分容器事件和全局事件",
+          "description": "说明容器事件和全局事件的区别"
+        },
+        {
+          "name": "提到事件系统文档",
+          "description": "建议查看 references/event-system.md"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "prompt": "我需要创建一个购物车组件，显示商品总价。总价应该是计算属性，根据商品列表自动计算。使用 @rabjs/react 如何实现？",
+      "expected_output": "应该在 CartService 中使用 getter 定义计算属性 get total()。说明 getter 会自动追踪依赖并在依赖变化时重新计算。",
+      "files": [],
+      "assertions": [
+        {
+          "name": "使用 getter 定义计算属性",
+          "description": "使用 get total() 定义计算属性"
+        },
+        {
+          "name": "正确计算总价",
+          "description": "使用 reduce 等方法计算商品总价"
+        },
+        {
+          "name": "说明自动追踪",
+          "description": "说明计算属性会自动追踪依赖"
+        },
+        {
+          "name": "提到计算属性文档",
+          "description": "可以提及 references/computed-properties.md"
+        }
+      ]
+    }
+  ]
+}
