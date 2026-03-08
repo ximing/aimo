@@ -29,9 +29,10 @@ describe('SpacedRepetitionService', () => {
         expect(result.interval).toBe(1);
       });
 
-      it('decreases easeFactor by 0.2', () => {
+      it('applies SM-2 formula: EF + (0.1 - 4*(0.08+4*0.02)) = EF - 0.54', () => {
+        // q=1: 0.1 - (5-1)*(0.08 + (5-1)*0.02) = 0.1 - 4*(0.08+0.08) = 0.1 - 0.64 = -0.54
         const result = service.calculateNextReview(baseCard, 1);
-        expect(result.easeFactor).toBeCloseTo(2.3, 5);
+        expect(result.easeFactor).toBeCloseTo(1.96, 5);
       });
 
       it('does not let easeFactor drop below 1.3', () => {
@@ -61,9 +62,10 @@ describe('SpacedRepetitionService', () => {
         expect(result.repetitions).toBe(1);
       });
 
-      it('decreases easeFactor by 0.08', () => {
+      it('applies SM-2 formula: EF + (0.1 - 2*(0.08+2*0.02)) = EF - 0.14', () => {
+        // q=3: 0.1 - (5-3)*(0.08 + (5-3)*0.02) = 0.1 - 2*(0.08+0.04) = 0.1 - 0.24 = -0.14
         const result = service.calculateNextReview(baseCard, 3);
-        expect(result.easeFactor).toBeCloseTo(2.42, 5);
+        expect(result.easeFactor).toBeCloseTo(2.36, 5);
       });
 
       it('does not let easeFactor drop below 1.3', () => {
@@ -83,11 +85,12 @@ describe('SpacedRepetitionService', () => {
         expect(result.interval).toBe(6);
       });
 
-      it('uses formula for repetitions >= 3', () => {
+      it('uses old easeFactor for interval formula (no double penalty)', () => {
+        // US-002: interval uses OLD easeFactor (2.5), not new (2.36)
         const card = { easeFactor: 2.5, interval: 6, repetitions: 2 };
         const result = service.calculateNextReview(card, 3);
-        const newEF = Math.max(1.3, 2.5 - 0.08); // 2.42
-        const expected = Math.round(6 * newEF);
+        // interval = round(6 * 2.5) = 15 (using old EF, not new 2.36)
+        const expected = Math.round(6 * 2.5);
         expect(result.interval).toBe(expected);
       });
     });
@@ -98,9 +101,10 @@ describe('SpacedRepetitionService', () => {
         expect(result.repetitions).toBe(1);
       });
 
-      it('increases easeFactor by 0.1', () => {
+      it('applies SM-2 formula: EF + (0.1 - 1*(0.08+1*0.02)) = EF + 0 = EF unchanged', () => {
+        // q=4: 0.1 - (5-4)*(0.08 + (5-4)*0.02) = 0.1 - 1*(0.08+0.02) = 0.1 - 0.1 = 0
         const result = service.calculateNextReview(baseCard, 4);
-        expect(result.easeFactor).toBeCloseTo(2.6, 5);
+        expect(result.easeFactor).toBeCloseTo(2.5, 5);
       });
 
       it('sets interval to 1 on first repetition', () => {
@@ -128,9 +132,10 @@ describe('SpacedRepetitionService', () => {
         expect(result.repetitions).toBe(1);
       });
 
-      it('increases easeFactor by 0.15', () => {
+      it('applies SM-2 formula: EF + (0.1 - 0*(0.08+0)) = EF + 0.1', () => {
+        // q=5: 0.1 - (5-5)*(0.08 + (5-5)*0.02) = 0.1 - 0 = 0.1
         const result = service.calculateNextReview(baseCard, 5);
-        expect(result.easeFactor).toBeCloseTo(2.65, 5);
+        expect(result.easeFactor).toBeCloseTo(2.6, 5);
       });
 
       it('sets interval to 1 on first repetition', () => {

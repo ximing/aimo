@@ -31,6 +31,9 @@ export class SpacedRepetitionService {
   /**
    * Calculate the next review schedule using the SM-2 algorithm.
    *
+   * SM-2 standard formula: EF' = max(1.3, EF + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02)))
+   * Where q is quality (0-5): 1=forgot, 3=fuzzy, 4=remembered, 5=mastered
+   *
    * @param card - Current card state (easeFactor, interval, repetitions)
    * @param quality - Review quality: 1=forgot, 3=fuzzy, 4=remembered, 5=mastered
    * @returns Updated card state with nextReviewAt
@@ -38,46 +41,39 @@ export class SpacedRepetitionService {
   calculateNextReview(card: SRCardState, quality: 1 | 3 | 4 | 5): SRNextReview {
     let { easeFactor, interval, repetitions } = card;
 
+    // SM-2 standard formula for easeFactor
+    // EF' = max(1.3, EF + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02)))
+    const q = quality;
+    const newEaseFactor = Math.max(1.3, easeFactor + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02)));
+
     if (quality === 1) {
       // Forgot: reset repetitions, interval back to 1
-      easeFactor = Math.max(1.3, easeFactor - 0.2);
       repetitions = 0;
       interval = 1;
     } else {
-      // Remembered (quality >= 3): increment repetitions, update easeFactor and interval
-      let newEaseFactor: number;
-      let newInterval: number;
-
-      if (quality === 5) {
-        newEaseFactor = Math.max(1.3, easeFactor + 0.15);
-      } else if (quality === 4) {
-        newEaseFactor = Math.max(1.3, easeFactor + 0.1);
-      } else {
-        // quality === 3
-        newEaseFactor = Math.max(1.3, easeFactor - 0.08);
-      }
+      // Remembered (quality >= 3): increment repetitions, update interval
+      const nextRepetitions = repetitions + 1;
 
       // After repetitions reset: 1st review = 1 day, 2nd review = 6 days, then formula
-      const nextRepetitions = repetitions + 1;
       if (nextRepetitions === 1) {
-        newInterval = 1;
+        interval = 1;
       } else if (nextRepetitions === 2) {
-        newInterval = 6;
+        interval = 6;
       } else {
         if (quality === 5) {
-          newInterval = Math.round(interval * easeFactor * 1.3);
+          interval = Math.round(interval * easeFactor * 1.3);
         } else if (quality === 4) {
-          newInterval = Math.round(interval * easeFactor);
+          interval = Math.round(interval * easeFactor);
         } else {
-          // quality === 3
-          newInterval = Math.round(interval * newEaseFactor);
+          // quality === 3: use old easeFactor (fixes double penalty)
+          interval = Math.round(interval * easeFactor);
         }
       }
 
-      easeFactor = newEaseFactor;
-      interval = newInterval;
       repetitions = nextRepetitions;
     }
+
+    easeFactor = newEaseFactor;
 
     const nextReviewAt = new Date();
     nextReviewAt.setDate(nextReviewAt.getDate() + interval);
