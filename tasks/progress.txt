@@ -124,3 +124,16 @@
   - Dropdown shows "系统默认" (null) as first option, then lists user models by name
   - Models are loaded via useEffect when detailMode !== 'none' and models array is empty
   - The DTO (CreateReviewProfileDto/UpdateReviewProfileDto) already includes userModelId field from US-003
+---
+## 2026-03-08 - US-011
+- Implemented: Added AI model selection dropdown to AI Explore input area
+- Files changed:
+  - apps/web/src/services/explore.service.ts (added selectedModelId state, localStorage persistence with EXPLORE_MODEL_STORAGE_KEY, setSelectedModel method, updated sendQuery to pass userModelId)
+  - apps/web/src/pages/ai-explore/ai-explore.tsx (added UserModelService import, added model dropdown in floating input area)
+  - tasks/prd.json (marked US-011 as passes: true)
+- **Learnings for future iterations:**
+  - ExploreService uses localStorage to persist selected model with key 'explore_selected_model_id'
+  - The model selection dropdown is placed in the floating input area before the send button
+  - Dropdown shows "系统默认" (null) as first option, then lists user models by name
+  - UserModelService loads models on component mount via useEffect
+  - The ExploreQueryDto already includes userModelId optional field from US-009

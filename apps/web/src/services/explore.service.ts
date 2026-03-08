@@ -37,6 +37,8 @@ interface NetworkError {
 
 // LocalStorage key for persisting selected conversation
 const STORAGE_KEY = 'ai-explore-current-conversation';
+// LocalStorage key for persisting selected model ID
+const EXPLORE_MODEL_STORAGE_KEY = 'explore_selected_model_id';
 
 export class ExploreService extends Service {
   // Chat messages (current conversation)
@@ -67,6 +69,9 @@ export class ExploreService extends Service {
 
   // Conversation context for follow-up questions
   private conversationContext = '';
+
+  // Selected model ID (persisted to localStorage)
+  selectedModelId: string | null = null;
 
   // Maximum number of messages per conversation (10 rounds = 20 messages)
   private readonly MAX_MESSAGES = 20;
@@ -104,6 +109,42 @@ export class ExploreService extends Service {
   constructor() {
     super();
     this.loadConversations();
+    this.loadSelectedModel();
+  }
+
+  /**
+   * Save selected model ID to localStorage
+   */
+  private saveSelectedModel(modelId: string | null) {
+    try {
+      if (modelId) {
+        localStorage.setItem(EXPLORE_MODEL_STORAGE_KEY, modelId);
+      } else {
+        localStorage.removeItem(EXPLORE_MODEL_STORAGE_KEY);
+      }
+    } catch (error) {
+      console.error('Failed to save selected model:', error);
+    }
+  }
+
+  /**
+   * Load saved model ID from localStorage
+   */
+  private loadSelectedModel() {
+    try {
+      this.selectedModelId = localStorage.getItem(EXPLORE_MODEL_STORAGE_KEY);
+    } catch (error) {
+      console.error('Failed to load selected model:', error);
+      this.selectedModelId = null;
+    }
+  }
+
+  /**
+   * Update selected model ID
+   */
+  setSelectedModel(modelId: string | null) {
+    this.selectedModelId = modelId;
+    this.saveSelectedModel(modelId);
   }
 
   /**
@@ -341,6 +382,7 @@ export class ExploreService extends Service {
       const response = await exploreApi.explore({
         query: query.trim(),
         context: this.conversationContext || undefined,
+        userModelId: this.selectedModelId,
       });
 
       if (response.code === 0 && response.data) {

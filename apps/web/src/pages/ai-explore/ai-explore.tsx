@@ -2,6 +2,7 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { view, useService } from '@rabjs/react';
 import { Layout } from '../../components/layout';
 import { ExploreService } from '../../services/explore.service';
+import { UserModelService } from '../../services/user-model.service';
 import {
   Sparkles,
   Send,
@@ -54,6 +55,7 @@ const formatRelativeTime = (timestamp: number): string => {
  */
 export const AIExplorePage = view(() => {
   const exploreService = useService(ExploreService);
+  const modelService = useService(UserModelService);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -85,6 +87,13 @@ export const AIExplorePage = view(() => {
       inputRef.current?.focus();
     }
   }, [exploreService.currentConversationId]);
+
+  // Load user models on mount
+  useEffect(() => {
+    if (modelService.models.length === 0) {
+      modelService.loadModels();
+    }
+  }, [modelService]);
 
   // Handle input submission
   const handleSubmit = useCallback(async () => {
@@ -588,6 +597,23 @@ export const AIExplorePage = view(() => {
                       className="flex-1 px-3 py-2 bg-transparent border-0 resize-none focus:outline-none focus:ring-0 text-gray-900 dark:text-gray-50 placeholder:text-gray-400 dark:placeholder:text-gray-600 disabled:opacity-50"
                       style={{ minHeight: '24px', maxHeight: '120px' }}
                     />
+
+                    {/* Model Selection Dropdown */}
+                    <div className="flex-shrink-0">
+                      <select
+                        value={exploreService.selectedModelId ?? ''}
+                        onChange={(e) => exploreService.setSelectedModel(e.target.value || null)}
+                        className="bg-gray-50 dark:bg-dark-700 border border-gray-200 dark:border-dark-600 rounded-lg px-2 py-1.5 text-xs text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer"
+                        title="选择 AI 模型"
+                      >
+                        <option value="">系统默认</option>
+                        {modelService.models.map((model) => (
+                          <option key={model.id} value={model.id}>
+                            {model.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
                     <button
                       onClick={handleSubmit}
