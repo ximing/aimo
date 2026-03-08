@@ -2,7 +2,10 @@ import { ChatOpenAI } from '@langchain/openai';
 import { Service } from 'typedi';
 
 import { config } from '../config/config.js';
+import { getDatabase } from '../db/connection.js';
 import { logger } from '../utils/logger.js';
+import { UserFeatureConfigService } from './user-feature-config.service.js';
+import { getModelClient } from './model-client.helper.js';
 
 /**
  * Service for AI-powered features
@@ -10,31 +13,27 @@ import { logger } from '../utils/logger.js';
  */
 @Service()
 export class AIService {
-  private model: ChatOpenAI;
-
-  constructor() {
-    // Initialize LangChain ChatOpenAI
-    this.model = new ChatOpenAI({
-      modelName: config.openai.model || 'gpt-4o-mini',
-      apiKey: config.openai.apiKey,
-      configuration: {
-        baseURL: config.openai.baseURL,
-      },
-      temperature: 0.3, // Lower temperature for consistent tag generation
-    });
-  }
+  constructor(private userFeatureConfigService: UserFeatureConfigService) {}
 
   /**
    * Generate tag suggestions from memo content using AI
    * Returns 3-8 relevant tags based on content analysis
    *
    * @param content - The memo content to analyze
+   * @param userId - The user's ID for model configuration
    * @returns Array of tag suggestions
    */
-  async generateTags(content: string): Promise<string[]> {
+  async generateTags(content: string, userId: string): Promise<string[]> {
     if (!content || content.trim().length === 0) {
       return [];
     }
+
+    // Get user's model preference for tag generation
+    const userModelId = await this.userFeatureConfigService.getTagModelId(userId);
+
+    // Get ChatOpenAI instance based on user's model configuration
+    const db = getDatabase();
+    const model = await getModelClient(db, userId, userModelId);
 
     // Truncate content if too long (to keep API costs reasonable)
     const truncatedContent = content.slice(0, 2000);
@@ -46,7 +45,7 @@ Task
 请根据提供的文本，生成 3-8 个 高质量标签。
 
 Tag Generation Principles (核心指令)
-从“词”转向“意”：禁止简单地从文中截取长句或无意义的动宾短语。标签应当是文本所属的领域、底层逻辑、或核心价值的提炼。
+从”词”转向”意”：禁止简单地从文中截取长句或无意义的动宾短语。标签应当是文本所属的领域、底层逻辑、或核心价值的提炼。
 
 多维度覆盖：
 
@@ -58,7 +57,7 @@ Tag Generation Principles (核心指令)
 
 文体/属性（例：方法论、深度评论、技术指南）
 
-颗粒度适中：避免过于宽泛（如“生活”、“技术”），也要避免过于琐碎（如“下午吃什么”）。
+颗粒度适中：避免过于宽泛（如”生活”、”技术”），也要避免过于琐碎（如”下午吃什么”）。
 
 语言规范：统一使用小写（专有名词除外），每个标签 1-3 个词。
 
@@ -67,24 +66,24 @@ Step 1: 阅读全文，识别作者的真实意图（他在解决什么问题？
 
 Step 2: 将内容映射到已知的知识体系中。
 
-Step 3: 筛选出对未来“检索”和“建立知识连接”最有帮助的标签。
+Step 3: 筛选出对未来”检索”和”建立知识连接”最有帮助的标签。
 
 You must respond with ONLY a JSON array of tag strings, like this:
-["tag1", "tag2", "tag3"]
+[“tag1”, “tag2”, “tag3”]
 
 Do not include any explanation, markdown formatting, or additional text.`;
 
     const userPrompt = `Please analyze the following note content and generate relevant tags:
 
 Content:
-"""
+“””
 ${truncatedContent}
-"""
+“””
 
 Respond with a JSON array of 3-8 tag strings.`;
 
     try {
-      const response = await this.model.invoke([
+      const response = await model.invoke([
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ]);

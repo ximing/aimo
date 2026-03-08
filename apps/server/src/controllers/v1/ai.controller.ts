@@ -36,7 +36,7 @@ export class AIV1Controller {
       }
 
       // Generate tags using AI service
-      const tags = await this.aiService.generateTags(body.content);
+      const tags = await this.aiService.generateTags(body.content, user.uid);
 
       return ResponseUtility.success({
         tags,
