@@ -12,6 +12,8 @@ export interface ExploreQueryDto {
   query: string;
   /** Optional conversation context for follow-up questions */
   context?: string;
+  /** Optional user model ID for custom model selection */
+  userModelId?: string | null;
 }
 
 /**

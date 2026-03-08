@@ -53,7 +53,7 @@ export class ExploreController {
         return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'Query is required');
       }
 
-      const result = await this.exploreService.explore(queryDto, user.uid);
+      const result = await this.exploreService.explore(queryDto, user.uid, queryDto.userModelId);
 
       return ResponseUtility.success(result);
     } catch (error) {

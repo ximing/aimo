@@ -3,12 +3,13 @@ import { StateGraph, END, START, Annotation } from '@langchain/langgraph';
 import { ChatOpenAI } from '@langchain/openai';
 import { Service } from 'typedi';
 
-import { config } from '../config/config.js';
+import { getDatabase } from '../db/connection.js';
 import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
 import { logger } from '../utils/logger.js';
 
 import { AttachmentService } from './attachment.service.js';
 import { EmbeddingService } from './embedding.service.js';
+import { getModelClient } from './model-client.helper.js';
 import { MemoRelationService } from './memo-relation.service.js';
 import { MemoService } from './memo.service.js';
 
@@ -70,6 +71,8 @@ interface ExploreAgentState {
   sources?: ExploreSourceDto[];
   suggestedQuestions?: string[];
   error?: string;
+  // Model instance (passed through state for dynamic model selection)
+  model?: ChatOpenAI;
 }
 
 /**
@@ -81,25 +84,13 @@ interface ExploreAgentState {
  */
 @Service()
 export class ExploreService {
-  private model: ChatOpenAI;
-
   constructor(
     private memoService: MemoService,
     private embeddingService: EmbeddingService,
     private lanceDatabase: LanceDatabaseService,
     private memoRelationService: MemoRelationService,
     private attachmentService: AttachmentService
-  ) {
-    // Initialize LangChain components
-    this.model = new ChatOpenAI({
-      modelName: config.openai.model || 'gpt-4o-mini',
-      apiKey: config.openai.apiKey,
-      configuration: {
-        baseURL: config.openai.baseURL,
-      },
-      temperature: 0.3,
-    });
-  }
+  ) {}
 
   /**
    * Initialize the LangChain agent workflow
@@ -135,6 +126,7 @@ export class ExploreService {
       sources: Annotation<ExploreSourceDto[] | undefined>,
       suggestedQuestions: Annotation<string[] | undefined>,
       error: Annotation<string | undefined>,
+      model: Annotation<ChatOpenAI | undefined>,
     });
 
     // Define the state graph using Annotation
@@ -267,7 +259,7 @@ Provide a concise analysis focusing on how these notes can answer the user's que
         new HumanMessage(analysisPrompt),
       ];
 
-      const analysis = await this.model.invoke(messages);
+      const analysis = await state.model!.invoke(messages);
       const analysisText = typeof analysis.content === 'string' ? analysis.content : '';
 
       return {
@@ -411,7 +403,7 @@ Provide a brief analysis (2-3 sentences):`;
             new HumanMessage(relationPrompt),
           ];
 
-          const response = await this.model.invoke(messages);
+          const response = await state.model!.invoke(messages);
           const llmAnalysis = typeof response.content === 'string' ? response.content.trim() : '';
           if (llmAnalysis) {
             enhancedAnalysis = `${analysis}\n\n${llmAnalysis}`;
@@ -562,7 +554,7 @@ Provide 1-2 brief insights:`;
             new HumanMessage(attachmentPrompt),
           ];
 
-          const response = await this.model.invoke(messages);
+          const response = await state.model!.invoke(messages);
           const llmInsights = typeof response.content === 'string' ? response.content.trim() : '';
 
           if (llmInsights) {
@@ -679,7 +671,7 @@ Provide your answer:`;
         new HumanMessage(generationPrompt),
       ];
 
-      const response = await this.model.invoke(messages);
+      const response = await state.model!.invoke(messages);
       const answer = typeof response.content === 'string' ? response.content : '';
 
       // Map memos to sources
@@ -691,7 +683,11 @@ Provide your answer:`;
       }));
 
       // Generate suggested follow-up questions
-      const suggestedQuestions = await this.generateSuggestedQuestions(query, answer);
+      const suggestedQuestions = await this.generateSuggestedQuestions(
+        query,
+        answer,
+        state.model!
+      );
 
       return {
         answer,
@@ -711,7 +707,11 @@ Provide your answer:`;
   /**
    * Generate suggested follow-up questions
    */
-  private async generateSuggestedQuestions(query: string, answer: string): Promise<string[]> {
+  private async generateSuggestedQuestions(
+    query: string,
+    answer: string,
+    model: ChatOpenAI
+  ): Promise<string[]> {
     try {
       const prompt = `Based on this question and answer, suggest 3 follow-up questions the user might want to ask:
 
@@ -726,7 +726,7 @@ Provide exactly 3 short, relevant follow-up questions (one per line, no numberin
         new HumanMessage(prompt),
       ];
 
-      const response = await this.model.invoke(messages);
+      const response = await model.invoke(messages);
       const content = typeof response.content === 'string' ? response.content : '';
 
       // Parse questions (one per line, take first 3)
@@ -745,20 +745,30 @@ Provide exactly 3 short, relevant follow-up questions (one per line, no numberin
    * Process an exploration query through the agent workflow
    * @param queryDto The query data
    * @param uid User ID
+   * @param userModelId Optional user model ID for custom model selection
    * @returns The exploration response
    */
-  async explore(queryDto: ExploreQueryDto, uid: string): Promise<ExploreResponseDto> {
+  async explore(
+    queryDto: ExploreQueryDto,
+    uid: string,
+    userModelId?: string | null
+  ): Promise<ExploreResponseDto> {
     try {
       const { query, context } = queryDto;
+
+      // Get model client based on user model selection
+      const db = getDatabase();
+      const model = await getModelClient(db, uid, userModelId);
 
       // Initialize agent workflow
       const workflow = this.initializeWorkflow();
 
-      // Initialize agent state
+      // Initialize agent state with the model
       const initialState: ExploreAgentState = {
         query,
         uid,
         context,
+        model,
       };
 
       // Compile and run the workflow
