@@ -1,5 +1,5 @@
 import { Service } from 'typedi';
-import { eq, and, desc, inArray } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 import { ChatOpenAI } from '@langchain/openai';
 
 import { config } from '../config/config.js';
@@ -17,6 +17,7 @@ import { MemoService } from './memo.service.js';
 import type {
   CreateReviewSessionDto,
   CreateReviewProfileDto,
+  UpdateReviewProfileDto,
   ReviewProfileDto,
   ReviewSessionDto,
   ReviewItemDto,
@@ -25,7 +26,7 @@ import type {
   CompleteSessionResponseDto,
   ReviewHistoryItemDto,
   MasteryLevel,
-  MemoSearchOptionsDto,
+  ProfileFilterRule,
 } from '@aimo/dto';
 
 @Service()
@@ -43,10 +44,10 @@ export class ReviewService {
 
   async createSession(uid: string, dto: CreateReviewSessionDto): Promise<ReviewSessionDto> {
     const db = getDatabase();
-    let scope = dto.scope;
-    let scopeValue = dto.scopeValue; // Stored in DB as string
-    let scopeValueArray: string | string[] | undefined = dto.scopeValue; // Used for memo selection
-    let count = Math.min(Math.max(dto.questionCount ?? 7, 5), 10);
+    let scope = dto.scope ?? 'all';
+    let scopeValue = dto.scopeValue;
+    let count = Math.min(Math.max(dto.questionCount ?? 7, 5), 20);
+    let filterRules: ProfileFilterRule[] | undefined;
 
     // If profileId is provided, use profile settings
     if (dto.profileId) {
@@ -54,32 +55,17 @@ export class ReviewService {
       if (!profile) {
         throw new Error('Review profile not found');
       }
-      scope = profile.scope;
-      count = Math.min(Math.max(profile.questionCount, 5), 10);
-
-      // Convert filterValues to scopeValue based on scope type
-      if (profile.scope === 'category' && profile.filterValues && profile.filterValues.length > 0) {
-        // For multiple categories, pass array for OR logic when selecting memos
-        scopeValueArray = profile.filterValues;
-        // Store first value in DB for backward compatibility
-        scopeValue = profile.filterValues[0];
-      } else if (profile.scope === 'tag' && profile.filterValues && profile.filterValues.length > 0) {
-        // For multiple tags, pass array for OR logic when selecting memos
-        scopeValueArray = profile.filterValues;
-        // Store first value in DB for backward compatibility
-        scopeValue = profile.filterValues[0];
-      } else if (profile.scope === 'recent' && profile.recentDays) {
-        scopeValue = profile.recentDays.toString();
-        scopeValueArray = scopeValue;
-      }
-    }
-
-    if (!scope) {
+      count = Math.min(Math.max(profile.questionCount, 5), 20);
+      filterRules = profile.filterRules;
+      // For DB storage, keep scope/scopeValue for backward compat
       scope = 'all';
     }
 
-    // Select memos based on scope
-    const selectedMemos = await this.selectMemos(uid, scope, scopeValueArray, count);
+    // Select memos based on filter rules or legacy scope
+    const selectedMemos = filterRules
+      ? await this.selectMemosByRules(uid, filterRules, count)
+      : await this.selectMemosByScope(uid, scope, scopeValue, count);
+
     if (selectedMemos.length === 0) {
       throw new Error('No memos available for review in the selected scope');
     }
@@ -157,7 +143,6 @@ export class ReviewService {
       .set({ status: 'completed', score, completedAt: new Date() })
       .where(eq(reviewSessions.sessionId, sessionId));
 
-    // Fetch memo content for each item
     const itemDtos = await Promise.all(
       items.map(async (i) => {
         const [memo] = await db.select({ content: memos.content })
@@ -206,17 +191,7 @@ export class ReviewService {
       .where(eq(reviewProfiles.userId, uid))
       .orderBy(desc(reviewProfiles.createdAt));
 
-    return profiles.map(p => ({
-      profileId: p.profileId,
-      userId: p.userId,
-      name: p.name,
-      scope: p.scope,
-      filterValues: p.filterValues ?? undefined,
-      recentDays: p.recentDays ?? undefined,
-      questionCount: p.questionCount,
-      createdAt: p.createdAt.toISOString(),
-      updatedAt: p.updatedAt.toISOString(),
-    }));
+    return profiles.map(p => this.toProfileDto(p));
   }
 
   async createProfile(uid: string, dto: CreateReviewProfileDto): Promise<ReviewProfileDto> {
@@ -224,13 +199,14 @@ export class ReviewService {
     const profileId = generateTypeId(OBJECT_TYPE.REVIEW_SESSION);
     const now = new Date();
 
+    // Store filterRules in the filterValues JSON column
     await db.insert(reviewProfiles).values({
       profileId,
       userId: uid,
       name: dto.name,
-      scope: dto.scope,
-      filterValues: dto.filterValues ?? [],
-      recentDays: dto.recentDays ?? null,
+      scope: 'all',
+      filterValues: dto.filterRules as unknown as string[],
+      recentDays: null,
       questionCount: dto.questionCount ?? 10,
       createdAt: now,
       updatedAt: now,
@@ -240,13 +216,33 @@ export class ReviewService {
       profileId,
       userId: uid,
       name: dto.name,
-      scope: dto.scope,
-      filterValues: dto.filterValues,
-      recentDays: dto.recentDays,
+      filterRules: dto.filterRules,
       questionCount: dto.questionCount ?? 10,
       createdAt: now.toISOString(),
       updatedAt: now.toISOString(),
     };
+  }
+
+  async updateProfile(uid: string, profileId: string, dto: UpdateReviewProfileDto): Promise<ReviewProfileDto | null> {
+    const db = getDatabase();
+    const [existing] = await db.select().from(reviewProfiles)
+      .where(and(eq(reviewProfiles.profileId, profileId), eq(reviewProfiles.userId, uid)));
+
+    if (!existing) return null;
+
+    const updates: Partial<typeof reviewProfiles.$inferInsert> = {
+      updatedAt: new Date(),
+    };
+    if (dto.name !== undefined) updates.name = dto.name;
+    if (dto.filterRules !== undefined) updates.filterValues = dto.filterRules as unknown as string[];
+    if (dto.questionCount !== undefined) updates.questionCount = dto.questionCount;
+
+    await db.update(reviewProfiles).set(updates).where(eq(reviewProfiles.profileId, profileId));
+
+    const [updated] = await db.select().from(reviewProfiles)
+      .where(eq(reviewProfiles.profileId, profileId));
+
+    return this.toProfileDto(updated);
   }
 
   async deleteProfile(uid: string, profileId: string): Promise<boolean> {
@@ -266,53 +262,97 @@ export class ReviewService {
       .where(and(eq(reviewProfiles.profileId, profileId), eq(reviewProfiles.userId, uid)));
 
     if (!profile) return null;
-
-    return {
-      profileId: profile.profileId,
-      userId: profile.userId,
-      name: profile.name,
-      scope: profile.scope,
-      filterValues: profile.filterValues ?? undefined,
-      recentDays: profile.recentDays ?? undefined,
-      questionCount: profile.questionCount,
-      createdAt: profile.createdAt.toISOString(),
-      updatedAt: profile.updatedAt.toISOString(),
-    };
+    return this.toProfileDto(profile);
   }
 
-  private async selectMemos(uid: string, scope: string, scopeValue?: string | string[], count: number = 7) {
-    const options: MemoSearchOptionsDto = { uid, limit: 50, page: 1 };
+  /**
+   * Select memos using structured filter rules (AND logic).
+   * Include rules narrow the set; exclude rules remove from the set.
+   */
+  private async selectMemosByRules(uid: string, rules: ProfileFilterRule[], count: number) {
+    // Fetch a large pool first
+    const result = await this.memoService.getMemos({ uid, limit: 200, page: 1 });
+    let pool = result.items;
 
-    // Handle both single value and array of values (OR logic)
+    for (const rule of rules) {
+      if (rule.type === 'category') {
+        if (rule.operator === 'include') {
+          pool = pool.filter(m => m.categoryId === rule.value);
+        } else {
+          pool = pool.filter(m => m.categoryId !== rule.value);
+        }
+      } else if (rule.type === 'tag') {
+        if (rule.operator === 'include') {
+          pool = pool.filter(m => m.tags?.some(t => t.name === rule.value || t.tagId === rule.value));
+        } else {
+          pool = pool.filter(m => !m.tags?.some(t => t.name === rule.value || t.tagId === rule.value));
+        }
+      } else if (rule.type === 'recent_days') {
+        const days = parseInt(rule.value, 10) || 7;
+        const cutoff = Date.now() - days * 86400000;
+        pool = pool.filter(m => m.createdAt >= cutoff);
+      } else if (rule.type === 'date_range') {
+        const [startISO, endISO] = rule.value.split(',');
+        const start = startISO ? new Date(startISO).getTime() : 0;
+        const end = endISO ? new Date(endISO).getTime() : Infinity;
+        pool = pool.filter(m => m.createdAt >= start && m.createdAt <= end);
+      }
+    }
+
+    // Shuffle and pick
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    return pool.slice(0, count);
+  }
+
+  /** Legacy scope-based memo selection (for sessions created without a profile). */
+  private async selectMemosByScope(uid: string, scope: string, scopeValue?: string, count: number = 7) {
+    const options = { uid, limit: 50, page: 1 } as any;
+
     if (scope === 'category' && scopeValue) {
-      const values = Array.isArray(scopeValue) ? scopeValue : [scopeValue];
-      // For multiple categories, we need to fetch more memos and filter in memory
-      // since the API might not support IN clause for categoryId
-      options.categoryId = values[0];
+      options.categoryId = scopeValue;
     }
     if (scope === 'tag' && scopeValue) {
-      const values = Array.isArray(scopeValue) ? scopeValue : [scopeValue];
-      options.tags = values;
+      options.tags = [scopeValue];
     }
     if (scope === 'recent' && scopeValue) {
-      const values = Array.isArray(scopeValue) ? scopeValue : [scopeValue];
-      const days = parseInt(values[0], 10) || 7;
+      const days = parseInt(scopeValue, 10) || 7;
       options.startDate = new Date(Date.now() - days * 86400000);
     }
+
     const result = await this.memoService.getMemos(options);
     let all = result.items;
 
-    // For category with multiple values, filter in memory (OR logic)
-    if (scope === 'category' && scopeValue && Array.isArray(scopeValue) && scopeValue.length > 1) {
-      all = all.filter(m => m.categoryId && scopeValue.includes(m.categoryId));
-    }
-
-    // Shuffle and pick count
     for (let i = all.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [all[i], all[j]] = [all[j], all[i]];
     }
     return all.slice(0, count);
+  }
+
+  private toProfileDto(p: any): ReviewProfileDto {
+    // filterValues column stores ProfileFilterRule[] in new format
+    let filterRules: ProfileFilterRule[] = [];
+    if (Array.isArray(p.filterValues) && p.filterValues.length > 0) {
+      const first = p.filterValues[0];
+      if (typeof first === 'object' && first !== null && 'type' in first) {
+        // New format: ProfileFilterRule[]
+        filterRules = p.filterValues as ProfileFilterRule[];
+      }
+      // Old string[] format: leave filterRules empty (graceful degradation)
+    }
+
+    return {
+      profileId: p.profileId,
+      userId: p.userId,
+      name: p.name,
+      filterRules,
+      questionCount: p.questionCount,
+      createdAt: p.createdAt instanceof Date ? p.createdAt.toISOString() : p.createdAt,
+      updatedAt: p.updatedAt instanceof Date ? p.updatedAt.toISOString() : p.updatedAt,
+    };
   }
 
   private async generateQuestion(content: string): Promise<string> {
@@ -346,13 +386,8 @@ export class ReviewService {
     return Math.round((total / items.length) * 100);
   }
 
-  private buildQuestionPrompt(content: string): string {
-    return `笔记内容：${content}`;
-  }
-
   private async toSessionDto(session: any, items: any[]): Promise<ReviewSessionDto> {
     const db = getDatabase();
-    // Fetch memo content for each item
     const itemsWithContent = await Promise.all(
       items.map(async (i) => {
         const [memo] = await db.select({ content: memos.content })

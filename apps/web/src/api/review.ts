@@ -1,5 +1,5 @@
 import type {
-  CreateReviewSessionDto, CreateReviewProfileDto, ReviewProfileDto,
+  CreateReviewSessionDto, CreateReviewProfileDto, UpdateReviewProfileDto, ReviewProfileDto,
   ReviewSessionDto, SubmitAnswerDto,
   SubmitAnswerResponseDto, CompleteSessionResponseDto, ReviewHistoryItemDto
 } from '@aimo/dto';
@@ -34,6 +34,11 @@ export const getReviewProfiles = () =>
 
 export const createReviewProfile = (data: CreateReviewProfileDto) =>
   request.post<unknown, { code: number; data: ReviewProfileDto }>('/api/v1/review/profiles', data);
+
+export const updateReviewProfile = (profileId: string, data: UpdateReviewProfileDto) =>
+  request.put<unknown, { code: number; data: ReviewProfileDto }>(
+    `/api/v1/review/profiles/${profileId}`, data
+  );
 
 export const deleteReviewProfile = (profileId: string) =>
   request.delete<unknown, { code: number; data: { success: boolean } }>(

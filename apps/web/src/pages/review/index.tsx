@@ -5,9 +5,9 @@ import * as reviewApi from '../../api/review';
 import * as srApi from '../../api/spaced-repetition';
 import * as categoryApi from '../../api/category';
 import * as tagApi from '../../api/tag';
-import type { ReviewSessionDto, SubmitAnswerResponseDto, CompleteSessionResponseDto, ReviewHistoryItemDto, ReviewItemDto, ReviewProfileDto, CreateReviewProfileDto } from '@aimo/dto';
+import type { ReviewSessionDto, SubmitAnswerResponseDto, CompleteSessionResponseDto, ReviewHistoryItemDto, ReviewItemDto, ReviewProfileDto, ProfileFilterRule } from '@aimo/dto';
 import type { SRCard } from '../../api/spaced-repetition';
-import { Clock, Loader2, ChevronLeft, ChevronRight, CheckCircle, Circle, XCircle, Plus, BrainCircuit, Trash2, Play, Save } from 'lucide-react';
+import { Clock, Loader2, ChevronLeft, ChevronRight, CheckCircle, Circle, XCircle, Plus, BrainCircuit, Trash2, Play, Save, X, Calendar, Tag, FolderOpen, CalendarDays } from 'lucide-react';
 
 type Step = 'setup' | 'quiz' | 'summary';
 type Scope = 'all' | 'category' | 'tag' | 'recent';
@@ -52,6 +52,300 @@ const getItemStatus = (item: ReviewItemDto): 'remembered' | 'fuzzy' | 'forgot' |
   return 'pending';
 };
 
+// ─── ProfileDetailPanel ────────────────────────────────────────────────────
+
+type RuleType = ProfileFilterRule['type'];
+type RuleOperator = ProfileFilterRule['operator'];
+
+const RULE_TYPE_LABELS: Record<RuleType, string> = {
+  category: '分类',
+  tag: '标签',
+  recent_days: '最近 N 天',
+  date_range: '日期范围',
+};
+
+const RULE_TYPE_ICONS: Record<RuleType, React.ReactNode> = {
+  category: <FolderOpen className="w-3.5 h-3.5" />,
+  tag: <Tag className="w-3.5 h-3.5" />,
+  recent_days: <CalendarDays className="w-3.5 h-3.5" />,
+  date_range: <Calendar className="w-3.5 h-3.5" />,
+};
+
+interface ProfileDetailPanelProps {
+  mode: string; // 'none' | 'new' | profileId
+  name: string;
+  rules: ProfileFilterRule[];
+  questionCount: number;
+  dirty: boolean;
+  saving: boolean;
+  loading: boolean;
+  categories: { id: string; name: string }[];
+  tags: { id: string; name: string }[];
+  onNameChange: (v: string) => void;
+  onRulesChange: (rules: ProfileFilterRule[]) => void;
+  onQuestionCountChange: (v: number) => void;
+  onSave: () => Promise<string | null>;
+  onStartWithSave: () => void;
+  onDelete?: () => void;
+}
+
+const ProfileDetailPanel = ({
+  mode, name, rules, questionCount, dirty, saving, loading,
+  categories, tags,
+  onNameChange, onRulesChange, onQuestionCountChange,
+  onSave, onStartWithSave, onDelete,
+}: ProfileDetailPanelProps) => {
+  // State for the "add rule" form
+  const [addingType, setAddingType] = useState<RuleType>('category');
+  const [addingOperator, setAddingOperator] = useState<RuleOperator>('include');
+  const [addingValue, setAddingValue] = useState('');
+  const [addingDateStart, setAddingDateStart] = useState('');
+  const [addingDateEnd, setAddingDateEnd] = useState('');
+  const [addingRecentDays, setAddingRecentDays] = useState('7');
+
+  if (mode === 'none') {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-center py-24">
+        <BrainCircuit className="w-16 h-16 text-gray-200 dark:text-gray-700 mb-4" />
+        <p className="text-gray-400 dark:text-gray-500 text-sm">从左侧选择一个回顾模式</p>
+        <p className="text-gray-300 dark:text-gray-600 text-xs mt-1">或点击「新建模式」创建一个</p>
+      </div>
+    );
+  }
+
+  const isNew = mode === 'new';
+
+  const handleAddRule = () => {
+    let value = '';
+    let label = '';
+    if (addingType === 'category') {
+      value = addingValue;
+      label = categories.find(c => c.id === addingValue)?.name ?? addingValue;
+    } else if (addingType === 'tag') {
+      value = addingValue;
+      label = tags.find(t => t.id === addingValue)?.name ?? addingValue;
+    } else if (addingType === 'recent_days') {
+      value = addingRecentDays;
+      label = `${addingRecentDays}天内`;
+    } else if (addingType === 'date_range') {
+      value = `${addingDateStart},${addingDateEnd}`;
+      label = `${addingDateStart} ~ ${addingDateEnd}`;
+    }
+    if (!value) return;
+    onRulesChange([...rules, { type: addingType, operator: addingOperator, value, label }]);
+    setAddingValue('');
+    setAddingDateStart('');
+    setAddingDateEnd('');
+    setAddingRecentDays('7');
+  };
+
+  const handleRemoveRule = (idx: number) => {
+    onRulesChange(rules.filter((_, i) => i !== idx));
+  };
+
+  const operatorLabel = (op: RuleOperator) => op === 'include' ? '包含' : '排除';
+  const operatorColor = (op: RuleOperator) =>
+    op === 'include'
+      ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+      : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400';
+
+  return (
+    <div className="max-w-xl mx-auto px-8 py-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-50">
+          {isNew ? '新建回顾模式' : '编辑回顾模式'}
+        </h2>
+        {!isNew && onDelete && (
+          <button
+            onClick={onDelete}
+            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+            title="删除模式"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+
+      {/* Name */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">模式名称</label>
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => onNameChange(e.target.value)}
+          placeholder="例如：工作笔记每日复习"
+          className="w-full bg-white dark:bg-dark-700 border border-gray-300 dark:border-dark-600 rounded-lg px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          autoFocus={isNew}
+        />
+      </div>
+
+      {/* Filter Rules */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">过滤规则</label>
+        <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">多条规则为 AND 关系，笔记需同时满足所有规则</p>
+
+        {/* Existing rules */}
+        {rules.length > 0 && (
+          <div className="space-y-2 mb-3">
+            {rules.map((rule, idx) => (
+              <div key={idx} className="flex items-center gap-2 bg-gray-50 dark:bg-dark-700 rounded-lg px-3 py-2">
+                <span className="text-gray-400">{RULE_TYPE_ICONS[rule.type]}</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{RULE_TYPE_LABELS[rule.type]}</span>
+                <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${operatorColor(rule.operator)}`}>
+                  {operatorLabel(rule.operator)}
+                </span>
+                <span className="text-sm text-gray-700 dark:text-gray-300 flex-1 truncate">
+                  {rule.label ?? rule.value}
+                </span>
+                <button
+                  onClick={() => handleRemoveRule(idx)}
+                  className="text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400 transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Add rule form */}
+        <div className="border border-dashed border-gray-300 dark:border-dark-600 rounded-lg p-3 space-y-3">
+          <p className="text-xs font-medium text-gray-500 dark:text-gray-400">添加规则</p>
+
+          {/* Row 1: type + operator */}
+          <div className="flex gap-2">
+            <select
+              value={addingType}
+              onChange={(e) => { setAddingType(e.target.value as RuleType); setAddingValue(''); }}
+              className="flex-1 bg-white dark:bg-dark-700 border border-gray-300 dark:border-dark-600 rounded-lg px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            >
+              {(Object.keys(RULE_TYPE_LABELS) as RuleType[]).map(t => (
+                <option key={t} value={t}>{RULE_TYPE_LABELS[t]}</option>
+              ))}
+            </select>
+            {(addingType === 'category' || addingType === 'tag') && (
+              <select
+                value={addingOperator}
+                onChange={(e) => setAddingOperator(e.target.value as RuleOperator)}
+                className="w-20 bg-white dark:bg-dark-700 border border-gray-300 dark:border-dark-600 rounded-lg px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              >
+                <option value="include">包含</option>
+                <option value="exclude">排除</option>
+              </select>
+            )}
+          </div>
+
+          {/* Row 2: value input */}
+          {addingType === 'category' && (
+            <select
+              value={addingValue}
+              onChange={(e) => setAddingValue(e.target.value)}
+              className="w-full bg-white dark:bg-dark-700 border border-gray-300 dark:border-dark-600 rounded-lg px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            >
+              <option value="">选择分类...</option>
+              {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          )}
+          {addingType === 'tag' && (
+            <select
+              value={addingValue}
+              onChange={(e) => setAddingValue(e.target.value)}
+              className="w-full bg-white dark:bg-dark-700 border border-gray-300 dark:border-dark-600 rounded-lg px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            >
+              <option value="">选择标签...</option>
+              {tags.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+          )}
+          {addingType === 'recent_days' && (
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min={1}
+                max={365}
+                value={addingRecentDays}
+                onChange={(e) => setAddingRecentDays(e.target.value)}
+                className="w-24 bg-white dark:bg-dark-700 border border-gray-300 dark:border-dark-600 rounded-lg px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              />
+              <span className="text-sm text-gray-500 dark:text-gray-400">天内创建的笔记</span>
+            </div>
+          )}
+          {addingType === 'date_range' && (
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={addingDateStart}
+                onChange={(e) => setAddingDateStart(e.target.value)}
+                className="flex-1 bg-white dark:bg-dark-700 border border-gray-300 dark:border-dark-600 rounded-lg px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              />
+              <span className="text-xs text-gray-400">至</span>
+              <input
+                type="date"
+                value={addingDateEnd}
+                onChange={(e) => setAddingDateEnd(e.target.value)}
+                className="flex-1 bg-white dark:bg-dark-700 border border-gray-300 dark:border-dark-600 rounded-lg px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              />
+            </div>
+          )}
+
+          <button
+            onClick={handleAddRule}
+            disabled={
+              (addingType === 'category' && !addingValue) ||
+              (addingType === 'tag' && !addingValue) ||
+              (addingType === 'date_range' && (!addingDateStart || !addingDateEnd))
+            }
+            className="w-full flex items-center justify-center gap-1.5 py-1.5 text-sm text-primary-600 dark:text-primary-400 border border-primary-300 dark:border-primary-700 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            添加此规则
+          </button>
+        </div>
+      </div>
+
+      {/* Question Count */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          题目数量：<span className="text-primary-600 dark:text-primary-400 font-semibold">{questionCount}</span>
+        </label>
+        <input
+          type="range"
+          min={5}
+          max={20}
+          value={questionCount}
+          onChange={(e) => onQuestionCountChange(parseInt(e.target.value, 10))}
+          className="w-full accent-primary-600"
+        />
+        <div className="flex justify-between text-xs text-gray-400 mt-1">
+          <span>5</span><span>20</span>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex gap-3 pt-2">
+        <button
+          onClick={onSave}
+          disabled={saving || !name.trim()}
+          className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 dark:border-dark-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+        >
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          {dirty ? '保存修改' : '已保存'}
+        </button>
+        <button
+          onClick={onStartWithSave}
+          disabled={loading || saving || !name.trim()}
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+        >
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+          {loading ? '准备中...' : '开始回顾'}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ─── ReviewPage ────────────────────────────────────────────────────────────
+
 export const ReviewPage = view(() => {
   const [step, setStep] = useState<Step>('setup');
   const [reviewType, setReviewType] = useState<ReviewType>('ai');
@@ -87,13 +381,19 @@ export const ReviewPage = view(() => {
   const [profiles, setProfiles] = useState<ReviewProfileDto[]>([]);
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [tags, setTags] = useState<{ id: string; name: string }[]>([]);
-  const [showSaveProfileDialog, setShowSaveProfileDialog] = useState(false);
-  const [newProfileName, setNewProfileName] = useState('');
+
+  // Profile detail panel state
+  // 'none' = empty placeholder, 'new' = creating new, profileId = editing existing
+  type DetailMode = 'none' | 'new' | string;
+  const [detailMode, setDetailMode] = useState<DetailMode>('none');
+  const [detailName, setDetailName] = useState('');
+  const [detailRules, setDetailRules] = useState<ProfileFilterRule[]>([]);
+  const [detailQuestionCount, setDetailQuestionCount] = useState(10);
+  const [detailSaving, setDetailSaving] = useState(false);
+  const [detailDirty, setDetailDirty] = useState(false);
+
+  // Legacy state kept for SR mode / other uses
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
-  const [showCustomSetup, setShowCustomSetup] = useState(false);
-  const [customScope, setCustomScope] = useState<Scope>('all');
-  const [customFilterValues, setCustomFilterValues] = useState<string[]>([]);
-  const [questionCount, setQuestionCount] = useState(7);
 
   // Handle tab switch - reset states to prevent pollution
   const handleReviewTypeChange = (type: ReviewType) => {
@@ -196,10 +496,10 @@ export const ReviewPage = view(() => {
         tagApi.getTags(),
       ]);
       if (catRes.code === 0) {
-        setCategories(catRes.data?.items || []);
+        setCategories((catRes.data?.categories || []).map((c: any) => ({ id: c.categoryId, name: c.name })));
       }
       if (tagRes.code === 0) {
-        setTags(tagRes.data?.tags || []);
+        setTags((tagRes.data?.tags || []).map((t: any) => ({ id: t.tagId, name: t.name })));
       }
     } catch (error) {
       console.error('Failed to load categories/tags:', error);
@@ -226,25 +526,66 @@ export const ReviewPage = view(() => {
     }
   };
 
-  const handleSaveProfile = async (): Promise<string | null> => {
-    if (!newProfileName.trim()) return null;
+  // Open detail panel for new profile
+  const handleNewProfile = () => {
+    setStep('setup');
+    setDetailMode('new');
+    setDetailName('');
+    setDetailRules([]);
+    setDetailQuestionCount(10);
+    setDetailDirty(false);
+    setSelectedProfileId(null);
+  };
+
+  // Open detail panel for existing profile
+  const handleSelectProfile = (profile: ReviewProfileDto) => {
+    setStep('setup');
+    setDetailMode(profile.profileId);
+    setDetailName(profile.name);
+    setDetailRules(profile.filterRules ?? []);
+    setDetailQuestionCount(profile.questionCount);
+    setDetailDirty(false);
+    setSelectedProfileId(profile.profileId);
+  };
+
+  const handleDetailRuleChange = (rules: ProfileFilterRule[]) => {
+    setDetailRules(rules);
+    setDetailDirty(true);
+  };
+
+  const handleSaveDetail = async (): Promise<string | null> => {
+    if (!detailName.trim()) return null;
+    setDetailSaving(true);
     try {
-      const dto: CreateReviewProfileDto = {
-        name: newProfileName.trim(),
-        scope: customScope,
-        filterValues: customScope !== 'all' && customScope !== 'recent' ? customFilterValues : undefined,
-        recentDays: customScope === 'recent' ? parseInt(customFilterValues[0] || '7', 10) : undefined,
-        questionCount,
-      };
-      const res = await reviewApi.createReviewProfile(dto);
-      if (res.code === 0) {
-        setProfiles([res.data, ...profiles]);
-        setShowSaveProfileDialog(false);
-        setNewProfileName('');
-        return res.data.profileId;
+      if (detailMode === 'new') {
+        const res = await reviewApi.createReviewProfile({
+          name: detailName.trim(),
+          filterRules: detailRules,
+          questionCount: detailQuestionCount,
+        });
+        if (res.code === 0) {
+          setProfiles([res.data, ...profiles]);
+          setDetailMode(res.data.profileId);
+          setSelectedProfileId(res.data.profileId);
+          setDetailDirty(false);
+          return res.data.profileId;
+        }
+      } else {
+        const res = await reviewApi.updateReviewProfile(detailMode, {
+          name: detailName.trim(),
+          filterRules: detailRules,
+          questionCount: detailQuestionCount,
+        });
+        if (res.code === 0) {
+          setProfiles(profiles.map(p => p.profileId === detailMode ? res.data : p));
+          setDetailDirty(false);
+          return detailMode;
+        }
       }
     } catch (error) {
       console.error('Failed to save profile:', error);
+    } finally {
+      setDetailSaving(false);
     }
     return null;
   };
@@ -255,10 +596,24 @@ export const ReviewPage = view(() => {
       const res = await reviewApi.deleteReviewProfile(profileId);
       if (res.code === 0) {
         setProfiles(profiles.filter(p => p.profileId !== profileId));
+        if (detailMode === profileId) {
+          setDetailMode('none');
+          setSelectedProfileId(null);
+        }
       }
     } catch (error) {
       console.error('Failed to delete profile:', error);
     }
+  };
+
+  const handleStartWithDetail = async () => {
+    // Save first if dirty or new
+    let profileId: string | null = detailMode === 'new' ? null : detailMode;
+    if (detailMode === 'new' || detailDirty) {
+      profileId = await handleSaveDetail();
+    }
+    if (!profileId) return;
+    await handleStartWithProfile(profileId);
   };
 
   // Calculate progress - count items that have been answered
@@ -267,33 +622,6 @@ export const ReviewPage = view(() => {
 
   // SR progress
 
-  const handleStart = async () => {
-    setLoading(true);
-    try {
-      // Use profile if selected, otherwise use custom settings
-      const dto = selectedProfileId
-        ? { profileId: selectedProfileId }
-        : {
-            scope: customScope,
-            scopeValue: customScope === 'recent' ? customFilterValues[0] || '7' : customFilterValues[0],
-            questionCount,
-          };
-      const res = await reviewApi.createReviewSession(dto);
-      if (res.code === 0) {
-        setSession(res.data);
-        setStep('quiz');
-        setCurrentIndex(0);
-        setAnswer('');
-        setFeedback(null);
-        const newSessionId = res.data.sessionId;
-        setSelectedHistorySession(newSessionId);
-        localStorage.setItem(STORAGE_KEY, newSessionId);
-        loadHistory();
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSelectHistorySession = async (sessionId: string) => {
     setLoading(true);
@@ -540,11 +868,42 @@ export const ReviewPage = view(() => {
 
   return (
     <Layout>
-      <div className="flex-1 flex h-full overflow-hidden">
-        {/* Left Sidebar - 280px fixed width */}
-        <aside className="w-[280px] flex-shrink-0 border-r border-gray-200 dark:border-dark-700 bg-gray-50 dark:bg-dark-800 flex flex-col">
+      <div className="flex-1 flex flex-col h-full overflow-hidden">
+        {/* Top Tab Bar - Full width, centered items */}
+        <div className="flex-shrink-0 bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700">
+          <div className="flex justify-center gap-2 px-6 pt-3">
+            <button
+              onClick={() => handleReviewTypeChange('ai')}
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-t-lg border-b-2 transition-all ${
+                reviewType === 'ai'
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <BrainCircuit className={`w-5 h-5 ${reviewType === 'ai' ? 'text-primary-600 dark:text-primary-400' : ''}`} />
+              <span className="font-medium">AI 回顾</span>
+            </button>
+            <button
+              onClick={() => handleReviewTypeChange('sr')}
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-t-lg border-b-2 transition-all ${
+                reviewType === 'sr'
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <Clock className={`w-5 h-5 ${reviewType === 'sr' ? 'text-primary-600 dark:text-primary-400' : ''}`} />
+              <span className="font-medium">间隔重复</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Content Area */}
+        <div className="flex-1 flex overflow-hidden">
+        {/* Left Sidebar - only shown in AI review mode */}
+        {reviewType === 'ai' && (
+        <aside className="w-[280px] flex-shrink-0 border-r border-gray-200 dark:border-dark-700 bg-gray-50 dark:bg-dark-800 flex flex-col overflow-hidden">
           {/* Sidebar Header - 回顾模式 */}
-          <div className="p-4 border-b border-gray-200 dark:border-dark-700">
+          <div className="flex-shrink-0 p-4 border-b border-gray-200 dark:border-dark-700">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center">
@@ -553,7 +912,7 @@ export const ReviewPage = view(() => {
                 <h1 className="text-base font-semibold text-gray-900 dark:text-gray-50">回顾模式</h1>
               </div>
               <button
-                onClick={() => setShowSaveProfileDialog(true)}
+                onClick={handleNewProfile}
                 className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
                 title="新建模式"
               >
@@ -563,8 +922,8 @@ export const ReviewPage = view(() => {
             </div>
           </div>
 
-          {/* Profile List in Left Sidebar */}
-          <div className="flex-1 overflow-y-auto border-b border-gray-200 dark:border-dark-700">
+          {/* Profile List in Left Sidebar - adaptive height */}
+          <div className="overflow-y-auto border-b border-gray-200 dark:border-dark-700">
             {profiles.length === 0 ? (
               <div className="p-8 text-center">
                 <BrainCircuit className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
@@ -579,19 +938,16 @@ export const ReviewPage = view(() => {
                   <div
                     key={profile.profileId}
                     className={`relative group rounded-lg transition-colors cursor-pointer ${
-                      selectedProfileId === profile.profileId
+                      detailMode === profile.profileId
                         ? 'bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800'
                         : 'hover:bg-gray-100 dark:hover:bg-dark-700 border border-transparent'
                     }`}
-                    onClick={() => {
-                      setSelectedProfileId(profile.profileId);
-                      setShowCustomSetup(false);
-                    }}
+                    onClick={() => handleSelectProfile(profile)}
                   >
                     <div className="p-3">
                       <p
                         className={`text-sm font-medium truncate ${
-                          selectedProfileId === profile.profileId
+                          detailMode === profile.profileId
                             ? 'text-primary-700 dark:text-primary-400'
                             : 'text-gray-700 dark:text-gray-300'
                         }`}
@@ -599,7 +955,7 @@ export const ReviewPage = view(() => {
                         {profile.name}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                        {scopeLabels[profile.scope]}{profile.scopeValue ? ` - ${profile.scopeValue}` : ''} · {profile.questionCount}题
+                        {profile.filterRules?.length > 0 ? `${profile.filterRules.length}条规则` : '全部笔记'} · {profile.questionCount}题
                       </p>
                     </div>
                     <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -631,11 +987,11 @@ export const ReviewPage = view(() => {
           </div>
 
           {/* History Section Header */}
-          <div className="p-4 border-b border-gray-200 dark:border-dark-700">
+          <div className="flex-shrink-0 p-4 border-b border-gray-200 dark:border-dark-700">
             <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300">历史记录</h2>
           </div>
 
-          {/* History List */}
+          {/* History List - takes remaining space */}
           <div className="flex-1 overflow-y-auto">
             {historyLoading ? (
               <div className="p-4 space-y-3">
@@ -693,257 +1049,44 @@ export const ReviewPage = view(() => {
             )}
           </div>
         </aside>
+        )}
 
         {/* Main Content Area */}
         <main className="flex-1 flex flex-col min-w-0 bg-white dark:bg-dark-800 overflow-hidden">
-          {/* Review Type Tab Bar - Always visible at top */}
-          <div className="bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700 px-6 pt-4">
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleReviewTypeChange('ai')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-t-lg border-b-2 transition-all ${
-                  reviewType === 'ai'
-                    ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                    : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <BrainCircuit className={`w-5 h-5 ${reviewType === 'ai' ? 'text-primary-600 dark:text-primary-400' : ''}`} />
-                <span className="font-medium">AI 回顾</span>
-              </button>
-              <button
-                onClick={() => handleReviewTypeChange('sr')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-t-lg border-b-2 transition-all ${
-                  reviewType === 'sr'
-                    ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                    : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <Clock className={`w-5 h-5 ${reviewType === 'sr' ? 'text-primary-600 dark:text-primary-400' : ''}`} />
-                <span className="font-medium">间隔重复</span>
-              </button>
-            </div>
-          </div>
 
           <div className="flex-1 overflow-y-auto">
             <div className="max-w-2xl mx-auto px-8 py-6">
-              {step === 'setup' && (
+              {step === 'setup' && reviewType === 'ai' && (
+                <ProfileDetailPanel
+                  mode={detailMode}
+                  name={detailName}
+                  rules={detailRules}
+                  questionCount={detailQuestionCount}
+                  dirty={detailDirty}
+                  saving={detailSaving}
+                  loading={loading}
+                  categories={categories}
+                  tags={tags}
+                  onNameChange={(v) => { setDetailName(v); setDetailDirty(true); }}
+                  onRulesChange={handleDetailRuleChange}
+                  onQuestionCountChange={(v) => { setDetailQuestionCount(v); setDetailDirty(true); }}
+                  onSave={handleSaveDetail}
+                  onStartWithSave={handleStartWithDetail}
+                  onDelete={detailMode !== 'none' && detailMode !== 'new' ? () => handleDeleteProfile(detailMode) : undefined}
+                />
+              )}
+
+              {step === 'setup' && reviewType === 'sr' && (
                 <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-6">
-                  <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-6">
-                    {reviewType === 'ai' ? '选择回顾模式' : '间隔重复复习'}
-                  </h1>
-
-                  {reviewType === 'ai' ? (
-                    <>
-                      {/* Saved Profiles Section */}
-                      {profiles.length > 0 && (
-                        <div className="mb-6">
-                          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">已保存的回顾模式</h3>
-                          <div className="grid grid-cols-1 gap-2">
-                            {profiles.map((profile) => (
-                              <div
-                                key={profile.profileId}
-                                className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
-                                  selectedProfileId === profile.profileId
-                                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                                    : 'border-gray-200 dark:border-dark-700 hover:border-gray-300 dark:hover:border-dark-600'
-                                }`}
-                              >
-                                <div className="flex-1 min-w-0 cursor-pointer" onClick={() => {
-                                  setSelectedProfileId(profile.profileId);
-                                  setShowCustomSetup(false);
-                                }}>
-                                  <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{profile.name}</p>
-                                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                                    {scopeLabels[profile.scope]}
-                                    {profile.filterValues && profile.filterValues.length > 0 && ` · ${profile.filterValues.join(', ')}`}
-                                    {profile.recentDays && ` · ${profile.recentDays}天`}
-                                    {` · ${profile.questionCount}题`}
-                                  </p>
-                                </div>
-                                <div className="flex items-center gap-1 ml-2">
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleDeleteProfile(profile.profileId);
-                                    }}
-                                    className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
-                                    title="删除"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleStartWithProfile(profile.profileId)}
-                                    disabled={loading}
-                                    className="p-1.5 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg"
-                                    title="开始"
-                                  >
-                                    <Play className="w-4 h-4" />
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Divider */}
-                      <div className="flex items-center gap-3 mb-6">
-                        <div className="flex-1 h-px bg-gray-200 dark:bg-dark-700" />
-                        <span className="text-xs text-gray-400">或自定义设置</span>
-                        <div className="flex-1 h-px bg-gray-200 dark:bg-dark-700" />
-                      </div>
-
-                      {/* Custom Setup Section */}
-                      <div className="space-y-4 mb-6">
-                        {/* Scope Selection */}
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">选择范围</label>
-                          <div className="grid grid-cols-2 gap-2">
-                            {(['all', 'category', 'tag', 'recent'] as Scope[]).map((s) => (
-                              <button
-                                key={s}
-                                onClick={() => {
-                                  setCustomScope(s);
-                                  setSelectedProfileId(null);
-                                  setShowCustomSetup(true);
-                                }}
-                                className={`p-2 rounded-lg border text-sm transition-all ${
-                                  customScope === s && showCustomSetup
-                                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                                    : 'border-gray-200 dark:border-dark-700 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-dark-600'
-                                }`}
-                              >
-                                {scopeLabels[s]}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Multi-select for Category/Tag */}
-                        {customScope === 'category' && (
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">选择分类（可多选）</label>
-                            <div className="flex flex-wrap gap-2">
-                              {categories.map((cat) => (
-                                <button
-                                  key={cat.id}
-                                  onClick={() => {
-                                    setCustomFilterValues(prev =>
-                                      prev.includes(cat.id)
-                                        ? prev.filter(v => v !== cat.id)
-                                        : [...prev, cat.id]
-                                    );
-                                    setShowCustomSetup(true);
-                                  }}
-                                  className={`px-3 py-1.5 rounded-full text-sm transition-all ${
-                                    customFilterValues.includes(cat.id)
-                                      ? 'bg-primary-500 text-white'
-                                      : 'bg-gray-100 dark:bg-dark-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-dark-600'
-                                  }`}
-                                >
-                                  {cat.name}
-                                </button>
-                              ))}
-                              {categories.length === 0 && <span className="text-sm text-gray-400">暂无分类</span>}
-                            </div>
-                          </div>
-                        )}
-
-                        {customScope === 'tag' && (
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">选择标签（可多选）</label>
-                            <div className="flex flex-wrap gap-2">
-                              {tags.map((tag) => (
-                                <button
-                                  key={tag.id}
-                                  onClick={() => {
-                                    setCustomFilterValues(prev =>
-                                      prev.includes(tag.id)
-                                        ? prev.filter(v => v !== tag.id)
-                                        : [...prev, tag.id]
-                                    );
-                                    setShowCustomSetup(true);
-                                  }}
-                                  className={`px-3 py-1.5 rounded-full text-sm transition-all ${
-                                    customFilterValues.includes(tag.id)
-                                      ? 'bg-primary-500 text-white'
-                                      : 'bg-gray-100 dark:bg-dark-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-dark-600'
-                                  }`}
-                                >
-                                  {tag.name}
-                                </button>
-                              ))}
-                              {tags.length === 0 && <span className="text-sm text-gray-400">暂无标签</span>}
-                            </div>
-                          </div>
-                        )}
-
-                        {customScope === 'recent' && (
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">最近天数</label>
-                            <input
-                              type="number"
-                              min={1}
-                              max={365}
-                              value={customFilterValues[0] || '7'}
-                              onChange={(e) => {
-                                setCustomFilterValues([e.target.value]);
-                                setShowCustomSetup(true);
-                              }}
-                              className="w-full bg-white dark:bg-dark-700 border border-gray-300 dark:border-dark-600 rounded-lg px-4 py-2 text-gray-900 dark:text-gray-100"
-                              placeholder="输入天数"
-                            />
-                          </div>
-                        )}
-
-                        {/* Question Count */}
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">题目数量: {questionCount}</label>
-                          <input
-                            type="range"
-                            min={5}
-                            max={10}
-                            value={questionCount}
-                            onChange={(e) => {
-                              setQuestionCount(parseInt(e.target.value, 10));
-                              setShowCustomSetup(true);
-                            }}
-                            className="w-full"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="flex gap-3">
-                        <button
-                          className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg px-4 py-2.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                          onClick={handleStart}
-                          disabled={loading || (!showCustomSetup && profiles.length === 0)}
-                        >
-                          {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                          {loading ? '准备中...' : '开始回顾'}
-                        </button>
-                        {showCustomSetup && (
-                          <button
-                            onClick={() => setShowSaveProfileDialog(true)}
-                            className="px-4 py-2.5 border border-gray-300 dark:border-dark-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"
-                            title="保存为回顾模式"
-                          >
-                            <Save className="w-5 h-5" />
-                          </button>
-                        )}
-                      </div>
-                    </>
-                  ) : (
-                    <button
-                      className="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg px-4 py-2.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                      onClick={handleStartSR}
-                      disabled={srLoading}
-                    >
-                      {srLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                      {srLoading ? '加载中...' : '开始复习'}
-                    </button>
-                  )}
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-6">间隔重复复习</h1>
+                  <button
+                    className="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg px-4 py-2.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    onClick={handleStartSR}
+                    disabled={srLoading}
+                  >
+                    {srLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {srLoading ? '加载中...' : '开始复习'}
+                  </button>
                 </div>
               )}
 
@@ -1329,70 +1472,8 @@ export const ReviewPage = view(() => {
             </div>
           </div>
 
-          {/* Save Profile Dialog */}
-          {showSaveProfileDialog && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center">
-              <div className="absolute inset-0 bg-black/50" onClick={() => setShowSaveProfileDialog(false)} />
-              <div className="relative bg-white dark:bg-dark-800 rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">保存回顾模式</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">模式名称</label>
-                    <input
-                      type="text"
-                      value={newProfileName}
-                      onChange={(e) => setNewProfileName(e.target.value)}
-                      placeholder="例如：我的每日复习"
-                      className="w-full bg-white dark:bg-dark-700 border border-gray-300 dark:border-dark-600 rounded-lg px-4 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400"
-                      autoFocus
-                    />
-                  </div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">
-                    <p>将保存以下设置：</p>
-                    <ul className="mt-2 space-y-1">
-                      <li>范围：{scopeLabels[customScope]}</li>
-                      {customScope !== 'all' && customScope !== 'recent' && customFilterValues.length > 0 && (
-                        <li>筛选：{customFilterValues.join(', ')}</li>
-                      )}
-                      {customScope === 'recent' && customFilterValues[0] && (
-                        <li>天数：{customFilterValues[0]}天</li>
-                      )}
-                      <li>题目数量：{questionCount}</li>
-                    </ul>
-                  </div>
-                </div>
-                <div className="flex gap-3 mt-6">
-                  <button
-                    onClick={() => setShowSaveProfileDialog(false)}
-                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-dark-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"
-                  >
-                    取消
-                  </button>
-                  <button
-                    onClick={handleSaveProfile}
-                    disabled={!newProfileName.trim()}
-                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-dark-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    仅保存
-                  </button>
-                  <button
-                    onClick={async () => {
-                      if (!newProfileName.trim()) return;
-                      const profileId = await handleSaveProfile();
-                      if (profileId) {
-                        await handleStartWithProfile(profileId);
-                      }
-                    }}
-                    disabled={!newProfileName.trim()}
-                    className="flex-1 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    保存并开始
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
         </main>
+        </div>
       </div>
     </Layout>
   );

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { bindServices, useService } from '@rabjs/react';
-import { BrainCircuit, Plus, Trash2, Upload, ChevronDown, Check } from 'lucide-react';
+import { BrainCircuit, Plus, Trash2, Upload, ChevronDown, Check, AlertTriangle } from 'lucide-react';
 import { SpacedRepetitionService } from './spaced-repetition.service';
 import { toast } from '../../../../services/toast.service';
 import { getCategories } from '../../../../api/category';
@@ -13,11 +13,34 @@ interface Option {
   label: string;
 }
 
+interface ConfirmDialogState {
+  open: boolean;
+  title: string;
+  message: string;
+  onConfirm: () => void;
+}
+
 export const SpacedRepetitionSettings = bindServices(() => {
   const srService = useService(SpacedRepetitionService);
   const { settings, rules, loading, savingSettings, importing } = srService;
   const dailyLimitDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Confirm dialog state
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>({
+    open: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
+
+  const showConfirm = (title: string, message: string, onConfirm: () => void) => {
+    setConfirmDialog({ open: true, title, message, onConfirm });
+  };
+
+  const closeConfirm = () => {
+    setConfirmDialog((prev) => ({ ...prev, open: false }));
+  };
 
   // Categories and tags for dropdown
   const [categories, setCategories] = useState<CategoryDto[]>([]);
@@ -146,30 +169,28 @@ export const SpacedRepetitionSettings = bindServices(() => {
     }
   };
 
-  const handleDeleteRule = async (ruleId: string) => {
-    if (!confirm('确定要删除这条过滤规则吗？')) {
-      return;
-    }
-    const result = await srService.deleteRule(ruleId);
-    if (!result.success) {
-      toast.error('删除规则失败');
-    }
+  const handleDeleteRule = (ruleId: string) => {
+    showConfirm('删除过滤规则', '确定要删除这条过滤规则吗？', async () => {
+      const result = await srService.deleteRule(ruleId);
+      if (!result.success) {
+        toast.error('删除规则失败');
+      }
+    });
   };
 
-  const handleImportExisting = async () => {
-    if (
-      !confirm(
-        '将把所有符合过滤规则的现有笔记加入复习池，已在复习池中的笔记不受影响，确认导入？'
-      )
-    ) {
-      return;
-    }
-    const result = await srService.importExistingMemos();
-    if (result.success) {
-      toast.success(`已导入 ${result.imported} 条笔记，跳过 ${result.skipped} 条（已在复习池或被规则排除）`);
-    } else {
-      toast.error('导入失败');
-    }
+  const handleImportExisting = () => {
+    showConfirm(
+      '导入历史笔记',
+      '将把所有符合过滤规则的现有笔记加入复习池，已在复习池中的笔记不受影响，确认导入？',
+      async () => {
+        const result = await srService.importExistingMemos();
+        if (result.success) {
+          toast.success(`已导入 ${result.imported} 条笔记，跳过 ${result.skipped} 条（已在复习池或被规则排除）`);
+        } else {
+          toast.error('导入失败');
+        }
+      }
+    );
   };
 
   const modeLabel = (mode: 'include' | 'exclude') => (mode === 'include' ? '包含' : '排除');
@@ -427,6 +448,45 @@ export const SpacedRepetitionSettings = bindServices(() => {
           )}
         </form>
       </div>
+
+      {/* Confirm Dialog */}
+      {confirmDialog.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={closeConfirm} />
+          <div className="relative bg-white dark:bg-dark-800 rounded-xl shadow-xl p-6 w-full max-w-sm mx-4">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="flex-shrink-0 w-9 h-9 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                  {confirmDialog.title}
+                </h3>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  {confirmDialog.message}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={closeConfirm}
+                className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-dark-600 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={() => {
+                  closeConfirm();
+                  confirmDialog.onConfirm();
+                }}
+                className="px-4 py-2 text-sm text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors"
+              >
+                确认
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }, [SpacedRepetitionService]);

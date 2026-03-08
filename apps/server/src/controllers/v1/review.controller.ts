@@ -1,4 +1,4 @@
-import { JsonController, Post, Get, Body, Param, CurrentUser, Delete } from 'routing-controllers';
+import { JsonController, Post, Get, Put, Body, Param, CurrentUser, Delete } from 'routing-controllers';
 import { Service } from 'typedi';
 
 import { ErrorCode } from '../../constants/error-codes.js';
@@ -6,7 +6,7 @@ import { ReviewService } from '../../services/review.service.js';
 import { logger } from '../../utils/logger.js';
 import { ResponseUtil } from '../../utils/response.js';
 
-import type { UserInfoDto, CreateReviewSessionDto, CreateReviewProfileDto, SubmitAnswerDto } from '@aimo/dto';
+import type { UserInfoDto, CreateReviewSessionDto, CreateReviewProfileDto, UpdateReviewProfileDto, SubmitAnswerDto } from '@aimo/dto';
 
 @Service()
 @JsonController('/api/v1/review')
@@ -99,6 +99,23 @@ export class ReviewController {
       return ResponseUtil.success(profile);
     } catch (error) {
       logger.error('Create review profile error:', error);
+      return ResponseUtil.error(ErrorCode.SYSTEM_ERROR, (error as Error).message);
+    }
+  }
+
+  @Put('/profiles/:id')
+  async updateProfile(
+    @Param('id') profileId: string,
+    @Body() dto: UpdateReviewProfileDto,
+    @CurrentUser() user: UserInfoDto
+  ) {
+    try {
+      if (!user?.uid) return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
+      const profile = await this.reviewService.updateProfile(user.uid, profileId, dto);
+      if (!profile) return ResponseUtil.error(ErrorCode.NOT_FOUND);
+      return ResponseUtil.success(profile);
+    } catch (error) {
+      logger.error('Update review profile error:', error);
       return ResponseUtil.error(ErrorCode.SYSTEM_ERROR, (error as Error).message);
     }
   }
