@@ -1,0 +1,137 @@
+{
+  "project": "AIMO",
+  "branchName": "ralph/feature-model-config",
+  "description": "功能级 LLM 模型配置 - 允许用户为回顾模式、AI 探索、标签生成分别指定使用哪个 LLM 模型，未配置时回退系统默认",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "新建 user_feature_configs 数据库表",
+      "description": "作为开发者，我需要一张表来持久化每个用户对每个 AI 功能的模型选择。",
+      "acceptanceCriteria": [
+        "在 apps/server/src/db/schema/ 下新建 user-feature-configs.ts，包含字段：id VARCHAR(191) PRIMARY KEY、userId VARCHAR(191) NOT NULL、feature VARCHAR(50) NOT NULL（枚举：review | explore | tag_generation）、modelId VARCHAR(191) 可为 NULL、createdAt TIMESTAMP、updatedAt TIMESTAMP",
+        "在 (userId, feature) 上建唯一索引",
+        "从 apps/server/src/db/schema/index.ts 导出新 schema",
+        "pnpm build 后 pnpm migrate:generate 生成迁移文件，SQL 正确",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "新建 UserFeatureConfigService",
+      "description": "作为开发者，我需要一个 Service 来读写用户功能配置，并能在没有配置时提供系统默认模型信息。",
+      "acceptanceCriteria": [
+        "在 apps/server/src/services/user-feature-config.service.ts 实现 UserFeatureConfigService，装饰 @Service()",
+        "提供 getConfig(userId, feature): Promise<string | null> 方法，返回用户配置的 modelId 或 null",
+        "提供 setConfig(userId, feature, modelId: string | null): Promise<void> 方法，使用 Drizzle onDuplicateKeyUpdate 实现 upsert",
+        "提供 getModelForFeature(userId, feature): Promise<FeatureModelConfig> 方法：若 modelId 非 null 则从 UserModelService.getModel() 获取配置并返回；若 null 则返回基于 config.openai.* 的默认配置对象 { apiKey, baseURL, modelName, provider: 'openai' }",
+        "FeatureModelConfig 接口定义在同文件中，包含 apiKey: string、baseURL: string、modelName: string、provider: string",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "新建 UserFeatureConfig API 端点",
+      "description": "作为前端，我需要 REST API 来读取和更新用户的功能模型配置。",
+      "acceptanceCriteria": [
+        "在 apps/server/src/controllers/v1/ 新建 user-feature-config.controller.ts",
+        "GET /api/v1/user-feature-configs 返回当前用户三个功能的配置列表，每项包含 feature 和 modelId（null 表示系统默认）",
+        "PUT /api/v1/user-feature-configs/:feature 接受 body { modelId: string | null }，更新指定功能的模型配置",
+        "所有端点使用 @CurrentUser() user 认证",
+        "feature 参数校验：只接受 review | explore | tag_generation，非法值返回 400",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "改造 ReviewService 使用动态模型配置",
+      "description": "作为用户，我希望回顾模式使用我配置的模型来生成问题和评估答案。",
+      "acceptanceCriteria": [
+        "ReviewService 移除 private model: ChatOpenAI 字段和构造函数中的硬编码 ChatOpenAI 初始化",
+        "注入 UserFeatureConfigService",
+        "私有方法 generateQuestion 和 evaluateAnswer 增加 userId: string 参数",
+        "两个方法内部通过 UserFeatureConfigService.getModelForFeature(userId, 'review') 获取 FeatureModelConfig，动态构造 ChatOpenAI 实例后调用",
+        "createSession、submitAnswer 等调用 generateQuestion/evaluateAnswer 的公共方法同步传入 userId（uid 参数已有）",
+        "若用户未配置模型（getModelForFeature 返回系统默认配置），行为与改造前一致",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "改造 ExploreService 使用动态模型配置",
+      "description": "作为用户，我希望 AI 探索功能使用我配置的模型来分析和生成内容。",
+      "acceptanceCriteria": [
+        "ExploreService 移除构造函数中的硬编码 ChatOpenAI 初始化（this.model = new ChatOpenAI(...)）",
+        "注入 UserFeatureConfigService",
+        "explore() 方法确认已有 userId 参数（若无则添加）",
+        "initializeWorkflow() 或等效位置改为接受 FeatureModelConfig 参数，动态构造 ChatOpenAI 实例",
+        "explore() 调用时通过 UserFeatureConfigService.getModelForFeature(userId, 'explore') 获取配置后传入",
+        "若用户未配置模型，回退到 config.openai.*，行为与改造前一致",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "改造 AIService（标签生成）使用动态模型配置",
+      "description": "作为用户，我希望标签生成功能使用我配置的模型。",
+      "acceptanceCriteria": [
+        "AIService 移除构造函数中的硬编码 ChatOpenAI 初始化",
+        "注入 UserFeatureConfigService",
+        "generateTags(content, userId) 增加 userId: string 参数",
+        "方法内部通过 UserFeatureConfigService.getModelForFeature(userId, 'tag_generation') 获取配置，动态构造 ChatOpenAI 实例后调用",
+        "找到所有调用 AIService.generateTags 的上游代码（controller 或 service），同步传入 userId",
+        "若用户未配置模型，回退到 config.openai.*，行为与改造前一致",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "前端回顾页面添加模型选择下拉",
+      "description": "作为用户，我希望在回顾功能页面能选择使用哪个 AI 模型。",
+      "acceptanceCriteria": [
+        "在回顾页面（apps/web/src/pages/ 中回顾相关页面）的配置/设置区域添加「AI 模型」下拉选择器",
+        "下拉列表选项：第一项为「系统默认」（值为 null），其余从 GET /api/v1/user-models 获取用户配置的模型列表",
+        "页面加载时从 GET /api/v1/user-feature-configs 读取 review 功能的当前配置并设为选中值",
+        "用户选择后调用 PUT /api/v1/user-feature-configs/review 保存，保存成功后显示成功反馈",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "前端 AI 探索页面添加模型选择下拉",
+      "description": "作为用户，我希望在 AI 探索页面能选择使用哪个 AI 模型。",
+      "acceptanceCriteria": [
+        "在 AI 探索页面（apps/web/src/pages/ai-explore/）的配置/设置区域添加「AI 模型」下拉选择器",
+        "下拉列表选项：第一项为「系统默认」（值为 null），其余从 GET /api/v1/user-models 获取用户配置的模型列表",
+        "页面加载时从 GET /api/v1/user-feature-configs 读取 explore 功能的当前配置并设为选中值",
+        "用户选择后调用 PUT /api/v1/user-feature-configs/explore 保存，保存成功后显示成功反馈",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}
