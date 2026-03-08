@@ -99,6 +99,17 @@
 - Updated PRD passes: true
 
 ---
+## 2026-03-08 - US-013
+- Implemented US-013 (前端 — 回顾页面顶部大 Tab 重构)
+- Added top-level tab bar with BrainCircuit (AI 回顾) and Clock (间隔重复) icons
+- Tab bar persists at top, replacing the inline tab in setup step
+- Added handleReviewTypeChange function to reset all states when switching tabs
+- Reset states: step, session, currentIndex, answer, feedback, finalScore, finalSession, selectedHistorySession, srCards, srCurrentIndex, skippedCards
+- Typecheck passes, lint passes (warnings only)
+- Verified in browser: tabs visible, switching works correctly
+- Updated PRD passes: true
+
+---
 ## Codebase Patterns
 - Use @rabjs/react for frontend state management with observable stores
 - Service classes extend Service from @rabjs/react and use bindServices() for React integration

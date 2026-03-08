@@ -86,6 +86,26 @@ export const ReviewPage = view(() => {
   const [customFilterValues, setCustomFilterValues] = useState<string[]>([]);
   const [questionCount, setQuestionCount] = useState(7);
 
+  // Handle tab switch - reset states to prevent pollution
+  const handleReviewTypeChange = (type: ReviewType) => {
+    if (type === reviewType) return;
+    // Reset AI Review states
+    setStep('setup');
+    setSession(null);
+    setCurrentIndex(0);
+    setAnswer('');
+    setFeedback(null);
+    setFinalScore(null);
+    setFinalSession(null);
+    setSelectedHistorySession(null);
+    // Reset SR states
+    setSrCards([]);
+    setSrCurrentIndex(0);
+    setSkippedCards([]);
+    // Set new type
+    setReviewType(type);
+  };
+
   const STORAGE_KEY = 'aimo-review-session';
 
   // Load history, profiles, categories, tags and restore selected session on mount
@@ -553,39 +573,41 @@ export const ReviewPage = view(() => {
 
         {/* Main Content Area */}
         <main className="flex-1 flex flex-col min-w-0 bg-gray-50 dark:bg-dark-900 overflow-hidden">
+          {/* Review Type Tab Bar - Always visible at top */}
+          <div className="bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700 px-6 pt-4">
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleReviewTypeChange('ai')}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-t-lg border-b-2 transition-all ${
+                  reviewType === 'ai'
+                    ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                    : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <BrainCircuit className={`w-5 h-5 ${reviewType === 'ai' ? 'text-primary-600 dark:text-primary-400' : ''}`} />
+                <span className="font-medium">AI 回顾</span>
+              </button>
+              <button
+                onClick={() => handleReviewTypeChange('sr')}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-t-lg border-b-2 transition-all ${
+                  reviewType === 'sr'
+                    ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                    : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <Clock className={`w-5 h-5 ${reviewType === 'sr' ? 'text-primary-600 dark:text-primary-400' : ''}`} />
+                <span className="font-medium">间隔重复</span>
+              </button>
+            </div>
+          </div>
+
           <div className="flex-1 overflow-y-auto">
             <div className="max-w-2xl mx-auto px-8 py-6">
               {step === 'setup' && (
                 <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-6">
-                  <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-6">选择回顾模式</h1>
-
-                  {/* Review Type Selector */}
-                  <div className="grid grid-cols-2 gap-4 mb-6">
-                    <button
-                      onClick={() => setReviewType('ai')}
-                      className={`p-4 rounded-xl border-2 transition-all ${
-                        reviewType === 'ai'
-                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                          : 'border-gray-200 dark:border-dark-700 hover:border-gray-300 dark:hover:border-dark-600'
-                      }`}
-                    >
-                      <Brain className={`w-8 h-8 mx-auto mb-2 ${reviewType === 'ai' ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400'}`} />
-                      <p className="font-medium text-gray-900 dark:text-gray-50">AI 回顾</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">AI 提问，自我检测</p>
-                    </button>
-                    <button
-                      onClick={() => setReviewType('sr')}
-                      className={`p-4 rounded-xl border-2 transition-all ${
-                        reviewType === 'sr'
-                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                          : 'border-gray-200 dark:border-dark-700 hover:border-gray-300 dark:hover:border-dark-600'
-                      }`}
-                    >
-                      <BrainCircuit className={`w-8 h-8 mx-auto mb-2 ${reviewType === 'sr' ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400'}`} />
-                      <p className="font-medium text-gray-900 dark:text-gray-50">间隔重复</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">基于艾宾浩斯遗忘曲线</p>
-                    </button>
-                  </div>
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-6">
+                    {reviewType === 'ai' ? '选择回顾模式' : '间隔重复复习'}
+                  </h1>
 
                   {reviewType === 'ai' ? (
                     <>
