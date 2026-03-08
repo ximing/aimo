@@ -194,12 +194,20 @@ export class SpacedRepetitionController {
         return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
       }
 
+      // Get user's srDailyLimit setting
+      const settings = await this.spacedRepetitionService.getSettings(user.uid);
+      const dailyLimit = settings?.srDailyLimit ?? 5;
+
       const cards = await this.spacedRepetitionService.getDueCards(user.uid);
+      const totalDue = cards.length;
+
+      // Truncate to daily limit (cards are already sorted by nextReviewAt asc)
+      const limitedCards = cards.slice(0, dailyLimit);
 
       // Fetch memo info for each card
       const db = getDatabase();
       const cardWithMemos = await Promise.all(
-        cards.map(async (card) => {
+        limitedCards.map(async (card) => {
           const memoResults = await db
             .select({ memoId: memos.memoId, content: memos.content })
             .from(memos)
@@ -236,7 +244,7 @@ export class SpacedRepetitionController {
       // Filter out cards whose memo was deleted
       const validCards = cardWithMemos.filter(Boolean);
 
-      return ResponseUtility.success({ cards: validCards });
+      return ResponseUtility.success({ cards: validCards, totalDue, dailyLimit });
     } catch (error) {
       logger.error('Get due cards error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR, 'Failed to get due cards');

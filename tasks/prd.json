@@ -94,8 +94,8 @@
         "Typecheck passes"
       ],
       "priority": 6,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed - recent_days and date_range filter types implemented"
     },
     {
       "id": "US-007",
@@ -109,8 +109,8 @@
         "Typecheck passes"
       ],
       "priority": 7,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Already implemented in backend controller and frontend API"
     },
     {
       "id": "US-008",
@@ -125,8 +125,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 8,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented with blue info box below progress bar"
     }
   ]
 }

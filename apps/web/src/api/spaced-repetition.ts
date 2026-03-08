@@ -25,6 +25,7 @@ export interface SRCard {
   easeFactor: number;
   interval: number;
   repetitions: number;
+  lapseCount: number;
   nextReviewAt: string;
 }
 
@@ -58,7 +59,7 @@ export const deleteSRRule = (ruleId: string) =>
   );
 
 export const getDueCards = () =>
-  request.get<unknown, { code: number; data: { cards: SRCard[] } }>(
+  request.get<unknown, { code: number; data: { cards: SRCard[]; totalDue: number; dailyLimit: number } }>(
     '/api/v1/spaced-repetition/due'
   );
 

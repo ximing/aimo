@@ -370,6 +370,8 @@ export const ReviewPage = view(() => {
     forgot: 0,
   });
   const [srTotalCards, setSrTotalCards] = useState(0);
+  const [srTotalDue, setSrTotalDue] = useState(0);
+  const [srDailyLimit, setSrDailyLimit] = useState(0);
   const [srImporting, setSrImporting] = useState(false);
 
   // History sidebar state
@@ -764,6 +766,10 @@ export const ReviewPage = view(() => {
         if (statsRes.code === 0 && statsRes.data) {
           setSrTotalCards(statsRes.data.totalCards);
         }
+
+        // Store total due count and daily limit for display
+        setSrTotalDue(dueRes.data.totalDue ?? dueRes.data.cards.length);
+        setSrDailyLimit(dueRes.data.dailyLimit ?? 0);
 
         if (dueRes.data.cards.length === 0) {
           // No cards due - show summary directly
@@ -1271,6 +1277,16 @@ export const ReviewPage = view(() => {
                       ))}
                     </div>
                   </div>
+
+                  {/* Daily Limit Info Message */}
+                  {srTotalDue > srDailyLimit && srDailyLimit > 0 && (
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-3">
+                      <p className="text-sm text-blue-700 dark:text-blue-300">
+                        今日已加载 <span className="font-medium">{srDailyLimit}</span> 张，还有{' '}
+                        <span className="font-medium">{srTotalDue - srDailyLimit}</span> 张待复习
+                      </p>
+                    </div>
+                  )}
 
                   {/* Memo Content - Flip Card */}
                   <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-6">

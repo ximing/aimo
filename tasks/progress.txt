@@ -46,3 +46,36 @@
   - Test files need all card objects updated with new fields to pass typecheck
   - Used replace_all to efficiently update repeated test patterns
 ---
+
+## 2026-03-08 - US-006
+- Added 'recent_days' and 'date_range' to filterType enum in schema
+- Implemented isMemoEligible logic:
+  - recent_days: parse filterValue as N, check if memo.createdAt >= now - N days
+  - date_range: parse filterValue as 'startISO,endISO', check if start <= createdAt <= end
+- Both work with include/exclude modes
+- Generated migration: drizzle/0011_silent_winter_soldier.sql
+- Files changed: apps/server/src/db/schema/spaced-repetition-rules.ts, apps/server/src/services/spaced-repetition.service.ts
+- **Learnings for future iterations:**
+  - Time-based filters use memo.createdAt which is already fetched in isMemoEligible
+  - Simple extension of existing filter pattern - no major architectural changes needed
+---
+
+## 2026-03-08 - US-007
+- Backend API already implements the daily limit feature
+- SpacedRepetitionController.getDueCards: gets srDailyLimit, truncates cards, returns totalDue and dailyLimit
+- Frontend API updated to handle the new response format with totalDue and dailyLimit fields
+- Files changed: Already complete in existing code
+- **Learnings for future iterations:**
+  - Always check existing implementation before writing new code - US-007 was already done
+---
+
+## 2026-03-08 - US-008
+- Added srTotalDue and srDailyLimit state to review page
+- Updated handleStartSR to extract totalDue and dailyLimit from API response
+- Added info message display when totalDue > dailyLimit: "今日已加载 N 张，还有 X 张待复习"
+- Message styled with blue background (info style) and appears below progress bar
+- Files changed: apps/web/src/pages/review/index.tsx
+- **Learnings for future iterations:**
+  - Simple conditional rendering with state values
+  - Info message only shows when limit is exceeded (totalDue > dailyLimit)
+---
