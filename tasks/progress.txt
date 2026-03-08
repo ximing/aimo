@@ -36,3 +36,15 @@
   - DTOs are in packages/dto/src/ directory, must be exported from index.ts
   - Build DTO package with `pnpm --filter @aimo/dto build` before running typecheck
   - All DTO changes require rebuilding the package to be visible to server
+---
+## 2026-03-08 - US-004
+- Implemented: Created model-client.helper.ts with getModelClient utility function
+- Files changed:
+  - apps/server/src/services/model-client.helper.ts (new file - getModelClient and getDefaultModelClient functions)
+  - tasks/prd.json (marked US-004 as passes: true)
+- **Learnings for future iterations:**
+  - getModelClient takes optional userModelId parameter; when null/undefined, uses system defaults from config.openai
+  - When userModelId is provided, queries user_models table and verifies ownership before using user's custom API config
+  - ErrorCode enum values are numbers, not strings - use type `number` when casting errors
+  - The helper returns ChatOpenAI instances with temperature: 0.3 (consistent with other services)
+  - User model's apiBaseUrl is optional - falls back to config.openai.baseURL if not provided
