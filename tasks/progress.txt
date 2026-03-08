@@ -1,0 +1,17 @@
+## Codebase Patterns
+- Use Drizzle ORM for MySQL schema - all schemas in schema/ directory must be exported from index.ts
+- Always build server (`pnpm build`) before generating migrations (`pnpm migrate:generate`)
+- Migration files are generated in drizzle/ folder at server root
+
+## 2026-03-08 - US-001
+- Implemented: review_profiles table schema change - added userModelId VARCHAR(191) field
+- Files changed:
+  - apps/server/src/db/schema/review-profiles.ts (added userModelId field)
+  - apps/server/drizzle/0013_faithful_lake.sql (generated migration with ALTER TABLE)
+  - apps/server/drizzle/meta/0013_snapshot.json, _journal.json (migration metadata)
+- **Learnings for future iterations:**
+  - The VARCHAR(191) length limit is due to MySQL utf8mb4 index size limit (767 bytes / 4 bytes per char = 191)
+  - Drizzle migration adds nullable columns without DEFAULT NULL - existing rows will have NULL values
+  - Build must happen before migration generation since drizzle-kit reads from dist/ folder
+  - The CLAUDE.md in db/ folder has good documentation about schema patterns
+---
