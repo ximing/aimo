@@ -89,6 +89,8 @@ export interface ReviewProfileDto {
   /** Structured filter rules (new format). Takes precedence over legacy scope fields. */
   filterRules: ProfileFilterRule[];
   questionCount: number;
+  /** User-selected model ID for AI review. Null means use system default. */
+  userModelId?: string | null;
   createdAt: string;
   updatedAt: string;
   /** @deprecated use filterRules */
@@ -103,10 +105,14 @@ export interface CreateReviewProfileDto {
   name: string;
   filterRules: ProfileFilterRule[];
   questionCount?: number;
+  /** User-selected model ID for AI review. Null means use system default. */
+  userModelId?: string | null;
 }
 
 export interface UpdateReviewProfileDto {
   name?: string;
   filterRules?: ProfileFilterRule[];
   questionCount?: number;
+  /** User-selected model ID for AI review. Null means use system default. */
+  userModelId?: string | null;
 }
