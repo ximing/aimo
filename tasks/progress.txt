@@ -2,3 +2,24 @@
 - Use @rabjs/react for frontend state management with observable stores
 - Service classes extend Service from @rabjs/react and use bindServices() for React integration
 - API calls use the request wrapper with typed responses
+- SM-2 standard formula: EF' = max(1.3, EF + (0.1 - (5-q)*(0.08 + (5-q)*0.02)))
+  - q=5: +0.1, q=4: 0 (unchanged), q=3: -0.14, q=1: -0.54 (often clamped to 1.3)
+- Interval must use OLD easeFactor (before update) to avoid double penalty on fuzzy ratings
+
+## 2026-03-08 - US-001
+- Replaced hardcoded easeFactor offsets (+0.15/+0.1/-0.08/-0.2) with SM-2 standard formula
+- Formula: EF' = max(1.3, EF + (0.1 - (5-q)*(0.08 + (5-q)*0.02)))
+- Files changed: apps/server/src/services/spaced-repetition.service.ts, apps/server/src/__tests__/spaced-repetition.service.test.ts
+- **Learnings for future iterations:**
+  - The PRD verification example for q=1 shows "1.3" but actual formula gives 1.96 (not clamped unless EF is very low)
+  - The worktree already had the SM-2 formula partially implemented; tests just needed updating
+  - Interval calculation already used old EF correctly in the worktree
+---
+
+## 2026-03-08 - US-002
+- No code changes needed - the worktree already implemented this correctly
+- Interval calculation uses old easeFactor; newEaseFactor applied after interval is computed
+- The test added in US-001 already covers this: "uses old easeFactor for interval formula (no double penalty)"
+- **Learnings for future iterations:**
+  - Always check if the worktree already has partial implementations before writing new code
+---
