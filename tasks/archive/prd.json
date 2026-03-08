@@ -1,17 +1,17 @@
 {
   "project": "AIMO",
-  "branchName": "ralph/memo-quick-reference",
-  "description": "Memo 快速引用功能 - 在卡片悬浮时提供一键引用入口，复用现有 relations 系统快速创建关联笔记",
+  "branchName": "ralph/spaced-repetition",
+  "description": "间隔重复推送（Spaced Repetition）— 基于 SM-2 算法，在用户最容易遗忘的时间点推送旧笔记，支持独立回顾页面、飞书/Meow 推送及站内通知",
   "userStories": [
     {
       "id": "US-001",
-      "title": "MemoEditorForm 暴露 addRelation 和 focusTextarea 方法",
-      "description": "As a developer, I need MemoEditorForm to expose addRelation and focusTextarea methods via useImperativeHandle so that the parent component can programmatically add a relation and focus the input.",
+      "title": "数据库 — 创建 SR 卡片表和规则表",
+      "description": "As a developer, I need to store spaced repetition card state and filter rules in MySQL so the system can track review schedules.",
       "acceptanceCriteria": [
-        "MemoEditorForm 使用 forwardRef 包装，暴露 ref 接口",
-        "useImperativeHandle 暴露 addRelation(memo: MemoListItemDto) 方法：将 memo 添加到 selectedRelations，若已存在则跳过",
-        "useImperativeHandle 暴露 focusTextarea() 方法：聚焦 textarea 并将光标移至末尾",
-        "不改变组件现有 props 接口和内部提交逻辑",
+        "在 apps/server/src/db/schema/ 创建 spacedRepetitionCards 表，字段：cardId VARCHAR(191) PK、userId VARCHAR(191)、memoId VARCHAR(191)、easeFactor FLOAT DEFAULT 2.5、interval INT DEFAULT 1、repetitions INT DEFAULT 0、nextReviewAt TIMESTAMP、lastReviewAt TIMESTAMP NULL、createdAt TIMESTAMP",
+        "在 apps/server/src/db/schema/ 创建 spacedRepetitionRules 表，字段：ruleId VARCHAR(191) PK、userId VARCHAR(191)、mode ENUM('include','exclude')、filterType ENUM('category','tag')、filterValue VARCHAR(255)、createdAt TIMESTAMP",
+        "两张表均从 apps/server/src/db/schema/index.ts 导出",
+        "cd apps/server && pnpm build && pnpm migrate:generate 执行无报错，生成迁移文件",
         "Typecheck passes"
       ],
       "priority": 1,
@@ -20,17 +20,12 @@
     },
     {
       "id": "US-002",
-      "title": "memo-card.tsx 新增引用按钮",
-      "description": "As a user, I want to see a quote button when hovering over a memo card so that I can quickly create a related note.",
+      "title": "数据库 — 用户设置表新增 SR 配置字段",
+      "description": "As a developer, I need to store per-user spaced repetition settings (enabled flag and daily limit) in the database.",
       "acceptanceCriteria": [
-        "在卡片操作按钮区域（group-hover 显示区）新增引用按钮，使用 lucide-react 的 Quote 图标",
-        "按钮样式与现有编辑/删除按钮一致，仅悬浮时可见",
-        "按钮有 title 属性提示文字「引用此笔记」",
-        "MemoCard 组件接受新 prop：onQuote?: (memo: MemoDto) => void",
-        "点击按钮调用 onQuote(memo)，并阻止事件冒泡（e.stopPropagation()）",
-        "若 onQuote 未传入，按钮不渲染",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "在现有用户设置表（users 表或 user_settings 表，以实际代码为准）新增字段：srEnabled BOOLEAN DEFAULT false、srDailyLimit INT DEFAULT 5",
+        "cd apps/server && pnpm build && pnpm migrate:generate 执行无报错，生成迁移文件",
+        "Typecheck passes"
       ],
       "priority": 2,
       "passes": true,
@@ -38,18 +33,243 @@
     },
     {
       "id": "US-003",
-      "title": "Home 页面串联引用逻辑：添加关联并聚焦输入框",
-      "description": "As a user, I want clicking the quote button to automatically add the memo as a relation in the editor and scroll/focus the input so I can start writing immediately.",
+      "title": "后端 — SM-2 算法服务（含单元测试）",
+      "description": "As a developer, I need a service that implements the SM-2 algorithm to calculate the next review interval based on user feedback.",
       "acceptanceCriteria": [
-        "Home 页面持有 MemoEditorForm 的 ref（类型为 MemoEditorFormRef）",
-        "实现 handleQuoteMemo(memo: MemoDto) 函数：调用 ref.current.addRelation(memo) 添加关联",
-        "handleQuoteMemo 调用后执行 scrollIntoView({ behavior: 'smooth', block: 'start' }) 滚动至编辑区",
-        "滚动后调用 ref.current.focusTextarea() 聚焦输入框",
-        "将 handleQuoteMemo 作为 onQuote prop 传递给每个 MemoCard",
+        "创建 apps/server/src/services/spaced-repetition.service.ts，实现 SpacedRepetitionService（@Service() 装饰）",
+        "实现方法 calculateNextReview(card, quality: 1|3|4|5): { easeFactor, interval, repetitions, nextReviewAt }",
+        "quality=5 (mastered): easeFactor = max(1.3, EF + 0.15), repetitions++, interval = round(prevInterval * EF * 1.3)",
+        "quality=4 (remembered): easeFactor = max(1.3, EF + 0.1), repetitions++, interval = round(prevInterval * EF)",
+        "quality=3 (fuzzy): easeFactor = max(1.3, EF - 0.08), repetitions++, interval = round(prevInterval * max(1.3, EF - 0.08))",
+        "quality=1 (forgot): easeFactor = max(1.3, EF - 0.2), repetitions=0, interval=1",
+        "interval 特殊规则：repetitions 重置后第一次=1天，第二次=6天，之后按公式增长",
+        "nextReviewAt = 当前时间 + interval 天",
+        "单元测试文件覆盖四种 quality 的输入输出，Tests pass",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "后端 — SR 卡片创建、重新评估、级联删除逻辑",
+      "description": "As a developer, I need card lifecycle management: auto-create on memo create, re-evaluate on memo update, cascade delete on memo delete.",
+      "acceptanceCriteria": [
+        "在 SpacedRepetitionService 中实现 createCardIfEligible(userId, memoId)：检查过滤规则（exclude 优先于 include，无规则时全部加入），符合条件则创建卡片，初始值 easeFactor=2.5, interval=1, repetitions=0, nextReviewAt=明天08:00；同一 memoId 不重复创建",
+        "在 SpacedRepetitionService 中实现 reevaluateCard(userId, memoId)：重新判断过滤规则，应加入且卡片不存在则创建，不应加入且卡片存在则删除，应加入且已存在则不操作",
+        "在 MemoService.createMemo() 完成后调用 createCardIfEligible",
+        "在 MemoService.updateMemo() 完成后，若 categoryId 或 tags 变化则调用 reevaluateCard",
+        "在 MemoService.deleteMemo() 中删除 Memo 前删除对应 spaced_repetition_cards 记录（按 memoId），即使无对应卡片也不报错",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "后端 — SR 设置和过滤规则 API",
+      "description": "As a user, I want to configure my spaced repetition settings and filter rules via API so the frontend can persist my preferences.",
+      "acceptanceCriteria": [
+        "创建 apps/server/src/controllers/v1/spaced-repetition.controller.ts",
+        "GET /api/v1/spaced-repetition/settings 返回当前用户 srEnabled、srDailyLimit（需 JWT 认证）",
+        "PUT /api/v1/spaced-repetition/settings 更新 srEnabled 和 srDailyLimit（需 JWT 认证）",
+        "GET /api/v1/spaced-repetition/rules 返回当前用户过滤规则列表（需 JWT 认证）",
+        "POST /api/v1/spaced-repetition/rules 创建规则，body: { mode: 'include'|'exclude', filterType: 'category'|'tag', filterValue: string }（需 JWT 认证）",
+        "DELETE /api/v1/spaced-repetition/rules/:ruleId 删除规则，规则不属于当前用户时返回 404（需 JWT 认证）",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "后端 — 回顾 API（获取待复习列表 + 提交掌握程度）",
+      "description": "As a user, I want to fetch due cards and submit review results so the review page can function.",
+      "acceptanceCriteria": [
+        "GET /api/v1/spaced-repetition/due 返回当前用户 nextReviewAt <= now 的卡片列表，含 Memo 信息（id, title, content 前200字），按 nextReviewAt 升序，需 JWT 认证",
+        "返回格式：{ cards: Array<{ cardId, memoId, memo: { id, title, content }, easeFactor, interval, repetitions, nextReviewAt }> }",
+        "POST /api/v1/spaced-repetition/cards/:cardId/review 接受 body { quality: 'mastered'|'remembered'|'fuzzy'|'forgot'|'skip' }，需 JWT 认证",
+        "quality 映射：mastered→5, remembered→4, fuzzy→3, forgot→1；skip 不更新卡片状态，直接返回当前卡片",
+        "非 skip 时调用 SM-2 算法更新 easeFactor, interval, repetitions, nextReviewAt, lastReviewAt",
+        "卡片不存在或不属于当前用户时返回 404",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "数据库 — 创建站内通知表",
+      "description": "As a developer, I need to store in-app notifications in MySQL so users can see review reminders without external push channels.",
+      "acceptanceCriteria": [
+        "在 apps/server/src/db/schema/ 创建 inAppNotifications 表，字段：notificationId VARCHAR(191) PK、userId VARCHAR(191)、type VARCHAR(50)、title VARCHAR(255)、body TEXT、memoId VARCHAR(191) NULL、isRead BOOLEAN DEFAULT false、createdAt TIMESTAMP",
+        "从 apps/server/src/db/schema/index.ts 导出",
+        "cd apps/server && pnpm build && pnpm migrate:generate 执行无报错",
+        "Typecheck passes"
+      ],
+      "priority": 7,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "后端 — 站内通知 API（列表 + 标记已读）",
+      "description": "As a user, I want to fetch and mark in-app notifications so I can manage my review reminders.",
+      "acceptanceCriteria": [
+        "创建 apps/server/src/controllers/v1/notification.controller.ts",
+        "GET /api/v1/notifications 返回当前用户通知列表（最近 50 条，按 createdAt 降序），需 JWT 认证",
+        "POST /api/v1/notifications/:id/read 将指定通知标记为已读，通知不属于当前用户时返回 404，需 JWT 认证",
+        "GET /api/v1/notifications/unread-count 返回当前用户未读通知数量 { count: number }，需 JWT 认证",
+        "Typecheck passes"
+      ],
+      "priority": 8,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "后端 — 定时推送任务（每日 08:00）",
+      "description": "As a user, I want to receive daily push notifications for due cards so I'm reminded to review.",
+      "acceptanceCriteria": [
+        "在 SchedulerService 中注册每日 08:00 的 cron 任务 sendSpacedRepetitionPush",
+        "任务查询所有 srEnabled=true 用户中 nextReviewAt <= now 的卡片，按 userId 分组，每用户取最多 srDailyLimit 条",
+        "对每个用户：若已配置外部推送渠道（飞书/Meow），通过 ChannelFactory 发送推送",
+        "推送内容格式：📚 复习提醒：《{memo.title}》\\n{memo.content前100字}\\n查看笔记：{站内链接}",
+        "同时将推送内容写入 in_app_notifications 表（type='spaced_repetition'）",
+        "未开启 SR（srEnabled=false）的用户跳过",
+        "Typecheck passes"
+      ],
+      "priority": 9,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "前端 — Settings 页面 SR 配置区块",
+      "description": "As a user, I want to enable/disable spaced repetition and configure daily limit and filter rules in Settings.",
+      "acceptanceCriteria": [
+        "Settings 页面新增「间隔重复」区块，包含：开启/关闭 toggle、每日最大推送数量输入框（1-20，默认5）",
+        "开关关闭时，其他设置项显示为 disabled",
+        "toggle 和数量输入框变更后自动调用 PUT /api/v1/spaced-repetition/settings 保存",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
-      "priority": 3,
+      "priority": 10,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "前端 — Settings SR 过滤规则改为多选 Select",
+      "description": "As a user, I want to pick categories and tags from a dropdown list when adding SR filter rules, instead of typing values manually.",
+      "acceptanceCriteria": [
+        "添加规则表单中，选择 filterType=category 时，filterValue 输入框改为多选 select，选项来自 GET /api/v1/categories 返回的用户分类列表（显示分类名称，提交值为 categoryId）",
+        "选择 filterType=tag 时，filterValue 改为多选 select，选项来自 GET /api/v1/tags 返回的用户标签列表（显示标签名，提交值为标签名）",
+        "多选后批量提交：每个选中值调用一次 POST /api/v1/spaced-repetition/rules，全部完成后列表实时更新",
+        "现有规则列表展示不变（每条规则仍显示 [include/exclude] [category/tag]: value）",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 11,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-011b",
+      "title": "数据库 — 创建 AI 回顾模式表（review_profiles）",
+      "description": "As a developer, I need to store named AI review profiles with filter conditions so users can save and reuse review configurations.",
+      "acceptanceCriteria": [
+        "在 apps/server/src/db/schema/ 创建 reviewProfiles 表，字段：profileId VARCHAR(191) PK、userId VARCHAR(191)、name VARCHAR(255)、scope ENUM('all','category','tag','recent')、filterValues JSON（存储分类ID或标签名数组，scope=all/recent 时为空数组）、recentDays INT NULL（scope=recent 时使用）、questionCount INT DEFAULT 10、createdAt TIMESTAMP、updatedAt TIMESTAMP",
+        "从 apps/server/src/db/schema/index.ts 导出",
+        "cd apps/server && pnpm build && pnpm migrate:generate 执行无报错",
+        "Typecheck passes"
+      ],
+      "priority": 12,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-011c",
+      "title": "后端 — AI 回顾模式 CRUD API",
+      "description": "As a user, I want to create, list, and delete AI review profiles via API so I can manage my saved review configurations.",
+      "acceptanceCriteria": [
+        "GET /api/v1/review/profiles 返回当前用户所有回顾模式列表，需 JWT 认证",
+        "POST /api/v1/review/profiles 创建回顾模式，body: { name, scope, filterValues: string[], recentDays?, questionCount? }，需 JWT 认证",
+        "DELETE /api/v1/review/profiles/:profileId 删除回顾模式，不属于当前用户时返回 404，需 JWT 认证",
+        "POST /api/v1/review/sessions 新增支持 profileId 参数：传入 profileId 时从 review_profiles 读取 scope/filterValues 作为会话配置（原有 scope/scopeValue 参数保持兼容）",
+        "filterValues 为数组，后端创建会话时将多个分类/标签展开为 OR 逻辑（匹配任意一个分类/标签的 Memo 均纳入）",
+        "Typecheck passes"
+      ],
+      "priority": 13,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "前端 — 回顾页面重构为 Tab 切换方案",
+      "description": "As a user, I want the review page to use a clear Tab layout separating AI review and spaced repetition so I can easily distinguish and access both modes.",
+      "acceptanceCriteria": [
+        "回顾页面顶部改为两个 Tab：「AI 回顾 🧠」和「间隔重复 🔁」，默认选中 AI 回顾",
+        "AI 回顾 Tab — Setup 阶段：上方显示已保存的回顾模式卡片列表（调用 GET /api/v1/review/profiles），每张卡片显示名称、scope 描述、题目数量，点击「▶ 开始」直接以该 profile 创建会话",
+        "AI 回顾 Tab — Setup 阶段：下方保留历史记录列表（现有功能不变）",
+        "AI 回顾 Tab — Setup 阶段：提供「自定义回顾」区域，scope 选择（全部/按分类/按标签/最近N天），选分类/标签时显示多选 select（选项来自 categories/tags API），题目数量选择",
+        "自定义区域底部有两个按钮：「保存为模式」（弹出输入模式名称的 dialog，保存后调用 POST /api/v1/review/profiles，卡片列表刷新）和「直接开始」",
+        "间隔重复 Tab — Setup 阶段：仅显示「开始复习」按钮，点击后直接进入复习流程（调用 GET /api/v1/spaced-repetition/due）",
+        "Quiz 阶段和 Summary 阶段交互逻辑不变，仅 Setup 阶段 UI 重构",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 14,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-013",
+      "title": "后端 — 历史 Memo 批量迁移 API",
+      "description": "As a user, I want to trigger a one-time import of my existing memos into the spaced repetition pool so I don't miss historical notes.",
+      "acceptanceCriteria": [
+        "POST /api/v1/spaced-repetition/import-existing 触发批量迁移，需 JWT 认证",
+        "遍历当前用户所有 Memo，对每条 Memo 执行 createCardIfEligible（复用过滤规则逻辑，已有卡片的 Memo 跳过）",
+        "nextReviewAt 设为明天 08:00（与新建 Memo 一致）",
+        "返回结果：{ imported: number, skipped: number }（imported=新建卡片数，skipped=已有卡片或被规则排除数）",
+        "Typecheck passes"
+      ],
+      "priority": 15,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-014",
+      "title": "前端 — Settings 页面历史 Memo 迁移入口",
+      "description": "As a user, I want a button in Settings to import my existing memos into the review pool so I can start reviewing historical notes.",
+      "acceptanceCriteria": [
+        "Settings SR 区块内新增「导入历史笔记」按钮，仅在 srEnabled=true 时可点击",
+        "点击后弹出确认 dialog：「将把所有符合过滤规则的现有笔记加入复习池，已在复习池中的笔记不受影响，确认导入？」",
+        "确认后调用 POST /api/v1/spaced-repetition/import-existing，显示 loading 状态",
+        "完成后显示结果提示：「已导入 X 条笔记，跳过 Y 条（已在复习池或被规则排除）」",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 16,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-015",
+      "title": "前端 — 导航栏站内通知入口",
+      "description": "As a user, I want to see in-app notifications for review reminders in the nav bar so I can access them without external push channels.",
+      "acceptanceCriteria": [
+        "导航栏新增通知图标（铃铛），有未读通知时图标上显示红点",
+        "点击图标展开通知下拉列表（最近50条），每条显示标题、时间、已读/未读状态",
+        "点击通知项跳转到对应 Memo 或 /review 页面，并调用 POST /api/v1/notifications/:id/read 标记已读",
+        "页面加载及每60秒（或 visibilitychange 时）调用 GET /api/v1/notifications/unread-count 刷新未读数",
+        "Typecheck passes"
+      ],
+      "priority": 17,
       "passes": true,
       "notes": ""
     }
