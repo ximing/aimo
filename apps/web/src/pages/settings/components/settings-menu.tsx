@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router';
-import { User, Import, Download, Info, Bell, Bot, BrainCircuit } from 'lucide-react';
+import { User, Import, Download, Info, Bell, Bot, BrainCircuit, Tag } from 'lucide-react';
 
 export const SettingsMenu = () => {
   const menuItems: Array<{ id: string; label: string; icon: React.ReactNode; to: string }> = [
@@ -26,6 +26,12 @@ export const SettingsMenu = () => {
       label: '大模型设置',
       icon: <Bot className="w-5 h-5" />,
       to: '/settings/models',
+    },
+    {
+      id: 'tags',
+      label: '标签设置',
+      icon: <Tag className="w-5 h-5" />,
+      to: '/settings/tags',
     },
     {
       id: 'import',

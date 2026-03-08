@@ -137,3 +137,20 @@
   - Dropdown shows "系统默认" (null) as first option, then lists user models by name
   - UserModelService loads models on component mount via useEffect
   - The ExploreQueryDto already includes userModelId optional field from US-009
+---
+## 2026-03-08 - US-012
+- Implemented: Added Tag model configuration entry in Settings page
+- Files changed:
+  - apps/web/src/api/user-feature-config.ts (new file - getTagModelConfig, updateTagModelConfig API functions)
+  - apps/web/src/pages/settings/components/tag-settings.tsx (new file - TagSettings component)
+  - apps/web/src/App.tsx (added import and route for /settings/tags)
+  - apps/web/src/pages/settings/components/settings-menu.tsx (added Tag icon and menu item for 标签设置)
+  - tasks/prd.json (marked US-012 as passes: true)
+- **Learnings for future iterations:**
+  - API files in apps/web/src/api/ use request (from '../utils/request') instead of axios
+  - Settings components use @rabjs/react's view() and useService() for state management
+  - Menu items are defined as an array in settings-menu.tsx with id, label, icon, and to properties
+  - Routes are added in App.tsx under the /settings parent route
+  - GET /api/v1/user-feature-configs/tag-model returns { userModelId }
+  - PUT /api/v1/user-feature-configs/tag-model accepts { userModelId: string | null }
+  - The Tag icon from lucide-react is used for the menu item
