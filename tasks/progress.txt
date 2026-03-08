@@ -96,3 +96,18 @@
   - getModelClient returns default model when userModelId is null - maintaining backward compatibility
   - The controller already has user from @CurrentUser() decorator, so userId is readily available
   - No changes needed to frontend API - userId is handled server-side from authenticated user
+---
+## 2026-03-08 - US-009
+- Implemented: Modified ExploreService to accept optional userModelId parameter for dynamic model selection
+- Files changed:
+  - packages/dto/src/explore.ts (added userModelId optional field to ExploreQueryDto)
+  - apps/server/src/services/explore.service.ts (added userModelId parameter, use getModelClient to get dynamic model, pass model through LangGraph state)
+  - apps/server/src/controllers/v1/explore.controller.ts (pass userModelId from request body to service)
+  - tasks/prd.json (marked US-009 as passes: true)
+- **Learnings for future iterations:**
+  - ExploreService uses LangGraph workflow - model is passed through state to all nodes
+  - Added 'model' field to ExploreAgentState interface and ExploreStateAnnotation
+  - All node methods use state.model! instead of this.model (which was removed from constructor)
+  - generateSuggestedQuestions is a private method that needed model passed as parameter
+  - getModelClient returns default model when userModelId is null - maintaining backward compatibility
+  - DTO changes require rebuilding the package before typecheck
