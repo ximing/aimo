@@ -75,8 +75,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 4,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented: Modal with name input, scope display, question count. Two buttons: 仅保存 and 保存并开始. Buttons disabled when name empty. Click outside or cancel closes modal. Profile saved and list refreshed. Typecheck passes, lint passes, browser verified."
     },
     {
       "id": "US-017",

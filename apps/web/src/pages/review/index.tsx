@@ -215,8 +215,8 @@ export const ReviewPage = view(() => {
     }
   };
 
-  const handleSaveProfile = async () => {
-    if (!newProfileName.trim()) return;
+  const handleSaveProfile = async (): Promise<string | null> => {
+    if (!newProfileName.trim()) return null;
     try {
       const dto: CreateReviewProfileDto = {
         name: newProfileName.trim(),
@@ -230,10 +230,12 @@ export const ReviewPage = view(() => {
         setProfiles([res.data, ...profiles]);
         setShowSaveProfileDialog(false);
         setNewProfileName('');
+        return res.data.profileId;
       }
     } catch (error) {
       console.error('Failed to save profile:', error);
     }
+    return null;
   };
 
   const handleDeleteProfile = async (profileId: string) => {
@@ -503,9 +505,8 @@ export const ReviewPage = view(() => {
                 <h1 className="text-base font-semibold text-gray-900 dark:text-gray-50">回顾模式</h1>
               </div>
               <button
-                onClick={handleStart}
-                disabled={loading}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors disabled:opacity-50"
+                onClick={() => setShowSaveProfileDialog(true)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
                 title="新建模式"
               >
                 <Plus className="w-4 h-4" />
@@ -1253,9 +1254,22 @@ export const ReviewPage = view(() => {
                   <button
                     onClick={handleSaveProfile}
                     disabled={!newProfileName.trim()}
+                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-dark-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    仅保存
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (!newProfileName.trim()) return;
+                      const profileId = await handleSaveProfile();
+                      if (profileId) {
+                        await handleStartWithProfile(profileId);
+                      }
+                    }}
+                    disabled={!newProfileName.trim()}
                     className="flex-1 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    保存
+                    保存并开始
                   </button>
                 </div>
               </div>

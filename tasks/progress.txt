@@ -133,6 +133,16 @@
 - Typecheck passes, lint passes, browser verified
 - Updated PRD passes: true
 
+## 2026-03-08 - US-016
+- Implemented US-016 (前端 — AI 回顾 - 新建模式弹窗)
+- Modal shows profile name input, scope, question count
+- Two buttons: 仅保存 (saves and closes), 保存并开始 (saves and starts quiz)
+- Buttons disabled when profile name is empty
+- Click outside or cancel closes modal
+- handleSaveProfile returns profileId for use by 保存并开始
+- Verified in browser: modal opens, profile saved, quiz started
+- Updated PRD passes: true
+
 ---
 ## Codebase Patterns
 - Use @rabjs/react for frontend state management with observable stores
