@@ -1,24 +1,96 @@
 import { useEffect, useRef, useState } from 'react';
 import { bindServices, useService } from '@rabjs/react';
-import { BrainCircuit, Plus, Trash2, Upload } from 'lucide-react';
+import { BrainCircuit, Plus, Trash2, Upload, ChevronDown, Check } from 'lucide-react';
 import { SpacedRepetitionService } from './spaced-repetition.service';
 import { toast } from '../../../../services/toast.service';
+import { getCategories } from '../../../../api/category';
+import { getTags } from '../../../../api/tag';
+import type { CategoryDto } from '@aimo/dto';
+import type { TagDto } from '@aimo/dto';
+
+interface Option {
+  value: string;
+  label: string;
+}
 
 export const SpacedRepetitionSettings = bindServices(() => {
   const srService = useService(SpacedRepetitionService);
   const { settings, rules, loading, savingSettings, importing } = srService;
   const dailyLimitDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Categories and tags for dropdown
+  const [categories, setCategories] = useState<CategoryDto[]>([]);
+  const [tags, setTags] = useState<TagDto[]>([]);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [loadingOptions, setLoadingOptions] = useState(false);
 
   // Add rule form state
   const [newRuleMode, setNewRuleMode] = useState<'include' | 'exclude'>('include');
   const [newRuleFilterType, setNewRuleFilterType] = useState<'category' | 'tag'>('tag');
-  const [newRuleFilterValue, setNewRuleFilterValue] = useState('');
+  const [selectedValues, setSelectedValues] = useState<Option[]>([]);
+
+  // Click outside handler to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    if (dropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [dropdownOpen]);
   const [addingRule, setAddingRule] = useState(false);
+
+  // Fetch categories and tags
+  const fetchOptions = async () => {
+    setLoadingOptions(true);
+    try {
+      const [catRes, tagRes] = await Promise.all([getCategories(), getTags()]);
+      if (catRes.code === 0 && catRes.data?.categories) {
+        setCategories(catRes.data.categories);
+      }
+      if (tagRes.code === 0 && tagRes.data?.tags) {
+        setTags(tagRes.data.tags);
+      }
+    } catch (e) {
+      console.error('Fetch options error:', e);
+    } finally {
+      setLoadingOptions(false);
+    }
+  };
 
   useEffect(() => {
     srService.fetchSettings();
     srService.fetchRules();
+    fetchOptions();
   }, [srService]);
+
+  // Get options based on filter type
+  const getOptions = (): Option[] => {
+    if (newRuleFilterType === 'category') {
+      return categories.map((c) => ({ value: c.categoryId, label: c.name }));
+    }
+    return tags.map((t) => ({ value: t.name, label: t.name }));
+  };
+
+  // Handle checkbox toggle
+  const handleToggleOption = (option: Option) => {
+    const exists = selectedValues.some((v) => v.value === option.value);
+    if (exists) {
+      setSelectedValues(selectedValues.filter((v) => v.value !== option.value));
+    } else {
+      setSelectedValues([...selectedValues, option]);
+    }
+  };
+
+  // Filter type change - reset selected values
+  const handleFilterTypeChange = (type: 'category' | 'tag') => {
+    setNewRuleFilterType(type);
+    setSelectedValues([]);
+  };
 
   const handleToggle = async () => {
     const result = await srService.updateSettings({ srEnabled: !settings.srEnabled });
@@ -46,21 +118,29 @@ export const SpacedRepetitionSettings = bindServices(() => {
 
   const handleAddRule = async (e: React.FormEvent) => {
     e.preventDefault();
-    const value = newRuleFilterValue.trim();
-    if (!value) {
-      toast.error('请输入过滤值');
+    if (selectedValues.length === 0) {
+      toast.error('请至少选择一个过滤值');
       return;
     }
     setAddingRule(true);
-    const result = await srService.createRule({
-      mode: newRuleMode,
-      filterType: newRuleFilterType,
-      filterValue: value,
-    });
+    let successCount = 0;
+
+    // Batch create rules for each selected value
+    for (const option of selectedValues) {
+      const result = await srService.createRule({
+        mode: newRuleMode,
+        filterType: newRuleFilterType,
+        filterValue: option.value,
+      });
+      if (result.success) {
+        successCount++;
+      }
+    }
+
     setAddingRule(false);
-    if (result.success) {
-      setNewRuleFilterValue('');
-      toast.success('规则已添加');
+    setSelectedValues([]);
+    if (successCount > 0) {
+      toast.success(`已添加 ${successCount} 条规则`);
     } else {
       toast.error('添加规则失败');
     }
@@ -255,28 +335,96 @@ export const SpacedRepetitionSettings = bindServices(() => {
             </select>
             <select
               value={newRuleFilterType}
-              onChange={(e) => setNewRuleFilterType(e.target.value as 'category' | 'tag')}
+              onChange={(e) => handleFilterTypeChange(e.target.value as 'category' | 'tag')}
               className="px-3 py-2 border border-gray-200 dark:border-dark-700 rounded-lg bg-white dark:bg-dark-900 text-gray-900 dark:text-gray-50 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
             >
               <option value="tag">标签</option>
               <option value="category">分类</option>
             </select>
-            <input
-              type="text"
-              value={newRuleFilterValue}
-              onChange={(e) => setNewRuleFilterValue(e.target.value)}
-              placeholder="输入具体值"
-              className="flex-1 min-w-[120px] px-3 py-2 border border-gray-200 dark:border-dark-700 rounded-lg bg-white dark:bg-dark-900 text-gray-900 dark:text-gray-50 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
-            />
+
+            {/* Multi-select dropdown */}
+            <div ref={dropdownRef} className="relative flex-1 min-w-[200px]">
+              <button
+                type="button"
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                disabled={loadingOptions}
+                className="w-full flex items-center justify-between px-3 py-2 border border-gray-200 dark:border-dark-700 rounded-lg bg-white dark:bg-dark-900 text-gray-900 dark:text-gray-50 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none disabled:opacity-60"
+              >
+                <span className="truncate">
+                  {selectedValues.length === 0
+                    ? `选择${newRuleFilterType === 'category' ? '分类' : '标签'}...`
+                    : `已选 ${selectedValues.length} 项`}
+                </span>
+                <ChevronDown className={`w-4 h-4 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* Dropdown menu */}
+              {dropdownOpen && (
+                <div className="absolute z-10 w-full mt-1 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  {loadingOptions ? (
+                    <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">加载中...</div>
+                  ) : getOptions().length === 0 ? (
+                    <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
+                      暂无{newRuleFilterType === 'category' ? '分类' : '标签'}
+                    </div>
+                  ) : (
+                    getOptions().map((option) => {
+                      const isSelected = selectedValues.some((v) => v.value === option.value);
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => handleToggleOption(option)}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors"
+                        >
+                          <div
+                            className={`w-4 h-4 rounded border flex items-center justify-center ${
+                              isSelected
+                                ? 'bg-primary-600 border-primary-600'
+                                : 'border-gray-300 dark:border-dark-500'
+                            }`}
+                          >
+                            {isSelected && <Check className="w-3 h-3 text-white" />}
+                          </div>
+                          <span className="truncate">{option.label}</span>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+            </div>
+
             <button
               type="submit"
-              disabled={addingRule}
+              disabled={addingRule || selectedValues.length === 0}
               className="flex items-center gap-1.5 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <Plus className="w-4 h-4" />
               添加
             </button>
           </div>
+
+          {/* Selected values preview */}
+          {selectedValues.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {selectedValues.map((v) => (
+                <span
+                  key={v.value}
+                  className="inline-flex items-center gap-1 px-2 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded text-xs"
+                >
+                  {v.label}
+                  <button
+                    type="button"
+                    onClick={() => handleToggleOption(v)}
+                    className="hover:text-primary-900 dark:hover:text-primary-100"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
         </form>
       </div>
     </div>

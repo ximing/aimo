@@ -164,36 +164,68 @@
     },
     {
       "id": "US-011",
-      "title": "前端 — Settings 页面过滤规则管理",
-      "description": "As a user, I want to add and remove include/exclude filter rules for spaced repetition in Settings.",
+      "title": "前端 — Settings SR 过滤规则改为多选 Select",
+      "description": "As a user, I want to pick categories and tags from a dropdown list when adding SR filter rules, instead of typing values manually.",
       "acceptanceCriteria": [
-        "Settings SR 区块内显示现有过滤规则列表，每条规则显示 [include/exclude] [category/tag]: value，支持删除按钮",
-        "删除规则时弹出确认 dialog，确认后调用 DELETE /api/v1/spaced-repetition/rules/:ruleId，列表实时更新",
-        "提供添加规则表单：下拉选 include/exclude、下拉选 category/tag、输入具体值，提交后调用 POST /api/v1/spaced-repetition/rules，列表实时更新",
-        "Typecheck passes"
+        "添加规则表单中，选择 filterType=category 时，filterValue 输入框改为多选 select，选项来自 GET /api/v1/categories 返回的用户分类列表（显示分类名称，提交值为 categoryId）",
+        "选择 filterType=tag 时，filterValue 改为多选 select，选项来自 GET /api/v1/tags 返回的用户标签列表（显示标签名，提交值为标签名）",
+        "多选后批量提交：每个选中值调用一次 POST /api/v1/spaced-repetition/rules，全部完成后列表实时更新",
+        "现有规则列表展示不变（每条规则仍显示 [include/exclude] [category/tag]: value）",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 11,
       "passes": true,
-      "notes": "Implemented in apps/web/src/pages/settings/components/spaced-repetition/"
+      "notes": ""
     },
     {
-      "id": "US-012",
-      "title": "前端 — 回顾页面 /review",
-      "description": "As a user, I want a dedicated review page that shows me due cards one by one so I can efficiently go through my spaced repetition queue.",
+      "id": "US-011b",
+      "title": "数据库 — 创建 AI 回顾模式表（review_profiles）",
+      "description": "As a developer, I need to store named AI review profiles with filter conditions so users can save and reuse review configurations.",
       "acceptanceCriteria": [
-        "路由 /review 对应独立回顾页面，需登录",
-        "页面加载时请求 GET /api/v1/spaced-repetition/due，展示待复习卡片总数和进度条（第X张/共Y张）",
-        "逐卡展示：显示 Memo 标题 + 内容前200字",
-        "每张卡片底部有五个操作按钮（左到右）：跳过（灰）| 忘记了（红）/ 模糊（黄）/ 记住了（绿）/ 熟练掌握（深蓝紫）",
-        "点击任意操作调用 POST /api/v1/spaced-repetition/cards/:cardId/review，自动切换到下一张",
-        "跳过的卡片移至本次队列末尾；若本轮所有剩余卡片均被跳过则结束",
-        "所有卡片处理完毕后显示完成状态「今日复习完成 🎉」",
-        "无待复习卡片时显示空状态「今天没有需要复习的笔记」",
+        "在 apps/server/src/db/schema/ 创建 reviewProfiles 表，字段：profileId VARCHAR(191) PK、userId VARCHAR(191)、name VARCHAR(255)、scope ENUM('all','category','tag','recent')、filterValues JSON（存储分类ID或标签名数组，scope=all/recent 时为空数组）、recentDays INT NULL（scope=recent 时使用）、questionCount INT DEFAULT 10、createdAt TIMESTAMP、updatedAt TIMESTAMP",
+        "从 apps/server/src/db/schema/index.ts 导出",
+        "cd apps/server && pnpm build && pnpm migrate:generate 执行无报错",
         "Typecheck passes"
       ],
       "priority": 12,
-      "passes": true,
-      "notes": "Implemented in apps/web/src/pages/review/index.tsx - added SR mode selector and 5-button review interface"
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011c",
+      "title": "后端 — AI 回顾模式 CRUD API",
+      "description": "As a user, I want to create, list, and delete AI review profiles via API so I can manage my saved review configurations.",
+      "acceptanceCriteria": [
+        "GET /api/v1/review/profiles 返回当前用户所有回顾模式列表，需 JWT 认证",
+        "POST /api/v1/review/profiles 创建回顾模式，body: { name, scope, filterValues: string[], recentDays?, questionCount? }，需 JWT 认证",
+        "DELETE /api/v1/review/profiles/:profileId 删除回顾模式，不属于当前用户时返回 404，需 JWT 认证",
+        "POST /api/v1/review/sessions 新增支持 profileId 参数：传入 profileId 时从 review_profiles 读取 scope/filterValues 作为会话配置（原有 scope/scopeValue 参数保持兼容）",
+        "filterValues 为数组，后端创建会话时将多个分类/标签展开为 OR 逻辑（匹配任意一个分类/标签的 Memo 均纳入）",
+        "Typecheck passes"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "前端 — 回顾页面重构为 Tab 切换方案",
+      "description": "As a user, I want the review page to use a clear Tab layout separating AI review and spaced repetition so I can easily distinguish and access both modes.",
+      "acceptanceCriteria": [
+        "回顾页面顶部改为两个 Tab：「AI 回顾 🧠」和「间隔重复 🔁」，默认选中 AI 回顾",
+        "AI 回顾 Tab — Setup 阶段：上方显示已保存的回顾模式卡片列表（调用 GET /api/v1/review/profiles），每张卡片显示名称、scope 描述、题目数量，点击「▶ 开始」直接以该 profile 创建会话",
+        "AI 回顾 Tab — Setup 阶段：下方保留历史记录列表（现有功能不变）",
+        "AI 回顾 Tab — Setup 阶段：提供「自定义回顾」区域，scope 选择（全部/按分类/按标签/最近N天），选分类/标签时显示多选 select（选项来自 categories/tags API），题目数量选择",
+        "自定义区域底部有两个按钮：「保存为模式」（弹出输入模式名称的 dialog，保存后调用 POST /api/v1/review/profiles，卡片列表刷新）和「直接开始」",
+        "间隔重复 Tab — Setup 阶段：仅显示「开始复习」按钮，点击后直接进入复习流程（调用 GET /api/v1/spaced-repetition/due）",
+        "Quiz 阶段和 Summary 阶段交互逻辑不变，仅 Setup 阶段 UI 重构",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 14,
+      "passes": false,
+      "notes": ""
     },
     {
       "id": "US-013",
@@ -206,7 +238,7 @@
         "返回结果：{ imported: number, skipped: number }（imported=新建卡片数，skipped=已有卡片或被规则排除数）",
         "Typecheck passes"
       ],
-      "priority": 13,
+      "priority": 15,
       "passes": true,
       "notes": ""
     },
@@ -222,7 +254,7 @@
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
-      "priority": 14,
+      "priority": 16,
       "passes": true,
       "notes": ""
     },
@@ -237,7 +269,7 @@
         "页面加载及每60秒（或 visibilitychange 时）调用 GET /api/v1/notifications/unread-count 刷新未读数",
         "Typecheck passes"
       ],
-      "priority": 15,
+      "priority": 17,
       "passes": true,
       "notes": ""
     }
