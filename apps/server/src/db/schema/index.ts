@@ -21,3 +21,4 @@ export * from './spaced-repetition-cards.js';
 export * from './spaced-repetition-rules.js';
 export * from './in-app-notifications.js';
 export * from './review-profiles.js';
+export * from './user-feature-configs.js';

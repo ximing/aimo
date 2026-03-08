@@ -15,3 +15,15 @@
   - Build must happen before migration generation since drizzle-kit reads from dist/ folder
   - The CLAUDE.md in db/ folder has good documentation about schema patterns
 ---
+## 2026-03-08 - US-002
+- Implemented: user_feature_configs table schema - stores user preferences for AI feature model selections
+- Files changed:
+  - apps/server/src/db/schema/user-feature-configs.ts (new file - schema definition)
+  - apps/server/src/db/schema/index.ts (added export)
+  - apps/server/drizzle/0014_spooky_bucky.sql (generated migration)
+  - apps/server/drizzle/meta/0014_snapshot.json, _journal.json (migration metadata)
+- **Learnings for future iterations:**
+  - Unique indexes use `uniqueIndex()` in Drizzle, not `index()`
+  - When creating tables with unique constraints, Drizzle automatically creates the constraint in the CREATE TABLE statement
+  - VARCHAR(50) is sufficient for feature names like 'tag_generation'
+---
