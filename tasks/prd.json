@@ -34,8 +34,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented: Left-right layout with 280px sidebar, gray-50 bg on left, white bg on right. Two sections: 回顾模式 (profiles) and 历史记录 with divider. Both scroll independently. Typecheck passes, lint passes, browser verified."
     },
     {
       "id": "US-015",

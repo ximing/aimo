@@ -7,7 +7,7 @@ import * as categoryApi from '../../api/category';
 import * as tagApi from '../../api/tag';
 import type { ReviewSessionDto, SubmitAnswerResponseDto, CompleteSessionResponseDto, ReviewHistoryItemDto, ReviewItemDto, ReviewProfileDto, CreateReviewProfileDto } from '@aimo/dto';
 import type { SRCard } from '../../api/spaced-repetition';
-import { Brain, Clock, Loader2, ChevronLeft, ChevronRight, CheckCircle, Circle, XCircle, Plus, BrainCircuit, Trash2, Play, Save } from 'lucide-react';
+import { Clock, Loader2, ChevronLeft, ChevronRight, CheckCircle, Circle, XCircle, Plus, BrainCircuit, Trash2, Play, Save } from 'lucide-react';
 
 type Step = 'setup' | 'quiz' | 'summary';
 type Scope = 'all' | 'category' | 'tag' | 'recent';
@@ -491,15 +491,15 @@ export const ReviewPage = view(() => {
     <Layout>
       <div className="flex-1 flex h-full overflow-hidden">
         {/* Left Sidebar - 280px fixed width */}
-        <aside className="w-[280px] flex-shrink-0 border-r border-gray-200 dark:border-dark-700 bg-white dark:bg-dark-800 flex flex-col">
-          {/* Sidebar Header */}
+        <aside className="w-[280px] flex-shrink-0 border-r border-gray-200 dark:border-dark-700 bg-gray-50 dark:bg-dark-800 flex flex-col">
+          {/* Sidebar Header - 回顾模式 */}
           <div className="p-4 border-b border-gray-200 dark:border-dark-700">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center">
-                  <Brain className="w-4 h-4 text-white" />
+                  <BrainCircuit className="w-4 h-4 text-white" />
                 </div>
-                <h1 className="text-base font-semibold text-gray-900 dark:text-gray-50">知识回顾</h1>
+                <h1 className="text-base font-semibold text-gray-900 dark:text-gray-50">回顾模式</h1>
               </div>
               <button
                 onClick={handleStart}
@@ -510,6 +510,78 @@ export const ReviewPage = view(() => {
                 <Plus className="w-5 h-5" />
               </button>
             </div>
+          </div>
+
+          {/* Profile List in Left Sidebar */}
+          <div className="flex-1 overflow-y-auto border-b border-gray-200 dark:border-dark-700">
+            {profiles.length === 0 ? (
+              <div className="p-8 text-center">
+                <BrainCircuit className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                <p className="text-sm text-gray-500 dark:text-gray-400">暂无保存的模式</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                  点击上方 + 创建回顾模式
+                </p>
+              </div>
+            ) : (
+              <div className="p-2 space-y-1">
+                {profiles.map((profile) => (
+                  <div
+                    key={profile.profileId}
+                    className={`relative group rounded-lg transition-colors cursor-pointer ${
+                      selectedProfileId === profile.profileId
+                        ? 'bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800'
+                        : 'hover:bg-gray-100 dark:hover:bg-dark-700 border border-transparent'
+                    }`}
+                    onClick={() => {
+                      setSelectedProfileId(profile.profileId);
+                      setShowCustomSetup(false);
+                    }}
+                  >
+                    <div className="p-3">
+                      <p
+                        className={`text-sm font-medium truncate ${
+                          selectedProfileId === profile.profileId
+                            ? 'text-primary-700 dark:text-primary-400'
+                            : 'text-gray-700 dark:text-gray-300'
+                        }`}
+                      >
+                        {profile.name}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                        {scopeLabels[profile.scope]}{profile.scopeValue ? ` - ${profile.scopeValue}` : ''} · {profile.questionCount}题
+                      </p>
+                    </div>
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleStartWithProfile(profile.profileId);
+                        }}
+                        className="p-1.5 text-primary-600 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-900/30 rounded"
+                        title="开始"
+                      >
+                        <Play className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteProfile(profile.profileId);
+                        }}
+                        className="p-1.5 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 rounded"
+                        title="删除"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* History Section Header */}
+          <div className="p-4 border-b border-gray-200 dark:border-dark-700">
+            <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300">历史记录</h2>
           </div>
 
           {/* History List */}
@@ -572,7 +644,7 @@ export const ReviewPage = view(() => {
         </aside>
 
         {/* Main Content Area */}
-        <main className="flex-1 flex flex-col min-w-0 bg-gray-50 dark:bg-dark-900 overflow-hidden">
+        <main className="flex-1 flex flex-col min-w-0 bg-white dark:bg-dark-800 overflow-hidden">
           {/* Review Type Tab Bar - Always visible at top */}
           <div className="bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700 px-6 pt-4">
             <div className="flex gap-2">

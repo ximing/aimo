@@ -109,6 +109,19 @@
 - Verified in browser: tabs visible, switching works correctly
 - Updated PRD passes: true
 
+## 2026-03-08 - US-014
+- Implemented US-014 (前端 — AI 回顾模式左右布局骨架)
+- Left sidebar: 280px fixed width, bg-gray-50, dark:bg-dark-800
+- Right content area: white background, dark:bg-dark-800
+- Left sidebar upper section: "回顾模式" header with + button, profile list
+- Left sidebar lower section: "历史记录" header, history items
+- Divider between the two sections
+- Both sections scroll independently (overflow-y-auto)
+- Right content retains existing setup/quiz/summary flow
+- Typecheck passes, lint passes (removed unused Brain import)
+- Browser verified: layout correct, sections visible
+- Updated PRD passes: true
+
 ---
 ## Codebase Patterns
 - Use @rabjs/react for frontend state management with observable stores
