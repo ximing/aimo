@@ -69,3 +69,17 @@
   - Controllers don't specify explicit return types to avoid type conflicts with ResponseUtility
   - ResponseUtility.success() and ResponseUtility.error() return ApiResponse<T> types
   - No manual registration needed - controllers in v1/ are auto-registered via glob import
+---
+## 2026-03-08 - US-007
+- Implemented: Modified ReviewService to use Profile-bound model for AI review
+- Files changed:
+  - apps/server/src/db/schema/review-sessions.ts (added profileId column)
+  - apps/server/src/services/review.service.ts (use getModelClient for generateQuestion and evaluateAnswer)
+  - apps/server/src/__tests__/review.service.test.ts (added mock for getModelClient, removed obsolete test)
+  - apps/server/drizzle/0015_careful_karnak.sql (migration for profileId column)
+  - tasks/prd.json (marked US-007 as passes: true)
+- **Learnings for future iterations:**
+  - When modifying services that use ChatOpenAI, need to add profileId to session storage for later retrieval
+  - getModelClient takes userModelId which can be null - returns default model when null
+  - Tests need to mock getModelClient helper when testing service methods that use it
+  - Import order matters for lint - schema imports should be alphabetically ordered
