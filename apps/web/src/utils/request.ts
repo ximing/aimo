@@ -4,6 +4,37 @@ import { navigate } from './navigation';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/';
 
+// Cached token for Electron environment (loaded once after login)
+let cachedElectronToken: string | null = null;
+
+/**
+ * Check if running in Electron environment
+ */
+function isElectron(): boolean {
+  return typeof window !== 'undefined' && !!window.electronAPI;
+}
+
+/**
+ * Set cached token (called after login)
+ */
+export function setElectronToken(token: string | null): void {
+  cachedElectronToken = token;
+}
+
+/**
+ * Clear cached token (called on logout)
+ */
+export function clearElectronToken(): void {
+  cachedElectronToken = null;
+}
+
+/**
+ * Get stored token for Electron environment (from cache)
+ */
+function getElectronToken(): string | null {
+  return cachedElectronToken;
+}
+
 /**
  * Create axios instance with default config
  */
@@ -23,6 +54,14 @@ const request: AxiosInstance = axios.create({
 request.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     // Token is handled by HTTP Only Cookie, no need to add Authorization header manually
+    // However, for Electron environment (file:// protocol), cookies don't work
+    // So we need to add token from localStorage manually
+    if (isElectron()) {
+      const token = getElectronToken();
+      if (token) {
+        config.headers.set('Authorization', `Bearer ${token}`);
+      }
+    }
 
     // Serialize Date objects in query parameters to timestamps
     if (config.params) {

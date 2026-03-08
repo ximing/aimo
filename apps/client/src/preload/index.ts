@@ -89,6 +89,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   installUpdate: () => ipcRenderer.invoke('install-update'),
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
 
+  // Secure storage (uses OS-level encryption via safeStorage)
+  secureStoreSet: (key: string, value: string) =>
+    ipcRenderer.invoke('secure-store-set', { key, value }),
+  secureStoreGet: (key: string) => ipcRenderer.invoke('secure-store-get', { key }),
+  secureStoreDelete: (key: string) => ipcRenderer.invoke('secure-store-delete', { key }),
+
   // Update status listener
   onUpdateStatus: (callback: UpdateStatusCallback) => {
     const wrappedCallback = (_event: IpcRendererEvent, status: UpdateStatus) => {
@@ -122,6 +128,15 @@ declare global {
       downloadUpdate: () => Promise<{ success: boolean }>;
       installUpdate: () => void;
       getAppVersion: () => Promise<string>;
+      // Secure storage (uses OS-level encryption via safeStorage)
+      secureStoreSet: (
+        key: string,
+        value: string
+      ) => Promise<{ success: boolean; warning?: string; error?: string }>;
+      secureStoreGet: (
+        key: string
+      ) => Promise<{ success: boolean; value: string | null; error?: string }>;
+      secureStoreDelete: (key: string) => Promise<{ success: boolean; error?: string }>;
       onUpdateStatus: (callback: (status: UpdateStatus) => void) => void;
       removeUpdateStatusListener: (callback: (status: UpdateStatus) => void) => void;
     };

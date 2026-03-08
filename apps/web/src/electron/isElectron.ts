@@ -100,6 +100,15 @@ declare global {
       getAppVersion: () => Promise<string>;
       onUpdateStatus?: (callback: (status: UpdateStatus) => void) => void;
       removeUpdateStatusListener?: (callback: (status: UpdateStatus) => void) => void;
+      // Secure storage (uses OS-level encryption via safeStorage)
+      secureStoreSet: (
+        key: string,
+        value: string
+      ) => Promise<{ success: boolean; warning?: string; error?: string }>;
+      secureStoreGet: (
+        key: string
+      ) => Promise<{ success: boolean; value: string | null; error?: string }>;
+      secureStoreDelete: (key: string) => Promise<{ success: boolean; error?: string }>;
     };
   }
 }

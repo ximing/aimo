@@ -8,11 +8,14 @@ import type {
 } from '@aimo/dto';
 import * as authApi from '../api/auth';
 import * as userApi from '../api/user';
+import { isElectron } from '../electron/isElectron';
+import { setElectronToken, clearElectronToken } from '../utils/request';
 
 /**
  * Authentication Service
  * Manages user authentication state and operations
- * Uses HTTP Only Cookie for token authentication
+ * Uses HTTP Only Cookie for token authentication (web)
+ * Uses Electron safeStorage for token storage (Electron desktop app)
  */
 export class AuthService extends Service {
   // State
@@ -45,23 +48,53 @@ export class AuthService extends Service {
   /**
    * Save authentication state to localStorage
    * Note: Token is stored in HTTP Only Cookie, only user info is saved here
+   * For Electron environment, token is stored securely using OS-level encryption (safeStorage)
    */
-  saveAuthState(_token: string, user: UserInfoDto) {
+  async saveAuthState(token: string, user: UserInfoDto) {
     this.user = user;
     this.isAuthenticated = true;
 
     // Only save user info to localStorage (token is in HTTP Only Cookie)
     localStorage.setItem('aimo_user', JSON.stringify(user));
+
+    // For Electron environment, store token using secure storage (safeStorage)
+    // This uses OS-level encryption (Keychain on macOS, DPAPI on Windows)
+    if (isElectron() && token) {
+      const result = await window.electronAPI?.secureStoreSet('auth_token', token);
+      if (!result?.success) {
+        console.error('Failed to store token securely:', result?.error);
+      }
+      // Also cache in memory for faster request interceptor access
+      setElectronToken(token);
+    }
+  }
+
+  /**
+   * Get stored token for Electron environment (from secure storage)
+   */
+  async getToken(): Promise<string | null> {
+    if (isElectron()) {
+      const result = await window.electronAPI?.secureStoreGet('auth_token');
+      if (result?.success && result.value) {
+        return result.value;
+      }
+    }
+    return null;
   }
 
   /**
    * Clear authentication state
    */
-  clearAuthState() {
+  async clearAuthState() {
     this.user = null;
     this.isAuthenticated = false;
 
     localStorage.removeItem('aimo_user');
+    // For Electron environment, also clear secure token storage
+    if (isElectron()) {
+      await window.electronAPI?.secureStoreDelete('auth_token');
+      clearElectronToken();
+    }
   }
 
   /**
@@ -72,7 +105,7 @@ export class AuthService extends Service {
       const response = await authApi.login(data);
 
       if (response.code === 0 && response.data) {
-        this.saveAuthState(response.data.token, response.data.user);
+        await this.saveAuthState(response.data.token, response.data.user);
         return { success: true };
       } else {
         return {
@@ -116,8 +149,8 @@ export class AuthService extends Service {
   /**
    * Logout current user
    */
-  logout() {
-    this.clearAuthState();
+  async logout() {
+    await this.clearAuthState();
   }
 
   /**
