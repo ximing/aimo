@@ -3,9 +3,11 @@ import { view } from '@rabjs/react';
 import { Layout } from '../../components/layout';
 import * as reviewApi from '../../api/review';
 import * as srApi from '../../api/spaced-repetition';
-import type { ReviewSessionDto, SubmitAnswerResponseDto, CompleteSessionResponseDto, ReviewHistoryItemDto, ReviewItemDto } from '@aimo/dto';
+import * as categoryApi from '../../api/category';
+import * as tagApi from '../../api/tag';
+import type { ReviewSessionDto, SubmitAnswerResponseDto, CompleteSessionResponseDto, ReviewHistoryItemDto, ReviewItemDto, ReviewProfileDto, CreateReviewProfileDto } from '@aimo/dto';
 import type { SRCard } from '../../api/spaced-repetition';
-import { Brain, Clock, Loader2, ChevronLeft, ChevronRight, CheckCircle, Circle, XCircle, Plus, BrainCircuit } from 'lucide-react';
+import { Brain, Clock, Loader2, ChevronLeft, ChevronRight, CheckCircle, Circle, XCircle, Plus, BrainCircuit, Trash2, Play, Save } from 'lucide-react';
 
 type Step = 'setup' | 'quiz' | 'summary';
 type Scope = 'all' | 'category' | 'tag' | 'recent';
@@ -53,8 +55,6 @@ const getItemStatus = (item: ReviewItemDto): 'remembered' | 'fuzzy' | 'forgot' |
 export const ReviewPage = view(() => {
   const [step, setStep] = useState<Step>('setup');
   const [reviewType, setReviewType] = useState<ReviewType>('ai');
-  const [scope, setScope] = useState<Scope>('all');
-  const [scopeValue, setScopeValue] = useState('');
   const [session, setSession] = useState<ReviewSessionDto | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answer, setAnswer] = useState('');
@@ -74,11 +74,25 @@ export const ReviewPage = view(() => {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [selectedHistorySession, setSelectedHistorySession] = useState<string | null>(null);
 
+  // Review Profile state
+  const [profiles, setProfiles] = useState<ReviewProfileDto[]>([]);
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+  const [tags, setTags] = useState<{ id: string; name: string }[]>([]);
+  const [showSaveProfileDialog, setShowSaveProfileDialog] = useState(false);
+  const [newProfileName, setNewProfileName] = useState('');
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
+  const [showCustomSetup, setShowCustomSetup] = useState(false);
+  const [customScope, setCustomScope] = useState<Scope>('all');
+  const [customFilterValues, setCustomFilterValues] = useState<string[]>([]);
+  const [questionCount, setQuestionCount] = useState(7);
+
   const STORAGE_KEY = 'aimo-review-session';
 
-  // Load history and restore selected session on mount
+  // Load history, profiles, categories, tags and restore selected session on mount
   useEffect(() => {
     loadHistory();
+    loadProfiles();
+    loadCategoriesAndTags();
     // Restore last selected session from localStorage
     const savedSessionId = localStorage.getItem(STORAGE_KEY);
     if (savedSessionId) {
@@ -133,6 +147,86 @@ export const ReviewPage = view(() => {
     }
   };
 
+  const loadProfiles = async () => {
+    try {
+      const res = await reviewApi.getReviewProfiles();
+      if (res.code === 0) {
+        setProfiles(res.data.profiles);
+      }
+    } catch (error) {
+      console.error('Failed to load profiles:', error);
+    }
+  };
+
+  const loadCategoriesAndTags = async () => {
+    try {
+      const [catRes, tagRes] = await Promise.all([
+        categoryApi.getCategories(),
+        tagApi.getTags(),
+      ]);
+      if (catRes.code === 0) {
+        setCategories(catRes.data?.items || []);
+      }
+      if (tagRes.code === 0) {
+        setTags(tagRes.data?.tags || []);
+      }
+    } catch (error) {
+      console.error('Failed to load categories/tags:', error);
+    }
+  };
+
+  const handleStartWithProfile = async (profileId: string) => {
+    setLoading(true);
+    try {
+      const res = await reviewApi.createReviewSession({ profileId });
+      if (res.code === 0) {
+        setSession(res.data);
+        setStep('quiz');
+        setCurrentIndex(0);
+        setAnswer('');
+        setFeedback(null);
+        const newSessionId = res.data.sessionId;
+        setSelectedHistorySession(newSessionId);
+        localStorage.setItem(STORAGE_KEY, newSessionId);
+        loadHistory();
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!newProfileName.trim()) return;
+    try {
+      const dto: CreateReviewProfileDto = {
+        name: newProfileName.trim(),
+        scope: customScope,
+        filterValues: customScope !== 'all' && customScope !== 'recent' ? customFilterValues : undefined,
+        recentDays: customScope === 'recent' ? parseInt(customFilterValues[0] || '7', 10) : undefined,
+        questionCount,
+      };
+      const res = await reviewApi.createReviewProfile(dto);
+      if (res.code === 0) {
+        setProfiles([res.data, ...profiles]);
+        setShowSaveProfileDialog(false);
+        setNewProfileName('');
+      }
+    } catch (error) {
+      console.error('Failed to save profile:', error);
+    }
+  };
+
+  const handleDeleteProfile = async (profileId: string) => {
+    try {
+      const res = await reviewApi.deleteReviewProfile(profileId);
+      if (res.code === 0) {
+        setProfiles(profiles.filter(p => p.profileId !== profileId));
+      }
+    } catch (error) {
+      console.error('Failed to delete profile:', error);
+    }
+  };
+
   // Calculate progress - count items that have been answered
   const answeredCount = session?.items.filter(item => item.mastery !== undefined).length || 0;
   const totalCount = session?.items.length || 0;
@@ -142,7 +236,15 @@ export const ReviewPage = view(() => {
   const handleStart = async () => {
     setLoading(true);
     try {
-      const res = await reviewApi.createReviewSession({ scope, scopeValue: scopeValue || undefined });
+      // Use profile if selected, otherwise use custom settings
+      const dto = selectedProfileId
+        ? { profileId: selectedProfileId }
+        : {
+            scope: customScope,
+            scopeValue: customScope === 'recent' ? customFilterValues[0] || '7' : customFilterValues[0],
+            questionCount,
+          };
+      const res = await reviewApi.createReviewSession(dto);
       if (res.code === 0) {
         setSession(res.data);
         setStep('quiz');
@@ -487,36 +589,205 @@ export const ReviewPage = view(() => {
 
                   {reviewType === 'ai' ? (
                     <>
-                      <div className="space-y-3 mb-6">
-                        {(['all', 'category', 'tag', 'recent'] as Scope[]).map((s) => (
-                          <label key={s} className="flex items-center gap-3 cursor-pointer">
-                            <input
-                              type="radio"
-                              value={s}
-                              checked={scope === s}
-                              onChange={() => setScope(s)}
-                              className="w-4 h-4 text-primary-600 dark:text-primary-400"
-                            />
-                            <span className="text-gray-700 dark:text-gray-300">{scopeLabels[s]}</span>
-                          </label>
-                        ))}
-                      </div>
-                      {scope !== 'all' && (
-                        <input
-                          className="w-full bg-white dark:bg-dark-700 border border-gray-300 dark:border-dark-600 rounded-lg px-4 py-2 mb-4 text-gray-900 dark:text-gray-100 placeholder-gray-400"
-                          placeholder={scope === 'recent' ? '输入天数，如 7' : '输入分类ID或标签名'}
-                          value={scopeValue}
-                          onChange={(e) => setScopeValue(e.target.value)}
-                        />
+                      {/* Saved Profiles Section */}
+                      {profiles.length > 0 && (
+                        <div className="mb-6">
+                          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">已保存的回顾模式</h3>
+                          <div className="grid grid-cols-1 gap-2">
+                            {profiles.map((profile) => (
+                              <div
+                                key={profile.profileId}
+                                className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
+                                  selectedProfileId === profile.profileId
+                                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                                    : 'border-gray-200 dark:border-dark-700 hover:border-gray-300 dark:hover:border-dark-600'
+                                }`}
+                              >
+                                <div className="flex-1 min-w-0 cursor-pointer" onClick={() => {
+                                  setSelectedProfileId(profile.profileId);
+                                  setShowCustomSetup(false);
+                                }}>
+                                  <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{profile.name}</p>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    {scopeLabels[profile.scope]}
+                                    {profile.filterValues && profile.filterValues.length > 0 && ` · ${profile.filterValues.join(', ')}`}
+                                    {profile.recentDays && ` · ${profile.recentDays}天`}
+                                    {` · ${profile.questionCount}题`}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-1 ml-2">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteProfile(profile.profileId);
+                                    }}
+                                    className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+                                    title="删除"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleStartWithProfile(profile.profileId)}
+                                    disabled={loading}
+                                    className="p-1.5 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg"
+                                    title="开始"
+                                  >
+                                    <Play className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       )}
-                      <button
-                        className="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg px-4 py-2.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                        onClick={handleStart}
-                        disabled={loading}
-                      >
-                        {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                        {loading ? '准备中...' : '开始回顾'}
-                      </button>
+
+                      {/* Divider */}
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="flex-1 h-px bg-gray-200 dark:bg-dark-700" />
+                        <span className="text-xs text-gray-400">或自定义设置</span>
+                        <div className="flex-1 h-px bg-gray-200 dark:bg-dark-700" />
+                      </div>
+
+                      {/* Custom Setup Section */}
+                      <div className="space-y-4 mb-6">
+                        {/* Scope Selection */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">选择范围</label>
+                          <div className="grid grid-cols-2 gap-2">
+                            {(['all', 'category', 'tag', 'recent'] as Scope[]).map((s) => (
+                              <button
+                                key={s}
+                                onClick={() => {
+                                  setCustomScope(s);
+                                  setSelectedProfileId(null);
+                                  setShowCustomSetup(true);
+                                }}
+                                className={`p-2 rounded-lg border text-sm transition-all ${
+                                  customScope === s && showCustomSetup
+                                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
+                                    : 'border-gray-200 dark:border-dark-700 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-dark-600'
+                                }`}
+                              >
+                                {scopeLabels[s]}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Multi-select for Category/Tag */}
+                        {customScope === 'category' && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">选择分类（可多选）</label>
+                            <div className="flex flex-wrap gap-2">
+                              {categories.map((cat) => (
+                                <button
+                                  key={cat.id}
+                                  onClick={() => {
+                                    setCustomFilterValues(prev =>
+                                      prev.includes(cat.id)
+                                        ? prev.filter(v => v !== cat.id)
+                                        : [...prev, cat.id]
+                                    );
+                                    setShowCustomSetup(true);
+                                  }}
+                                  className={`px-3 py-1.5 rounded-full text-sm transition-all ${
+                                    customFilterValues.includes(cat.id)
+                                      ? 'bg-primary-500 text-white'
+                                      : 'bg-gray-100 dark:bg-dark-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-dark-600'
+                                  }`}
+                                >
+                                  {cat.name}
+                                </button>
+                              ))}
+                              {categories.length === 0 && <span className="text-sm text-gray-400">暂无分类</span>}
+                            </div>
+                          </div>
+                        )}
+
+                        {customScope === 'tag' && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">选择标签（可多选）</label>
+                            <div className="flex flex-wrap gap-2">
+                              {tags.map((tag) => (
+                                <button
+                                  key={tag.id}
+                                  onClick={() => {
+                                    setCustomFilterValues(prev =>
+                                      prev.includes(tag.id)
+                                        ? prev.filter(v => v !== tag.id)
+                                        : [...prev, tag.id]
+                                    );
+                                    setShowCustomSetup(true);
+                                  }}
+                                  className={`px-3 py-1.5 rounded-full text-sm transition-all ${
+                                    customFilterValues.includes(tag.id)
+                                      ? 'bg-primary-500 text-white'
+                                      : 'bg-gray-100 dark:bg-dark-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-dark-600'
+                                  }`}
+                                >
+                                  {tag.name}
+                                </button>
+                              ))}
+                              {tags.length === 0 && <span className="text-sm text-gray-400">暂无标签</span>}
+                            </div>
+                          </div>
+                        )}
+
+                        {customScope === 'recent' && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">最近天数</label>
+                            <input
+                              type="number"
+                              min={1}
+                              max={365}
+                              value={customFilterValues[0] || '7'}
+                              onChange={(e) => {
+                                setCustomFilterValues([e.target.value]);
+                                setShowCustomSetup(true);
+                              }}
+                              className="w-full bg-white dark:bg-dark-700 border border-gray-300 dark:border-dark-600 rounded-lg px-4 py-2 text-gray-900 dark:text-gray-100"
+                              placeholder="输入天数"
+                            />
+                          </div>
+                        )}
+
+                        {/* Question Count */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">题目数量: {questionCount}</label>
+                          <input
+                            type="range"
+                            min={5}
+                            max={10}
+                            value={questionCount}
+                            onChange={(e) => {
+                              setQuestionCount(parseInt(e.target.value, 10));
+                              setShowCustomSetup(true);
+                            }}
+                            className="w-full"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex gap-3">
+                        <button
+                          className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg px-4 py-2.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                          onClick={handleStart}
+                          disabled={loading || (!showCustomSetup && profiles.length === 0)}
+                        >
+                          {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                          {loading ? '准备中...' : '开始回顾'}
+                        </button>
+                        {showCustomSetup && (
+                          <button
+                            onClick={() => setShowSaveProfileDialog(true)}
+                            className="px-4 py-2.5 border border-gray-300 dark:border-dark-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"
+                            title="保存为回顾模式"
+                          >
+                            <Save className="w-5 h-5" />
+                          </button>
+                        )}
+                      </div>
                     </>
                   ) : (
                     <button
@@ -843,6 +1114,57 @@ export const ReviewPage = view(() => {
               )}
             </div>
           </div>
+
+          {/* Save Profile Dialog */}
+          {showSaveProfileDialog && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center">
+              <div className="absolute inset-0 bg-black/50" onClick={() => setShowSaveProfileDialog(false)} />
+              <div className="relative bg-white dark:bg-dark-800 rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">保存回顾模式</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">模式名称</label>
+                    <input
+                      type="text"
+                      value={newProfileName}
+                      onChange={(e) => setNewProfileName(e.target.value)}
+                      placeholder="例如：我的每日复习"
+                      className="w-full bg-white dark:bg-dark-700 border border-gray-300 dark:border-dark-600 rounded-lg px-4 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-400"
+                      autoFocus
+                    />
+                  </div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                    <p>将保存以下设置：</p>
+                    <ul className="mt-2 space-y-1">
+                      <li>范围：{scopeLabels[customScope]}</li>
+                      {customScope !== 'all' && customScope !== 'recent' && customFilterValues.length > 0 && (
+                        <li>筛选：{customFilterValues.join(', ')}</li>
+                      )}
+                      {customScope === 'recent' && customFilterValues[0] && (
+                        <li>天数：{customFilterValues[0]}天</li>
+                      )}
+                      <li>题目数量：{questionCount}</li>
+                    </ul>
+                  </div>
+                </div>
+                <div className="flex gap-3 mt-6">
+                  <button
+                    onClick={() => setShowSaveProfileDialog(false)}
+                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-dark-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"
+                  >
+                    取消
+                  </button>
+                  <button
+                    onClick={handleSaveProfile}
+                    disabled={!newProfileName.trim()}
+                    className="flex-1 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    保存
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </main>
       </div>
     </Layout>

@@ -16,16 +16,22 @@
 - Verified in browser: multi-select dropdown shows tags, selection works, rules are created
 - Updated PRD passes: true
 
-## 2026-03-08 - US-012
-- Implemented US-012 (前端 — 回顾页面 /review)
-- Added review type selector (AI vs Spaced Repetition) to review page
-- Implemented SR due cards fetching via GET /api/v1/spaced-repetition/due
-- Implemented 5-button review interface: skip (灰), forgot (红), fuzzy (黄), remembered (绿), mastered (紫)
-- Handles skipped cards by moving to end of queue
-- Shows completion state "今日复习完成 🎉" when all cards reviewed
-- Shows "今天没有需要复习的笔记" when no due cards
-- Typecheck passes, lint passes (no errors)
-- Verified in browser at /review
+## 2026-03-08 - US-012 (Updated)
+- Implemented US-012 (前端 — 回顾页面重构为 Tab 切换方案)
+- Added review type selector (AI vs Spaced Repetition) tabs to review page
+- AI Review Tab:
+  - Shows saved review profiles (calls GET /api/v1/review/profiles)
+  - Each profile card shows name, scope description, question count
+  - Has play button to start with that profile, trash button to delete
+  - Custom setup section with scope selection (all/category/tag/recent)
+  - Multi-select for category: shows all categories as clickable tags
+  - Multi-select for tag: shows all tags as clickable tags
+  - Question count slider (5-10)
+  - Save profile button opens dialog to save current settings
+  - Direct start button to begin review
+- Spaced Repetition Tab: unchanged, shows "开始复习" button
+- History sidebar remains in left panel
+- Typecheck passes, lint passes
 - Updated PRD passes: true
 
 ## 2026-03-08 - US-013

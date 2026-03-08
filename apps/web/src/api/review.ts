@@ -1,5 +1,6 @@
 import type {
-  CreateReviewSessionDto, ReviewSessionDto, SubmitAnswerDto,
+  CreateReviewSessionDto, CreateReviewProfileDto, ReviewProfileDto,
+  ReviewSessionDto, SubmitAnswerDto,
   SubmitAnswerResponseDto, CompleteSessionResponseDto, ReviewHistoryItemDto
 } from '@aimo/dto';
 import request from '../utils/request';
@@ -23,4 +24,18 @@ export const completeSession = (sessionId: string) =>
 export const getReviewHistory = () =>
   request.get<unknown, { code: number; data: { items: ReviewHistoryItemDto[]; total: number } }>(
     '/api/v1/review/history'
+  );
+
+// Review Profile APIs
+export const getReviewProfiles = () =>
+  request.get<unknown, { code: number; data: { profiles: ReviewProfileDto[] } }>(
+    '/api/v1/review/profiles'
+  );
+
+export const createReviewProfile = (data: CreateReviewProfileDto) =>
+  request.post<unknown, { code: number; data: ReviewProfileDto }>('/api/v1/review/profiles', data);
+
+export const deleteReviewProfile = (profileId: string) =>
+  request.delete<unknown, { code: number; data: { success: boolean } }>(
+    `/api/v1/review/profiles/${profileId}`
   );
