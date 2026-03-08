@@ -13,6 +13,8 @@ import { logger } from '../utils/logger.js';
 import type { SpacedRepetitionCard } from '../db/schema/spaced-repetition-cards.js';
 import type { SpacedRepetitionRule } from '../db/schema/spaced-repetition-rules.js';
 
+export const MAX_INTERVAL_DAYS = 365;
+
 export interface SRCardState {
   easeFactor: number;
   interval: number;
@@ -74,6 +76,9 @@ export class SpacedRepetitionService {
     }
 
     easeFactor = newEaseFactor;
+
+    // Cap interval at MAX_INTERVAL_DAYS to prevent cards from disappearing indefinitely
+    interval = Math.min(interval, MAX_INTERVAL_DAYS);
 
     const nextReviewAt = new Date();
     nextReviewAt.setDate(nextReviewAt.getDate() + interval);

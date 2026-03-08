@@ -10,7 +10,7 @@ jest.mock('../config/config.js', () => ({
   },
 }));
 
-import { SpacedRepetitionService } from '../services/spaced-repetition.service.js';
+import { SpacedRepetitionService, MAX_INTERVAL_DAYS } from '../services/spaced-repetition.service.js';
 
 describe('SpacedRepetitionService', () => {
   let service: SpacedRepetitionService;
@@ -154,6 +154,26 @@ describe('SpacedRepetitionService', () => {
         const result = service.calculateNextReview(card, 5);
         const expected = Math.round(6 * 2.5 * 1.3); // 19 (rounded from 19.5)
         expect(result.interval).toBe(expected);
+      });
+    });
+
+    describe('MAX_INTERVAL_DAYS cap', () => {
+      it('caps interval at 365 days for very long intervals', () => {
+        // easeFactor=3.0, interval=300, mastered: round(300*3.0*1.3) = 1170 -> capped to 365
+        const card = { easeFactor: 3.0, interval: 300, repetitions: 5 };
+        const result = service.calculateNextReview(card, 5);
+        expect(result.interval).toBe(365);
+      });
+
+      it('does not cap interval when below 365', () => {
+        // easeFactor=3.0, interval=80, mastered: round(80*3.0*1.3) = 312 -> not capped
+        const card = { easeFactor: 3.0, interval: 80, repetitions: 5 };
+        const result = service.calculateNextReview(card, 5);
+        expect(result.interval).toBe(312);
+      });
+
+      it('exports MAX_INTERVAL_DAYS constant as 365', () => {
+        expect(MAX_INTERVAL_DAYS).toBe(365);
       });
     });
 
