@@ -82,6 +82,7 @@ export class ReviewService extends Service {
   detailName = '';
   detailRules: ProfileFilterRule[] = [];
   detailQuestionCount = 10;
+  detailUserModelId: string | null = null;
   detailSaving = false;
   detailDirty = false;
 
@@ -270,6 +271,7 @@ export class ReviewService extends Service {
     this.detailName = '';
     this.detailRules = [];
     this.detailQuestionCount = 10;
+    this.detailUserModelId = null;
     this.detailDirty = false;
   }
 
@@ -279,6 +281,7 @@ export class ReviewService extends Service {
     this.detailName = profile.name;
     this.detailRules = profile.filterRules ?? [];
     this.detailQuestionCount = profile.questionCount;
+    this.detailUserModelId = profile.userModelId ?? null;
     this.detailDirty = false;
   }
 
@@ -297,6 +300,11 @@ export class ReviewService extends Service {
     this.detailDirty = true;
   }
 
+  updateDetailUserModelId(userModelId: string | null): void {
+    this.detailUserModelId = userModelId;
+    this.detailDirty = true;
+  }
+
   async saveDetail(): Promise<string | null> {
     if (!this.detailName.trim()) return null;
     this.detailSaving = true;
@@ -307,6 +315,7 @@ export class ReviewService extends Service {
           name: this.detailName.trim(),
           filterRules: this.detailRules,
           questionCount: this.detailQuestionCount,
+          userModelId: this.detailUserModelId,
         });
         if (res.code === 0) {
           this.profiles = [res.data, ...this.profiles];
@@ -319,6 +328,7 @@ export class ReviewService extends Service {
           name: this.detailName.trim(),
           filterRules: this.detailRules,
           questionCount: this.detailQuestionCount,
+          userModelId: this.detailUserModelId,
         });
         if (res.code === 0) {
           this.profiles = this.profiles.map((p) =>

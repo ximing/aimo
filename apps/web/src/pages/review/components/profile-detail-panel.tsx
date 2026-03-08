@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { observer, useService } from '@rabjs/react';
 import type { ProfileFilterRule } from '@aimo/dto';
 import { ReviewService } from '../review.service';
-import { Loader2, Plus, Trash2, X, Tag, FolderOpen, CalendarDays, Calendar } from 'lucide-react';
+import { UserModelService } from '../../../services/user-model.service';
+import { Loader2, Plus, Trash2, X, Tag, FolderOpen, CalendarDays, Calendar, Bot } from 'lucide-react';
 
 type RuleType = ProfileFilterRule['type'];
 type RuleOperator = ProfileFilterRule['operator'];
@@ -23,6 +24,14 @@ const RULE_TYPE_ICONS: Record<RuleType, React.ReactNode> = {
 
 const ProfileDetailPanelContent = () => {
   const service = useService(ReviewService);
+  const modelService = useService(UserModelService);
+
+  // Load user models when panel is shown
+  useEffect(() => {
+    if (service.detailMode !== 'none' && modelService.models.length === 0) {
+      modelService.loadModels();
+    }
+  }, [service.detailMode, modelService]);
 
   const [addingType, setAddingType] = useState<RuleType>('category');
   const [addingOperator, setAddingOperator] = useState<RuleOperator>('include');
@@ -288,6 +297,33 @@ const ProfileDetailPanelContent = () => {
           <span>5</span>
           <span>20</span>
         </div>
+      </div>
+
+      {/* AI Model Selection */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+          <span className="flex items-center gap-1.5">
+            <Bot className="w-4 h-4" />
+            AI 模型
+          </span>
+        </label>
+        <select
+          value={service.detailUserModelId ?? ''}
+          onChange={(e) => service.updateDetailUserModelId(e.target.value || null)}
+          className="w-full bg-white dark:bg-dark-700 border border-gray-300 dark:border-dark-600 rounded-lg px-3 py-2 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+        >
+          <option value="">系统默认</option>
+          {modelService.models.map((model) => (
+            <option key={model.id} value={model.id}>
+              {model.name}
+            </option>
+          ))}
+        </select>
+        {modelService.models.length === 0 && (
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+            请在设置中添加自定义模型
+          </p>
+        )}
       </div>
 
       {/* Action Buttons */}
