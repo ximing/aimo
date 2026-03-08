@@ -1,136 +1,132 @@
 {
   "project": "AIMO",
-  "branchName": "ralph/review-page-refactor",
-  "description": "知识回顾页面重构 — 顶部大 Tab 区分 AI 回顾和间隔重复，AI 回顾采用左右布局（左侧：已保存模式 + 历史记录，右侧：回顾流程），间隔重复采用艾宾浩斯翻卡片式交互",
+  "branchName": "ralph/sm2-ebbinghaus-fixes",
+  "description": "SM-2 算法修复 —— 使间隔重复功能符合艾宾浩斯记忆习惯，包括标准公式替换、模糊评分双重惩罚修复、lapseCount 追踪、最大间隔上限、时间维度过滤规则、每日限制应用到 API",
   "userStories": [
     {
-      "id": "US-013",
-      "title": "回顾页面顶部大 Tab 重构",
-      "description": "As a user, I want a prominent tab bar at the top of the review page so that I can clearly switch between AI Review and Spaced Repetition modes.",
+      "id": "US-001",
+      "title": "使用 SM-2 标准公式更新难度因子",
+      "description": "作为系统，我需要使用 SM-2 原始公式计算 easeFactor，使卡片难度能平滑适应用户的真实记忆能力。",
       "acceptanceCriteria": [
-        "页面顶部有两个大 Tab：「AI 回顾」（BrainCircuit 图标）和「间隔重复」（Clock 图标）",
-        "默认选中「AI 回顾」Tab",
-        "选中状态与未选中状态有明显视觉区别（选中：深色背景或底部粗下划线）",
-        "切换 Tab 时页面内容区域完全替换（不共用布局）",
-        "Tab 切换时重置各模式的内部状态（防止状态污染）",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "移除 calculateNextReview 中所有硬编码的 easeFactor 偏移量（+0.15 / +0.1 / -0.08 / -0.2）",
+        "改为使用公式：EF' = max(1.3, EF + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02)))，其中 q 为质量分（0-5）",
+        "UI 评分到质量分的映射保持不变：mastered→5、remembered→4、fuzzy→3、forgot→1",
+        "质量分 < 3 时（即 forgot），repetitions 重置为 0（保持现有行为）",
+        "验证 mastered(q=5): EF' = max(1.3, 2.5 + (0.1 - 0*0.08)) = 2.6",
+        "验证 remembered(q=4): EF' = max(1.3, 2.5 + (0.1 - 1*(0.08+0.02))) = 2.5",
+        "验证 fuzzy(q=3): EF' = max(1.3, 2.5 + (0.1 - 2*(0.08+0.08))) = max(1.3, 2.5 - 0.14) = 2.36",
+        "验证 forgot(q=1): EF' = max(1.3, 2.5 + (0.1 - 4*(0.08+0.32))) = max(1.3, 2.5 - 1.5) = 1.3",
+        "Typecheck passes"
       ],
       "priority": 1,
-      "passes": true,
-      "notes": "Implemented: Added top-level tab bar with BrainCircuit and Clock icons. Tab switching resets all states to prevent pollution. Typecheck passes, browser verified."
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-014",
-      "title": "AI 回顾模式左右布局骨架",
-      "description": "As a user, I want the AI review mode to use a left-right layout so that I can manage profiles and history on the left while the review session is on the right.",
+      "id": "US-002",
+      "title": "修复模糊评分的双重惩罚",
+      "description": "作为系统，我需要在计算下次复习间隔时使用旧的 easeFactor，只在计算完间隔后才更新 easeFactor，避免对模糊评分造成复利惩罚。",
       "acceptanceCriteria": [
-        "AI 回顾 Tab 下，页面分为左侧面板（宽度约 280px 固定）和右侧内容区（自适应）",
-        "左侧面板背景色略深（如 bg-gray-50），右侧为白色背景",
-        "左侧面板上半区标题为「回顾模式」，下半区标题为「历史记录」，两区之间有分隔线",
-        "左侧面板两个区域各自独立滚动（overflow-y-auto），内容过多时不影响另一区",
-        "右侧内容区保留现有 AI 回顾三步流程（setup → quiz → summary）逻辑不变",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "calculateNextReview 中，interval 的计算始终基于更新前的 easeFactor（保存为 oldEaseFactor）",
+        "easeFactor 的更新（使用 US-001 的标准公式）在 interval 计算之后进行",
+        "验证：quality=3，easeFactor=2.5，interval=6，repetitions>=2 时，新 interval = round(6 * 2.5) = 15（而非之前用新 easeFactor 计算的更小值）",
+        "Typecheck passes"
       ],
       "priority": 2,
-      "passes": true,
-      "notes": "Implemented: Left-right layout with 280px sidebar, gray-50 bg on left, white bg on right. Two sections: 回顾模式 (profiles) and 历史记录 with divider. Both scroll independently. Typecheck passes, lint passes, browser verified."
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-015",
-      "title": "AI 回顾 - 左侧回顾模式列表",
-      "description": "As a user, I want to see my saved review profiles in the left panel so that I can quickly start a session or delete a profile.",
+      "id": "US-003",
+      "title": "设置最大复习间隔上限",
+      "description": "作为系统，我需要限制复习间隔不超过 365 天，防止卡片因间隔过长而实际上永远不会再出现。",
       "acceptanceCriteria": [
-        "左侧「回顾模式」区域顶部有「新建模式」按钮（Plus 图标 + 文字）",
-        "已保存的模式以列表项形式展示，每项显示：模式名称、范围描述（如「全部笔记」「按分类」）、题目数量（如「10题」）",
-        "每个模式项有「开始」按钮（Play 图标），点击后调用 POST /api/v1/review/sessions（传入 profileId），直接进入 quiz 步骤",
-        "每个模式项有「删除」按钮（Trash2 图标），点击后弹出 window.confirm 确认提示，确认后调用 DELETE /api/v1/review/profiles/:profileId，成功后刷新模式列表",
-        "正在使用的模式（当前 session 对应的 profileId）高亮显示",
-        "若无已保存模式，显示空状态提示：「暂无保存的模式」",
-        "页面加载时调用 GET /api/v1/review/profiles 获取模式列表",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "在 apps/server/src/services/spaced-repetition.service.ts 中定义常量 MAX_INTERVAL_DAYS = 365",
+        "calculateNextReview 计算出的 interval 在写入前，执行 Math.min(interval, MAX_INTERVAL_DAYS)",
+        "验证：easeFactor=3.0、interval=300 的卡片，mastered 评分后 interval = min(round(300*3.0*1.3), 365) = 365（被截断）",
+        "验证：easeFactor=3.0、interval=80 的卡片，mastered 评分后 interval = min(round(80*3.0*1.3), 365) = 312（未截断）",
+        "Typecheck passes"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": "Implemented: Plus button with '新建模式' text in header, profile list shows name/scope/question count, Play button to start session, Trash2 button to delete with window.confirm, empty state shows '暂无保存的模式', profiles loaded on mount. Typecheck passes, lint passes, browser verified."
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-016",
-      "title": "AI 回顾 - 新建模式弹窗",
-      "description": "As a user, I want a modal dialog to create and save a new review profile so that I can configure and reuse custom review settings.",
+      "id": "US-004",
+      "title": "添加 lapseCount 数据库字段",
+      "description": "作为系统，我需要在数据库中独立追踪每张卡片的遗忘次数，供后续统计和展示使用。",
       "acceptanceCriteria": [
-        "点击「新建模式」按钮，弹出 Modal 对话框（遮罩层 + 居中卡片）",
-        "弹窗包含字段：模式名称（文本输入，必填）、范围 Select（全部笔记 / 按分类 / 按标签 / 最近 N 天）、题目数量（数字输入，范围 5–20，默认 10）",
-        "范围选「按分类」时，显示分类多选区域（选项来自 GET /api/v1/categories，显示分类名称，值为 categoryId）",
-        "范围选「按标签」时，显示标签多选区域（选项来自 GET /api/v1/tags，显示标签名，值为标签名）",
-        "范围选「最近 N 天」时，显示天数数字输入框（默认 7）",
-        "弹窗底部有两个按钮：「仅保存」和「保存并开始」",
-        "「仅保存」：调用 POST /api/v1/review/profiles 保存，成功后关闭弹窗并刷新模式列表",
-        "「保存并开始」：保存后立即以 profileId 调用 POST /api/v1/review/sessions，进入 quiz 步骤",
-        "模式名称为空时，两个按钮均 disabled",
-        "点击弹窗外部或「取消」按钮关闭弹窗",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "在 apps/server/src/db/schema/spaced-repetition-cards.ts 中添加 lapseCount INT 字段，默认值 0，NOT NULL",
+        "执行 cd apps/server && pnpm build 构建成功",
+        "执行 cd apps/server && pnpm migrate:generate 生成迁移文件成功",
+        "迁移文件内容包含 ALTER TABLE spaced_repetition_cards ADD COLUMN lapse_count int NOT NULL DEFAULT 0",
+        "Typecheck passes"
       ],
       "priority": 4,
-      "passes": true,
-      "notes": "Implemented: Modal with name input, scope display, question count. Two buttons: 仅保存 and 保存并开始. Buttons disabled when name empty. Click outside or cancel closes modal. Profile saved and list refreshed. Typecheck passes, lint passes, browser verified."
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-017",
-      "title": "AI 回顾 - 左侧历史记录列表",
-      "description": "As a user, I want to see my past review sessions in the left panel history section so that I can resume or review past sessions.",
+      "id": "US-005",
+      "title": "实现 lapseCount 遗忘计数逻辑",
+      "description": "作为系统，当用户评分为「忘了」时，我需要递增 lapseCount 并在 /due API 响应中返回该字段。",
       "acceptanceCriteria": [
-        "左侧「历史记录」区域展示过往会话列表（调用 GET /api/v1/review/history）",
-        "每条历史项显示：相对时间（如「2小时前」）、得分（如「85分」，status=active 时显示「进行中」）",
-        "点击某条历史记录，右侧内容区加载该会话：已完成的进入 summary 步骤，进行中的恢复 quiz 步骤（与现有 localStorage 恢复逻辑一致）",
-        "当前选中的历史会话高亮显示",
-        "历史记录加载中显示 Loader2 spinner",
-        "若无历史记录，显示空状态提示：「暂无回顾历史」",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "calculateNextReview 在 quality=1（forgot）时，返回值中包含 lapseCount: card.lapseCount + 1",
+        "calculateNextReview 在 quality>=3 时，返回值中包含 lapseCount: card.lapseCount（不变）",
+        "updateCardAfterReview 将 lapseCount 持久化到数据库",
+        "在 packages/dto/src/review.ts 的 SpacedRepetitionCardDto（或对应 DTO）中添加 lapseCount: number 字段",
+        "getDueCards 返回的卡片数据中包含 lapseCount 字段",
+        "Typecheck passes"
       ],
       "priority": 5,
-      "passes": true,
-      "notes": "Implemented: History section shows past sessions with relative time and scores. Clicking history loads session in right panel. Selected history highlighted. Uses existing loadHistory() from API. Empty state shows '暂无回顾历史'. Typecheck passes, lint passes, browser verified."
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-018",
-      "title": "间隔重复 - 翻卡片式交互",
-      "description": "As a user, I want to review my due spaced repetition cards with a flip-card interaction so that I can practice recall and let the system schedule my next review.",
+      "id": "US-006",
+      "title": "实现 recent_days 和 date_range 时间维度过滤规则",
+      "description": "作为用户，我希望能够设置按时间范围过滤哪些 Memo 进入 SR 池，让间隔重复聚焦于特定时间段的内容。",
       "acceptanceCriteria": [
-        "切换到「间隔重复」Tab 后，调用 GET /api/v1/spaced-repetition/due 获取今日到期卡片",
-        "有到期卡片时，显示进度指示器「第 X / Y 张」",
-        "卡片正面（问题面）显示笔记标题（大字）和内容摘要（前200字），底部有「显示答案」按钮",
-        "点击「显示答案」后，卡片翻转（CSS 3D rotateY(180deg) 动画，0.4s ease-in-out）显示笔记完整内容",
-        "翻转后底部显示四个自评按钮：「完全记住」（mastered）「记住了」（remembered）「模糊」（fuzzy）「忘记了」（forgot）",
-        "点击任意自评按钮后，调用 POST /api/v1/spaced-repetition/cards/:cardId/review（传入对应 quality），然后自动切换到下一张卡片（翻转状态重置为正面）",
-        "所有卡片完成后，显示本次复习总结：复习数量、各评分分布（完全记住 X 张、记住了 X 张、模糊 X 张、忘记了 X 张）",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "SpacedRepetitionService.isMemoEligible() 中处理 filterType === 'recent_days' 的规则：查询 memo 的 createdAt，若 createdAt >= now - N days 则该规则匹配，N 从 filterValue 解析为整数",
+        "SpacedRepetitionService.isMemoEligible() 中处理 filterType === 'date_range' 的规则：filterValue 格式为 'startISO,endISO'，若 startISO <= memo.createdAt <= endISO 则该规则匹配",
+        "两种规则均可与 mode: 'include' 或 mode: 'exclude' 组合使用，与现有 category/tag 规则逻辑一致",
+        "isMemoEligible 需要查询 memo 的 createdAt 时，从 memos 表获取（已有 memoId 参数）",
+        "Typecheck passes"
       ],
       "priority": 6,
-      "passes": true,
-      "notes": "Implemented: Flip card UI with front showing title + content preview (200 chars) + '显示答案' button. CSS 3D rotateY transform for flip animation. Four self-rating buttons (完全记住/记住了/模糊/忘记了). Progress indicator '进度: X / Y'. Stats tracking and summary display with distribution. Typecheck passes, lint passes."
+      "passes": false,
+      "notes": ""
     },
     {
-      "id": "US-019",
-      "title": "间隔重复 - 无卡片时的引导页",
-      "description": "As a user, when there are no due cards today, I want to see helpful guidance and an option to import existing memos so that I can get started with spaced repetition.",
+      "id": "US-007",
+      "title": "将每日限制应用到 /due API",
+      "description": "作为用户，我希望 /due 接口返回的卡片数量不超过我设置的每日上限，同时告知我总的到期数量。",
       "acceptanceCriteria": [
-        "GET /api/v1/spaced-repetition/due 返回空数组时，不显示卡片区域，显示空状态界面",
-        "空状态显示文案：「今日无需复习，继续保持！」",
-        "若 cards 总数为 0（用户从未导入），额外显示「导入现有笔记」按钮",
-        "点击「导入现有笔记」后调用 POST /api/v1/spaced-repetition/import-existing，显示 loading 状态",
-        "导入完成后显示提示：「已导入 X 条笔记，跳过 Y 条」，并重新调用 due API 刷新卡片列表",
+        "SpacedRepetitionController 的 getDueCards 方法获取用户的 srDailyLimit 设置",
+        "getDueCards 在返回前将卡片列表截断为 srDailyLimit 条（取 nextReviewAt 最早的前 N 张）",
+        "API 响应格式改为 { cards: SRCard[], totalDue: number, dailyLimit: number }，totalDue 为截断前的总数量",
+        "更新 apps/web/src/api/spaced-repetition.ts 中 getDueCards 的返回类型，添加 totalDue: number 和 dailyLimit: number 字段",
+        "Typecheck passes"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "前端展示每日限制超出提示",
+      "description": "作为用户，我希望在复习页看到「今日已加载 N 张，还有 X 张待复习」的提示，了解全部到期情况。",
+      "acceptanceCriteria": [
+        "apps/web/src/pages/review/index.tsx 中，getDueCards 返回的 totalDue 和 dailyLimit 存入组件状态",
+        "SR 模式下，当 totalDue > dailyLimit 时，在卡片区域上方展示提示：「今日已加载 {dailyLimit} 张，还有 {totalDue - dailyLimit} 张待复习」",
+        "提示样式使用 info 风格（蓝色或灰色背景，小字）",
+        "当 totalDue <= dailyLimit 时，不展示该提示",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
-      "priority": 7,
-      "passes": true,
-      "notes": "Implemented: Empty state shows '今日无需复习，继续保持！'. Added GET /api/v1/spaced-repetition/stats endpoint to return total card count. Import button shows only when totalCards === 0 (user never imported). Click import calls POST /api/v1/spaced-repetition/import-existing, shows alert with results, then refreshes. Typecheck passes, lint passes, browser verified."
+      "priority": 8,
+      "passes": false,
+      "notes": ""
     }
   ]
 }

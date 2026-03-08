@@ -1,0 +1,136 @@
+{
+  "project": "AIMO",
+  "branchName": "ralph/review-page-refactor",
+  "description": "知识回顾页面重构 — 顶部大 Tab 区分 AI 回顾和间隔重复，AI 回顾采用左右布局（左侧：已保存模式 + 历史记录，右侧：回顾流程），间隔重复采用艾宾浩斯翻卡片式交互",
+  "userStories": [
+    {
+      "id": "US-013",
+      "title": "回顾页面顶部大 Tab 重构",
+      "description": "As a user, I want a prominent tab bar at the top of the review page so that I can clearly switch between AI Review and Spaced Repetition modes.",
+      "acceptanceCriteria": [
+        "页面顶部有两个大 Tab：「AI 回顾」（BrainCircuit 图标）和「间隔重复」（Clock 图标）",
+        "默认选中「AI 回顾」Tab",
+        "选中状态与未选中状态有明显视觉区别（选中：深色背景或底部粗下划线）",
+        "切换 Tab 时页面内容区域完全替换（不共用布局）",
+        "Tab 切换时重置各模式的内部状态（防止状态污染）",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "Implemented: Added top-level tab bar with BrainCircuit and Clock icons. Tab switching resets all states to prevent pollution. Typecheck passes, browser verified."
+    },
+    {
+      "id": "US-014",
+      "title": "AI 回顾模式左右布局骨架",
+      "description": "As a user, I want the AI review mode to use a left-right layout so that I can manage profiles and history on the left while the review session is on the right.",
+      "acceptanceCriteria": [
+        "AI 回顾 Tab 下，页面分为左侧面板（宽度约 280px 固定）和右侧内容区（自适应）",
+        "左侧面板背景色略深（如 bg-gray-50），右侧为白色背景",
+        "左侧面板上半区标题为「回顾模式」，下半区标题为「历史记录」，两区之间有分隔线",
+        "左侧面板两个区域各自独立滚动（overflow-y-auto），内容过多时不影响另一区",
+        "右侧内容区保留现有 AI 回顾三步流程（setup → quiz → summary）逻辑不变",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Implemented: Left-right layout with 280px sidebar, gray-50 bg on left, white bg on right. Two sections: 回顾模式 (profiles) and 历史记录 with divider. Both scroll independently. Typecheck passes, lint passes, browser verified."
+    },
+    {
+      "id": "US-015",
+      "title": "AI 回顾 - 左侧回顾模式列表",
+      "description": "As a user, I want to see my saved review profiles in the left panel so that I can quickly start a session or delete a profile.",
+      "acceptanceCriteria": [
+        "左侧「回顾模式」区域顶部有「新建模式」按钮（Plus 图标 + 文字）",
+        "已保存的模式以列表项形式展示，每项显示：模式名称、范围描述（如「全部笔记」「按分类」）、题目数量（如「10题」）",
+        "每个模式项有「开始」按钮（Play 图标），点击后调用 POST /api/v1/review/sessions（传入 profileId），直接进入 quiz 步骤",
+        "每个模式项有「删除」按钮（Trash2 图标），点击后弹出 window.confirm 确认提示，确认后调用 DELETE /api/v1/review/profiles/:profileId，成功后刷新模式列表",
+        "正在使用的模式（当前 session 对应的 profileId）高亮显示",
+        "若无已保存模式，显示空状态提示：「暂无保存的模式」",
+        "页面加载时调用 GET /api/v1/review/profiles 获取模式列表",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": "Implemented: Plus button with '新建模式' text in header, profile list shows name/scope/question count, Play button to start session, Trash2 button to delete with window.confirm, empty state shows '暂无保存的模式', profiles loaded on mount. Typecheck passes, lint passes, browser verified."
+    },
+    {
+      "id": "US-016",
+      "title": "AI 回顾 - 新建模式弹窗",
+      "description": "As a user, I want a modal dialog to create and save a new review profile so that I can configure and reuse custom review settings.",
+      "acceptanceCriteria": [
+        "点击「新建模式」按钮，弹出 Modal 对话框（遮罩层 + 居中卡片）",
+        "弹窗包含字段：模式名称（文本输入，必填）、范围 Select（全部笔记 / 按分类 / 按标签 / 最近 N 天）、题目数量（数字输入，范围 5–20，默认 10）",
+        "范围选「按分类」时，显示分类多选区域（选项来自 GET /api/v1/categories，显示分类名称，值为 categoryId）",
+        "范围选「按标签」时，显示标签多选区域（选项来自 GET /api/v1/tags，显示标签名，值为标签名）",
+        "范围选「最近 N 天」时，显示天数数字输入框（默认 7）",
+        "弹窗底部有两个按钮：「仅保存」和「保存并开始」",
+        "「仅保存」：调用 POST /api/v1/review/profiles 保存，成功后关闭弹窗并刷新模式列表",
+        "「保存并开始」：保存后立即以 profileId 调用 POST /api/v1/review/sessions，进入 quiz 步骤",
+        "模式名称为空时，两个按钮均 disabled",
+        "点击弹窗外部或「取消」按钮关闭弹窗",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": "Implemented: Modal with name input, scope display, question count. Two buttons: 仅保存 and 保存并开始. Buttons disabled when name empty. Click outside or cancel closes modal. Profile saved and list refreshed. Typecheck passes, lint passes, browser verified."
+    },
+    {
+      "id": "US-017",
+      "title": "AI 回顾 - 左侧历史记录列表",
+      "description": "As a user, I want to see my past review sessions in the left panel history section so that I can resume or review past sessions.",
+      "acceptanceCriteria": [
+        "左侧「历史记录」区域展示过往会话列表（调用 GET /api/v1/review/history）",
+        "每条历史项显示：相对时间（如「2小时前」）、得分（如「85分」，status=active 时显示「进行中」）",
+        "点击某条历史记录，右侧内容区加载该会话：已完成的进入 summary 步骤，进行中的恢复 quiz 步骤（与现有 localStorage 恢复逻辑一致）",
+        "当前选中的历史会话高亮显示",
+        "历史记录加载中显示 Loader2 spinner",
+        "若无历史记录，显示空状态提示：「暂无回顾历史」",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": "Implemented: History section shows past sessions with relative time and scores. Clicking history loads session in right panel. Selected history highlighted. Uses existing loadHistory() from API. Empty state shows '暂无回顾历史'. Typecheck passes, lint passes, browser verified."
+    },
+    {
+      "id": "US-018",
+      "title": "间隔重复 - 翻卡片式交互",
+      "description": "As a user, I want to review my due spaced repetition cards with a flip-card interaction so that I can practice recall and let the system schedule my next review.",
+      "acceptanceCriteria": [
+        "切换到「间隔重复」Tab 后，调用 GET /api/v1/spaced-repetition/due 获取今日到期卡片",
+        "有到期卡片时，显示进度指示器「第 X / Y 张」",
+        "卡片正面（问题面）显示笔记标题（大字）和内容摘要（前200字），底部有「显示答案」按钮",
+        "点击「显示答案」后，卡片翻转（CSS 3D rotateY(180deg) 动画，0.4s ease-in-out）显示笔记完整内容",
+        "翻转后底部显示四个自评按钮：「完全记住」（mastered）「记住了」（remembered）「模糊」（fuzzy）「忘记了」（forgot）",
+        "点击任意自评按钮后，调用 POST /api/v1/spaced-repetition/cards/:cardId/review（传入对应 quality），然后自动切换到下一张卡片（翻转状态重置为正面）",
+        "所有卡片完成后，显示本次复习总结：复习数量、各评分分布（完全记住 X 张、记住了 X 张、模糊 X 张、忘记了 X 张）",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 6,
+      "passes": true,
+      "notes": "Implemented: Flip card UI with front showing title + content preview (200 chars) + '显示答案' button. CSS 3D rotateY transform for flip animation. Four self-rating buttons (完全记住/记住了/模糊/忘记了). Progress indicator '进度: X / Y'. Stats tracking and summary display with distribution. Typecheck passes, lint passes."
+    },
+    {
+      "id": "US-019",
+      "title": "间隔重复 - 无卡片时的引导页",
+      "description": "As a user, when there are no due cards today, I want to see helpful guidance and an option to import existing memos so that I can get started with spaced repetition.",
+      "acceptanceCriteria": [
+        "GET /api/v1/spaced-repetition/due 返回空数组时，不显示卡片区域，显示空状态界面",
+        "空状态显示文案：「今日无需复习，继续保持！」",
+        "若 cards 总数为 0（用户从未导入），额外显示「导入现有笔记」按钮",
+        "点击「导入现有笔记」后调用 POST /api/v1/spaced-repetition/import-existing，显示 loading 状态",
+        "导入完成后显示提示：「已导入 X 条笔记，跳过 Y 条」，并重新调用 due API 刷新卡片列表",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 7,
+      "passes": true,
+      "notes": "Implemented: Empty state shows '今日无需复习，继续保持！'. Added GET /api/v1/spaced-repetition/stats endpoint to return total card count. Import button shows only when totalCards === 0 (user never imported). Click import calls POST /api/v1/spaced-repetition/import-existing, shows alert with results, then refreshes. Typecheck passes, lint passes, browser verified."
+    }
+  ]
+}

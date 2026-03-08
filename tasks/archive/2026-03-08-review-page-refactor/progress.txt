@@ -1,0 +1,187 @@
+## Codebase Patterns
+- Use @rabjs/react for frontend state management with observable stores
+- Service classes extend Service from @rabjs/react and use bindServices() for React integration
+- API calls use the request wrapper with typed responses
+
+## 2026-03-08 - US-011
+- Implemented US-011 (前端 — Settings SR 过滤规则改为多选 Select)
+- Changed filter value input from text field to multi-select dropdown
+- When filterType=tag: fetches options from GET /api/v1/tags API
+- When filterType=category: fetches options from GET /api/v1/categories API
+- Each selected value creates one rule via POST /api/v1/spaced-repetition/rules
+- Added click-outside handler to close dropdown
+- Shows selected values as tags with remove button
+- Batch adds multiple rules at once
+- Typecheck passes, lint passes
+- Verified in browser: multi-select dropdown shows tags, selection works, rules are created
+- Updated PRD passes: true
+
+## 2026-03-08 - US-012 (Updated)
+- Implemented US-012 (前端 — 回顾页面重构为 Tab 切换方案)
+- Added review type selector (AI vs Spaced Repetition) tabs to review page
+- AI Review Tab:
+  - Shows saved review profiles (calls GET /api/v1/review/profiles)
+  - Each profile card shows name, scope description, question count
+  - Has play button to start with that profile, trash button to delete
+  - Custom setup section with scope selection (all/category/tag/recent)
+  - Multi-select for category: shows all categories as clickable tags
+  - Multi-select for tag: shows all tags as clickable tags
+  - Question count slider (5-10)
+  - Save profile button opens dialog to save current settings
+  - Direct start button to begin review
+- Spaced Repetition Tab: unchanged, shows "开始复习" button
+- History sidebar remains in left panel
+- Typecheck passes, lint passes
+- Updated PRD passes: true
+
+## 2026-03-08 - US-013
+- Implemented US-013 (前端 — 导航栏站内通知入口)
+- Added notification bell button to layout sidebar
+- Red dot indicator shows when there are unread notifications
+- Dropdown shows recent 50 notifications with title, body, time, read/unread status
+- Click notification to navigate to memo or /review and mark as read
+- Polling for unread count every 60 seconds + on visibilitychange
+- Registered NotificationService in main.tsx
+- Typecheck passes, lint passes (no errors)
+- Verified in browser at /home - dropdown shows "暂无通知" (no notifications yet)
+- Updated PRD passes: true
+
+## 2026-03-08 - US-013/US-014
+- Implemented US-013 (后端 — 历史 Memo 批量迁移 API)
+- Added importExistingMemos() method to SpacedRepetitionService
+- Added POST /api/v1/spaced-repetition/import-existing endpoint
+- Reuses isMemoEligible() filter logic, skips existing cards
+- nextReviewAt set to tomorrow 08:00 (same as new memos)
+- Returns { imported: number, skipped: number }
+
+- Implemented US-014 (前端 — Settings 页面历史 Memo 迁移入口)
+- Added "导入历史笔记" button to Settings SR block
+- Button disabled when srEnabled=false
+- Shows confirmation dialog before import
+- Shows loading state during import
+- Displays success message with import/skip counts
+- Added importExistingMemos() to frontend SpacedRepetitionService
+- Added importExistingMemos API call to spaced-repetition.ts
+
+- Typecheck passes (server and web), lint passes (no errors)
+- Updated PRD passes: true for both US-013 and US-014
+
+**Learnings for future iterations:**
+  - US-011 multi-select pattern can be reused for other settings pages
+  - API endpoints for categories and tags already exist in the codebase
+  - Frontend uses getCategories() and getTags() from api/category and api/tag
+
+## 2026-03-08 - US-011b
+- Implemented US-011b (数据库 — 创建 AI 回顾模式表 review_profiles)
+- Created review_profiles table schema in apps/server/src/db/schema/review-profiles.ts
+- Fields: profileId VARCHAR(191) PK, userId VARCHAR(191), name VARCHAR(255), scope ENUM('all','category','tag','recent'), filterValues JSON, recentDays INT NULL, questionCount INT DEFAULT 10, createdAt TIMESTAMP, updatedAt TIMESTAMP
+- Added userId index for efficient queries
+- Exported schema from apps/server/src/db/schema/index.ts
+- Generated migration: drizzle/0009_dusty_firelord.sql
+- Build passes, typecheck passes
+- Updated PRD passes: true
+
+---
+## 2026-03-08 - US-011c
+- Implemented US-011c (后端 — AI 回顾模式 CRUD API)
+- Added DTOs: ReviewProfileDto, CreateReviewProfileDto in packages/dto/src/review.ts
+- Added DTO: profileId field to CreateReviewSessionDto
+- Added ReviewService methods: getProfiles(), createProfile(), deleteProfile(), getProfileById()
+- Added controller endpoints:
+  - GET /api/v1/review/profiles - returns current user's review profiles
+  - POST /api/v1/review/profiles - creates a new review profile
+  - DELETE /api/v1/review/profiles/:profileId - deletes a review profile
+- Updated POST /api/v1/review/sessions to support profileId parameter
+- When profileId is provided, uses profile's scope/filterValues/questionCount
+- For multiple filterValues, uses OR logic when selecting memos
+- Typecheck passes (server), lint passes (warnings only)
+- Tests pass (30 tests)
+- Updated PRD passes: true
+
+---
+## 2026-03-08 - US-013
+- Implemented US-013 (前端 — 回顾页面顶部大 Tab 重构)
+- Added top-level tab bar with BrainCircuit (AI 回顾) and Clock (间隔重复) icons
+- Tab bar persists at top, replacing the inline tab in setup step
+- Added handleReviewTypeChange function to reset all states when switching tabs
+- Reset states: step, session, currentIndex, answer, feedback, finalScore, finalSession, selectedHistorySession, srCards, srCurrentIndex, skippedCards
+- Typecheck passes, lint passes (warnings only)
+- Verified in browser: tabs visible, switching works correctly
+- Updated PRD passes: true
+
+## 2026-03-08 - US-014
+- Implemented US-014 (前端 — AI 回顾模式左右布局骨架)
+- Left sidebar: 280px fixed width, bg-gray-50, dark:bg-dark-800
+- Right content area: white background, dark:bg-dark-800
+- Left sidebar upper section: "回顾模式" header with + button, profile list
+- Left sidebar lower section: "历史记录" header, history items
+- Divider between the two sections
+- Both sections scroll independently (overflow-y-auto)
+- Right content retains existing setup/quiz/summary flow
+- Typecheck passes, lint passes (removed unused Brain import)
+- Browser verified: layout correct, sections visible
+- Updated PRD passes: true
+
+## 2026-03-08 - US-015
+- Implemented US-015 (前端 — AI 回顾 - 左侧回顾模式列表)
+- Added "新建模式" text to Plus button in header
+- Profile list shows name, scope description, question count
+- Play button starts session with profileId
+- Delete button shows window.confirm before calling DELETE API
+- Empty state shows "暂无保存的模式"
+- Profiles loaded on mount via GET /api/v1/review/profiles
+- Typecheck passes, lint passes, browser verified
+- Updated PRD passes: true
+
+## 2026-03-08 - US-016
+- Implemented US-016 (前端 — AI 回顾 - 新建模式弹窗)
+- Modal shows profile name input, scope, question count
+- Two buttons: 仅保存 (saves and closes), 保存并开始 (saves and starts quiz)
+- Buttons disabled when profile name is empty
+- Click outside or cancel closes modal
+- handleSaveProfile returns profileId for use by 保存并开始
+- Verified in browser: modal opens, profile saved, quiz started
+- Updated PRD passes: true
+
+## 2026-03-08 - US-017
+- Implemented US-017 (前端 — AI 回顾 - 左侧历史记录列表)
+- History section shows past sessions with relative time and scores
+- Click history item loads session in right panel (completed → summary, active → quiz)
+- Selected history highlighted with border
+- Uses existing loadHistory() API
+- Empty state shows "暂无回顾历史"
+- Updated text from "暂无回顾记录" to "暂无回顾历史"
+- Typecheck passes, lint passes, browser verified
+- Updated PRD passes: true
+
+## 2026-03-08 - US-018
+- Implemented US-018 (间隔重复 - 翻卡片式交互)
+- Added srCardFlipped state and srStats for tracking review distribution
+- Flip card UI: front shows title + content preview (200 chars) + "显示答案" button
+- CSS 3D rotateY(180deg) animation (0.4s ease-in-out) for card flip
+- Back shows full content + four self-rating buttons (完全记住/记住了/模糊/忘记了)
+- Progress indicator "进度: X / Y" with percentage and card dots
+- Stats tracked per rating and displayed in summary
+- Summary shows review count + distribution (各评分 X 张)
+- Tab switching and start SR both reset flip state and stats
+- Typecheck passes, lint passes
+- Verified in browser: empty state shows (no due cards), flip card UI code complete
+- Updated PRD passes: true
+
+## 2026-03-08 - US-019
+- Implemented US-019 (间隔重复 - 无卡片时的引导页)
+- Added GET /api/v1/spaced-repetition/stats endpoint returning total card count
+- Added getSRStats() to frontend API
+- Added srTotalCards and srImporting state to track total cards and import status
+- Empty state shows "今日无需复习，继续保持！" (changed from previous message)
+- Import button shows only when srTotalCards === 0 (user never imported any cards)
+- handleImportExistingMemos() calls import API, shows alert with imported/skipped counts, then refreshes
+- Typecheck passes (server and web), lint passes
+- Browser verified: empty state shows correctly, stats API returns totalCards=2
+- Updated PRD passes: true
+
+---
+## Codebase Patterns
+- Use @rabjs/react for frontend state management with observable stores
+- Service classes extend Service from @rabjs/react and use bindServices() for React integration
+- API calls use the request wrapper with typed responses
