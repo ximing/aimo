@@ -27,3 +27,12 @@
   - When creating tables with unique constraints, Drizzle automatically creates the constraint in the CREATE TABLE statement
   - VARCHAR(50) is sufficient for feature names like 'tag_generation'
 ---
+## 2026-03-08 - US-003
+- Implemented: Updated ReviewProfile DTO to include userModelId field
+- Files changed:
+  - packages/dto/src/review.ts (added userModelId to ReviewProfileDto, CreateReviewProfileDto, UpdateReviewProfileDto)
+  - tasks/prd.json (marked US-003 as passes: true)
+- **Learnings for future iterations:**
+  - DTOs are in packages/dto/src/ directory, must be exported from index.ts
+  - Build DTO package with `pnpm --filter @aimo/dto build` before running typecheck
+  - All DTO changes require rebuilding the package to be visible to server
