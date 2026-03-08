@@ -1,0 +1,26 @@
+## Codebase Patterns
+- Use @rabjs/react for frontend state management with observable stores
+- Service classes extend Service from @rabjs/react and use bindServices() for React integration
+- API calls use the request wrapper with typed responses
+
+## 2026-03-08 - US-011
+- Verified US-011 (Settings 页面过滤规则管理) is already implemented
+- Checked: rules list display, delete confirmation dialog, add rule form with dropdowns
+- Verified in browser: page renders correctly at /settings/spaced-repetition
+- Typecheck passes, lint passes (no errors)
+- Updated PRD passes: true
+
+## 2026-03-08 - US-012
+- Implemented US-012 (前端 — 回顾页面 /review)
+- Added review type selector (AI vs Spaced Repetition) to review page
+- Implemented SR due cards fetching via GET /api/v1/spaced-repetition/due
+- Implemented 5-button review interface: skip (灰), forgot (红), fuzzy (黄), remembered (绿), mastered (紫)
+- Handles skipped cards by moving to end of queue
+- Shows completion state "今日复习完成 🎉" when all cards reviewed
+- Shows "今天没有需要复习的笔记" when no due cards
+- Typecheck passes, lint passes (no errors)
+- Verified in browser at /review
+- Updated PRD passes: true
+
+Next: US-013 (前端 — 导航栏站内通知入口) is the highest priority remaining story
+---

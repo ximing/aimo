@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router';
-import { User, Import, Download, Info, Bell, Bot } from 'lucide-react';
+import { User, Import, Download, Info, Bell, Bot, BrainCircuit } from 'lucide-react';
 
 export const SettingsMenu = () => {
   const menuItems: Array<{ id: string; label: string; icon: React.ReactNode; to: string }> = [
@@ -14,6 +14,12 @@ export const SettingsMenu = () => {
       label: '推送规则',
       icon: <Bell className="w-5 h-5" />,
       to: '/settings/push-rules',
+    },
+    {
+      id: 'spaced-repetition',
+      label: '间隔重复',
+      icon: <BrainCircuit className="w-5 h-5" />,
+      to: '/settings/spaced-repetition',
     },
     {
       id: 'models',

@@ -10,6 +10,7 @@ import { ImportData } from './pages/settings/components/import-data';
 import { ExportData } from './pages/settings/components/export-data';
 import { About } from './pages/settings/components/about';
 import { PushRulesSettings } from './pages/settings/components/push-rule';
+import { SpacedRepetitionSettings } from './pages/settings/components/spaced-repetition';
 import AIExplorePage from './pages/ai-explore';
 import GalleryPage from './pages/gallery';
 import SharePage from './pages/share';
@@ -79,6 +80,7 @@ function App() {
           <Route path="models" element={<ModelSettings />} />
           <Route path="import" element={<ImportData />} />
           <Route path="export" element={<ExportData />} />
+          <Route path="spaced-repetition" element={<SpacedRepetitionSettings />} />
           <Route path="about" element={<About />} />
         </Route>
         <Route

@@ -2,11 +2,14 @@ import { useState, useEffect } from 'react';
 import { view } from '@rabjs/react';
 import { Layout } from '../../components/layout';
 import * as reviewApi from '../../api/review';
+import * as srApi from '../../api/spaced-repetition';
 import type { ReviewSessionDto, SubmitAnswerResponseDto, CompleteSessionResponseDto, ReviewHistoryItemDto, ReviewItemDto } from '@aimo/dto';
-import { Brain, Clock, Loader2, ChevronLeft, ChevronRight, CheckCircle, Circle, XCircle, Plus } from 'lucide-react';
+import type { SRCard } from '../../api/spaced-repetition';
+import { Brain, Clock, Loader2, ChevronLeft, ChevronRight, CheckCircle, Circle, XCircle, Plus, BrainCircuit } from 'lucide-react';
 
 type Step = 'setup' | 'quiz' | 'summary';
 type Scope = 'all' | 'category' | 'tag' | 'recent';
+type ReviewType = 'ai' | 'sr';
 
 /**
  * Format relative time (e.g., "2 hours ago")
@@ -49,6 +52,7 @@ const getItemStatus = (item: ReviewItemDto): 'remembered' | 'fuzzy' | 'forgot' |
 
 export const ReviewPage = view(() => {
   const [step, setStep] = useState<Step>('setup');
+  const [reviewType, setReviewType] = useState<ReviewType>('ai');
   const [scope, setScope] = useState<Scope>('all');
   const [scopeValue, setScopeValue] = useState('');
   const [session, setSession] = useState<ReviewSessionDto | null>(null);
@@ -58,6 +62,12 @@ export const ReviewPage = view(() => {
   const [loading, setLoading] = useState(false);
   const [finalScore, setFinalScore] = useState<number | null>(null);
   const [finalSession, setFinalSession] = useState<CompleteSessionResponseDto | null>(null);
+
+  // Spaced Repetition state
+  const [srCards, setSrCards] = useState<SRCard[]>([]);
+  const [srCurrentIndex, setSrCurrentIndex] = useState(0);
+  const [skippedCards, setSkippedCards] = useState<SRCard[]>([]);
+  const [srLoading, setSrLoading] = useState(false);
 
   // History sidebar state
   const [history, setHistory] = useState<ReviewHistoryItemDto[]>([]);
@@ -126,6 +136,8 @@ export const ReviewPage = view(() => {
   // Calculate progress - count items that have been answered
   const answeredCount = session?.items.filter(item => item.mastery !== undefined).length || 0;
   const totalCount = session?.items.length || 0;
+
+  // SR progress
 
   const handleStart = async () => {
     setLoading(true);
@@ -271,6 +283,79 @@ export const ReviewPage = view(() => {
     }
   };
 
+  // ========== Spaced Repetition Handlers ==========
+  const handleStartSR = async () => {
+    setSrLoading(true);
+    setSkippedCards([]);
+    try {
+      const res = await srApi.getDueCards();
+      if (res.code === 0 && res.data?.cards) {
+        if (res.data.cards.length === 0) {
+          // No cards due - show summary directly
+          setSrCards([]);
+          setSrCurrentIndex(0);
+          setFinalScore(null);
+          setFinalSession(null);
+          setStep('summary');
+        } else {
+          setSrCards(res.data.cards);
+          setSrCurrentIndex(0);
+          setStep('quiz');
+        }
+      }
+    } finally {
+      setSrLoading(false);
+    }
+  };
+
+  const handleSRReview = async (quality: 'mastered' | 'remembered' | 'fuzzy' | 'forgot' | 'skip') => {
+    if (srCurrentIndex >= srCards.length) return;
+
+    const card = srCards[srCurrentIndex];
+
+    if (quality === 'skip') {
+      // Move skipped card to end of queue
+      setSkippedCards([...skippedCards, card]);
+      moveToNextSR();
+      return;
+    }
+
+    setSrLoading(true);
+    try {
+      const res = await srApi.reviewCard(card.cardId, quality);
+      if (res.code === 0) {
+        // Update the card in place
+        const updatedCards = [...srCards];
+        updatedCards[srCurrentIndex] = res.data.card;
+        setSrCards(updatedCards);
+        moveToNextSR();
+      }
+    } finally {
+      setSrLoading(false);
+    }
+  };
+
+  const moveToNextSR = () => {
+    const remainingCards = srCards.length - srCurrentIndex - 1;
+    const totalSkipped = skippedCards.length;
+
+    if (remainingCards <= 0 && totalSkipped <= 0) {
+      // All cards done
+      setStep('summary');
+      setFinalScore(null);
+      setFinalSession(null);
+    } else if (remainingCards <= 0 && totalSkipped > 0) {
+      // Move skipped cards back to continue
+      setSrCards([...skippedCards]);
+      setSkippedCards([]);
+      setSrCurrentIndex(0);
+    } else {
+      setSrCurrentIndex(srCurrentIndex + 1);
+    }
+  };
+
+  const currentSRCard = srCards[srCurrentIndex];
+
   const masteryLabel = (m?: string) => ({ remembered: '记得', fuzzy: '模糊', forgot: '忘了' }[m ?? ''] ?? '未回答');
   const masteryColor = (m?: string) => ({
     remembered: 'text-green-600 dark:text-green-400',
@@ -370,41 +455,83 @@ export const ReviewPage = view(() => {
             <div className="max-w-2xl mx-auto px-8 py-6">
               {step === 'setup' && (
                 <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-6">
-                  <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-6">AI 回顾模式</h1>
-                  <div className="space-y-3 mb-6">
-                    {(['all', 'category', 'tag', 'recent'] as Scope[]).map((s) => (
-                      <label key={s} className="flex items-center gap-3 cursor-pointer">
-                        <input
-                          type="radio"
-                          value={s}
-                          checked={scope === s}
-                          onChange={() => setScope(s)}
-                          className="w-4 h-4 text-primary-600 dark:text-primary-400"
-                        />
-                        <span className="text-gray-700 dark:text-gray-300">{scopeLabels[s]}</span>
-                      </label>
-                    ))}
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-6">选择回顾模式</h1>
+
+                  {/* Review Type Selector */}
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    <button
+                      onClick={() => setReviewType('ai')}
+                      className={`p-4 rounded-xl border-2 transition-all ${
+                        reviewType === 'ai'
+                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                          : 'border-gray-200 dark:border-dark-700 hover:border-gray-300 dark:hover:border-dark-600'
+                      }`}
+                    >
+                      <Brain className={`w-8 h-8 mx-auto mb-2 ${reviewType === 'ai' ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400'}`} />
+                      <p className="font-medium text-gray-900 dark:text-gray-50">AI 回顾</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">AI 提问，自我检测</p>
+                    </button>
+                    <button
+                      onClick={() => setReviewType('sr')}
+                      className={`p-4 rounded-xl border-2 transition-all ${
+                        reviewType === 'sr'
+                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                          : 'border-gray-200 dark:border-dark-700 hover:border-gray-300 dark:hover:border-dark-600'
+                      }`}
+                    >
+                      <BrainCircuit className={`w-8 h-8 mx-auto mb-2 ${reviewType === 'sr' ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400'}`} />
+                      <p className="font-medium text-gray-900 dark:text-gray-50">间隔重复</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">基于艾宾浩斯遗忘曲线</p>
+                    </button>
                   </div>
-                  {scope !== 'all' && (
-                    <input
-                      className="w-full bg-white dark:bg-dark-700 border border-gray-300 dark:border-dark-600 rounded-lg px-4 py-2 mb-4 text-gray-900 dark:text-gray-100 placeholder-gray-400"
-                      placeholder={scope === 'recent' ? '输入天数，如 7' : '输入分类ID或标签名'}
-                      value={scopeValue}
-                      onChange={(e) => setScopeValue(e.target.value)}
-                    />
+
+                  {reviewType === 'ai' ? (
+                    <>
+                      <div className="space-y-3 mb-6">
+                        {(['all', 'category', 'tag', 'recent'] as Scope[]).map((s) => (
+                          <label key={s} className="flex items-center gap-3 cursor-pointer">
+                            <input
+                              type="radio"
+                              value={s}
+                              checked={scope === s}
+                              onChange={() => setScope(s)}
+                              className="w-4 h-4 text-primary-600 dark:text-primary-400"
+                            />
+                            <span className="text-gray-700 dark:text-gray-300">{scopeLabels[s]}</span>
+                          </label>
+                        ))}
+                      </div>
+                      {scope !== 'all' && (
+                        <input
+                          className="w-full bg-white dark:bg-dark-700 border border-gray-300 dark:border-dark-600 rounded-lg px-4 py-2 mb-4 text-gray-900 dark:text-gray-100 placeholder-gray-400"
+                          placeholder={scope === 'recent' ? '输入天数，如 7' : '输入分类ID或标签名'}
+                          value={scopeValue}
+                          onChange={(e) => setScopeValue(e.target.value)}
+                        />
+                      )}
+                      <button
+                        className="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg px-4 py-2.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        onClick={handleStart}
+                        disabled={loading}
+                      >
+                        {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                        {loading ? '准备中...' : '开始回顾'}
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      className="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg px-4 py-2.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      onClick={handleStartSR}
+                      disabled={srLoading}
+                    >
+                      {srLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                      {srLoading ? '加载中...' : '开始复习'}
+                    </button>
                   )}
-                  <button
-                    className="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg px-4 py-2.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                    onClick={handleStart}
-                    disabled={loading}
-                  >
-                    {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                    {loading ? '准备中...' : '开始回顾'}
-                  </button>
                 </div>
               )}
 
-              {step === 'quiz' && session && currentItem && (
+              {step === 'quiz' && reviewType === 'ai' && session && currentItem && (
                 <div className="space-y-4">
                   {/* Progress Bar */}
                   <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-4">
@@ -546,7 +673,102 @@ export const ReviewPage = view(() => {
                 </div>
               )}
 
-              {step === 'summary' && finalSession && (
+              {/* Spaced Repetition Quiz */}
+              {step === 'quiz' && reviewType === 'sr' && currentSRCard && (
+                <div className="space-y-4">
+                  {/* Progress Bar */}
+                  <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-4">
+                    <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400 mb-2">
+                      <span>进度: {srCurrentIndex + 1} / {srCards.length}</span>
+                      <span>{Math.round(((srCurrentIndex + 1) / srCards.length) * 100)}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 dark:bg-dark-700 rounded-full h-2">
+                      <div
+                        className="bg-primary-600 h-2 rounded-full transition-all"
+                        style={{ width: `${((srCurrentIndex + 1) / srCards.length) * 100}%` }}
+                      />
+                    </div>
+                    {/* Card dots */}
+                    <div className="flex justify-center gap-1 mt-3 flex-wrap">
+                      {srCards.map((card, idx) => (
+                        <button
+                          key={card.cardId}
+                          onClick={() => setSrCurrentIndex(idx)}
+                          className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
+                            idx === srCurrentIndex
+                              ? 'ring-2 ring-primary-500 ring-offset-1'
+                              : idx < srCurrentIndex
+                              ? 'bg-green-100 dark:bg-green-900/30'
+                              : 'bg-gray-100 dark:bg-dark-700'
+                          }`}
+                          title={`第${idx + 1}张`}
+                        >
+                          {idx < srCurrentIndex ? (
+                            <CheckCircle className="w-3 h-3 text-green-600 dark:text-green-400" />
+                          ) : (
+                            <span className="text-xs text-gray-500 dark:text-gray-400">{idx + 1}</span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Memo Content */}
+                  <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-50 mb-3">
+                      {currentSRCard.memo.title}
+                    </h3>
+                    <div className="prose prose-sm dark:prose-invert max-w-none">
+                      <p className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
+                        {currentSRCard.memo.content.slice(0, 200)}
+                        {currentSRCard.memo.content.length > 200 ? '...' : ''}
+                      </p>
+                    </div>
+
+                    {/* 5 Action Buttons */}
+                    <div className="mt-6 grid grid-cols-5 gap-2">
+                      <button
+                        onClick={() => handleSRReview('skip')}
+                        disabled={srLoading}
+                        className="px-3 py-3 bg-gray-100 dark:bg-dark-700 text-gray-600 dark:text-gray-400 font-medium rounded-lg hover:bg-gray-200 dark:hover:bg-dark-600 transition-colors text-sm disabled:opacity-50"
+                      >
+                        跳过
+                      </button>
+                      <button
+                        onClick={() => handleSRReview('forgot')}
+                        disabled={srLoading}
+                        className="px-3 py-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 font-medium rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors text-sm disabled:opacity-50"
+                      >
+                        忘记了
+                      </button>
+                      <button
+                        onClick={() => handleSRReview('fuzzy')}
+                        disabled={srLoading}
+                        className="px-3 py-3 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 font-medium rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-colors text-sm disabled:opacity-50"
+                      >
+                        模糊
+                      </button>
+                      <button
+                        onClick={() => handleSRReview('remembered')}
+                        disabled={srLoading}
+                        className="px-3 py-3 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 font-medium rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors text-sm disabled:opacity-50"
+                      >
+                        记住了
+                      </button>
+                      <button
+                        onClick={() => handleSRReview('mastered')}
+                        disabled={srLoading}
+                        className="px-3 py-3 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors text-sm disabled:opacity-50"
+                      >
+                        熟练掌握
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* AI Review Summary */}
+              {step === 'summary' && reviewType === 'ai' && finalSession && (
                 <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-6">
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-2">回顾完成</h2>
                   <p className="text-5xl font-bold text-primary-600 dark:text-primary-400 mb-6">
@@ -568,9 +790,54 @@ export const ReviewPage = view(() => {
                       setFinalScore(null);
                       setFinalSession(null);
                       setSelectedHistorySession(null);
+                      setReviewType('ai');
                     }}
                   >
                     再来一次
+                  </button>
+                </div>
+              )}
+
+              {/* Spaced Repetition Summary - Empty State */}
+              {step === 'summary' && reviewType === 'sr' && srCards.length === 0 && (
+                <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-6 text-center">
+                  <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-2">今天没有需要复习的笔记</h2>
+                  <p className="text-gray-500 dark:text-gray-400 mb-6">
+                    全部笔记都已复习完毕，记得明天再来！
+                  </p>
+                  <button
+                    className="bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg px-4 py-2.5 transition-colors"
+                    onClick={() => {
+                      setStep('setup');
+                      setSrCards([]);
+                      setSkippedCards([]);
+                      setSrCurrentIndex(0);
+                    }}
+                  >
+                    返回
+                  </button>
+                </div>
+              )}
+
+              {/* Spaced Repetition Summary - Completed */}
+              {step === 'summary' && reviewType === 'sr' && srCards.length > 0 && (
+                <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-6 text-center">
+                  <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-2">今日复习完成</h2>
+                  <p className="text-gray-500 dark:text-gray-400 mb-6">
+                    已复习 {srCards.length} 张卡片
+                  </p>
+                  <button
+                    className="bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg px-4 py-2.5 transition-colors"
+                    onClick={() => {
+                      setStep('setup');
+                      setSrCards([]);
+                      setSkippedCards([]);
+                      setSrCurrentIndex(0);
+                    }}
+                  >
+                    返回
                   </button>
                 </div>
               )}

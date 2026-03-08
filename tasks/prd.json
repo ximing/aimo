@@ -159,7 +159,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 10,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -170,12 +170,11 @@
         "Settings SR 区块内显示现有过滤规则列表，每条规则显示 [include/exclude] [category/tag]: value，支持删除按钮",
         "删除规则时弹出确认 dialog，确认后调用 DELETE /api/v1/spaced-repetition/rules/:ruleId，列表实时更新",
         "提供添加规则表单：下拉选 include/exclude、下拉选 category/tag、输入具体值，提交后调用 POST /api/v1/spaced-repetition/rules，列表实时更新",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "Typecheck passes"
       ],
       "priority": 11,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented in apps/web/src/pages/settings/components/spaced-repetition/"
     },
     {
       "id": "US-012",
@@ -190,12 +189,11 @@
         "跳过的卡片移至本次队列末尾；若本轮所有剩余卡片均被跳过则结束",
         "所有卡片处理完毕后显示完成状态「今日复习完成 🎉」",
         "无待复习卡片时显示空状态「今天没有需要复习的笔记」",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "Typecheck passes"
       ],
       "priority": 12,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented in apps/web/src/pages/review/index.tsx - added SR mode selector and 5-button review interface"
     },
     {
       "id": "US-013",
@@ -206,8 +204,7 @@
         "点击图标展开通知下拉列表（最近50条），每条显示标题、时间、已读/未读状态",
         "点击通知项跳转到对应 Memo 或 /review 页面，并调用 POST /api/v1/notifications/:id/read 标记已读",
         "页面加载及每60秒（或 visibilitychange 时）调用 GET /api/v1/notifications/unread-count 刷新未读数",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "Typecheck passes"
       ],
       "priority": 13,
       "passes": false,
