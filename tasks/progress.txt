@@ -111,3 +111,16 @@
   - generateSuggestedQuestions is a private method that needed model passed as parameter
   - getModelClient returns default model when userModelId is null - maintaining backward compatibility
   - DTO changes require rebuilding the package before typecheck
+---
+## 2026-03-08 - US-010
+- Implemented: Added AI model selection dropdown to Review Profile detail panel
+- Files changed:
+  - apps/web/src/pages/review/review.service.ts (added detailUserModelId state, updateDetailUserModelId method, updated openNewProfile/openProfile/saveDetail)
+  - apps/web/src/pages/review/components/profile-detail-panel.tsx (added model dropdown with UserModelService integration)
+  - tasks/prd.json (marked US-010 as passes: true)
+- **Learnings for future iterations:**
+  - ProfileDetailPanel uses @rabjs/react's useService for state management
+  - UserModelService.models observable contains all user-configured models
+  - Dropdown shows "系统默认" (null) as first option, then lists user models by name
+  - Models are loaded via useEffect when detailMode !== 'none' and models array is empty
+  - The DTO (CreateReviewProfileDto/UpdateReviewProfileDto) already includes userModelId field from US-003
