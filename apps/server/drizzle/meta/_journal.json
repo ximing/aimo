@@ -64,6 +64,13 @@
       "when": 1772903509402,
       "tag": "0008_jazzy_stick",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1772936243190,
+      "tag": "0009_dusty_firelord",
+      "breakpoints": true
     }
   ]
 }
