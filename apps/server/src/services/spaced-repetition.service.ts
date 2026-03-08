@@ -146,6 +146,26 @@ export class SpacedRepetitionService {
         if (memoTagNames.includes(rule.filterValue)) {
           return false;
         }
+      } else if (rule.filterType === 'recent_days') {
+        const days = parseInt(rule.filterValue, 10);
+        if (!isNaN(days) && days > 0) {
+          const cutoffDate = new Date();
+          cutoffDate.setDate(cutoffDate.getDate() - days);
+          if (memo.createdAt && memo.createdAt >= cutoffDate) {
+            return false;
+          }
+        }
+      } else if (rule.filterType === 'date_range') {
+        const [startStr, endStr] = rule.filterValue.split(',');
+        if (startStr && endStr) {
+          const startDate = new Date(startStr.trim());
+          const endDate = new Date(endStr.trim());
+          if (memo.createdAt && !isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+            if (memo.createdAt >= startDate && memo.createdAt <= endDate) {
+              return false;
+            }
+          }
+        }
       }
     }
 
@@ -159,6 +179,26 @@ export class SpacedRepetitionService {
         } else if (rule.filterType === 'tag') {
           if (memoTagNames.includes(rule.filterValue)) {
             return true;
+          }
+        } else if (rule.filterType === 'recent_days') {
+          const days = parseInt(rule.filterValue, 10);
+          if (!isNaN(days) && days > 0) {
+            const cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - days);
+            if (memo.createdAt && memo.createdAt >= cutoffDate) {
+              return true;
+            }
+          }
+        } else if (rule.filterType === 'date_range') {
+          const [startStr, endStr] = rule.filterValue.split(',');
+          if (startStr && endStr) {
+            const startDate = new Date(startStr.trim());
+            const endDate = new Date(endStr.trim());
+            if (memo.createdAt && !isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+              if (memo.createdAt >= startDate && memo.createdAt <= endDate) {
+                return true;
+              }
+            }
           }
         }
       }

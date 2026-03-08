@@ -9,7 +9,7 @@ export const spacedRepetitionRules = mysqlTable(
     ruleId: varchar('rule_id', { length: 191 }).primaryKey().notNull(),
     userId: varchar('user_id', { length: 191 }).notNull(),
     mode: mysqlEnum('mode', ['include', 'exclude']).notNull(),
-    filterType: mysqlEnum('filter_type', ['category', 'tag']).notNull(),
+    filterType: mysqlEnum('filter_type', ['category', 'tag', 'recent_days', 'date_range']).notNull(),
     filterValue: varchar('filter_value', { length: 255 }).notNull(),
     createdAt: timestamp('created_at', { mode: 'date', fsp: 3 }).notNull().defaultNow(),
   },

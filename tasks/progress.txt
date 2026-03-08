@@ -23,3 +23,26 @@
 - **Learnings for future iterations:**
   - Always check if the worktree already has partial implementations before writing new code
 ---
+
+## 2026-03-08 - US-003
+- Added MAX_INTERVAL_DAYS = 365 constant to spaced-repetition.service.ts
+- Applied Math.min(interval, MAX_INTERVAL_DAYS) before returning from calculateNextReview
+- Updated tests to verify the cap is applied correctly
+- Files changed: apps/server/src/services/spaced-repetition.service.ts, apps/server/src/__tests__/spaced-repetition.service.test.ts
+- **Learnings for future iterations:**
+  - Simple constant addition with min() cap - straightforward implementation
+---
+
+## 2026-03-08 - US-004 & US-005
+- Added lapseCount field to schema (int, default 0, NOT NULL)
+- Generated migration file: drizzle/0010_mean_barracuda.sql
+- Implemented lapseCount logic: increment on quality=1 (forgot), keep unchanged otherwise
+- Updated getDueCards API to return lapseCount field
+- Updated reviewCard API to persist lapseCount to database
+- Added comprehensive tests for lapseCount tracking
+- Files changed: apps/server/src/db/schema/spaced-repetition-cards.ts, apps/server/src/services/spaced-repetition.service.ts, apps/server/src/controllers/v1/spaced-repetition.controller.ts, apps/server/src/__tests__/spaced-repetition.service.test.ts
+- **Learnings for future iterations:**
+  - Schema changes require: 1) update schema file, 2) pnpm build, 3) pnpm migrate:generate
+  - Test files need all card objects updated with new fields to pass typecheck
+  - Used replace_all to efficiently update repeated test patterns
+---
