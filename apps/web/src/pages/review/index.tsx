@@ -598,7 +598,7 @@ export const ReviewPage = view(() => {
             ) : history.length === 0 ? (
               <div className="p-8 text-center">
                 <Clock className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                <p className="text-sm text-gray-500 dark:text-gray-400">暂无回顾记录</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">暂无回顾历史</p>
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                   开始一次回顾来创建记录
                 </p>

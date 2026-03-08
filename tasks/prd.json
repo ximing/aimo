@@ -93,8 +93,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 5,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented: History section shows past sessions with relative time and scores. Clicking history loads session in right panel. Selected history highlighted. Uses existing loadHistory() from API. Empty state shows '暂无回顾历史'. Typecheck passes, lint passes, browser verified."
     },
     {
       "id": "US-018",

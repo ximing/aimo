@@ -143,6 +143,17 @@
 - Verified in browser: modal opens, profile saved, quiz started
 - Updated PRD passes: true
 
+## 2026-03-08 - US-017
+- Implemented US-017 (前端 — AI 回顾 - 左侧历史记录列表)
+- History section shows past sessions with relative time and scores
+- Click history item loads session in right panel (completed → summary, active → quiz)
+- Selected history highlighted with border
+- Uses existing loadHistory() API
+- Empty state shows "暂无回顾历史"
+- Updated text from "暂无回顾记录" to "暂无回顾历史"
+- Typecheck passes, lint passes, browser verified
+- Updated PRD passes: true
+
 ---
 ## Codebase Patterns
 - Use @rabjs/react for frontend state management with observable stores
