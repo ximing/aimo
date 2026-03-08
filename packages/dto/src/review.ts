@@ -3,7 +3,9 @@ export type ReviewStatus = 'active' | 'completed' | 'abandoned';
 export type MasteryLevel = 'remembered' | 'fuzzy' | 'forgot';
 
 export interface CreateReviewSessionDto {
-  scope: ReviewScope;
+  /** Profile ID - if provided, use profile's scope/filterValues instead of scope/scopeValue */
+  profileId?: string;
+  scope?: ReviewScope;
   /** categoryId, tagName, or number of days (for 'recent') */
   scopeValue?: string;
   /** Number of questions, 5-10. Defaults to 7. */
@@ -60,4 +62,24 @@ export interface ReviewHistoryItemDto {
   itemCount: number;
   createdAt: string;
   completedAt?: string;
+}
+
+export interface ReviewProfileDto {
+  profileId: string;
+  userId: string;
+  name: string;
+  scope: ReviewScope;
+  filterValues?: string[];
+  recentDays?: number;
+  questionCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateReviewProfileDto {
+  name: string;
+  scope: ReviewScope;
+  filterValues?: string[];
+  recentDays?: number;
+  questionCount?: number;
 }

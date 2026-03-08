@@ -1,4 +1,4 @@
-import { JsonController, Post, Get, Body, Param, CurrentUser } from 'routing-controllers';
+import { JsonController, Post, Get, Body, Param, CurrentUser, Delete } from 'routing-controllers';
 import { Service } from 'typedi';
 
 import { ErrorCode } from '../../constants/error-codes.js';
@@ -6,7 +6,7 @@ import { ReviewService } from '../../services/review.service.js';
 import { logger } from '../../utils/logger.js';
 import { ResponseUtil } from '../../utils/response.js';
 
-import type { UserInfoDto, CreateReviewSessionDto, SubmitAnswerDto } from '@aimo/dto';
+import type { UserInfoDto, CreateReviewSessionDto, CreateReviewProfileDto, SubmitAnswerDto } from '@aimo/dto';
 
 @Service()
 @JsonController('/api/v1/review')
@@ -74,6 +74,44 @@ export class ReviewController {
       return ResponseUtil.success({ items: history, total: history.length });
     } catch (error) {
       logger.error('Get review history error:', error);
+      return ResponseUtil.error(ErrorCode.SYSTEM_ERROR);
+    }
+  }
+
+  // Profile CRUD endpoints
+  @Get('/profiles')
+  async getProfiles(@CurrentUser() user: UserInfoDto) {
+    try {
+      if (!user?.uid) return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
+      const profiles = await this.reviewService.getProfiles(user.uid);
+      return ResponseUtil.success({ profiles });
+    } catch (error) {
+      logger.error('Get review profiles error:', error);
+      return ResponseUtil.error(ErrorCode.SYSTEM_ERROR);
+    }
+  }
+
+  @Post('/profiles')
+  async createProfile(@Body() dto: CreateReviewProfileDto, @CurrentUser() user: UserInfoDto) {
+    try {
+      if (!user?.uid) return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
+      const profile = await this.reviewService.createProfile(user.uid, dto);
+      return ResponseUtil.success(profile);
+    } catch (error) {
+      logger.error('Create review profile error:', error);
+      return ResponseUtil.error(ErrorCode.SYSTEM_ERROR, (error as Error).message);
+    }
+  }
+
+  @Delete('/profiles/:id')
+  async deleteProfile(@Param('id') profileId: string, @CurrentUser() user: UserInfoDto) {
+    try {
+      if (!user?.uid) return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
+      const deleted = await this.reviewService.deleteProfile(user.uid, profileId);
+      if (!deleted) return ResponseUtil.error(ErrorCode.NOT_FOUND);
+      return ResponseUtil.success({ success: true });
+    } catch (error) {
+      logger.error('Delete review profile error:', error);
       return ResponseUtil.error(ErrorCode.SYSTEM_ERROR);
     }
   }

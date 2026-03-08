@@ -43,7 +43,7 @@ export class NotificationService {
       )
       .limit(1);
 
-    if (!existing.length) {
+    if (existing.length === 0) {
       return false;
     }
 

@@ -133,6 +133,37 @@
 - [ ] `DELETE /api/v1/spaced-repetition/rules/:ruleId` 删除规则
 - [ ] Typecheck passes
 
+### US-008c: 数据库 — 创建 AI 回顾模式表（review_profiles）
+**Description:** As a developer, I need to store named AI review profiles with filter conditions so users can save and reuse review configurations.
+
+**Acceptance Criteria:**
+- [ ] 在 `apps/server/src/db/schema/` 创建 `reviewProfiles` 表，字段：`profileId` VARCHAR(191) PK、`userId` VARCHAR(191)、`name` VARCHAR(255)、`scope` ENUM('all','category','tag','recent')、`filterValues` JSON（存储分类 ID 或标签名数组，scope=all/recent 时为空数组）、`recentDays` INT NULL（scope=recent 时使用）、`questionCount` INT DEFAULT 10、`createdAt` TIMESTAMP、`updatedAt` TIMESTAMP
+- [ ] 从 `apps/server/src/db/schema/index.ts` 导出
+- [ ] `pnpm build && pnpm migrate:generate` 执行无报错
+- [ ] Typecheck passes
+
+### US-008d: 后端 — AI 回顾模式 CRUD API
+**Description:** As a user, I want to create, list, and delete AI review profiles via API so I can manage my saved review configurations.
+
+**Acceptance Criteria:**
+- [ ] `GET /api/v1/review/profiles` 返回当前用户所有回顾模式列表，需 JWT 认证
+- [ ] `POST /api/v1/review/profiles` 创建回顾模式，body: `{ name, scope, filterValues: string[], recentDays?, questionCount? }`，需 JWT 认证
+- [ ] `DELETE /api/v1/review/profiles/:profileId` 删除回顾模式，不属于当前用户时返回 404，需 JWT 认证
+- [ ] `POST /api/v1/review/sessions` 新增支持 `profileId` 参数：传入时从 `review_profiles` 读取配置，原有 `scope/scopeValue` 参数保持兼容
+- [ ] `filterValues` 为数组，后端展开为 OR 逻辑（匹配任意一个分类/标签的 Memo 均纳入）
+- [ ] Typecheck passes
+
+### US-008e: 前端 — Settings SR 过滤规则改为多选 Select
+**Description:** As a user, I want to pick categories and tags from a dropdown list when adding SR filter rules, instead of typing values manually.
+
+**Acceptance Criteria:**
+- [ ] 添加规则表单中，选择 `filterType=category` 时，filterValue 输入框改为多选 select，选项来自 `GET /api/v1/categories`（显示分类名称，提交值为 categoryId）
+- [ ] 选择 `filterType=tag` 时，改为多选 select，选项来自 `GET /api/v1/tags`（显示标签名，提交值为标签名）
+- [ ] 多选后批量提交：每个选中值调用一次 `POST /api/v1/spaced-repetition/rules`，全部完成后列表实时更新
+- [ ] 现有规则列表展示不变（每条规则仍显示 `[include/exclude] [category/tag]: value`），支持删除（二次确认）
+- [ ] Typecheck passes
+- [ ] Verify in browser using dev-browser skill
+
 ### US-009: 前端 — Settings 页面 SR 配置区块
 **Description:** As a user, I want to enable/disable spaced repetition and configure daily limit and filter rules in Settings so I can control the feature.
 
@@ -148,20 +179,48 @@
 - [ ] Typecheck passes
 - [ ] Verify in browser using dev-browser skill
 
-### US-010: 前端 — 回顾页面（/review）
-**Description:** As a user, I want a dedicated review page that shows me due cards one by one so I can efficiently go through my spaced repetition queue.
+### US-010: 前端 — 回顾页面重构为 Tab 切换方案
+**Description:** As a user, I want the review page to use a clear Tab layout separating AI review and spaced repetition so I can easily distinguish and access both modes.
+
+**交互结构：**
+```
+[AI 回顾 🧠]  [间隔重复 🔁]
+─────────────────────────────────────────────────────
+AI 回顾 Tab（Setup 阶段）:
+
+  已保存的回顾模式                    [+ 新建模式]
+  ┌──────────────┐  ┌──────────────┐
+  │ 🏷 工作笔记   │  │ 📁 技术学习   │
+  │ 标签: 工作   │  │ 分类: 技术   │
+  │ 10 题        │  │ 5 题         │
+  │ [▶ 开始]     │  │ [▶ 开始]     │
+  └──────────────┘  └──────────────┘
+
+  ── 历史记录 ──
+  • 昨天 - 工作笔记
+  • 3天前 - 全部笔记
+
+  ── 自定义回顾 ──
+  范围: ○全部  ○按分类  ○按标签  ○最近N天
+  按分类: [▼ 多选分类 select ▼]
+  题目数量: [10 ▾]
+  [保存为模式...]   [▶ 直接开始]
+
+间隔重复 Tab（Setup 阶段）:
+  [▶ 开始复习]
+```
 
 **Acceptance Criteria:**
-- [ ] 路由 `/review` 对应独立回顾页面
-- [ ] 页面加载时请求 `GET /api/v1/spaced-repetition/due`，展示待复习卡片总数
-- [ ] 逐卡展示：显示 Memo 标题 + 内容前 200 字
-- [ ] 每张卡片底部有五个操作：「忘记了」(forgot) / 「模糊」(fuzzy) / 「记住了」(remembered) / 「熟练掌握」(mastered) / 「跳过」(skip)
-  - 「忘记了」红色、「模糊」黄色、「记住了」绿色、「熟练掌握」蓝色（更深绿/紫）、「跳过」灰色
-- [ ] 点击任意操作后调用 `POST /api/v1/spaced-repetition/cards/:cardId/review`，自动切换到下一张
-- [ ] 「跳过」的卡片移至本次队列末尾（而非永久跳过），若本轮所有卡片均被跳过则结束
-- [ ] 所有卡片处理完毕后显示完成状态（"今日复习完成 🎉"）
-- [ ] 无待复习卡片时显示空状态（"今天没有需要复习的笔记"）
-- [ ] 显示进度条（当前第 X 张 / 共 Y 张，跳过的不计入已完成数）
+- [ ] 回顾页面顶部改为两个 Tab：「AI 回顾 🧠」和「间隔重复 🔁」，默认选中 AI 回顾
+- [ ] AI 回顾 Tab Setup 阶段上方：调用 `GET /api/v1/review/profiles` 展示已保存模式卡片，每张卡片显示名称、scope 描述、题目数量，点击「▶ 开始」以该 profileId 创建会话
+- [ ] AI 回顾 Tab Setup 阶段中部：保留现有历史记录列表（点击恢复历史会话，功能不变）
+- [ ] AI 回顾 Tab Setup 阶段下方：自定义区域，scope 选分类/标签时显示多选 select（选项来自 categories/tags API），底部有「保存为模式」和「直接开始」两个按钮
+- [ ] 「保存为模式」弹出输入模式名称的 dialog，确认后调用 `POST /api/v1/review/profiles`，模式卡片列表刷新
+- [ ] 间隔重复 Tab Setup 阶段：仅显示「▶ 开始复习」按钮，点击后调用 `GET /api/v1/spaced-repetition/due` 进入复习流程
+- [ ] 间隔重复 Quiz 阶段：逐卡展示 Memo 标题 + 内容前 200 字，底部五个按钮（左→右）：跳过（灰）/ 忘记了（红）/ 模糊（黄）/ 记住了（绿）/ 熟练掌握（深蓝紫）
+- [ ] 跳过的卡片移至队列末尾；所有卡片完成后显示「今日复习完成 🎉」；无待复习时显示空状态
+- [ ] 显示进度条（第 X 张 / 共 Y 张）
+- [ ] AI 回顾 Quiz/Summary 阶段交互逻辑不变
 - [ ] Typecheck passes
 - [ ] Verify in browser using dev-browser skill
 
@@ -173,6 +232,27 @@
 - [ ] 点击图标展开通知列表（最近 50 条），显示标题、时间、已读/未读状态
 - [ ] 点击通知项跳转到对应 Memo 或回顾页面，并标记为已读
 - [ ] 轮询或页面聚焦时刷新未读数量（每 60 秒或 visibilitychange）
+- [ ] Typecheck passes
+- [ ] Verify in browser using dev-browser skill
+
+### US-008b: 后端 — 历史 Memo 批量迁移 API
+**Description:** As a user, I want to trigger a one-time import of my existing memos into the spaced repetition pool so I don't miss historical notes.
+
+**Acceptance Criteria:**
+- [ ] `POST /api/v1/spaced-repetition/import-existing` 触发批量迁移，需 JWT 认证
+- [ ] 遍历当前用户所有 Memo，对每条 Memo 执行 `createCardIfEligible`（复用过滤规则逻辑，已有卡片的 Memo 跳过）
+- [ ] `nextReviewAt` 设为明天 08:00（与新建 Memo 一致）
+- [ ] 返回结果：`{ imported: number, skipped: number }`（imported=新建卡片数，skipped=已有卡片或被规则排除数）
+- [ ] Typecheck passes
+
+### US-009b: 前端 — Settings 页面历史 Memo 迁移入口
+**Description:** As a user, I want a button in Settings to import my existing memos into the review pool so I can start reviewing historical notes.
+
+**Acceptance Criteria:**
+- [ ] Settings SR 区块内新增「导入历史笔记」按钮，仅在 `srEnabled=true` 时可点击
+- [ ] 点击后弹出确认 dialog：「将把所有符合过滤规则的现有笔记加入复习池，已在复习池中的笔记不受影响，确认导入？」
+- [ ] 确认后调用 `POST /api/v1/spaced-repetition/import-existing`，显示 loading 状态
+- [ ] 完成后显示结果提示：「已导入 X 条笔记，跳过 Y 条（已在复习池或被规则排除）」
 - [ ] Typecheck passes
 - [ ] Verify in browser using dev-browser skill
 
@@ -189,10 +269,12 @@
 - **FR-9:** 站内通知支持未读标记，导航栏显示未读红点；通知永久保存（不自动清理）
 - **FR-10:** Memo 修改 category/tag 时，系统重新评估该 Memo 的 SR 卡片资格（新增/删除卡片，不修改已有卡片的 SM-2 状态）
 - **FR-11:** Memo 删除时，对应 SR 卡片同步删除
+- **FR-12:** 提供 `POST /api/v1/spaced-repetition/import-existing` 接口，将用户所有现有 Memo 按过滤规则批量加入复习池（已有卡片的 Memo 跳过），返回导入/跳过数量
+- **FR-13:** Settings 页面提供「导入历史笔记」按钮，触发批量迁移并展示结果
 
 ## Non-Goals
 
-- 不支持手动将已有 Memo 批量加入复习池（仅新建时自动加入）
+- 不支持自动将历史 Memo 批量加入复习池（需用户在 Settings 中手动触发导入）
 - 不支持过滤规则变更后批量溯及既往（即修改规则不会影响已有卡片，仅影响后续 Memo 创建/更新）
 - 不支持自定义 SM-2 参数（easeFactor 初始值、interval 增长系数固定）
 - 不支持多设备推送去重

@@ -1,11 +1,12 @@
 import { Service } from 'typedi';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, inArray } from 'drizzle-orm';
 import { ChatOpenAI } from '@langchain/openai';
 
 import { config } from '../config/config.js';
 import { getDatabase } from '../db/connection.js';
 import { reviewSessions } from '../db/schema/review-sessions.js';
 import { reviewItems } from '../db/schema/review-items.js';
+import { reviewProfiles } from '../db/schema/review-profiles.js';
 import { memos } from '../db/schema/memos.js';
 import { OBJECT_TYPE } from '../models/constant/type.js';
 import { generateTypeId } from '../utils/id.js';
@@ -15,6 +16,8 @@ import { MemoService } from './memo.service.js';
 
 import type {
   CreateReviewSessionDto,
+  CreateReviewProfileDto,
+  ReviewProfileDto,
   ReviewSessionDto,
   ReviewItemDto,
   SubmitAnswerDto,
@@ -40,10 +43,43 @@ export class ReviewService {
 
   async createSession(uid: string, dto: CreateReviewSessionDto): Promise<ReviewSessionDto> {
     const db = getDatabase();
-    const count = Math.min(Math.max(dto.questionCount ?? 7, 5), 10);
+    let scope = dto.scope;
+    let scopeValue = dto.scopeValue; // Stored in DB as string
+    let scopeValueArray: string | string[] | undefined = dto.scopeValue; // Used for memo selection
+    let count = Math.min(Math.max(dto.questionCount ?? 7, 5), 10);
+
+    // If profileId is provided, use profile settings
+    if (dto.profileId) {
+      const profile = await this.getProfileById(uid, dto.profileId);
+      if (!profile) {
+        throw new Error('Review profile not found');
+      }
+      scope = profile.scope;
+      count = Math.min(Math.max(profile.questionCount, 5), 10);
+
+      // Convert filterValues to scopeValue based on scope type
+      if (profile.scope === 'category' && profile.filterValues && profile.filterValues.length > 0) {
+        // For multiple categories, pass array for OR logic when selecting memos
+        scopeValueArray = profile.filterValues;
+        // Store first value in DB for backward compatibility
+        scopeValue = profile.filterValues[0];
+      } else if (profile.scope === 'tag' && profile.filterValues && profile.filterValues.length > 0) {
+        // For multiple tags, pass array for OR logic when selecting memos
+        scopeValueArray = profile.filterValues;
+        // Store first value in DB for backward compatibility
+        scopeValue = profile.filterValues[0];
+      } else if (profile.scope === 'recent' && profile.recentDays) {
+        scopeValue = profile.recentDays.toString();
+        scopeValueArray = scopeValue;
+      }
+    }
+
+    if (!scope) {
+      scope = 'all';
+    }
 
     // Select memos based on scope
-    const selectedMemos = await this.selectMemos(uid, dto.scope, dto.scopeValue, count);
+    const selectedMemos = await this.selectMemos(uid, scope, scopeValueArray, count);
     if (selectedMemos.length === 0) {
       throw new Error('No memos available for review in the selected scope');
     }
@@ -53,8 +89,8 @@ export class ReviewService {
     await db.insert(reviewSessions).values({
       sessionId,
       uid,
-      scope: dto.scope,
-      scopeValue: dto.scopeValue,
+      scope,
+      scopeValue,
       status: 'active',
     });
 
@@ -76,7 +112,7 @@ export class ReviewService {
       items.push({ itemId, sessionId, memoId: memo.memoId, memoContent: memo.content, question, order: i });
     }
 
-    return { sessionId, uid, scope: dto.scope, scopeValue: dto.scopeValue, status: 'active', items, createdAt: new Date().toISOString() };
+    return { sessionId, uid, scope, scopeValue, status: 'active', items, createdAt: new Date().toISOString() };
   }
 
   async getSession(uid: string, sessionId: string): Promise<ReviewSessionDto | null> {
@@ -163,16 +199,114 @@ export class ReviewService {
     return result;
   }
 
-  private async selectMemos(uid: string, scope: string, scopeValue?: string, count: number = 7) {
+  // Review Profile CRUD
+  async getProfiles(uid: string): Promise<ReviewProfileDto[]> {
+    const db = getDatabase();
+    const profiles = await db.select().from(reviewProfiles)
+      .where(eq(reviewProfiles.userId, uid))
+      .orderBy(desc(reviewProfiles.createdAt));
+
+    return profiles.map(p => ({
+      profileId: p.profileId,
+      userId: p.userId,
+      name: p.name,
+      scope: p.scope,
+      filterValues: p.filterValues ?? undefined,
+      recentDays: p.recentDays ?? undefined,
+      questionCount: p.questionCount,
+      createdAt: p.createdAt.toISOString(),
+      updatedAt: p.updatedAt.toISOString(),
+    }));
+  }
+
+  async createProfile(uid: string, dto: CreateReviewProfileDto): Promise<ReviewProfileDto> {
+    const db = getDatabase();
+    const profileId = generateTypeId(OBJECT_TYPE.REVIEW_SESSION);
+    const now = new Date();
+
+    await db.insert(reviewProfiles).values({
+      profileId,
+      userId: uid,
+      name: dto.name,
+      scope: dto.scope,
+      filterValues: dto.filterValues ?? [],
+      recentDays: dto.recentDays ?? null,
+      questionCount: dto.questionCount ?? 10,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return {
+      profileId,
+      userId: uid,
+      name: dto.name,
+      scope: dto.scope,
+      filterValues: dto.filterValues,
+      recentDays: dto.recentDays,
+      questionCount: dto.questionCount ?? 10,
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
+    };
+  }
+
+  async deleteProfile(uid: string, profileId: string): Promise<boolean> {
+    const db = getDatabase();
+    const [profile] = await db.select().from(reviewProfiles)
+      .where(and(eq(reviewProfiles.profileId, profileId), eq(reviewProfiles.userId, uid)));
+
+    if (!profile) return false;
+
+    await db.delete(reviewProfiles).where(eq(reviewProfiles.profileId, profileId));
+    return true;
+  }
+
+  async getProfileById(uid: string, profileId: string): Promise<ReviewProfileDto | null> {
+    const db = getDatabase();
+    const [profile] = await db.select().from(reviewProfiles)
+      .where(and(eq(reviewProfiles.profileId, profileId), eq(reviewProfiles.userId, uid)));
+
+    if (!profile) return null;
+
+    return {
+      profileId: profile.profileId,
+      userId: profile.userId,
+      name: profile.name,
+      scope: profile.scope,
+      filterValues: profile.filterValues ?? undefined,
+      recentDays: profile.recentDays ?? undefined,
+      questionCount: profile.questionCount,
+      createdAt: profile.createdAt.toISOString(),
+      updatedAt: profile.updatedAt.toISOString(),
+    };
+  }
+
+  private async selectMemos(uid: string, scope: string, scopeValue?: string | string[], count: number = 7) {
     const options: MemoSearchOptionsDto = { uid, limit: 50, page: 1 };
-    if (scope === 'category' && scopeValue) options.categoryId = scopeValue;
-    if (scope === 'tag' && scopeValue) options.tags = [scopeValue];
+
+    // Handle both single value and array of values (OR logic)
+    if (scope === 'category' && scopeValue) {
+      const values = Array.isArray(scopeValue) ? scopeValue : [scopeValue];
+      // For multiple categories, we need to fetch more memos and filter in memory
+      // since the API might not support IN clause for categoryId
+      options.categoryId = values[0];
+    }
+    if (scope === 'tag' && scopeValue) {
+      const values = Array.isArray(scopeValue) ? scopeValue : [scopeValue];
+      options.tags = values;
+    }
     if (scope === 'recent' && scopeValue) {
-      const days = parseInt(scopeValue, 10) || 7;
+      const values = Array.isArray(scopeValue) ? scopeValue : [scopeValue];
+      const days = parseInt(values[0], 10) || 7;
       options.startDate = new Date(Date.now() - days * 86400000);
     }
     const result = await this.memoService.getMemos(options);
-    const all = result.items;
+    let all = result.items;
+
+    // For category with multiple values, filter in memory (OR logic)
+    if (scope === 'category' && scopeValue && Array.isArray(scopeValue) && scopeValue.length > 1) {
+      all = all.filter(m => m.categoryId && scopeValue.includes(m.categoryId));
+    }
+
     // Shuffle and pick count
     for (let i = all.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));

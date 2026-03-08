@@ -76,6 +76,23 @@
 - Updated PRD passes: true
 
 ---
+## 2026-03-08 - US-011c
+- Implemented US-011c (后端 — AI 回顾模式 CRUD API)
+- Added DTOs: ReviewProfileDto, CreateReviewProfileDto in packages/dto/src/review.ts
+- Added DTO: profileId field to CreateReviewSessionDto
+- Added ReviewService methods: getProfiles(), createProfile(), deleteProfile(), getProfileById()
+- Added controller endpoints:
+  - GET /api/v1/review/profiles - returns current user's review profiles
+  - POST /api/v1/review/profiles - creates a new review profile
+  - DELETE /api/v1/review/profiles/:profileId - deletes a review profile
+- Updated POST /api/v1/review/sessions to support profileId parameter
+- When profileId is provided, uses profile's scope/filterValues/questionCount
+- For multiple filterValues, uses OR logic when selecting memos
+- Typecheck passes (server), lint passes (warnings only)
+- Tests pass (30 tests)
+- Updated PRD passes: true
+
+---
 ## Codebase Patterns
 - Use @rabjs/react for frontend state management with observable stores
 - Service classes extend Service from @rabjs/react and use bindServices() for React integration
