@@ -154,6 +154,20 @@
 - Typecheck passes, lint passes, browser verified
 - Updated PRD passes: true
 
+## 2026-03-08 - US-018
+- Implemented US-018 (间隔重复 - 翻卡片式交互)
+- Added srCardFlipped state and srStats for tracking review distribution
+- Flip card UI: front shows title + content preview (200 chars) + "显示答案" button
+- CSS 3D rotateY(180deg) animation (0.4s ease-in-out) for card flip
+- Back shows full content + four self-rating buttons (完全记住/记住了/模糊/忘记了)
+- Progress indicator "进度: X / Y" with percentage and card dots
+- Stats tracked per rating and displayed in summary
+- Summary shows review count + distribution (各评分 X 张)
+- Tab switching and start SR both reset flip state and stats
+- Typecheck passes, lint passes
+- Verified in browser: empty state shows (no due cards), flip card UI code complete
+- Updated PRD passes: true
+
 ---
 ## Codebase Patterns
 - Use @rabjs/react for frontend state management with observable stores

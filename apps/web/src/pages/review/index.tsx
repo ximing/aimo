@@ -66,8 +66,15 @@ export const ReviewPage = view(() => {
   // Spaced Repetition state
   const [srCards, setSrCards] = useState<SRCard[]>([]);
   const [srCurrentIndex, setSrCurrentIndex] = useState(0);
+  const [srCardFlipped, setSrCardFlipped] = useState(false);
   const [skippedCards, setSkippedCards] = useState<SRCard[]>([]);
   const [srLoading, setSrLoading] = useState(false);
+  const [srStats, setSrStats] = useState<{ mastered: number; remembered: number; fuzzy: number; forgot: number }>({
+    mastered: 0,
+    remembered: 0,
+    fuzzy: 0,
+    forgot: 0,
+  });
 
   // History sidebar state
   const [history, setHistory] = useState<ReviewHistoryItemDto[]>([]);
@@ -101,7 +108,9 @@ export const ReviewPage = view(() => {
     // Reset SR states
     setSrCards([]);
     setSrCurrentIndex(0);
+    setSrCardFlipped(false);
     setSkippedCards([]);
+    setSrStats({ mastered: 0, remembered: 0, fuzzy: 0, forgot: 0 });
     // Set new type
     setReviewType(type);
   };
@@ -412,6 +421,7 @@ export const ReviewPage = view(() => {
   const handleStartSR = async () => {
     setSrLoading(true);
     setSkippedCards([]);
+    setSrStats({ mastered: 0, remembered: 0, fuzzy: 0, forgot: 0 });
     try {
       const res = await srApi.getDueCards();
       if (res.code === 0 && res.data?.cards) {
@@ -453,6 +463,15 @@ export const ReviewPage = view(() => {
         const updatedCards = [...srCards];
         updatedCards[srCurrentIndex] = res.data.card;
         setSrCards(updatedCards);
+
+        // Update stats
+        if (quality !== 'skip') {
+          setSrStats(prev => ({
+            ...prev,
+            [quality]: prev[quality as keyof typeof prev] + 1,
+          }));
+        }
+
         moveToNextSR();
       }
     } finally {
@@ -461,6 +480,7 @@ export const ReviewPage = view(() => {
   };
 
   const moveToNextSR = () => {
+    setSrCardFlipped(false); // Reset flip state
     const remainingCards = srCards.length - srCurrentIndex - 1;
     const totalSkipped = skippedCards.length;
 
@@ -1081,55 +1101,94 @@ export const ReviewPage = view(() => {
                     </div>
                   </div>
 
-                  {/* Memo Content */}
+                  {/* Memo Content - Flip Card */}
                   <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-50 mb-3">
-                      {currentSRCard.memo.title}
-                    </h3>
-                    <div className="prose prose-sm dark:prose-invert max-w-none">
-                      <p className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
-                        {currentSRCard.memo.content.slice(0, 200)}
-                        {currentSRCard.memo.content.length > 200 ? '...' : ''}
-                      </p>
-                    </div>
+                    <div className="perspective-1000">
+                      <div
+                        className={`transition-transform duration-400 ease-in-out transform-style-3d ${
+                          srCardFlipped ? 'rotate-y-180' : ''
+                        }`}
+                        style={{
+                          transformStyle: 'preserve-3d',
+                          transform: srCardFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+                        }}
+                      >
+                        {/* Card Front */}
+                        <div
+                          className="backface-hidden"
+                          style={{ backfaceVisibility: 'hidden' }}
+                        >
+                          <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-50 mb-3">
+                            {currentSRCard.memo.title}
+                          </h3>
+                          <div className="prose prose-sm dark:prose-invert max-w-none">
+                            <p className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
+                              {currentSRCard.memo.content.slice(0, 200)}
+                              {currentSRCard.memo.content.length > 200 ? '...' : ''}
+                            </p>
+                          </div>
 
-                    {/* 5 Action Buttons */}
-                    <div className="mt-6 grid grid-cols-5 gap-2">
-                      <button
-                        onClick={() => handleSRReview('skip')}
-                        disabled={srLoading}
-                        className="px-3 py-3 bg-gray-100 dark:bg-dark-700 text-gray-600 dark:text-gray-400 font-medium rounded-lg hover:bg-gray-200 dark:hover:bg-dark-600 transition-colors text-sm disabled:opacity-50"
-                      >
-                        跳过
-                      </button>
-                      <button
-                        onClick={() => handleSRReview('forgot')}
-                        disabled={srLoading}
-                        className="px-3 py-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 font-medium rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors text-sm disabled:opacity-50"
-                      >
-                        忘记了
-                      </button>
-                      <button
-                        onClick={() => handleSRReview('fuzzy')}
-                        disabled={srLoading}
-                        className="px-3 py-3 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 font-medium rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-colors text-sm disabled:opacity-50"
-                      >
-                        模糊
-                      </button>
-                      <button
-                        onClick={() => handleSRReview('remembered')}
-                        disabled={srLoading}
-                        className="px-3 py-3 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 font-medium rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors text-sm disabled:opacity-50"
-                      >
-                        记住了
-                      </button>
-                      <button
-                        onClick={() => handleSRReview('mastered')}
-                        disabled={srLoading}
-                        className="px-3 py-3 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors text-sm disabled:opacity-50"
-                      >
-                        熟练掌握
-                      </button>
+                          {/* Show Answer Button */}
+                          <div className="mt-6">
+                            <button
+                              onClick={() => setSrCardFlipped(true)}
+                              className="w-full px-4 py-3 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors"
+                            >
+                              显示答案
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Card Back (Answer) */}
+                        <div
+                          className="backface-hidden absolute inset-0"
+                          style={{
+                            backfaceVisibility: 'hidden',
+                            transform: 'rotateY(180deg)',
+                          }}
+                        >
+                          <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-50 mb-3">
+                            {currentSRCard.memo.title}
+                          </h3>
+                          <div className="prose prose-sm dark:prose-invert max-w-none">
+                            <p className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
+                              {currentSRCard.memo.content}
+                            </p>
+                          </div>
+
+                          {/* 4 Self-Rating Buttons */}
+                          <div className="mt-6 grid grid-cols-2 gap-2">
+                            <button
+                              onClick={() => handleSRReview('mastered')}
+                              disabled={srLoading}
+                              className="px-3 py-3 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors text-sm disabled:opacity-50"
+                            >
+                              完全记住
+                            </button>
+                            <button
+                              onClick={() => handleSRReview('remembered')}
+                              disabled={srLoading}
+                              className="px-3 py-3 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 font-medium rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors text-sm disabled:opacity-50"
+                            >
+                              记住了
+                            </button>
+                            <button
+                              onClick={() => handleSRReview('fuzzy')}
+                              disabled={srLoading}
+                              className="px-3 py-3 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 font-medium rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-colors text-sm disabled:opacity-50"
+                            >
+                              模糊
+                            </button>
+                            <button
+                              onClick={() => handleSRReview('forgot')}
+                              disabled={srLoading}
+                              className="px-3 py-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 font-medium rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors text-sm disabled:opacity-50"
+                            >
+                              忘记了
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1193,9 +1252,27 @@ export const ReviewPage = view(() => {
                 <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-6 text-center">
                   <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-2">今日复习完成</h2>
-                  <p className="text-gray-500 dark:text-gray-400 mb-6">
+                  <p className="text-gray-500 dark:text-gray-400 mb-4">
                     已复习 {srCards.length} 张卡片
                   </p>
+                  <div className="grid grid-cols-2 gap-3 mb-6 max-w-sm mx-auto">
+                    <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3">
+                      <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">{srStats.mastered}</div>
+                      <div className="text-sm text-purple-600 dark:text-purple-400">完全记住</div>
+                    </div>
+                    <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
+                      <div className="text-2xl font-bold text-green-600 dark:text-green-400">{srStats.remembered}</div>
+                      <div className="text-sm text-green-600 dark:text-green-400">记住了</div>
+                    </div>
+                    <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3">
+                      <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{srStats.fuzzy}</div>
+                      <div className="text-sm text-yellow-600 dark:text-yellow-400">模糊</div>
+                    </div>
+                    <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3">
+                      <div className="text-2xl font-bold text-red-600 dark:text-red-400">{srStats.forgot}</div>
+                      <div className="text-sm text-red-600 dark:text-red-400">忘记了</div>
+                    </div>
+                  </div>
                   <button
                     className="bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg px-4 py-2.5 transition-colors"
                     onClick={() => {
