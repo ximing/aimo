@@ -65,6 +65,16 @@
   - API endpoints for categories and tags already exist in the codebase
   - Frontend uses getCategories() and getTags() from api/category and api/tag
 
+## 2026-03-08 - US-011b
+- Implemented US-011b (数据库 — 创建 AI 回顾模式表 review_profiles)
+- Created review_profiles table schema in apps/server/src/db/schema/review-profiles.ts
+- Fields: profileId VARCHAR(191) PK, userId VARCHAR(191), name VARCHAR(255), scope ENUM('all','category','tag','recent'), filterValues JSON, recentDays INT NULL, questionCount INT DEFAULT 10, createdAt TIMESTAMP, updatedAt TIMESTAMP
+- Added userId index for efficient queries
+- Exported schema from apps/server/src/db/schema/index.ts
+- Generated migration: drizzle/0009_dusty_firelord.sql
+- Build passes, typecheck passes
+- Updated PRD passes: true
+
 ---
 ## Codebase Patterns
 - Use @rabjs/react for frontend state management with observable stores
