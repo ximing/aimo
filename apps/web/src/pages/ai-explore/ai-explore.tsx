@@ -17,6 +17,9 @@ import {
   Pencil,
   Trash2,
   X,
+  Bot,
+  ChevronDown,
+  Check,
 } from 'lucide-react';
 import {
   SourceCard,
@@ -61,6 +64,8 @@ export const AIExplorePage = view(() => {
   const sidebarRef = useRef<HTMLDivElement>(null);
   const [inputValue, setInputValue] = useState('');
   const [isInputFocused, setIsInputFocused] = useState(false);
+  const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
+  const modelDropdownRef = useRef<HTMLDivElement>(null);
 
   // State for memo detail modal
   const [selectedMemoId, setSelectedMemoId] = useState<string | null>(null);
@@ -94,6 +99,17 @@ export const AIExplorePage = view(() => {
       modelService.loadModels();
     }
   }, [modelService]);
+
+  // Close model dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (modelDropdownRef.current && !modelDropdownRef.current.contains(e.target as Node)) {
+        setIsModelDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Handle input submission
   const handleSubmit = useCallback(async () => {
@@ -580,6 +596,80 @@ export const AIExplorePage = view(() => {
                         : 'border-gray-200 dark:border-dark-600'
                     }`}
                   >
+                    {/* Model Selection - left of textarea */}
+                    <div ref={modelDropdownRef} className="flex-shrink-0 self-center relative">
+                      <button
+                        type="button"
+                        onClick={() => setIsModelDropdownOpen((v) => !v)}
+                        className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors"
+                        title="选择 AI 模型"
+                      >
+                        <Bot className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span className="max-w-[80px] truncate">
+                          {exploreService.selectedModelId
+                            ? (modelService.models.find((m) => m.id === exploreService.selectedModelId)?.name ?? '未知模型')
+                            : '默认'}
+                        </span>
+                        <ChevronDown className={`w-3 h-3 flex-shrink-0 transition-transform ${isModelDropdownOpen ? 'rotate-180' : ''}`} />
+                      </button>
+
+                      {/* Custom dropdown panel */}
+                      {isModelDropdownOpen && (
+                        <div className="absolute bottom-full left-0 mb-2 w-52 bg-white dark:bg-dark-800 rounded-xl shadow-xl border border-gray-200 dark:border-dark-700 py-1.5 z-50">
+                          <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                            AI 模型
+                          </div>
+                          {/* System default option */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              exploreService.setSelectedModel(null);
+                              setIsModelDropdownOpen(false);
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"
+                          >
+                            <div className="w-6 h-6 rounded-md bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center flex-shrink-0">
+                              <Bot className="w-3.5 h-3.5 text-white" />
+                            </div>
+                            <span className="flex-1 text-left">系统默认</span>
+                            {!exploreService.selectedModelId && (
+                              <Check className="w-3.5 h-3.5 text-primary-500 flex-shrink-0" />
+                            )}
+                          </button>
+
+                          {modelService.models.length > 0 && (
+                            <div className="mx-3 my-1 border-t border-gray-100 dark:border-dark-700" />
+                          )}
+
+                          {modelService.models.map((model) => (
+                            <button
+                              key={model.id}
+                              type="button"
+                              onClick={() => {
+                                exploreService.setSelectedModel(model.id);
+                                setIsModelDropdownOpen(false);
+                              }}
+                              className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"
+                            >
+                              <div className="w-6 h-6 rounded-md bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center flex-shrink-0">
+                                <Bot className="w-3.5 h-3.5 text-white" />
+                              </div>
+                              <div className="flex-1 text-left min-w-0">
+                                <div className="truncate font-medium">{model.name}</div>
+                                <div className="truncate text-[10px] text-gray-400 dark:text-gray-500">{model.modelName}</div>
+                              </div>
+                              {exploreService.selectedModelId === model.id && (
+                                <Check className="w-3.5 h-3.5 text-primary-500 flex-shrink-0" />
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Vertical divider */}
+                    <div className="self-center w-px h-5 bg-gray-200 dark:bg-dark-600 flex-shrink-0" />
+
                     <textarea
                       ref={inputRef}
                       value={inputValue}
@@ -598,23 +688,6 @@ export const AIExplorePage = view(() => {
                       style={{ minHeight: '24px', maxHeight: '120px' }}
                     />
 
-                    {/* Model Selection Dropdown */}
-                    <div className="flex-shrink-0">
-                      <select
-                        value={exploreService.selectedModelId ?? ''}
-                        onChange={(e) => exploreService.setSelectedModel(e.target.value || null)}
-                        className="bg-gray-50 dark:bg-dark-700 border border-gray-200 dark:border-dark-600 rounded-lg px-2 py-1.5 text-xs text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer"
-                        title="选择 AI 模型"
-                      >
-                        <option value="">系统默认</option>
-                        {modelService.models.map((model) => (
-                          <option key={model.id} value={model.id}>
-                            {model.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
                     <button
                       onClick={handleSubmit}
                       disabled={
@@ -622,7 +695,7 @@ export const AIExplorePage = view(() => {
                         exploreService.loading ||
                         exploreService.isConversationLimitReached
                       }
-                      className="flex-shrink-0 p-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="flex-shrink-0 self-center p-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       title="发送"
                     >
                       {exploreService.loading ? (
