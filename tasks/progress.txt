@@ -122,6 +122,17 @@
 - Browser verified: layout correct, sections visible
 - Updated PRD passes: true
 
+## 2026-03-08 - US-015
+- Implemented US-015 (前端 — AI 回顾 - 左侧回顾模式列表)
+- Added "新建模式" text to Plus button in header
+- Profile list shows name, scope description, question count
+- Play button starts session with profileId
+- Delete button shows window.confirm before calling DELETE API
+- Empty state shows "暂无保存的模式"
+- Profiles loaded on mount via GET /api/v1/review/profiles
+- Typecheck passes, lint passes, browser verified
+- Updated PRD passes: true
+
 ---
 ## Codebase Patterns
 - Use @rabjs/react for frontend state management with observable stores

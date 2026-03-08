@@ -53,8 +53,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented: Plus button with '新建模式' text in header, profile list shows name/scope/question count, Play button to start session, Trash2 button to delete with window.confirm, empty state shows '暂无保存的模式', profiles loaded on mount. Typecheck passes, lint passes, browser verified."
     },
     {
       "id": "US-016",

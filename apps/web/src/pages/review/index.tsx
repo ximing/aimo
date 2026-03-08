@@ -237,6 +237,7 @@ export const ReviewPage = view(() => {
   };
 
   const handleDeleteProfile = async (profileId: string) => {
+    if (!window.confirm('确定要删除这个回顾模式吗？')) return;
     try {
       const res = await reviewApi.deleteReviewProfile(profileId);
       if (res.code === 0) {
@@ -504,10 +505,11 @@ export const ReviewPage = view(() => {
               <button
                 onClick={handleStart}
                 disabled={loading}
-                className="p-2 text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors disabled:opacity-50"
-                title="新建回顾"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors disabled:opacity-50"
+                title="新建模式"
               >
-                <Plus className="w-5 h-5" />
+                <Plus className="w-4 h-4" />
+                <span>新建模式</span>
               </button>
             </div>
           </div>
