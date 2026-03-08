@@ -4,10 +4,16 @@
 - API calls use the request wrapper with typed responses
 
 ## 2026-03-08 - US-011
-- Verified US-011 (Settings 页面过滤规则管理) is already implemented
-- Checked: rules list display, delete confirmation dialog, add rule form with dropdowns
-- Verified in browser: page renders correctly at /settings/spaced-repetition
-- Typecheck passes, lint passes (no errors)
+- Implemented US-011 (前端 — Settings SR 过滤规则改为多选 Select)
+- Changed filter value input from text field to multi-select dropdown
+- When filterType=tag: fetches options from GET /api/v1/tags API
+- When filterType=category: fetches options from GET /api/v1/categories API
+- Each selected value creates one rule via POST /api/v1/spaced-repetition/rules
+- Added click-outside handler to close dropdown
+- Shows selected values as tags with remove button
+- Batch adds multiple rules at once
+- Typecheck passes, lint passes
+- Verified in browser: multi-select dropdown shows tags, selection works, rules are created
 - Updated PRD passes: true
 
 ## 2026-03-08 - US-012
@@ -34,5 +40,33 @@
 - Verified in browser at /home - dropdown shows "暂无通知" (no notifications yet)
 - Updated PRD passes: true
 
-Next: US-014 (后端 — 通知 API) is the highest priority remaining story
+## 2026-03-08 - US-013/US-014
+- Implemented US-013 (后端 — 历史 Memo 批量迁移 API)
+- Added importExistingMemos() method to SpacedRepetitionService
+- Added POST /api/v1/spaced-repetition/import-existing endpoint
+- Reuses isMemoEligible() filter logic, skips existing cards
+- nextReviewAt set to tomorrow 08:00 (same as new memos)
+- Returns { imported: number, skipped: number }
+
+- Implemented US-014 (前端 — Settings 页面历史 Memo 迁移入口)
+- Added "导入历史笔记" button to Settings SR block
+- Button disabled when srEnabled=false
+- Shows confirmation dialog before import
+- Shows loading state during import
+- Displays success message with import/skip counts
+- Added importExistingMemos() to frontend SpacedRepetitionService
+- Added importExistingMemos API call to spaced-repetition.ts
+
+- Typecheck passes (server and web), lint passes (no errors)
+- Updated PRD passes: true for both US-013 and US-014
+
+**Learnings for future iterations:**
+  - US-011 multi-select pattern can be reused for other settings pages
+  - API endpoints for categories and tags already exist in the codebase
+  - Frontend uses getCategories() and getTags() from api/category and api/tag
+
 ---
+## Codebase Patterns
+- Use @rabjs/react for frontend state management with observable stores
+- Service classes extend Service from @rabjs/react and use bindServices() for React integration
+- API calls use the request wrapper with typed responses
