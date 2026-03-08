@@ -58,3 +58,14 @@
   - This codebase doesn't use onDuplicateKeyUpdate - use check-then-insert-or-update pattern instead
   - Generate unique IDs with generateUid() from @/utils/id.js
   - Feature constants like TAG_GENERATION_FEATURE can be defined as module-level constants for clarity
+---
+## 2026-03-08 - US-006
+- Implemented: Created UserFeatureConfigController with GET/PUT endpoints for tag model configuration
+- Files changed:
+  - apps/server/src/controllers/v1/user-feature-config.controller.ts (new file - GET /tag-model, PUT /tag-model endpoints)
+  - tasks/prd.json (marked US-006 as passes: true)
+- **Learnings for future iterations:**
+  - Controllers use routing-controllers decorators - @JsonController, @Get, @Put, @Body, @CurrentUser
+  - Controllers don't specify explicit return types to avoid type conflicts with ResponseUtility
+  - ResponseUtility.success() and ResponseUtility.error() return ApiResponse<T> types
+  - No manual registration needed - controllers in v1/ are auto-registered via glob import
