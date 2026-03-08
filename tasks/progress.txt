@@ -48,3 +48,13 @@
   - ErrorCode enum values are numbers, not strings - use type `number` when casting errors
   - The helper returns ChatOpenAI instances with temperature: 0.3 (consistent with other services)
   - User model's apiBaseUrl is optional - falls back to config.openai.baseURL if not provided
+---
+## 2026-03-08 - US-005
+- Implemented: Created UserFeatureConfigService for Tag model preferences CRUD
+- Files changed:
+  - apps/server/src/services/user-feature-config.service.ts (new file - getTagModelId, setTagModelId, getFeatureModelId, setFeatureModelId methods)
+  - tasks/prd.json (marked US-005 as passes: true)
+- **Learnings for future iterations:**
+  - This codebase doesn't use onDuplicateKeyUpdate - use check-then-insert-or-update pattern instead
+  - Generate unique IDs with generateUid() from @/utils/id.js
+  - Feature constants like TAG_GENERATION_FEATURE can be defined as module-level constants for clarity
