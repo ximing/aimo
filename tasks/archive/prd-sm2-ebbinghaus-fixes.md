@@ -16,9 +16,11 @@
 ## User Stories
 
 ### US-001: 使用 SM-2 标准公式更新难度因子
+
 **Description:** 作为系统，我需要使用 SM-2 原始公式计算 easeFactor，使卡片难度能平滑适应用户的真实记忆能力。
 
 **Acceptance Criteria:**
+
 - [ ] 移除 `calculateNextReview` 中所有硬编码的 easeFactor 偏移量（+0.15 / +0.1 / -0.08 / -0.2）
 - [ ] 改为使用公式：`EF' = max(1.3, EF + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02)))`，其中 q 为质量分（0-5）
 - [ ] UI 评分到质量分的映射：`mastered→5`、`remembered→4`、`fuzzy→3`、`forgot→1`（保持不变）
@@ -27,18 +29,22 @@
 - [ ] Typecheck 通过
 
 ### US-002: 修复模糊评分的双重惩罚
+
 **Description:** 作为系统，我需要在计算下次复习间隔时使用**旧的** easeFactor，只在计算完间隔后才更新 easeFactor，避免对模糊评分造成复利惩罚。
 
 **Acceptance Criteria:**
+
 - [ ] `calculateNextReview` 中，interval 的计算始终基于**更新前的** easeFactor（`oldEaseFactor`）
 - [ ] easeFactor 的更新（使用 US-001 的标准公式）在 interval 计算之后进行
-- [ ] 验证：quality=3，easeFactor=2.5，interval=6 时，新 interval = round(6 * 2.5) = 15（而非当前的 round(6 * 2.42) = 14）
+- [ ] 验证：quality=3，easeFactor=2.5，interval=6 时，新 interval = round(6 _ 2.5) = 15（而非当前的 round(6 _ 2.42) = 14）
 - [ ] Typecheck 通过
 
 ### US-003: 添加 lapseCount 字段并实现渐进式遗忘恢复
+
 **Description:** 作为系统，我需要独立追踪遗忘次数，并在遗忘后使用基于遗忘历史的渐进式恢复间隔，而非直接重置为 1 天。
 
 **Acceptance Criteria:**
+
 - [ ] 在 `spaced_repetition_cards` 表中添加 `lapse_count` INT 字段，默认值 0
 - [ ] 生成并运行 Drizzle 迁移，迁移成功
 - [ ] 更新 `SpacedRepetitionCardDto`（packages/dto）添加 `lapseCount: number` 字段
@@ -52,18 +58,22 @@
 - [ ] Typecheck 通过
 
 ### US-004: 设置最大复习间隔上限
+
 **Description:** 作为系统，我需要限制复习间隔不超过 365 天，防止卡片因间隔过长而实际上永远不会再出现。
 
 **Acceptance Criteria:**
+
 - [ ] `calculateNextReview` 计算出的 `interval` 在写入前，执行 `Math.min(interval, 365)`
 - [ ] 验证：一张 easeFactor=3.0、interval=200 的卡片，mastered 评分后 interval = min(260, 365) = 260（正常）；interval=300 时，mastered 后 interval = min(390, 365) = 365（被截断）
 - [ ] 最大间隔值 365 提取为常量 `MAX_INTERVAL_DAYS = 365`，方便后续调整
 - [ ] Typecheck 通过
 
 ### US-005: 实现 recent_days 时间维度过滤规则
+
 **Description:** 作为用户，我希望能够设置"只复习最近 N 天内创建的 Memo"，让 SR 池聚焦于近期内容。
 
 **Acceptance Criteria:**
+
 - [ ] `SpacedRepetitionService.isMemoEligible()` 中处理 `filterType === 'recent_days'` 的规则
 - [ ] 规则逻辑：查询 memo 的 `createdAt`，若 `createdAt >= now - N days`，则该规则匹配
 - [ ] `recent_days` 规则可以与 `mode: 'include'` 或 `mode: 'exclude'` 组合使用
@@ -72,9 +82,11 @@
 - [ ] Typecheck 通过
 
 ### US-006: 实现 date_range 时间维度过滤规则
+
 **Description:** 作为用户，我希望能够设置"只复习指定日期范围内创建的 Memo"，精确控制 SR 池内容。
 
 **Acceptance Criteria:**
+
 - [ ] `SpacedRepetitionService.isMemoEligible()` 中处理 `filterType === 'date_range'` 的规则
 - [ ] `filterValue` 格式为 `"startISO,endISO"`（如 `"2024-01-01T00:00:00Z,2024-03-31T23:59:59Z"`）
 - [ ] 规则逻辑：查询 memo 的 `createdAt`，若 `startISO <= createdAt <= endISO`，则该规则匹配
@@ -82,9 +94,11 @@
 - [ ] Typecheck 通过
 
 ### US-007: 将每日限制应用到 /due API
+
 **Description:** 作为用户，我希望 /due 接口返回的卡片数量不超过我设置的每日上限，避免一次性看到过多卡片造成压力。
 
 **Acceptance Criteria:**
+
 - [ ] `SpacedRepetitionController` 的 `getDueCards` 方法在返回前，将结果截断为 `srDailyLimit` 条
 - [ ] 截断逻辑：取到期时间最早的前 N 张（已按 `nextReviewAt` 升序排序，直接 slice 即可）
 - [ ] API 响应中添加元数据字段：`{ cards: [...], totalDue: number, dailyLimit: number }`，其中 `totalDue` 为未截断前的总数量
@@ -92,9 +106,11 @@
 - [ ] Typecheck 通过
 
 ### US-008: 前端展示每日限制提示
+
 **Description:** 作为用户，我希望在复习页看到"今日还有 X 张卡片待复习（已达每日上限）"的提示，了解全部到期情况。
 
 **Acceptance Criteria:**
+
 - [ ] 复习页（`apps/web/src/pages/review/index.tsx`）在 SR 模式下，当 `totalDue > dailyLimit` 时，展示提示信息："今日已加载 {dailyLimit} 张，还有 {totalDue - dailyLimit} 张待复习"
 - [ ] 提示信息位于卡片列表上方或复习完成页面
 - [ ] 当 `totalDue <= dailyLimit` 时，不展示该提示

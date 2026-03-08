@@ -1,6 +1,4 @@
-import {
-  mysqlTable, varchar, int, timestamp, mysqlEnum, index
-} from 'drizzle-orm/mysql-core';
+import { mysqlTable, varchar, int, timestamp, mysqlEnum, index } from 'drizzle-orm/mysql-core';
 
 export const reviewSessions = mysqlTable(
   'review_sessions',

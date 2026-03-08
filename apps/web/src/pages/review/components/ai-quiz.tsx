@@ -1,12 +1,5 @@
 import { observer, useService } from '@rabjs/react';
-import {
-  ChevronLeft,
-  ChevronRight,
-  CheckCircle,
-  Circle,
-  XCircle,
-  Loader2,
-} from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle, Circle, XCircle, Loader2 } from 'lucide-react';
 import { ReviewService } from '../review.service';
 import { getItemStatus, masteryLabel, masteryColor } from './utils';
 
@@ -79,8 +72,9 @@ const AIQuizContent = () => {
           上一题
         </button>
         <span className="text-sm text-gray-500 dark:text-gray-400">
-          第 {service.currentIndex + 1} / {service.session?.items.length ?? 0}</span>
-         题
+          第 {service.currentIndex + 1} / {service.session?.items.length ?? 0}
+        </span>
+        题
         <button
           onClick={() => service.goToNext()}
           disabled={
@@ -116,7 +110,7 @@ const AIQuizContent = () => {
               placeholder="输入你的回答..."
               value={service.answer}
               onChange={(e) => {
-                service.answer = e.target.value;
+                service.setAnswer(e.target.value);
               }}
             />
             <div className="flex gap-3">
@@ -155,7 +149,9 @@ const AIQuizContent = () => {
               className="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg px-4 py-2.5 transition-colors"
               onClick={() => service.goToNext()}
             >
-              {service.currentIndex + 1 >= (service.session?.items.length ?? 0) ? '完成回顾' : '下一题'}
+              {service.currentIndex + 1 >= (service.session?.items.length ?? 0)
+                ? '完成回顾'
+                : '下一题'}
             </button>
           </div>
         )}

@@ -8,7 +8,10 @@ import { OBJECT_TYPE } from '../models/constant/type.js';
 
 import type { InAppNotification, NewInAppNotification } from '../db/schema/in-app-notifications.js';
 
-export type CreateNotificationParams = Omit<NewInAppNotification, 'notificationId' | 'createdAt' | 'isRead'>;
+export type CreateNotificationParams = Omit<
+  NewInAppNotification,
+  'notificationId' | 'createdAt' | 'isRead'
+>;
 
 @Service()
 export class NotificationService {
@@ -63,12 +66,7 @@ export class NotificationService {
     const result = await db
       .select({ count: sql<number>`count(*)` })
       .from(inAppNotifications)
-      .where(
-        and(
-          eq(inAppNotifications.userId, userId),
-          eq(inAppNotifications.isRead, false)
-        )
-      );
+      .where(and(eq(inAppNotifications.userId, userId), eq(inAppNotifications.isRead, false)));
 
     return Number(result[0]?.count ?? 0);
   }

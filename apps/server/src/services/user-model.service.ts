@@ -2,7 +2,7 @@ import { Service } from 'typedi';
 import { eq, and } from 'drizzle-orm';
 
 import { getDatabase } from '../db/connection.js';
-import { userModels } from  '../db/schema/user-models.js';
+import { userModels } from '../db/schema/user-models.js';
 import { generateUid } from '../utils/id.js';
 import { logger } from '../utils/logger.js';
 

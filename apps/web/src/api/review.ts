@@ -1,7 +1,13 @@
 import type {
-  CreateReviewSessionDto, CreateReviewProfileDto, UpdateReviewProfileDto, ReviewProfileDto,
-  ReviewSessionDto, SubmitAnswerDto,
-  SubmitAnswerResponseDto, CompleteSessionResponseDto, ReviewHistoryItemDto
+  CreateReviewSessionDto,
+  CreateReviewProfileDto,
+  UpdateReviewProfileDto,
+  ReviewProfileDto,
+  ReviewSessionDto,
+  SubmitAnswerDto,
+  SubmitAnswerResponseDto,
+  CompleteSessionResponseDto,
+  ReviewHistoryItemDto,
 } from '@aimo/dto';
 import request from '../utils/request';
 
@@ -9,16 +15,20 @@ export const createReviewSession = (data: CreateReviewSessionDto) =>
   request.post<unknown, { code: number; data: ReviewSessionDto }>('/api/v1/review/sessions', data);
 
 export const getReviewSession = (sessionId: string) =>
-  request.get<unknown, { code: number; data: ReviewSessionDto }>(`/api/v1/review/sessions/${sessionId}`);
+  request.get<unknown, { code: number; data: ReviewSessionDto }>(
+    `/api/v1/review/sessions/${sessionId}`
+  );
 
 export const submitAnswer = (sessionId: string, data: SubmitAnswerDto) =>
   request.post<unknown, { code: number; data: SubmitAnswerResponseDto }>(
-    `/api/v1/review/sessions/${sessionId}/answer`, data
+    `/api/v1/review/sessions/${sessionId}/answer`,
+    data
   );
 
 export const completeSession = (sessionId: string) =>
   request.post<unknown, { code: number; data: CompleteSessionResponseDto }>(
-    `/api/v1/review/sessions/${sessionId}/complete`, {}
+    `/api/v1/review/sessions/${sessionId}/complete`,
+    {}
   );
 
 export const getReviewHistory = () =>
@@ -37,7 +47,8 @@ export const createReviewProfile = (data: CreateReviewProfileDto) =>
 
 export const updateReviewProfile = (profileId: string, data: UpdateReviewProfileDto) =>
   request.put<unknown, { code: number; data: ReviewProfileDto }>(
-    `/api/v1/review/profiles/${profileId}`, data
+    `/api/v1/review/profiles/${profileId}`,
+    data
   );
 
 export const deleteReviewProfile = (profileId: string) =>

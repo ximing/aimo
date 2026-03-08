@@ -59,9 +59,10 @@ export const deleteSRRule = (ruleId: string) =>
   );
 
 export const getDueCards = () =>
-  request.get<unknown, { code: number; data: { cards: SRCard[]; totalDue: number; dailyLimit: number } }>(
-    '/api/v1/spaced-repetition/due'
-  );
+  request.get<
+    unknown,
+    { code: number; data: { cards: SRCard[]; totalDue: number; dailyLimit: number } }
+  >('/api/v1/spaced-repetition/due');
 
 export const getSRStats = () =>
   request.get<unknown, { code: number; data: { totalCards: number } }>(

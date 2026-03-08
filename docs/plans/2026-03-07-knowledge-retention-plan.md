@@ -23,7 +23,6 @@
 - **生成迁移**：必须先 build 再 generate：`cd apps/server && pnpm build && pnpm migrate:generate`
 - **测试**：`cd apps/server && pnpm test -- apps/server/src/__tests__/xxx.test.ts`
 
-
 ---
 
 # 功能一：AI 回顾模式（Review Mode）
@@ -33,6 +32,7 @@
 ### Task 1: DB Schema — review_sessions & review_items
 
 **Files:**
+
 - Modify: `apps/server/src/models/constant/type.ts`
 - Create: `apps/server/src/db/schema/review-sessions.ts`
 - Create: `apps/server/src/db/schema/review-items.ts`
@@ -71,11 +71,13 @@ describe('Review schemas', () => {
 ```bash
 cd apps/server && pnpm test -- apps/server/src/__tests__/review-schema.test.ts
 ```
+
 Expected: FAIL — "Cannot find module"
 
 **Step 3: Add OBJECT_TYPE constants**
 
 In `apps/server/src/models/constant/type.ts`, add to `OBJECT_TYPE`:
+
 ```typescript
 REVIEW_SESSION: 'REVIEW_SESSION',
 REVIEW_ITEM: 'REVIEW_ITEM',
@@ -85,9 +87,7 @@ REVIEW_ITEM: 'REVIEW_ITEM',
 
 ```typescript
 // apps/server/src/db/schema/review-sessions.ts
-import {
-  mysqlTable, varchar, int, timestamp, mysqlEnum, index
-} from 'drizzle-orm/mysql-core';
+import { mysqlTable, varchar, int, timestamp, mysqlEnum, index } from 'drizzle-orm/mysql-core';
 
 export const reviewSessions = mysqlTable(
   'review_sessions',
@@ -115,9 +115,7 @@ export type NewReviewSession = typeof reviewSessions.$inferInsert;
 
 ```typescript
 // apps/server/src/db/schema/review-items.ts
-import {
-  mysqlTable, varchar, text, int, mysqlEnum, index
-} from 'drizzle-orm/mysql-core';
+import { mysqlTable, varchar, text, int, mysqlEnum, index } from 'drizzle-orm/mysql-core';
 
 export const reviewItems = mysqlTable(
   'review_items',
@@ -143,6 +141,7 @@ export type NewReviewItem = typeof reviewItems.$inferInsert;
 **Step 6: Export from schema/index.ts**
 
 Add to `apps/server/src/db/schema/index.ts`:
+
 ```typescript
 export * from './review-sessions.js';
 export * from './review-items.js';
@@ -153,6 +152,7 @@ export * from './review-items.js';
 ```bash
 cd apps/server && pnpm test -- apps/server/src/__tests__/review-schema.test.ts
 ```
+
 Expected: PASS
 
 **Step 8: Build and generate migration**
@@ -160,6 +160,7 @@ Expected: PASS
 ```bash
 cd apps/server && pnpm build && pnpm migrate:generate
 ```
+
 Expected: New migration file created in `drizzle/` folder with CREATE TABLE statements for `review_sessions` and `review_items`.
 
 **Step 9: Commit**
@@ -179,6 +180,7 @@ git commit -m "feat: add review_sessions and review_items DB schemas"
 ### Task 2: ID 生成 — generateReviewSessionId & generateReviewItemId
 
 **Files:**
+
 - Modify: `apps/server/src/utils/id.ts`
 - Test: `apps/server/src/__tests__/review-id.test.ts`
 
@@ -209,11 +211,13 @@ describe('Review ID generation', () => {
 ```bash
 cd apps/server && pnpm test -- apps/server/src/__tests__/review-id.test.ts
 ```
+
 Expected: FAIL — "Invalid type: REVIEW_SESSION"
 
 **Step 3: Add cases to generateTypeId switch**
 
 In `apps/server/src/utils/id.ts`, add to the switch statement:
+
 ```typescript
 case OBJECT_TYPE.REVIEW_SESSION: {
   return `rev${typeid()}`;
@@ -228,6 +232,7 @@ case OBJECT_TYPE.REVIEW_ITEM: {
 ```bash
 cd apps/server && pnpm test -- apps/server/src/__tests__/review-id.test.ts
 ```
+
 Expected: PASS
 
 **Step 5: Commit**
@@ -237,12 +242,12 @@ git add apps/server/src/utils/id.ts apps/server/src/__tests__/review-id.test.ts
 git commit -m "feat: add review session and item ID generators"
 ```
 
-
 ---
 
 ### Task 3: DTOs — Review types in @aimo/dto
 
 **Files:**
+
 - Create: `packages/dto/src/review.ts`
 - Modify: `packages/dto/src/index.ts`
 
@@ -317,6 +322,7 @@ export interface ReviewHistoryItemDto {
 **Step 2: Export from packages/dto/src/index.ts**
 
 Add to `packages/dto/src/index.ts`:
+
 ```typescript
 // Review DTOs
 export * from './review.js';
@@ -327,6 +333,7 @@ export * from './review.js';
 ```bash
 pnpm --filter @aimo/dto build
 ```
+
 Expected: Build succeeds, no TypeScript errors.
 
 **Step 4: Commit**
@@ -341,6 +348,7 @@ git commit -m "feat: add Review DTOs to @aimo/dto"
 ### Task 4: ReviewService — core logic
 
 **Files:**
+
 - Create: `apps/server/src/services/review.service.ts`
 - Test: `apps/server/src/__tests__/review.service.test.ts`
 
@@ -353,10 +361,7 @@ git commit -m "feat: add Review DTOs to @aimo/dto"
 describe('ReviewService', () => {
   describe('calculateScore', () => {
     it('returns 100 when all items remembered', () => {
-      const items = [
-        { mastery: 'remembered' },
-        { mastery: 'remembered' },
-      ];
+      const items = [{ mastery: 'remembered' }, { mastery: 'remembered' }];
       // Access private method via (service as any).calculateScore
       const score = (service as any).calculateScore(items);
       expect(score).toBe(100);
@@ -389,6 +394,7 @@ describe('ReviewService', () => {
 ```bash
 cd apps/server && pnpm test -- apps/server/src/__tests__/review.service.test.ts
 ```
+
 Expected: FAIL — "Cannot find module"
 
 **Step 3: Implement ReviewService**
@@ -472,34 +478,54 @@ export class ReviewService {
       items.push({ itemId, sessionId, memoId: memo.memoId, question, order: i });
     }
 
-    return { sessionId, uid, scope: dto.scope, scopeValue: dto.scopeValue, status: 'active', items, createdAt: new Date().toISOString() };
+    return {
+      sessionId,
+      uid,
+      scope: dto.scope,
+      scopeValue: dto.scopeValue,
+      status: 'active',
+      items,
+      createdAt: new Date().toISOString(),
+    };
   }
 
   async getSession(uid: string, sessionId: string): Promise<ReviewSessionDto | null> {
     const db = getDatabase();
-    const [session] = await db.select().from(reviewSessions)
+    const [session] = await db
+      .select()
+      .from(reviewSessions)
       .where(and(eq(reviewSessions.sessionId, sessionId), eq(reviewSessions.uid, uid)));
     if (!session) return null;
 
-    const items = await db.select().from(reviewItems)
+    const items = await db
+      .select()
+      .from(reviewItems)
       .where(eq(reviewItems.sessionId, sessionId))
       .orderBy(reviewItems.order);
 
     return this.toSessionDto(session, items);
   }
 
-  async submitAnswer(uid: string, sessionId: string, dto: SubmitAnswerDto): Promise<SubmitAnswerResponseDto> {
+  async submitAnswer(
+    uid: string,
+    sessionId: string,
+    dto: SubmitAnswerDto
+  ): Promise<SubmitAnswerResponseDto> {
     const db = getDatabase();
-    const [item] = await db.select().from(reviewItems)
-      .where(eq(reviewItems.itemId, dto.itemId));
+    const [item] = await db.select().from(reviewItems).where(eq(reviewItems.itemId, dto.itemId));
     if (!item || item.sessionId !== sessionId) throw new Error('Item not found');
 
     const [memo] = await db.select().from(memos).where(eq(memos.memoId, item.memoId));
     if (!memo) throw new Error('Memo not found');
 
-    const { feedback, mastery } = await this.evaluateAnswer(dto.answer, memo.content, item.question);
+    const { feedback, mastery } = await this.evaluateAnswer(
+      dto.answer,
+      memo.content,
+      item.question
+    );
 
-    await db.update(reviewItems)
+    await db
+      .update(reviewItems)
       .set({ userAnswer: dto.answer, aiFeedback: feedback, mastery })
       .where(eq(reviewItems.itemId, dto.itemId));
 
@@ -508,19 +534,23 @@ export class ReviewService {
 
   async completeSession(uid: string, sessionId: string): Promise<CompleteSessionResponseDto> {
     const db = getDatabase();
-    const items = await db.select().from(reviewItems)
-      .where(eq(reviewItems.sessionId, sessionId));
+    const items = await db.select().from(reviewItems).where(eq(reviewItems.sessionId, sessionId));
 
     const score = this.calculateScore(items);
 
-    await db.update(reviewSessions)
+    await db
+      .update(reviewSessions)
       .set({ status: 'completed', score, completedAt: new Date() })
       .where(eq(reviewSessions.sessionId, sessionId));
 
     const itemDtos = items.map((i) => ({
-      itemId: i.itemId, sessionId: i.sessionId, memoId: i.memoId,
-      question: i.question, userAnswer: i.userAnswer ?? undefined,
-      aiFeedback: i.aiFeedback ?? undefined, mastery: i.mastery ?? undefined,
+      itemId: i.itemId,
+      sessionId: i.sessionId,
+      memoId: i.memoId,
+      question: i.question,
+      userAnswer: i.userAnswer ?? undefined,
+      aiFeedback: i.aiFeedback ?? undefined,
+      mastery: i.mastery ?? undefined,
       order: i.order,
     }));
 
@@ -529,19 +559,27 @@ export class ReviewService {
 
   async getHistory(uid: string): Promise<ReviewHistoryItemDto[]> {
     const db = getDatabase();
-    const sessions = await db.select().from(reviewSessions)
+    const sessions = await db
+      .select()
+      .from(reviewSessions)
       .where(eq(reviewSessions.uid, uid))
       .orderBy(desc(reviewSessions.createdAt))
       .limit(50);
 
     const result: ReviewHistoryItemDto[] = [];
     for (const s of sessions) {
-      const items = await db.select({ itemId: reviewItems.itemId })
-        .from(reviewItems).where(eq(reviewItems.sessionId, s.sessionId));
+      const items = await db
+        .select({ itemId: reviewItems.itemId })
+        .from(reviewItems)
+        .where(eq(reviewItems.sessionId, s.sessionId));
       result.push({
-        sessionId: s.sessionId, scope: s.scope, scopeValue: s.scopeValue ?? undefined,
-        score: s.score ?? undefined, itemCount: items.length,
-        createdAt: s.createdAt.toISOString(), completedAt: s.completedAt?.toISOString(),
+        sessionId: s.sessionId,
+        scope: s.scope,
+        scopeValue: s.scopeValue ?? undefined,
+        score: s.score ?? undefined,
+        itemCount: items.length,
+        createdAt: s.createdAt.toISOString(),
+        completedAt: s.completedAt?.toISOString(),
       });
     }
     return result;
@@ -568,16 +606,31 @@ export class ReviewService {
   private async generateQuestion(content: string): Promise<string> {
     const truncated = content.slice(0, 1000);
     const response = await this.model.invoke([
-      { role: 'system', content: '你是一个知识回顾助手。根据笔记内容，生成一个简洁的问题来测试用户是否记得这条笔记的核心内容。问题应该是开放性的，用中文，不超过50字。只输出问题本身，不要加任何前缀。' },
+      {
+        role: 'system',
+        content:
+          '你是一个知识回顾助手。根据笔记内容，生成一个简洁的问题来测试用户是否记得这条笔记的核心内容。问题应该是开放性的，用中文，不超过50字。只输出问题本身，不要加任何前缀。',
+      },
       { role: 'user', content: `笔记内容：${truncated}` },
     ]);
     return response.content as string;
   }
 
-  private async evaluateAnswer(answer: string, memoContent: string, question: string): Promise<{ feedback: string; mastery: MasteryLevel }> {
+  private async evaluateAnswer(
+    answer: string,
+    memoContent: string,
+    question: string
+  ): Promise<{ feedback: string; mastery: MasteryLevel }> {
     const response = await this.model.invoke([
-      { role: 'system', content: '你是一个知识回顾评估助手。对比用户的回答和原始笔记，评估掌握程度并给出反馈。\n\n输出格式（严格JSON）：{"mastery": "remembered"|"fuzzy"|"forgot", "feedback": "评估反馈文字"}\n\n评估标准：remembered=核心内容都答对了；fuzzy=部分正确但有遗漏；forgot=基本没答对或没回答' },
-      { role: 'user', content: `问题：${question}\n\n用户回答：${answer}\n\n原始笔记：${memoContent.slice(0, 1000)}` },
+      {
+        role: 'system',
+        content:
+          '你是一个知识回顾评估助手。对比用户的回答和原始笔记，评估掌握程度并给出反馈。\n\n输出格式（严格JSON）：{"mastery": "remembered"|"fuzzy"|"forgot", "feedback": "评估反馈文字"}\n\n评估标准：remembered=核心内容都答对了；fuzzy=部分正确但有遗漏；forgot=基本没答对或没回答',
+      },
+      {
+        role: 'user',
+        content: `问题：${question}\n\n用户回答：${answer}\n\n原始笔记：${memoContent.slice(0, 1000)}`,
+      },
     ]);
     try {
       const parsed = JSON.parse(response.content as string);
@@ -602,13 +655,20 @@ export class ReviewService {
 
   private toSessionDto(session: any, items: any[]): ReviewSessionDto {
     return {
-      sessionId: session.sessionId, uid: session.uid, scope: session.scope,
-      scopeValue: session.scopeValue ?? undefined, status: session.status,
+      sessionId: session.sessionId,
+      uid: session.uid,
+      scope: session.scope,
+      scopeValue: session.scopeValue ?? undefined,
+      status: session.status,
       score: session.score ?? undefined,
       items: items.map((i) => ({
-        itemId: i.itemId, sessionId: i.sessionId, memoId: i.memoId,
-        question: i.question, userAnswer: i.userAnswer ?? undefined,
-        aiFeedback: i.aiFeedback ?? undefined, mastery: i.mastery ?? undefined,
+        itemId: i.itemId,
+        sessionId: i.sessionId,
+        memoId: i.memoId,
+        question: i.question,
+        userAnswer: i.userAnswer ?? undefined,
+        aiFeedback: i.aiFeedback ?? undefined,
+        mastery: i.mastery ?? undefined,
         order: i.order,
       })),
       createdAt: session.createdAt.toISOString(),
@@ -623,6 +683,7 @@ export class ReviewService {
 ```bash
 cd apps/server && pnpm test -- apps/server/src/__tests__/review.service.test.ts
 ```
+
 Expected: PASS
 
 **Step 5: Commit**
@@ -632,12 +693,12 @@ git add apps/server/src/services/review.service.ts apps/server/src/__tests__/rev
 git commit -m "feat: implement ReviewService with AI question generation and evaluation"
 ```
 
-
 ---
 
 ### Task 5: ReviewController — REST endpoints
 
 **Files:**
+
 - Create: `apps/server/src/controllers/v1/review.controller.ts`
 - Test: `apps/server/src/__tests__/review.controller.test.ts`
 
@@ -659,15 +720,14 @@ describe('ReviewController', () => {
 ```bash
 cd apps/server && pnpm test -- apps/server/src/__tests__/review.controller.test.ts
 ```
+
 Expected: FAIL — "Cannot find module"
 
 **Step 3: Implement ReviewController**
 
 ```typescript
 // apps/server/src/controllers/v1/review.controller.ts
-import {
-  JsonController, Post, Get, Body, Param, CurrentUser
-} from 'routing-controllers';
+import { JsonController, Post, Get, Body, Param, CurrentUser } from 'routing-controllers';
 import { Service } from 'typedi';
 
 import { ErrorCode } from '../../constants/error-codes.js';
@@ -754,6 +814,7 @@ export class ReviewController {
 ```bash
 cd apps/server && pnpm test -- apps/server/src/__tests__/review.controller.test.ts
 ```
+
 Expected: PASS
 
 **Step 5: Commit**
@@ -768,6 +829,7 @@ git commit -m "feat: add ReviewController with 5 REST endpoints"
 ### Task 6: Frontend — Review API client and /review page
 
 **Files:**
+
 - Create: `apps/web/src/api/review.ts`
 - Create: `apps/web/src/pages/review/index.tsx`
 - Modify: `apps/web/src/main.tsx`
@@ -777,8 +839,12 @@ git commit -m "feat: add ReviewController with 5 REST endpoints"
 ```typescript
 // apps/web/src/api/review.ts
 import type {
-  CreateReviewSessionDto, ReviewSessionDto, SubmitAnswerDto,
-  SubmitAnswerResponseDto, CompleteSessionResponseDto, ReviewHistoryItemDto
+  CreateReviewSessionDto,
+  ReviewSessionDto,
+  SubmitAnswerDto,
+  SubmitAnswerResponseDto,
+  CompleteSessionResponseDto,
+  ReviewHistoryItemDto,
 } from '@aimo/dto';
 import request from '../utils/request';
 
@@ -786,16 +852,20 @@ export const createReviewSession = (data: CreateReviewSessionDto) =>
   request.post<unknown, { code: number; data: ReviewSessionDto }>('/api/v1/review/sessions', data);
 
 export const getReviewSession = (sessionId: string) =>
-  request.get<unknown, { code: number; data: ReviewSessionDto }>(`/api/v1/review/sessions/${sessionId}`);
+  request.get<unknown, { code: number; data: ReviewSessionDto }>(
+    `/api/v1/review/sessions/${sessionId}`
+  );
 
 export const submitAnswer = (sessionId: string, data: SubmitAnswerDto) =>
   request.post<unknown, { code: number; data: SubmitAnswerResponseDto }>(
-    `/api/v1/review/sessions/${sessionId}/answer`, data
+    `/api/v1/review/sessions/${sessionId}/answer`,
+    data
   );
 
 export const completeSession = (sessionId: string) =>
   request.post<unknown, { code: number; data: CompleteSessionResponseDto }>(
-    `/api/v1/review/sessions/${sessionId}/complete`, {}
+    `/api/v1/review/sessions/${sessionId}/complete`,
+    {}
   );
 
 export const getReviewHistory = () =>
@@ -807,6 +877,7 @@ export const getReviewHistory = () =>
 **Step 2: Create the Review page**
 
 Create `apps/web/src/pages/review/index.tsx` — a 3-step wizard:
+
 - **Step 'setup'**: Scope selector (radio: 全部/分类/标签/最近N天) + "开始回顾" button → calls createReviewSession
 - **Step 'quiz'**: Shows current question (item[currentIndex]), progress bar (currentIndex/total), textarea for answer, "提交回答" button → calls submitAnswer, shows AI feedback, then "下一题" / "完成回顾"
 - **Step 'summary'**: Shows score (0-100), list of items with mastery badges (记得✓ / 模糊~ / 忘了✗), "再来一次" button
@@ -980,6 +1051,7 @@ export default ReviewPage;
 **Step 3: Add /review route to main.tsx**
 
 In `apps/web/src/main.tsx`, add import and route:
+
 ```typescript
 import ReviewPage from './pages/review';
 
@@ -1001,7 +1073,6 @@ git add apps/web/src/api/review.ts apps/web/src/pages/review/index.tsx apps/web/
 git commit -m "feat: add Review page and API client"
 ```
 
-
 ---
 
 # 功能二：间隔重复推送（Spaced Repetition）
@@ -1011,6 +1082,7 @@ git commit -m "feat: add Review page and API client"
 ### Task 7: DB Schema — spaced_repetition_cards & spaced_repetition_rules
 
 **Files:**
+
 - Modify: `apps/server/src/models/constant/type.ts`
 - Create: `apps/server/src/db/schema/spaced-repetition-cards.ts`
 - Create: `apps/server/src/db/schema/spaced-repetition-rules.ts`
@@ -1046,17 +1118,20 @@ describe('Spaced repetition schemas', () => {
 ```bash
 cd apps/server && pnpm test -- apps/server/src/__tests__/spaced-repetition-schema.test.ts
 ```
+
 Expected: FAIL
 
 **Step 3: Add OBJECT_TYPE constants and ID generators**
 
 In `apps/server/src/models/constant/type.ts`:
+
 ```typescript
 SR_CARD: 'SR_CARD',
 SR_RULE: 'SR_RULE',
 ```
 
 In `apps/server/src/utils/id.ts` switch:
+
 ```typescript
 case OBJECT_TYPE.SR_CARD: {
   return `src${typeid()}`;
@@ -1070,9 +1145,7 @@ case OBJECT_TYPE.SR_RULE: {
 
 ```typescript
 // apps/server/src/db/schema/spaced-repetition-cards.ts
-import {
-  mysqlTable, varchar, float, int, timestamp, index, unique
-} from 'drizzle-orm/mysql-core';
+import { mysqlTable, varchar, float, int, timestamp, index, unique } from 'drizzle-orm/mysql-core';
 
 export const spacedRepetitionCards = mysqlTable(
   'spaced_repetition_cards',
@@ -1102,9 +1175,7 @@ export type NewSpacedRepetitionCard = typeof spacedRepetitionCards.$inferInsert;
 
 ```typescript
 // apps/server/src/db/schema/spaced-repetition-rules.ts
-import {
-  mysqlTable, varchar, mysqlEnum, timestamp, index
-} from 'drizzle-orm/mysql-core';
+import { mysqlTable, varchar, mysqlEnum, timestamp, index } from 'drizzle-orm/mysql-core';
 
 export const spacedRepetitionRules = mysqlTable(
   'spaced_repetition_rules',
@@ -1157,6 +1228,7 @@ git commit -m "feat: add spaced_repetition_cards and rules DB schemas"
 ### Task 8: SpacedRepetitionService — SM-2 algorithm
 
 **Files:**
+
 - Create: `apps/server/src/services/spaced-repetition.service.ts`
 - Test: `apps/server/src/__tests__/spaced-repetition.service.test.ts`
 
@@ -1168,7 +1240,9 @@ import { SpacedRepetitionService } from '../services/spaced-repetition.service.j
 
 describe('SpacedRepetitionService SM-2', () => {
   let service: SpacedRepetitionService;
-  beforeEach(() => { service = new (SpacedRepetitionService as any)(); });
+  beforeEach(() => {
+    service = new (SpacedRepetitionService as any)();
+  });
 
   it('remembered: increases interval and keeps easeFactor >= 1.3', () => {
     const card = { easeFactor: 2.5, interval: 1, repetitions: 0 };
@@ -1208,6 +1282,7 @@ describe('SpacedRepetitionService SM-2', () => {
 ```bash
 cd apps/server && pnpm test -- apps/server/src/__tests__/spaced-repetition.service.test.ts
 ```
+
 Expected: FAIL
 
 **Step 3: Implement SpacedRepetitionService**
@@ -1277,7 +1352,8 @@ export class SpacedRepetitionService {
 
     const db = getDatabase();
     // Check if card already exists
-    const [existing] = await db.select({ cardId: spacedRepetitionCards.cardId })
+    const [existing] = await db
+      .select({ cardId: spacedRepetitionCards.cardId })
       .from(spacedRepetitionCards)
       .where(and(eq(spacedRepetitionCards.uid, uid), eq(spacedRepetitionCards.memoId, memoId)));
     if (existing) return;
@@ -1296,7 +1372,8 @@ export class SpacedRepetitionService {
 
   async updateCard(uid: string, memoId: string, mastery: MasteryLevel): Promise<void> {
     const db = getDatabase();
-    const [card] = await db.select()
+    const [card] = await db
+      .select()
       .from(spacedRepetitionCards)
       .where(and(eq(spacedRepetitionCards.uid, uid), eq(spacedRepetitionCards.memoId, memoId)));
     if (!card) return;
@@ -1308,7 +1385,8 @@ export class SpacedRepetitionService {
 
     const nextReviewAt = new Date(Date.now() + updated.interval * 86400000);
 
-    await db.update(spacedRepetitionCards)
+    await db
+      .update(spacedRepetitionCards)
       .set({ ...updated, nextReviewAt, lastReviewAt: new Date() })
       .where(eq(spacedRepetitionCards.cardId, card.cardId));
   }
@@ -1316,7 +1394,8 @@ export class SpacedRepetitionService {
   async getDueCards(uid: string, limit = 5) {
     const db = getDatabase();
     const now = new Date();
-    const cards = await db.select()
+    const cards = await db
+      .select()
       .from(spacedRepetitionCards)
       .where(and(eq(spacedRepetitionCards.uid, uid), lte(spacedRepetitionCards.nextReviewAt, now)))
       .limit(limit);
@@ -1332,7 +1411,10 @@ export class SpacedRepetitionService {
 
   async shouldTrackMemo(uid: string, memoId: string): Promise<boolean> {
     const db = getDatabase();
-    const rules = await db.select().from(spacedRepetitionRules).where(eq(spacedRepetitionRules.uid, uid));
+    const rules = await db
+      .select()
+      .from(spacedRepetitionRules)
+      .where(eq(spacedRepetitionRules.uid, uid));
     if (rules.length === 0) return true; // No rules = track everything
 
     const [memo] = await db.select().from(memos).where(eq(memos.memoId, memoId));
@@ -1345,14 +1427,16 @@ export class SpacedRepetitionService {
     // Check excludes first (black list wins)
     for (const rule of excludeRules) {
       if (rule.filterType === 'category' && memo.categoryId === rule.filterValue) return false;
-      if (rule.filterType === 'tag' && (memo.tagIds as string[] ?? []).includes(rule.filterValue)) return false;
+      if (rule.filterType === 'tag' && ((memo.tagIds as string[]) ?? []).includes(rule.filterValue))
+        return false;
     }
 
     // If there are include rules, memo must match at least one
     if (hasInclude) {
       return includeRules.some((rule) => {
         if (rule.filterType === 'category') return memo.categoryId === rule.filterValue;
-        if (rule.filterType === 'tag') return (memo.tagIds as string[] ?? []).includes(rule.filterValue);
+        if (rule.filterType === 'tag')
+          return ((memo.tagIds as string[]) ?? []).includes(rule.filterValue);
         return false;
       });
     }
@@ -1361,18 +1445,32 @@ export class SpacedRepetitionService {
   }
 
   async getRules(uid: string) {
-    return getDatabase().select().from(spacedRepetitionRules).where(eq(spacedRepetitionRules.uid, uid));
+    return getDatabase()
+      .select()
+      .from(spacedRepetitionRules)
+      .where(eq(spacedRepetitionRules.uid, uid));
   }
 
-  async addRule(uid: string, mode: 'include' | 'exclude', filterType: 'category' | 'tag', filterValue: string) {
-    await getDatabase().insert(spacedRepetitionRules).values({
-      ruleId: generateTypeId(OBJECT_TYPE.SR_RULE),
-      uid, mode, filterType, filterValue,
-    });
+  async addRule(
+    uid: string,
+    mode: 'include' | 'exclude',
+    filterType: 'category' | 'tag',
+    filterValue: string
+  ) {
+    await getDatabase()
+      .insert(spacedRepetitionRules)
+      .values({
+        ruleId: generateTypeId(OBJECT_TYPE.SR_RULE),
+        uid,
+        mode,
+        filterType,
+        filterValue,
+      });
   }
 
   async removeRule(uid: string, ruleId: string) {
-    await getDatabase().delete(spacedRepetitionRules)
+    await getDatabase()
+      .delete(spacedRepetitionRules)
       .where(and(eq(spacedRepetitionRules.ruleId, ruleId), eq(spacedRepetitionRules.uid, uid)));
   }
 }
@@ -1383,6 +1481,7 @@ export class SpacedRepetitionService {
 ```bash
 cd apps/server && pnpm test -- apps/server/src/__tests__/spaced-repetition.service.test.ts
 ```
+
 Expected: PASS
 
 **Step 5: Commit**
@@ -1393,18 +1492,19 @@ git add apps/server/src/services/spaced-repetition.service.ts \
 git commit -m "feat: implement SpacedRepetitionService with SM-2 algorithm"
 ```
 
-
 ---
 
 ### Task 9: Hook SpacedRepetition into ReviewService and MemoService
 
 **Files:**
+
 - Modify: `apps/server/src/services/review.service.ts`
 - Modify: `apps/server/src/services/memo.service.ts`
 
 **Step 1: Update ReviewService.completeSession to update SR cards**
 
 In `apps/server/src/services/review.service.ts`:
+
 - Add `SpacedRepetitionService` to constructor
 - After calculating score in `completeSession`, loop through items and call `spacedRepetitionService.updateCard(uid, item.memoId, item.mastery)` for each item that has a mastery value
 
@@ -1428,14 +1528,15 @@ for (const item of items) {
 **Step 2: Update MemoService.createMemo to create SR card**
 
 In `apps/server/src/services/memo.service.ts`:
+
 - Add `SpacedRepetitionService` to constructor (use `@Inject()`)
 - After successfully inserting the memo, call `this.spacedRepetitionService.createCardForMemo(uid, memoId)` — wrap in try/catch so SR failure doesn't break memo creation
 
 ```typescript
 // After memo insert succeeds:
-this.spacedRepetitionService.createCardForMemo(uid, newMemo.memoId).catch((e) =>
-  logger.warn('Failed to create SR card for memo:', e)
-);
+this.spacedRepetitionService
+  .createCardForMemo(uid, newMemo.memoId)
+  .catch((e) => logger.warn('Failed to create SR card for memo:', e));
 ```
 
 **Step 3: Commit**
@@ -1450,11 +1551,13 @@ git commit -m "feat: hook spaced repetition into review completion and memo crea
 ### Task 10: Add SpacedRepetition daily push scheduler task
 
 **Files:**
+
 - Modify: `apps/server/src/services/scheduler.service.ts`
 
 **Step 1: Add SpacedRepetitionService and UserService to SchedulerService constructor**
 
 In `apps/server/src/services/scheduler.service.ts`:
+
 ```typescript
 // Add to imports:
 import { SpacedRepetitionService } from './spaced-repetition.service.js';
@@ -1538,6 +1641,7 @@ git commit -m "feat: add daily spaced repetition push scheduler task"
 ### Task 11: SpacedRepetition API controller and frontend settings
 
 **Files:**
+
 - Create: `apps/server/src/controllers/v1/spaced-repetition.controller.ts`
 - Create: `apps/web/src/api/spaced-repetition.ts`
 - Create: `apps/web/src/pages/settings/components/spaced-repetition-settings.tsx`
@@ -1568,7 +1672,8 @@ export class SpacedRepetitionController {
 
   @Post('/rules')
   async addRule(
-    @Body() body: { mode: 'include' | 'exclude'; filterType: 'category' | 'tag'; filterValue: string },
+    @Body()
+    body: { mode: 'include' | 'exclude'; filterType: 'category' | 'tag'; filterValue: string },
     @CurrentUser() user: UserInfoDto
   ) {
     if (!user?.uid) return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
@@ -1596,16 +1701,22 @@ export const getSRRules = () =>
     '/api/v1/spaced-repetition/rules'
   );
 
-export const addSRRule = (data: { mode: 'include' | 'exclude'; filterType: 'category' | 'tag'; filterValue: string }) =>
-  request.post<unknown, { code: number; data: null }>('/api/v1/spaced-repetition/rules', data);
+export const addSRRule = (data: {
+  mode: 'include' | 'exclude';
+  filterType: 'category' | 'tag';
+  filterValue: string;
+}) => request.post<unknown, { code: number; data: null }>('/api/v1/spaced-repetition/rules', data);
 
 export const deleteSRRule = (ruleId: string) =>
-  request.delete<unknown, { code: number; data: null }>(`/api/v1/spaced-repetition/rules/${ruleId}`);
+  request.delete<unknown, { code: number; data: null }>(
+    `/api/v1/spaced-repetition/rules/${ruleId}`
+  );
 ```
 
 **Step 3: Create settings component**
 
 Create `apps/web/src/pages/settings/components/spaced-repetition-settings.tsx` — a simple settings panel showing:
+
 - Explanation text about spaced repetition
 - List of current rules (mode badge + filterType + filterValue + delete button)
 - Form to add new rule (mode select, filterType select, filterValue input, add button)
@@ -1629,7 +1740,6 @@ git add apps/server/src/controllers/v1/spaced-repetition.controller.ts \
 git commit -m "feat: add SpacedRepetition controller and settings UI"
 ```
 
-
 ---
 
 # 功能三：周期摘要报告（Digest Report）
@@ -1639,6 +1749,7 @@ git commit -m "feat: add SpacedRepetition controller and settings UI"
 ### Task 12: DB Schema — digest_reports
 
 **Files:**
+
 - Modify: `apps/server/src/models/constant/type.ts`
 - Create: `apps/server/src/db/schema/digest-reports.ts`
 - Modify: `apps/server/src/db/schema/index.ts`
@@ -1678,7 +1789,15 @@ In `id.ts` switch: `case OBJECT_TYPE.DIGEST_REPORT: return \`dr${typeid()}\`;`
 ```typescript
 // apps/server/src/db/schema/digest-reports.ts
 import {
-  mysqlTable, varchar, int, text, json, date, mysqlEnum, timestamp, index
+  mysqlTable,
+  varchar,
+  int,
+  text,
+  json,
+  date,
+  mysqlEnum,
+  timestamp,
+  index,
 } from 'drizzle-orm/mysql-core';
 
 export const digestReports = mysqlTable(
@@ -1690,7 +1809,8 @@ export const digestReports = mysqlTable(
     startDate: date('start_date', { mode: 'string' }).notNull(),
     endDate: date('end_date', { mode: 'string' }).notNull(),
     memoCount: int('memo_count').notNull().default(0),
-    topTopics: json('top_topics').$type<Array<{ topic: string; count: number; memoIds: string[] }>>(),
+    topTopics:
+      json('top_topics').$type<Array<{ topic: string; count: number; memoIds: string[] }>>(),
     topTags: json('top_tags').$type<Array<{ tag: string; count: number }>>(),
     topCategories: json('top_categories').$type<Array<{ category: string; count: number }>>(),
     highlights: json('highlights').$type<string[]>(),
@@ -1732,6 +1852,7 @@ git commit -m "feat: add digest_reports DB schema"
 ### Task 13: DigestService — report generation
 
 **Files:**
+
 - Create: `apps/server/src/services/digest.service.ts`
 - Test: `apps/server/src/__tests__/digest.service.test.ts`
 
@@ -1803,22 +1924,33 @@ export class DigestService {
 
     // Insert placeholder
     await db.insert(digestReports).values({
-      reportId, uid, period, startDate, endDate, status: 'generating',
+      reportId,
+      uid,
+      period,
+      startDate,
+      endDate,
+      status: 'generating',
     });
 
     try {
       // Query memos for period
-      const periodMemos = await db.select().from(memos).where(
-        and(
-          eq(memos.uid, uid),
-          eq(memos.deletedAt, 0),
-          gte(memos.createdAt, new Date(startDate)),
-          lte(memos.createdAt, new Date(endDate + 'T23:59:59'))
-        )
-      );
+      const periodMemos = await db
+        .select()
+        .from(memos)
+        .where(
+          and(
+            eq(memos.uid, uid),
+            eq(memos.deletedAt, 0),
+            gte(memos.createdAt, new Date(startDate)),
+            lte(memos.createdAt, new Date(endDate + 'T23:59:59'))
+          )
+        );
 
       if (periodMemos.length === 0) {
-        await db.update(digestReports).set({ status: 'ready', memoCount: 0 }).where(eq(digestReports.reportId, reportId));
+        await db
+          .update(digestReports)
+          .set({ status: 'ready', memoCount: 0 })
+          .where(eq(digestReports.reportId, reportId));
         return reportId;
       }
 
@@ -1826,20 +1958,37 @@ export class DigestService {
       const tagCounts: Record<string, number> = {};
       const categoryCounts: Record<string, number> = {};
       for (const memo of periodMemos) {
-        for (const tagId of (memo.tagIds as string[] ?? [])) {
+        for (const tagId of (memo.tagIds as string[]) ?? []) {
           tagCounts[tagId] = (tagCounts[tagId] ?? 0) + 1;
         }
-        if (memo.categoryId) categoryCounts[memo.categoryId] = (categoryCounts[memo.categoryId] ?? 0) + 1;
+        if (memo.categoryId)
+          categoryCounts[memo.categoryId] = (categoryCounts[memo.categoryId] ?? 0) + 1;
       }
 
-      const topTags = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([tag, count]) => ({ tag, count }));
-      const topCategories = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([category, count]) => ({ category, count }));
+      const topTags = Object.entries(tagCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10)
+        .map(([tag, count]) => ({ tag, count }));
+      const topCategories = Object.entries(categoryCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([category, count]) => ({ category, count }));
 
       // AI topic clustering and summary
-      const contentSample = periodMemos.slice(0, 30).map((m) => m.content.slice(0, 200)).join('\n---\n');
+      const contentSample = periodMemos
+        .slice(0, 30)
+        .map((m) => m.content.slice(0, 200))
+        .join('\n---\n');
       const aiResponse = await this.model.invoke([
-        { role: 'system', content: '你是一个知识管理助手。分析用户的笔记内容，提取主题并生成摘要。\n\n输出格式（严格JSON）：\n{"topics": [{"topic": "主题名", "count": 数量}], "highlights": ["memoId1", "memoId2", "memoId3"], "summary": "100-200字总结"}\n\ntopics 最多5个，highlights 选3个最有价值的笔记的索引（0-based）。' },
-        { role: 'user', content: `笔记数量：${periodMemos.length}\n\n笔记内容样本：\n${contentSample}` },
+        {
+          role: 'system',
+          content:
+            '你是一个知识管理助手。分析用户的笔记内容，提取主题并生成摘要。\n\n输出格式（严格JSON）：\n{"topics": [{"topic": "主题名", "count": 数量}], "highlights": ["memoId1", "memoId2", "memoId3"], "summary": "100-200字总结"}\n\ntopics 最多5个，highlights 选3个最有价值的笔记的索引（0-based）。',
+        },
+        {
+          role: 'user',
+          content: `笔记数量：${periodMemos.length}\n\n笔记内容样本：\n${contentSample}`,
+        },
       ]);
 
       let topTopics: any[] = [];
@@ -1849,25 +1998,32 @@ export class DigestService {
       try {
         const parsed = JSON.parse(aiResponse.content as string);
         topTopics = parsed.topics ?? [];
-        highlights = (parsed.highlights ?? []).map((idx: number) => periodMemos[idx]?.memoId).filter(Boolean);
+        highlights = (parsed.highlights ?? [])
+          .map((idx: number) => periodMemos[idx]?.memoId)
+          .filter(Boolean);
         summary = parsed.summary ?? '';
       } catch {
         summary = aiResponse.content as string;
       }
 
-      await db.update(digestReports).set({
-        memoCount: periodMemos.length,
-        topTopics,
-        topTags,
-        topCategories,
-        highlights,
-        summary,
-        status: 'ready',
-      }).where(eq(digestReports.reportId, reportId));
-
+      await db
+        .update(digestReports)
+        .set({
+          memoCount: periodMemos.length,
+          topTopics,
+          topTags,
+          topCategories,
+          highlights,
+          summary,
+          status: 'ready',
+        })
+        .where(eq(digestReports.reportId, reportId));
     } catch (error) {
       logger.error('Digest report generation failed:', error);
-      await db.update(digestReports).set({ status: 'failed' }).where(eq(digestReports.reportId, reportId));
+      await db
+        .update(digestReports)
+        .set({ status: 'failed' })
+        .where(eq(digestReports.reportId, reportId));
     }
 
     return reportId;
@@ -1877,17 +2033,27 @@ export class DigestService {
     const db = getDatabase();
     const conditions = [eq(digestReports.uid, uid)];
     if (period) conditions.push(eq(digestReports.period, period));
-    return db.select().from(digestReports).where(and(...conditions)).orderBy(desc(digestReports.createdAt)).limit(24);
+    return db
+      .select()
+      .from(digestReports)
+      .where(and(...conditions))
+      .orderBy(desc(digestReports.createdAt))
+      .limit(24);
   }
 
   async getReport(uid: string, reportId: string) {
     const db = getDatabase();
-    const [report] = await db.select().from(digestReports)
+    const [report] = await db
+      .select()
+      .from(digestReports)
       .where(and(eq(digestReports.reportId, reportId), eq(digestReports.uid, uid)));
     return report ?? null;
   }
 
-  private getPreviousPeriodDates(period: 'weekly' | 'monthly'): { startDate: string; endDate: string } {
+  private getPreviousPeriodDates(period: 'weekly' | 'monthly'): {
+    startDate: string;
+    endDate: string;
+  } {
     const now = new Date();
     if (period === 'weekly') {
       const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon...
@@ -1925,6 +2091,7 @@ git commit -m "feat: implement DigestService with AI topic clustering"
 ### Task 14: Digest scheduler task and controller
 
 **Files:**
+
 - Modify: `apps/server/src/services/scheduler.service.ts`
 - Create: `apps/server/src/controllers/v1/digest.controller.ts`
 
@@ -2015,6 +2182,7 @@ git commit -m "feat: add digest scheduler tasks and DigestController"
 ### Task 15: Frontend — Digest API and Insights page extension
 
 **Files:**
+
 - Create: `apps/web/src/api/digest.ts`
 - Modify or create: `apps/web/src/pages/insights/index.tsx` (check if insights page exists, if not create it)
 - Modify: `apps/web/src/main.tsx`
@@ -2027,7 +2195,8 @@ import request from '../utils/request';
 
 export const getDigestReports = (period?: 'weekly' | 'monthly') =>
   request.get<unknown, { code: number; data: { items: any[]; total: number } }>(
-    '/api/v1/digest/reports', { params: period ? { period } : {} }
+    '/api/v1/digest/reports',
+    { params: period ? { period } : {} }
   );
 
 export const getDigestReport = (reportId: string) =>
@@ -2037,6 +2206,7 @@ export const getDigestReport = (reportId: string) =>
 **Step 2: Create Insights page with digest reports**
 
 Check if `apps/web/src/pages/insights/` exists. If not, create `apps/web/src/pages/insights/index.tsx` showing:
+
 - Tab selector: 周报 / 月报
 - Report list (card per report: period label, date range, memoCount, status badge, click to expand)
 - Expanded report: AI summary, top topics chips, highlighted memos (3 cards), top tags
@@ -2056,7 +2226,6 @@ git add apps/web/src/api/digest.ts apps/web/src/pages/insights/ apps/web/src/mai
 git commit -m "feat: add Insights page with digest report viewer"
 ```
 
-
 ---
 
 # 功能四：知识图谱可视化（Knowledge Graph）
@@ -2066,6 +2235,7 @@ git commit -m "feat: add Insights page with digest report viewer"
 ### Task 16: GraphService — build graph data
 
 **Files:**
+
 - Create: `apps/server/src/services/graph.service.ts`
 - Test: `apps/server/src/__tests__/graph.service.test.ts`
 
@@ -2148,7 +2318,9 @@ export class GraphService {
     const db = getDatabase();
 
     // Get memos
-    const userMemos = await db.select().from(memos)
+    const userMemos = await db
+      .select()
+      .from(memos)
       .where(and(eq(memos.uid, uid), eq(memos.deletedAt, 0)))
       .orderBy(memos.createdAt)
       .limit(limit);
@@ -2158,12 +2330,16 @@ export class GraphService {
     const memoIds = new Set(userMemos.map((m) => m.memoId));
 
     // Get reference edges from memo_relations
-    const relations = await db.select().from(memoRelations)
-      .where(eq(memoRelations.uid, uid));
+    const relations = await db.select().from(memoRelations).where(eq(memoRelations.uid, uid));
 
     const referenceEdges: GraphEdge[] = relations
       .filter((r) => memoIds.has(r.sourceMemoId) && memoIds.has(r.targetMemoId))
-      .map((r) => ({ source: r.sourceMemoId, target: r.targetMemoId, type: 'reference' as const, weight: 1 }));
+      .map((r) => ({
+        source: r.sourceMemoId,
+        target: r.targetMemoId,
+        type: 'reference' as const,
+        weight: 1,
+      }));
 
     // Count incoming references for node sizing
     const linkCounts: Record<string, number> = {};
@@ -2176,7 +2352,7 @@ export class GraphService {
       id: m.memoId,
       label: m.content.slice(0, 20),
       category: m.categoryId ?? undefined,
-      tags: (m.tagIds as string[] ?? []),
+      tags: (m.tagIds as string[]) ?? [],
       linkCount: linkCounts[m.memoId] ?? 0,
       createdAt: m.createdAt.toISOString(),
     }));
@@ -2210,7 +2386,12 @@ export class GraphService {
           if (result.memoId === memo.memoId) continue;
           const score = (result as any).score ?? 0;
           if (score >= 0.8) {
-            edges.push({ source: memo.memoId, target: result.memoId, type: 'semantic', weight: score });
+            edges.push({
+              source: memo.memoId,
+              target: result.memoId,
+              type: 'semantic',
+              weight: score,
+            });
           }
         }
       } catch (e) {
@@ -2223,7 +2404,10 @@ export class GraphService {
     return edges;
   }
 
-  private filterSemanticEdges(similarities: Array<{ memoId: string; targetId: string; score: number }>, threshold: number) {
+  private filterSemanticEdges(
+    similarities: Array<{ memoId: string; targetId: string; score: number }>,
+    threshold: number
+  ) {
     return similarities.filter((s) => s.score >= threshold);
   }
 }
@@ -2247,6 +2431,7 @@ git commit -m "feat: implement GraphService with reference and semantic edges"
 ### Task 17: GraphController — REST endpoint
 
 **Files:**
+
 - Create: `apps/server/src/controllers/v1/graph.controller.ts`
 
 **Step 1: Implement GraphController**
@@ -2267,10 +2452,7 @@ export class GraphController {
   constructor(private graphService: GraphService) {}
 
   @Get('/')
-  async getGraph(
-    @QueryParam('limit') limit: number = 200,
-    @CurrentUser() user: UserInfoDto
-  ) {
+  async getGraph(@QueryParam('limit') limit: number = 200, @CurrentUser() user: UserInfoDto) {
     try {
       if (!user?.uid) return ResponseUtil.error(ErrorCode.UNAUTHORIZED);
       const validLimit = Math.min(Math.max(limit, 10), 500);
@@ -2296,6 +2478,7 @@ git commit -m "feat: add GraphController GET /api/v1/graph"
 ### Task 18: Frontend — Knowledge Graph page with Cytoscape.js
 
 **Files:**
+
 - Create: `apps/web/src/api/graph.ts`
 - Create: `apps/web/src/pages/graph/index.tsx`
 - Modify: `apps/web/src/main.tsx`
@@ -2566,6 +2749,7 @@ pnpm build
 ## 新增文件汇总
 
 **后端 DB Schemas:**
+
 - `apps/server/src/db/schema/review-sessions.ts`
 - `apps/server/src/db/schema/review-items.ts`
 - `apps/server/src/db/schema/spaced-repetition-cards.ts`
@@ -2573,18 +2757,21 @@ pnpm build
 - `apps/server/src/db/schema/digest-reports.ts`
 
 **后端 Services:**
+
 - `apps/server/src/services/review.service.ts`
 - `apps/server/src/services/spaced-repetition.service.ts`
 - `apps/server/src/services/digest.service.ts`
 - `apps/server/src/services/graph.service.ts`
 
 **后端 Controllers:**
+
 - `apps/server/src/controllers/v1/review.controller.ts`
 - `apps/server/src/controllers/v1/spaced-repetition.controller.ts`
 - `apps/server/src/controllers/v1/digest.controller.ts`
 - `apps/server/src/controllers/v1/graph.controller.ts`
 
 **前端:**
+
 - `apps/web/src/api/review.ts`
 - `apps/web/src/api/spaced-repetition.ts`
 - `apps/web/src/api/digest.ts`
@@ -2595,5 +2782,5 @@ pnpm build
 - `apps/web/src/pages/settings/components/spaced-repetition-settings.tsx`
 
 **DTO:**
-- `packages/dto/src/review.ts`
 
+- `packages/dto/src/review.ts`

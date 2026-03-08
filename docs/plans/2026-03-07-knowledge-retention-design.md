@@ -8,12 +8,12 @@
 
 ## 功能概览
 
-| # | 功能 | 优先级 | 新增表 | 新增服务 |
-|---|------|--------|--------|---------|
-| 1 | AI 回顾模式 | P0 | `review_sessions`, `review_items` | `review.service` |
-| 2 | 间隔重复推送 | P1 | `spaced_repetition_cards`, `spaced_repetition_rules` | 扩展 `scheduler` |
-| 3 | 周期摘要报告 | P2 | `digest_reports` | `digest.service` |
-| 4 | 知识图谱可视化 | P3 | 无 | `graph.service` |
+| #   | 功能           | 优先级 | 新增表                                               | 新增服务         |
+| --- | -------------- | ------ | ---------------------------------------------------- | ---------------- |
+| 1   | AI 回顾模式    | P0     | `review_sessions`, `review_items`                    | `review.service` |
+| 2   | 间隔重复推送   | P1     | `spaced_repetition_cards`, `spaced_repetition_rules` | 扩展 `scheduler` |
+| 3   | 周期摘要报告   | P2     | `digest_reports`                                     | `digest.service` |
+| 4   | 知识图谱可视化 | P3     | 无                                                   | `graph.service`  |
 
 ---
 
@@ -90,11 +90,11 @@ GET  /api/v1/review/history               # 回顾历史记录
 
 ### SM-2 算法映射
 
-| 用户反馈 | SM-2 评分 | 效果 |
-|---------|----------|------|
-| `remembered` | 5 | interval 增长，easeFactor 略升 |
-| `fuzzy` | 3 | interval 增长但较慢 |
-| `forgot` | 1 | interval 重置为 1，明天再推 |
+| 用户反馈     | SM-2 评分 | 效果                           |
+| ------------ | --------- | ------------------------------ |
+| `remembered` | 5         | interval 增长，easeFactor 略升 |
+| `fuzzy`      | 3         | interval 增长但较慢            |
+| `forgot`     | 1         | interval 重置为 1，明天再推    |
 
 ### 数据模型
 
@@ -131,6 +131,7 @@ spaced_repetition_rules
 ### 推送流程
 
 定时任务（每天 8:00）：
+
 1. 查询所有 `nextReviewAt <= now` 且符合过滤规则的卡片
 2. 按用户分组，每用户最多推送 5 条（防止轰炸）
 3. 通过用户配置的推送渠道发送（飞书 / Meow）
@@ -182,6 +183,7 @@ digest_reports
 ### 报告生成流程
 
 定时任务（每周一 9:00 / 每月 1 日 9:00）：
+
 1. 查询该用户上周/上月新增的所有 Memo
 2. 统计标签、分类分布
 3. 将 Memo 内容批量送给 AI，提取 3-5 个主题（主题聚类）
@@ -198,6 +200,7 @@ digest_reports
 ### 站内展示
 
 扩展现有 `/insights` 页面：
+
 - 历史报告列表（按时间倒序）
 - 点击查看完整报告：主题卡片 + 高亮笔记 + AI 总结
 

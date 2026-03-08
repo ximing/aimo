@@ -21,7 +21,7 @@ export const ReviewPage = bindServices(() => {
   // Initialize service on mount
   useEffect(() => {
     service.initialize();
-  }, []);
+  }, [service]);
 
   return (
     <Layout>
@@ -68,9 +68,7 @@ export const ReviewPage = bindServices(() => {
             <div className="flex-1 overflow-y-auto">
               <div className="max-w-2xl mx-auto px-8 py-6">
                 {/* Setup - AI Review */}
-                {service.step === 'setup' && service.reviewType === 'ai' && (
-                  <ProfileDetailPanel />
-                )}
+                {service.step === 'setup' && service.reviewType === 'ai' && <ProfileDetailPanel />}
 
                 {/* Setup - Spaced Repetition */}
                 {service.step === 'setup' && service.reviewType === 'sr' && (
@@ -95,37 +93,43 @@ export const ReviewPage = bindServices(() => {
                 )}
 
                 {/* Quiz - Spaced Repetition */}
-                {service.step === 'quiz' && service.reviewType === 'sr' && service.srCards.length > 0 && (
-                  <SRQuiz />
-                )}
+                {service.step === 'quiz' &&
+                  service.reviewType === 'sr' &&
+                  service.srCards.length > 0 && <SRQuiz />}
 
                 {/* Summary - AI Review */}
-                {service.step === 'summary' && service.reviewType === 'ai' && service.finalSession && (
-                  <AISummary
-                    session={service.finalSession}
-                    score={service.finalScore ?? 0}
-                    onReset={() => service.resetToSetup()}
-                  />
-                )}
+                {service.step === 'summary' &&
+                  service.reviewType === 'ai' &&
+                  service.finalSession && (
+                    <AISummary
+                      session={service.finalSession}
+                      score={service.finalScore ?? 0}
+                      onReset={() => service.resetToSetup()}
+                    />
+                  )}
 
                 {/* Summary - SR Empty */}
-                {service.step === 'summary' && service.reviewType === 'sr' && service.srCards.length === 0 && (
-                  <SREmptySummary
-                    totalCards={service.srTotalCards}
-                    importing={service.srImporting}
-                    onImport={() => service.importExistingMemos()}
-                    onBack={() => service.resetSR()}
-                  />
-                )}
+                {service.step === 'summary' &&
+                  service.reviewType === 'sr' &&
+                  service.srCards.length === 0 && (
+                    <SREmptySummary
+                      totalCards={service.srTotalCards}
+                      importing={service.srImporting}
+                      onImport={() => service.importExistingMemos()}
+                      onBack={() => service.resetSR()}
+                    />
+                  )}
 
                 {/* Summary - SR Completed */}
-                {service.step === 'summary' && service.reviewType === 'sr' && service.srCards.length > 0 && (
-                  <SRCompletedSummary
-                    cardsCount={service.srCards.length}
-                    stats={service.srStats}
-                    onBack={() => service.resetSR()}
-                  />
-                )}
+                {service.step === 'summary' &&
+                  service.reviewType === 'sr' &&
+                  service.srCards.length > 0 && (
+                    <SRCompletedSummary
+                      cardsCount={service.srCards.length}
+                      stats={service.srStats}
+                      onBack={() => service.resetSR()}
+                    />
+                  )}
               </div>
             </div>
           </main>

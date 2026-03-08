@@ -3,7 +3,6 @@ import { BrainCircuit, Plus, Play, Trash2, Clock } from 'lucide-react';
 import { ReviewService } from '../review.service';
 import { formatRelativeTime } from './utils';
 
-
 const ReviewSidebarContent = () => {
   const service = useService(ReviewService);
 
@@ -110,10 +109,7 @@ const ReviewSidebarContent = () => {
         {service.historyLoading ? (
           <div className="p-4 space-y-3">
             {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="h-16 bg-gray-100 dark:bg-dark-700 rounded-lg animate-pulse"
-              />
+              <div key={i} className="h-16 bg-gray-100 dark:bg-dark-700 rounded-lg animate-pulse" />
             ))}
           </div>
         ) : service.history.length === 0 ? (

@@ -117,7 +117,8 @@ export class SpacedRepetitionController {
    */
   @Post('/rules')
   async createRule(
-    @Body() body: { mode: 'include' | 'exclude'; filterType: 'category' | 'tag'; filterValue: string },
+    @Body()
+    body: { mode: 'include' | 'exclude'; filterType: 'category' | 'tag'; filterValue: string },
     @CurrentUser() user: UserInfoDto
   ) {
     try {
@@ -126,10 +127,7 @@ export class SpacedRepetitionController {
       }
 
       if (!body.mode || !['include', 'exclude'].includes(body.mode)) {
-        return ResponseUtility.error(
-          ErrorCode.PARAMS_ERROR,
-          'mode must be "include" or "exclude"'
-        );
+        return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'mode must be "include" or "exclude"');
       }
 
       if (!body.filterType || !['category', 'tag'].includes(body.filterType)) {

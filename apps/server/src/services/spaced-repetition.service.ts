@@ -223,10 +223,7 @@ export class SpacedRepetitionService {
         .select({ cardId: spacedRepetitionCards.cardId })
         .from(spacedRepetitionCards)
         .where(
-          and(
-            eq(spacedRepetitionCards.userId, userId),
-            eq(spacedRepetitionCards.memoId, memoId)
-          )
+          and(eq(spacedRepetitionCards.userId, userId), eq(spacedRepetitionCards.memoId, memoId))
         )
         .limit(1);
 
@@ -279,10 +276,7 @@ export class SpacedRepetitionService {
         .select({ cardId: spacedRepetitionCards.cardId })
         .from(spacedRepetitionCards)
         .where(
-          and(
-            eq(spacedRepetitionCards.userId, userId),
-            eq(spacedRepetitionCards.memoId, memoId)
-          )
+          and(eq(spacedRepetitionCards.userId, userId), eq(spacedRepetitionCards.memoId, memoId))
         )
         .limit(1);
 
@@ -296,10 +290,7 @@ export class SpacedRepetitionService {
         await db
           .delete(spacedRepetitionCards)
           .where(
-            and(
-              eq(spacedRepetitionCards.userId, userId),
-              eq(spacedRepetitionCards.memoId, memoId)
-            )
+            and(eq(spacedRepetitionCards.userId, userId), eq(spacedRepetitionCards.memoId, memoId))
           );
         logger.info('Deleted SR card due to rule change:', { userId, memoId });
       }
@@ -317,9 +308,7 @@ export class SpacedRepetitionService {
   async deleteCardsByMemo(memoId: string): Promise<void> {
     try {
       const db = getDatabase();
-      await db
-        .delete(spacedRepetitionCards)
-        .where(eq(spacedRepetitionCards.memoId, memoId));
+      await db.delete(spacedRepetitionCards).where(eq(spacedRepetitionCards.memoId, memoId));
       logger.info('Deleted SR cards for memo:', { memoId });
     } catch (error) {
       logger.error('Error deleting SR cards for memo:', error);
@@ -352,10 +341,7 @@ export class SpacedRepetitionService {
       .select()
       .from(spacedRepetitionCards)
       .where(
-        and(
-          eq(spacedRepetitionCards.userId, userId),
-          lte(spacedRepetitionCards.nextReviewAt, now)
-        )
+        and(eq(spacedRepetitionCards.userId, userId), lte(spacedRepetitionCards.nextReviewAt, now))
       )
       .orderBy(spacedRepetitionCards.nextReviewAt);
   }
@@ -378,7 +364,14 @@ export class SpacedRepetitionService {
   async updateCardAfterReview(
     cardId: string,
     userId: string,
-    updates: { easeFactor: number; interval: number; repetitions: number; lapseCount: number; nextReviewAt: Date; lastReviewAt: Date }
+    updates: {
+      easeFactor: number;
+      interval: number;
+      repetitions: number;
+      lapseCount: number;
+      nextReviewAt: Date;
+      lastReviewAt: Date;
+    }
   ): Promise<SpacedRepetitionCard | null> {
     const db = getDatabase();
     await db
@@ -427,10 +420,7 @@ export class SpacedRepetitionService {
    */
   async getRules(userId: string): Promise<SpacedRepetitionRule[]> {
     const db = getDatabase();
-    return db
-      .select()
-      .from(spacedRepetitionRules)
-      .where(eq(spacedRepetitionRules.userId, userId));
+    return db.select().from(spacedRepetitionRules).where(eq(spacedRepetitionRules.userId, userId));
   }
 
   /**
@@ -494,7 +484,9 @@ export class SpacedRepetitionService {
 
     // Group by userId
     const result = new Map<string, { cards: SpacedRepetitionCard[]; srDailyLimit: number }>();
-    const userLimitMap = new Map<string, number>(srUsers.map((u) => [u.uid, u.srDailyLimit as number]));
+    const userLimitMap = new Map<string, number>(
+      srUsers.map((u) => [u.uid, u.srDailyLimit as number])
+    );
 
     for (const card of dueCards) {
       if (!result.has(card.userId)) {
@@ -518,10 +510,7 @@ export class SpacedRepetitionService {
       .select({ ruleId: spacedRepetitionRules.ruleId })
       .from(spacedRepetitionRules)
       .where(
-        and(
-          eq(spacedRepetitionRules.ruleId, ruleId),
-          eq(spacedRepetitionRules.userId, userId)
-        )
+        and(eq(spacedRepetitionRules.ruleId, ruleId), eq(spacedRepetitionRules.userId, userId))
       )
       .limit(1);
     if (existing.length === 0) {
@@ -530,10 +519,7 @@ export class SpacedRepetitionService {
     await db
       .delete(spacedRepetitionRules)
       .where(
-        and(
-          eq(spacedRepetitionRules.ruleId, ruleId),
-          eq(spacedRepetitionRules.userId, userId)
-        )
+        and(eq(spacedRepetitionRules.ruleId, ruleId), eq(spacedRepetitionRules.userId, userId))
       );
     return true;
   }
@@ -598,7 +584,11 @@ export class SpacedRepetitionService {
         });
 
         imported++;
-        logger.info('Imported SR card from existing memo:', { cardId, userId, memoId: memo.memoId });
+        logger.info('Imported SR card from existing memo:', {
+          cardId,
+          userId,
+          memoId: memo.memoId,
+        });
       } catch (error) {
         logger.error('Error importing memo to SR:', { memoId: memo.memoId, error });
         skipped++;

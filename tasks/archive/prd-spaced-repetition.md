@@ -18,9 +18,11 @@
 ## User Stories
 
 ### US-001: 数据库 — 创建 SR 卡片表和规则表
+
 **Description:** As a developer, I need to store spaced repetition card state and filter rules in MySQL so the system can track review schedules.
 
 **Acceptance Criteria:**
+
 - [ ] 创建 `spaced_repetition_cards` 表，字段：`cardId` VARCHAR(191) PK、`userId` VARCHAR(191)、`memoId` VARCHAR(191)、`easeFactor` FLOAT DEFAULT 2.5、`interval` INT DEFAULT 1、`repetitions` INT DEFAULT 0、`nextReviewAt` TIMESTAMP、`lastReviewAt` TIMESTAMP NULL、`createdAt` TIMESTAMP
 - [ ] 创建 `spaced_repetition_rules` 表，字段：`ruleId` VARCHAR(191) PK、`userId` VARCHAR(191)、`mode` ENUM('include','exclude')、`filterType` ENUM('category','tag')、`filterValue` VARCHAR(255)、`createdAt` TIMESTAMP
 - [ ] 在 `schema/index.ts` 中导出两张表
@@ -28,25 +30,29 @@
 - [ ] Typecheck passes
 
 ### US-002: 后端 — SM-2 算法服务
+
 **Description:** As a developer, I need a service that implements the SM-2 algorithm to calculate the next review interval based on user feedback.
 
 **Acceptance Criteria:**
+
 - [ ] 创建 `SpacedRepetitionService`，包含方法 `calculateNextReview(card, quality: 1|3|5): { easeFactor, interval, repetitions, nextReviewAt }`
 - [ ] SM-2 规则正确实现（quality 映射见下）：
-  - quality=5 (mastered，熟练掌握): `easeFactor = max(1.3, EF + 0.15)`, repetitions++, interval 按 EF 增长更快（interval * EF * 1.3）
+  - quality=5 (mastered，熟练掌握): `easeFactor = max(1.3, EF + 0.15)`, repetitions++, interval 按 EF 增长更快（interval _ EF _ 1.3）
   - quality=4 (remembered，记住了): `easeFactor = max(1.3, EF + 0.1)`, repetitions++, interval 按 EF 增长
   - quality=3 (fuzzy，模糊): `easeFactor = max(1.3, EF - 0.08)`, repetitions++, interval 按较慢速度增长
   - quality=1 (forgot，忘记了): `easeFactor = max(1.3, EF - 0.2)`, repetitions=0, interval=1
-  - interval 计算：repetitions=0 → 1天, repetitions=1 → 6天, repetitions>1 → round(prevInterval * EF)
+  - interval 计算：repetitions=0 → 1天, repetitions=1 → 6天, repetitions>1 → round(prevInterval \* EF)
   - 跳过（skip）：不更新卡片状态，`nextReviewAt` 不变
 - [ ] `nextReviewAt` = 当前时间 + interval 天
 - [ ] 单元测试覆盖三种 quality 的计算结果
 - [ ] Typecheck passes
 
 ### US-003: 后端 — 卡片自动创建（Memo 创建时）
+
 **Description:** As a user, I want my new memos to automatically enter the review pool so I don't have to manually manage which notes to review.
 
 **Acceptance Criteria:**
+
 - [ ] 在 `MemoService.createMemo()` 完成后，调用 `SpacedRepetitionService.createCardIfEligible(userId, memoId)`
 - [ ] `createCardIfEligible` 检查过滤规则：
   - 无规则时：创建卡片
@@ -58,9 +64,11 @@
 - [ ] Typecheck passes
 
 ### US-003b: 后端 — Memo 更新时重新评估 SR 卡片资格
+
 **Description:** As a user, I want the system to automatically update my review pool when I change a memo's category or tags, so the filter rules stay accurate.
 
 **Acceptance Criteria:**
+
 - [ ] 在 `MemoService.updateMemo()` 完成后，若 `categoryId` 或 `tags` 发生变化，调用 `SpacedRepetitionService.reevaluateCard(userId, memoId)`
 - [ ] `reevaluateCard` 逻辑：
   1. 用更新后的 Memo category/tag 重新执行过滤规则判断
@@ -70,17 +78,21 @@
 - [ ] Typecheck passes
 
 ### US-003c: 后端 — Memo 删除时级联删除 SR 卡片
+
 **Description:** As a user, I want my review cards to be cleaned up when I delete a memo, so there are no orphaned cards in the system.
 
 **Acceptance Criteria:**
+
 - [ ] 在 `MemoService.deleteMemo()` 中，删除 Memo 前（或同一事务中）删除对应的 `spaced_repetition_cards` 记录（按 `memoId` 删除）
 - [ ] 删除操作不抛出错误（即使该 Memo 没有对应卡片也安全执行）
 - [ ] Typecheck passes
 
 ### US-004: 后端 — 回顾 API（获取今日待复习列表）
+
 **Description:** As a user, I want to fetch my due cards for today so the review page can show me what to review.
 
 **Acceptance Criteria:**
+
 - [ ] `GET /api/v1/spaced-repetition/due` 返回当前用户 `nextReviewAt <= now` 的卡片列表，含完整 Memo 信息（title, content 前200字, id）
 - [ ] 返回结果按 `nextReviewAt` 升序排列
 - [ ] 需要 JWT 认证（`@CurrentUser()`）
@@ -88,9 +100,11 @@
 - [ ] Typecheck passes
 
 ### US-005: 后端 — 回顾 API（提交掌握程度）
+
 **Description:** As a user, I want to submit my recall quality for a card so the system can update its review schedule.
 
 **Acceptance Criteria:**
+
 - [ ] `POST /api/v1/spaced-repetition/cards/:cardId/review` 接受 body `{ quality: 'mastered' | 'remembered' | 'fuzzy' | 'forgot' | 'skip' }`
 - [ ] 映射：`mastered→5`, `remembered→4`, `fuzzy→3`, `forgot→1`；`skip` 不更新卡片，直接返回当前状态
 - [ ] 调用 SM-2 算法更新卡片的 `easeFactor`, `interval`, `repetitions`, `nextReviewAt`, `lastReviewAt`
@@ -99,9 +113,11 @@
 - [ ] Typecheck passes
 
 ### US-006: 后端 — 定时推送任务
+
 **Description:** As a user, I want to receive daily push notifications for due cards so I'm reminded to review without having to check the app.
 
 **Acceptance Criteria:**
+
 - [ ] 在 `SchedulerService` 中注册每日 08:00 的 cron 任务 `sendSpacedRepetitionPush`
 - [ ] 任务流程：
   1. 查询所有用户中 `nextReviewAt <= now` 的卡片，按 userId 分组
@@ -112,9 +128,11 @@
 - [ ] Typecheck passes
 
 ### US-007: 后端 — 站内通知存储
+
 **Description:** As a developer, I need to store in-app notifications so users can see review reminders even without external push channels.
 
 **Acceptance Criteria:**
+
 - [ ] 创建 `in_app_notifications` 表：`notificationId` VARCHAR(191) PK、`userId` VARCHAR(191)、`type` VARCHAR(50)（如 `spaced_repetition`）、`title` VARCHAR(255)、`body` TEXT、`memoId` VARCHAR(191) NULL、`isRead` BOOLEAN DEFAULT false、`createdAt` TIMESTAMP
 - [ ] 推送任务执行时同步写入该表
 - [ ] `GET /api/v1/notifications` 返回当前用户未读通知列表（最近 50 条）
@@ -122,9 +140,11 @@
 - [ ] Typecheck passes
 
 ### US-008: 后端 — SR 用户设置 API
+
 **Description:** As a user, I want to configure my spaced repetition settings via API so the frontend can persist my preferences.
 
 **Acceptance Criteria:**
+
 - [ ] 在用户设置表（或单独配置表）中增加字段：`srEnabled` BOOLEAN DEFAULT false、`srDailyLimit` INT DEFAULT 5
 - [ ] `GET /api/v1/spaced-repetition/settings` 返回当前用户 SR 配置
 - [ ] `PUT /api/v1/spaced-repetition/settings` 更新 `srEnabled` 和 `srDailyLimit`
@@ -134,18 +154,22 @@
 - [ ] Typecheck passes
 
 ### US-008c: 数据库 — 创建 AI 回顾模式表（review_profiles）
+
 **Description:** As a developer, I need to store named AI review profiles with filter conditions so users can save and reuse review configurations.
 
 **Acceptance Criteria:**
+
 - [ ] 在 `apps/server/src/db/schema/` 创建 `reviewProfiles` 表，字段：`profileId` VARCHAR(191) PK、`userId` VARCHAR(191)、`name` VARCHAR(255)、`scope` ENUM('all','category','tag','recent')、`filterValues` JSON（存储分类 ID 或标签名数组，scope=all/recent 时为空数组）、`recentDays` INT NULL（scope=recent 时使用）、`questionCount` INT DEFAULT 10、`createdAt` TIMESTAMP、`updatedAt` TIMESTAMP
 - [ ] 从 `apps/server/src/db/schema/index.ts` 导出
 - [ ] `pnpm build && pnpm migrate:generate` 执行无报错
 - [ ] Typecheck passes
 
 ### US-008d: 后端 — AI 回顾模式 CRUD API
+
 **Description:** As a user, I want to create, list, and delete AI review profiles via API so I can manage my saved review configurations.
 
 **Acceptance Criteria:**
+
 - [ ] `GET /api/v1/review/profiles` 返回当前用户所有回顾模式列表，需 JWT 认证
 - [ ] `POST /api/v1/review/profiles` 创建回顾模式，body: `{ name, scope, filterValues: string[], recentDays?, questionCount? }`，需 JWT 认证
 - [ ] `DELETE /api/v1/review/profiles/:profileId` 删除回顾模式，不属于当前用户时返回 404，需 JWT 认证
@@ -154,9 +178,11 @@
 - [ ] Typecheck passes
 
 ### US-008e: 前端 — Settings SR 过滤规则改为多选 Select
+
 **Description:** As a user, I want to pick categories and tags from a dropdown list when adding SR filter rules, instead of typing values manually.
 
 **Acceptance Criteria:**
+
 - [ ] 添加规则表单中，选择 `filterType=category` 时，filterValue 输入框改为多选 select，选项来自 `GET /api/v1/categories`（显示分类名称，提交值为 categoryId）
 - [ ] 选择 `filterType=tag` 时，改为多选 select，选项来自 `GET /api/v1/tags`（显示标签名，提交值为标签名）
 - [ ] 多选后批量提交：每个选中值调用一次 `POST /api/v1/spaced-repetition/rules`，全部完成后列表实时更新
@@ -165,9 +191,11 @@
 - [ ] Verify in browser using dev-browser skill
 
 ### US-009: 前端 — Settings 页面 SR 配置区块
+
 **Description:** As a user, I want to enable/disable spaced repetition and configure daily limit and filter rules in Settings so I can control the feature.
 
 **Acceptance Criteria:**
+
 - [ ] Settings 页面新增"间隔重复"区块，包含：
   - 开启/关闭开关（toggle）
   - 每日最大推送数量输入框（1-20，默认 5）
@@ -180,9 +208,11 @@
 - [ ] Verify in browser using dev-browser skill
 
 ### US-010: 前端 — 回顾页面重构为 Tab 切换方案
+
 **Description:** As a user, I want the review page to use a clear Tab layout separating AI review and spaced repetition so I can easily distinguish and access both modes.
 
 **交互结构：**
+
 ```
 [AI 回顾 🧠]  [间隔重复 🔁]
 ─────────────────────────────────────────────────────
@@ -211,6 +241,7 @@ AI 回顾 Tab（Setup 阶段）:
 ```
 
 **Acceptance Criteria:**
+
 - [ ] 回顾页面顶部改为两个 Tab：「AI 回顾 🧠」和「间隔重复 🔁」，默认选中 AI 回顾
 - [ ] AI 回顾 Tab Setup 阶段上方：调用 `GET /api/v1/review/profiles` 展示已保存模式卡片，每张卡片显示名称、scope 描述、题目数量，点击「▶ 开始」以该 profileId 创建会话
 - [ ] AI 回顾 Tab Setup 阶段中部：保留现有历史记录列表（点击恢复历史会话，功能不变）
@@ -225,9 +256,11 @@ AI 回顾 Tab（Setup 阶段）:
 - [ ] Verify in browser using dev-browser skill
 
 ### US-011: 前端 — 站内通知入口
+
 **Description:** As a user, I want to see in-app notifications for review reminders so I can access them even without external push channels configured.
 
 **Acceptance Criteria:**
+
 - [ ] 导航栏/顶部新增通知图标，有未读通知时显示红点
 - [ ] 点击图标展开通知列表（最近 50 条），显示标题、时间、已读/未读状态
 - [ ] 点击通知项跳转到对应 Memo 或回顾页面，并标记为已读
@@ -236,9 +269,11 @@ AI 回顾 Tab（Setup 阶段）:
 - [ ] Verify in browser using dev-browser skill
 
 ### US-008b: 后端 — 历史 Memo 批量迁移 API
+
 **Description:** As a user, I want to trigger a one-time import of my existing memos into the spaced repetition pool so I don't miss historical notes.
 
 **Acceptance Criteria:**
+
 - [ ] `POST /api/v1/spaced-repetition/import-existing` 触发批量迁移，需 JWT 认证
 - [ ] 遍历当前用户所有 Memo，对每条 Memo 执行 `createCardIfEligible`（复用过滤规则逻辑，已有卡片的 Memo 跳过）
 - [ ] `nextReviewAt` 设为明天 08:00（与新建 Memo 一致）
@@ -246,9 +281,11 @@ AI 回顾 Tab（Setup 阶段）:
 - [ ] Typecheck passes
 
 ### US-009b: 前端 — Settings 页面历史 Memo 迁移入口
+
 **Description:** As a user, I want a button in Settings to import my existing memos into the review pool so I can start reviewing historical notes.
 
 **Acceptance Criteria:**
+
 - [ ] Settings SR 区块内新增「导入历史笔记」按钮，仅在 `srEnabled=true` 时可点击
 - [ ] 点击后弹出确认 dialog：「将把所有符合过滤规则的现有笔记加入复习池，已在复习池中的笔记不受影响，确认导入？」
 - [ ] 确认后调用 `POST /api/v1/spaced-repetition/import-existing`，显示 loading 状态
@@ -309,9 +346,9 @@ AI 回顾 Tab（Setup 阶段）:
 
 以下问题已确认决策，已纳入正式需求：
 
-| 问题 | 决策 |
-|------|------|
+| 问题                                            | 决策                                                                                              |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------- |
 | Memo 修改 category/tag 后是否重新评估 SR 卡片？ | 是。检查新 category/tag 是否满足过滤规则：满足则保留/新建卡片；不满足则删除卡片（FR-10, US-003b） |
-| Memo 删除时 SR 卡片是否级联删除？ | 是，在 `deleteMemo` 中同步删除（FR-11, US-003c） |
-| 站内通知保留时长？ | 永久保存，不自动清理（FR-9） |
-| 回顾页面是否支持跳过和熟练掌握？ | 支持。共五档：忘记了 / 模糊 / 记住了 / 熟练掌握 / 跳过；跳过移至队列末尾（FR-6, US-010） |
+| Memo 删除时 SR 卡片是否级联删除？               | 是，在 `deleteMemo` 中同步删除（FR-11, US-003c）                                                  |
+| 站内通知保留时长？                              | 永久保存，不自动清理（FR-9）                                                                      |
+| 回顾页面是否支持跳过和熟练掌握？                | 支持。共五档：忘记了 / 模糊 / 记住了 / 熟练掌握 / 跳过；跳过移至队列末尾（FR-6, US-010）          |

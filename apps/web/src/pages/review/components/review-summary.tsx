@@ -58,16 +58,19 @@ interface SREmptySummaryProps {
   onBack: () => void;
 }
 
-export const SREmptySummary = ({ totalCards, importing, onImport, onBack }: SREmptySummaryProps) => {
+export const SREmptySummary = ({
+  totalCards,
+  importing,
+  onImport,
+  onBack,
+}: SREmptySummaryProps) => {
   return (
     <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-200 dark:border-dark-700 p-6 text-center">
       <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
       <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-2">
         今日无需复习，继续保持！
       </h2>
-      <p className="text-gray-500 dark:text-gray-400 mb-4">
-        全部笔记都已复习完毕，记得明天再来！
-      </p>
+      <p className="text-gray-500 dark:text-gray-400 mb-4">全部笔记都已复习完毕，记得明天再来！</p>
 
       {totalCards === 0 && (
         <button
@@ -104,15 +107,21 @@ export const SRCompletedSummary = ({ cardsCount, stats, onBack }: SRCompletedSum
       <p className="text-gray-500 dark:text-gray-400 mb-4">已复习 {cardsCount} 张卡片</p>
       <div className="grid grid-cols-2 gap-3 mb-6 max-w-sm mx-auto">
         <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3">
-          <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">{stats.mastered}</div>
+          <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+            {stats.mastered}
+          </div>
           <div className="text-sm text-purple-600 dark:text-purple-400">完全记住</div>
         </div>
         <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
-          <div className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.remembered}</div>
+          <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+            {stats.remembered}
+          </div>
           <div className="text-sm text-green-600 dark:text-green-400">记住了</div>
         </div>
         <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3">
-          <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{stats.fuzzy}</div>
+          <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+            {stats.fuzzy}
+          </div>
           <div className="text-sm text-yellow-600 dark:text-yellow-400">模糊</div>
         </div>
         <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3">

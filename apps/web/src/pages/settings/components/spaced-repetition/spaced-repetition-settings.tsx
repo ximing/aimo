@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { bindServices, useService } from '@rabjs/react';
-import { BrainCircuit, Plus, Trash2, Upload, ChevronDown, Check, AlertTriangle } from 'lucide-react';
+import {
+  BrainCircuit,
+  Plus,
+  Trash2,
+  Upload,
+  ChevronDown,
+  Check,
+  AlertTriangle,
+} from 'lucide-react';
 import { SpacedRepetitionService } from './spaced-repetition.service';
 import { toast } from '../../../../services/toast.service';
 import { getCategories } from '../../../../api/category';
@@ -185,7 +193,9 @@ export const SpacedRepetitionSettings = bindServices(() => {
       async () => {
         const result = await srService.importExistingMemos();
         if (result.success) {
-          toast.success(`已导入 ${result.imported} 条笔记，跳过 ${result.skipped} 条（已在复习池或被规则排除）`);
+          toast.success(
+            `已导入 ${result.imported} 条笔记，跳过 ${result.skipped} 条（已在复习池或被规则排除）`
+          );
         } else {
           toast.error('导入失败');
         }
@@ -244,9 +254,7 @@ export const SpacedRepetitionSettings = bindServices(() => {
             onClick={handleToggle}
             disabled={savingSettings}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-60 ${
-              settings.srEnabled
-                ? 'bg-primary-600'
-                : 'bg-gray-200 dark:bg-dark-600'
+              settings.srEnabled ? 'bg-primary-600' : 'bg-gray-200 dark:bg-dark-600'
             }`}
             aria-pressed={settings.srEnabled}
           >
@@ -376,14 +384,18 @@ export const SpacedRepetitionSettings = bindServices(() => {
                     ? `选择${newRuleFilterType === 'category' ? '分类' : '标签'}...`
                     : `已选 ${selectedValues.length} 项`}
                 </span>
-                <ChevronDown className={`w-4 h-4 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`}
+                />
               </button>
 
               {/* Dropdown menu */}
               {dropdownOpen && (
                 <div className="absolute z-10 w-full mt-1 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                   {loadingOptions ? (
-                    <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">加载中...</div>
+                    <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
+                      加载中...
+                    </div>
                   ) : getOptions().length === 0 ? (
                     <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
                       暂无{newRuleFilterType === 'category' ? '分类' : '标签'}

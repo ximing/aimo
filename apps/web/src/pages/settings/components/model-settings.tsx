@@ -15,12 +15,7 @@ import {
   CheckCircle,
   AlertCircle,
 } from 'lucide-react';
-import type {
-  UserModelDto,
-  CreateUserModelDto,
-  UpdateUserModelDto,
-  LLMProvider,
-} from '@aimo/dto';
+import type { UserModelDto, CreateUserModelDto, UpdateUserModelDto, LLMProvider } from '@aimo/dto';
 
 const providerOptions: { value: LLMProvider; label: string }[] = [
   { value: 'openai', label: 'OpenAI' },

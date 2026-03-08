@@ -24,6 +24,7 @@
 **描述：** 作为开发者，我需要一张表来持久化每个用户对每个 AI 功能的模型选择。
 
 **Acceptance Criteria:**
+
 - [ ] 在 `apps/server/src/db/schema/` 下新建 `user-feature-configs.ts`，包含以下字段：
   - `id` VARCHAR(191) PRIMARY KEY
   - `userId` VARCHAR(191) NOT NULL（关联 users.uid）
@@ -43,6 +44,7 @@
 **描述：** 作为开发者，我需要一个 Service 来读写用户功能配置，并能在没有配置时提供系统默认模型信息。
 
 **Acceptance Criteria:**
+
 - [ ] 在 `apps/server/src/services/user-feature-config.service.ts` 实现 `UserFeatureConfigService`，装饰 `@Service()`
 - [ ] 提供 `getConfig(userId, feature)` → 返回 `modelId | null`
 - [ ] 提供 `setConfig(userId, feature, modelId | null)` → upsert（有则更新，无则插入）
@@ -58,6 +60,7 @@
 **描述：** 作为前端，我需要 REST API 来读取和更新用户的功能模型配置。
 
 **Acceptance Criteria:**
+
 - [ ] 在 `apps/server/src/controllers/v1/` 新建 `user-feature-config.controller.ts`
 - [ ] `GET /api/v1/user-feature-configs` → 返回当前用户所有功能的配置列表（三个功能，每个包含 feature、modelId）
 - [ ] `PUT /api/v1/user-feature-configs/:feature` → 更新指定功能的 modelId（body: `{ modelId: string | null }`）
@@ -72,6 +75,7 @@
 **描述：** 作为用户，我希望回顾模式使用我配置的模型来生成问题和评估答案。
 
 **Acceptance Criteria:**
+
 - [ ] `ReviewService` 移除 `private model: ChatOpenAI` 和构造函数中的硬编码初始化
 - [ ] 注入 `LLMService` 和 `UserFeatureConfigService`
 - [ ] `generateQuestion(content, userId)` 和 `evaluateAnswer(answer, memoContent, question, userId)` 接收 `userId` 参数
@@ -86,6 +90,7 @@
 **描述：** 作为用户，我希望 AI 探索功能使用我配置的模型来分析和生成内容。
 
 **Acceptance Criteria:**
+
 - [ ] `ExploreService` 移除构造函数中的硬编码 `ChatOpenAI` 初始化
 - [ ] 注入 `UserFeatureConfigService`
 - [ ] `explore()` 方法接收 `userId` 参数（检查现有签名，若已有则直接使用）
@@ -100,6 +105,7 @@
 **描述：** 作为用户，我希望标签生成功能使用我配置的模型。
 
 **Acceptance Criteria:**
+
 - [ ] `AIService` 移除构造函数中的硬编码 `ChatOpenAI` 初始化
 - [ ] 注入 `UserFeatureConfigService`
 - [ ] `generateTags(content, userId)` 接收 `userId` 参数
@@ -115,6 +121,7 @@
 **描述：** 作为用户，我希望在回顾功能页面能选择使用哪个模型。
 
 **Acceptance Criteria:**
+
 - [ ] 在回顾页面（`apps/web/src/pages/` 中回顾相关页面）的设置/配置区域，添加"AI 模型"下拉选择器
 - [ ] 下拉列表从 `GET /api/v1/user-models` 获取用户配置的模型列表，加上"系统默认"选项
 - [ ] 当前选中值从 `GET /api/v1/user-feature-configs` 读取
@@ -129,6 +136,7 @@
 **描述：** 作为用户，我希望在 AI 探索页面能选择使用哪个模型。
 
 **Acceptance Criteria:**
+
 - [ ] 在 AI 探索页面（`apps/web/src/pages/ai-explore/`）的设置/配置区域，添加"AI 模型"下拉选择器
 - [ ] 同 US-007，从 user-models 获取列表，读写 `explore` 功能配置
 - [ ] Typecheck 通过

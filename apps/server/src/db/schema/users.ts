@@ -1,4 +1,12 @@
-import { mysqlTable, varchar, int, bigint, timestamp, index, boolean } from 'drizzle-orm/mysql-core';
+import {
+  mysqlTable,
+  varchar,
+  int,
+  bigint,
+  timestamp,
+  index,
+  boolean,
+} from 'drizzle-orm/mysql-core';
 
 /**
  * Users table - stores user account information

@@ -95,37 +95,64 @@ export class ReviewService {
         order: i,
       });
 
-      items.push({ itemId, sessionId, memoId: memo.memoId, memoContent: memo.content, question, order: i });
+      items.push({
+        itemId,
+        sessionId,
+        memoId: memo.memoId,
+        memoContent: memo.content,
+        question,
+        order: i,
+      });
     }
 
-    return { sessionId, uid, scope, scopeValue, status: 'active', items, createdAt: new Date().toISOString() };
+    return {
+      sessionId,
+      uid,
+      scope,
+      scopeValue,
+      status: 'active',
+      items,
+      createdAt: new Date().toISOString(),
+    };
   }
 
   async getSession(uid: string, sessionId: string): Promise<ReviewSessionDto | null> {
     const db = getDatabase();
-    const [session] = await db.select().from(reviewSessions)
+    const [session] = await db
+      .select()
+      .from(reviewSessions)
       .where(and(eq(reviewSessions.sessionId, sessionId), eq(reviewSessions.uid, uid)));
     if (!session) return null;
 
-    const items = await db.select().from(reviewItems)
+    const items = await db
+      .select()
+      .from(reviewItems)
       .where(eq(reviewItems.sessionId, sessionId))
       .orderBy(reviewItems.order);
 
     return await this.toSessionDto(session, items);
   }
 
-  async submitAnswer(uid: string, sessionId: string, dto: SubmitAnswerDto): Promise<SubmitAnswerResponseDto> {
+  async submitAnswer(
+    uid: string,
+    sessionId: string,
+    dto: SubmitAnswerDto
+  ): Promise<SubmitAnswerResponseDto> {
     const db = getDatabase();
-    const [item] = await db.select().from(reviewItems)
-      .where(eq(reviewItems.itemId, dto.itemId));
+    const [item] = await db.select().from(reviewItems).where(eq(reviewItems.itemId, dto.itemId));
     if (!item || item.sessionId !== sessionId) throw new Error('Item not found');
 
     const [memo] = await db.select().from(memos).where(eq(memos.memoId, item.memoId));
     if (!memo) throw new Error('Memo not found');
 
-    const { feedback, mastery } = await this.evaluateAnswer(dto.answer, memo.content, item.question);
+    const { feedback, mastery } = await this.evaluateAnswer(
+      dto.answer,
+      memo.content,
+      item.question
+    );
 
-    await db.update(reviewItems)
+    await db
+      .update(reviewItems)
       .set({ userAnswer: dto.answer, aiFeedback: feedback, mastery })
       .where(eq(reviewItems.itemId, dto.itemId));
 
@@ -134,19 +161,21 @@ export class ReviewService {
 
   async completeSession(uid: string, sessionId: string): Promise<CompleteSessionResponseDto> {
     const db = getDatabase();
-    const items = await db.select().from(reviewItems)
-      .where(eq(reviewItems.sessionId, sessionId));
+    const items = await db.select().from(reviewItems).where(eq(reviewItems.sessionId, sessionId));
 
     const score = this.calculateScore(items);
 
-    await db.update(reviewSessions)
+    await db
+      .update(reviewSessions)
       .set({ status: 'completed', score, completedAt: new Date() })
       .where(eq(reviewSessions.sessionId, sessionId));
 
     const itemDtos = await Promise.all(
       items.map(async (i) => {
-        const [memo] = await db.select({ content: memos.content })
-          .from(memos).where(eq(memos.memoId, i.memoId));
+        const [memo] = await db
+          .select({ content: memos.content })
+          .from(memos)
+          .where(eq(memos.memoId, i.memoId));
         return {
           itemId: i.itemId,
           sessionId: i.sessionId,
@@ -166,19 +195,27 @@ export class ReviewService {
 
   async getHistory(uid: string): Promise<ReviewHistoryItemDto[]> {
     const db = getDatabase();
-    const sessions = await db.select().from(reviewSessions)
+    const sessions = await db
+      .select()
+      .from(reviewSessions)
       .where(eq(reviewSessions.uid, uid))
       .orderBy(desc(reviewSessions.createdAt))
       .limit(50);
 
     const result: ReviewHistoryItemDto[] = [];
     for (const s of sessions) {
-      const items = await db.select({ itemId: reviewItems.itemId })
-        .from(reviewItems).where(eq(reviewItems.sessionId, s.sessionId));
+      const items = await db
+        .select({ itemId: reviewItems.itemId })
+        .from(reviewItems)
+        .where(eq(reviewItems.sessionId, s.sessionId));
       result.push({
-        sessionId: s.sessionId, scope: s.scope, scopeValue: s.scopeValue ?? undefined,
-        score: s.score ?? undefined, itemCount: items.length,
-        createdAt: s.createdAt.toISOString(), completedAt: s.completedAt?.toISOString(),
+        sessionId: s.sessionId,
+        scope: s.scope,
+        scopeValue: s.scopeValue ?? undefined,
+        score: s.score ?? undefined,
+        itemCount: items.length,
+        createdAt: s.createdAt.toISOString(),
+        completedAt: s.completedAt?.toISOString(),
       });
     }
     return result;
@@ -187,11 +224,13 @@ export class ReviewService {
   // Review Profile CRUD
   async getProfiles(uid: string): Promise<ReviewProfileDto[]> {
     const db = getDatabase();
-    const profiles = await db.select().from(reviewProfiles)
+    const profiles = await db
+      .select()
+      .from(reviewProfiles)
       .where(eq(reviewProfiles.userId, uid))
       .orderBy(desc(reviewProfiles.createdAt));
 
-    return profiles.map(p => this.toProfileDto(p));
+    return profiles.map((p) => this.toProfileDto(p));
   }
 
   async createProfile(uid: string, dto: CreateReviewProfileDto): Promise<ReviewProfileDto> {
@@ -223,9 +262,15 @@ export class ReviewService {
     };
   }
 
-  async updateProfile(uid: string, profileId: string, dto: UpdateReviewProfileDto): Promise<ReviewProfileDto | null> {
+  async updateProfile(
+    uid: string,
+    profileId: string,
+    dto: UpdateReviewProfileDto
+  ): Promise<ReviewProfileDto | null> {
     const db = getDatabase();
-    const [existing] = await db.select().from(reviewProfiles)
+    const [existing] = await db
+      .select()
+      .from(reviewProfiles)
       .where(and(eq(reviewProfiles.profileId, profileId), eq(reviewProfiles.userId, uid)));
 
     if (!existing) return null;
@@ -234,12 +279,15 @@ export class ReviewService {
       updatedAt: new Date(),
     };
     if (dto.name !== undefined) updates.name = dto.name;
-    if (dto.filterRules !== undefined) updates.filterValues = dto.filterRules as unknown as string[];
+    if (dto.filterRules !== undefined)
+      updates.filterValues = dto.filterRules as unknown as string[];
     if (dto.questionCount !== undefined) updates.questionCount = dto.questionCount;
 
     await db.update(reviewProfiles).set(updates).where(eq(reviewProfiles.profileId, profileId));
 
-    const [updated] = await db.select().from(reviewProfiles)
+    const [updated] = await db
+      .select()
+      .from(reviewProfiles)
       .where(eq(reviewProfiles.profileId, profileId));
 
     return this.toProfileDto(updated);
@@ -247,7 +295,9 @@ export class ReviewService {
 
   async deleteProfile(uid: string, profileId: string): Promise<boolean> {
     const db = getDatabase();
-    const [profile] = await db.select().from(reviewProfiles)
+    const [profile] = await db
+      .select()
+      .from(reviewProfiles)
       .where(and(eq(reviewProfiles.profileId, profileId), eq(reviewProfiles.userId, uid)));
 
     if (!profile) return false;
@@ -258,7 +308,9 @@ export class ReviewService {
 
   async getProfileById(uid: string, profileId: string): Promise<ReviewProfileDto | null> {
     const db = getDatabase();
-    const [profile] = await db.select().from(reviewProfiles)
+    const [profile] = await db
+      .select()
+      .from(reviewProfiles)
       .where(and(eq(reviewProfiles.profileId, profileId), eq(reviewProfiles.userId, uid)));
 
     if (!profile) return null;
@@ -277,25 +329,29 @@ export class ReviewService {
     for (const rule of rules) {
       if (rule.type === 'category') {
         if (rule.operator === 'include') {
-          pool = pool.filter(m => m.categoryId === rule.value);
+          pool = pool.filter((m) => m.categoryId === rule.value);
         } else {
-          pool = pool.filter(m => m.categoryId !== rule.value);
+          pool = pool.filter((m) => m.categoryId !== rule.value);
         }
       } else if (rule.type === 'tag') {
         if (rule.operator === 'include') {
-          pool = pool.filter(m => m.tags?.some(t => t.name === rule.value || t.tagId === rule.value));
+          pool = pool.filter((m) =>
+            m.tags?.some((t) => t.name === rule.value || t.tagId === rule.value)
+          );
         } else {
-          pool = pool.filter(m => !m.tags?.some(t => t.name === rule.value || t.tagId === rule.value));
+          pool = pool.filter(
+            (m) => !m.tags?.some((t) => t.name === rule.value || t.tagId === rule.value)
+          );
         }
       } else if (rule.type === 'recent_days') {
         const days = parseInt(rule.value, 10) || 7;
         const cutoff = Date.now() - days * 86400000;
-        pool = pool.filter(m => m.createdAt >= cutoff);
+        pool = pool.filter((m) => m.createdAt >= cutoff);
       } else if (rule.type === 'date_range') {
         const [startISO, endISO] = rule.value.split(',');
         const start = startISO ? new Date(startISO).getTime() : 0;
         const end = endISO ? new Date(endISO).getTime() : Infinity;
-        pool = pool.filter(m => m.createdAt >= start && m.createdAt <= end);
+        pool = pool.filter((m) => m.createdAt >= start && m.createdAt <= end);
       }
     }
 
@@ -308,7 +364,12 @@ export class ReviewService {
   }
 
   /** Legacy scope-based memo selection (for sessions created without a profile). */
-  private async selectMemosByScope(uid: string, scope: string, scopeValue?: string, count: number = 7) {
+  private async selectMemosByScope(
+    uid: string,
+    scope: string,
+    scopeValue?: string,
+    count: number = 7
+  ) {
     const options = { uid, limit: 50, page: 1 } as any;
 
     if (scope === 'category' && scopeValue) {
@@ -358,16 +419,31 @@ export class ReviewService {
   private async generateQuestion(content: string): Promise<string> {
     const truncated = content.slice(0, 1000);
     const response = await this.model.invoke([
-      { role: 'system', content: '你是一个知识回顾助手。根据笔记内容，生成一个简洁的问题来测试用户是否记得这条笔记的核心内容。问题应该是开放性的，用中文，不超过50字。只输出问题本身，不要加任何前缀。' },
+      {
+        role: 'system',
+        content:
+          '你是一个知识回顾助手。根据笔记内容，生成一个简洁的问题来测试用户是否记得这条笔记的核心内容。问题应该是开放性的，用中文，不超过50字。只输出问题本身，不要加任何前缀。',
+      },
       { role: 'user', content: `笔记内容：${truncated}` },
     ]);
     return response.content as string;
   }
 
-  private async evaluateAnswer(answer: string, memoContent: string, question: string): Promise<{ feedback: string; mastery: MasteryLevel }> {
+  private async evaluateAnswer(
+    answer: string,
+    memoContent: string,
+    question: string
+  ): Promise<{ feedback: string; mastery: MasteryLevel }> {
     const response = await this.model.invoke([
-      { role: 'system', content: '你是一个知识回顾评估助手。对比用户的回答和原始笔记，评估掌握程度并给出反馈。\n\n输出格式（严格JSON）：{"mastery": "remembered"|"fuzzy"|"forgot", "feedback": "评估反馈文字"}\n\n评估标准：remembered=核心内容都答对了；fuzzy=部分正确但有遗漏；forgot=基本没答对或没回答' },
-      { role: 'user', content: `问题：${question}\n\n用户回答：${answer}\n\n原始笔记：${memoContent.slice(0, 1000)}` },
+      {
+        role: 'system',
+        content:
+          '你是一个知识回顾评估助手。对比用户的回答和原始笔记，评估掌握程度并给出反馈。\n\n输出格式（严格JSON）：{"mastery": "remembered"|"fuzzy"|"forgot", "feedback": "评估反馈文字"}\n\n评估标准：remembered=核心内容都答对了；fuzzy=部分正确但有遗漏；forgot=基本没答对或没回答',
+      },
+      {
+        role: 'user',
+        content: `问题：${question}\n\n用户回答：${answer}\n\n原始笔记：${memoContent.slice(0, 1000)}`,
+      },
     ]);
     try {
       const parsed = JSON.parse(response.content as string);
@@ -390,8 +466,10 @@ export class ReviewService {
     const db = getDatabase();
     const itemsWithContent = await Promise.all(
       items.map(async (i) => {
-        const [memo] = await db.select({ content: memos.content })
-          .from(memos).where(eq(memos.memoId, i.memoId));
+        const [memo] = await db
+          .select({ content: memos.content })
+          .from(memos)
+          .where(eq(memos.memoId, i.memoId));
         return {
           itemId: i.itemId,
           sessionId: i.sessionId,

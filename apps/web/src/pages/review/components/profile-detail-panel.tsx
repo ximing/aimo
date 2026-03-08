@@ -72,7 +72,10 @@ const ProfileDetailPanelContent = () => {
       label = `${addingDateStart} ~ ${addingDateEnd}`;
     }
     if (!value) return;
-    service.updateDetailRules([...service.detailRules, { type: addingType, operator: addingOperator, value, label }]);
+    service.updateDetailRules([
+      ...service.detailRules,
+      { type: addingType, operator: addingOperator, value, label },
+    ]);
     setAddingValue('');
     setAddingDateStart('');
     setAddingDateEnd('');

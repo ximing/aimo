@@ -41,10 +41,7 @@ describe('ReviewService', () => {
 
   describe('calculateScore', () => {
     it('returns 100 when all items remembered', () => {
-      const items = [
-        { mastery: 'remembered' },
-        { mastery: 'remembered' },
-      ];
+      const items = [{ mastery: 'remembered' }, { mastery: 'remembered' }];
       // Access private method via (service as any).calculateScore
       const score = (service as any).calculateScore(items);
       expect(score).toBe(100);

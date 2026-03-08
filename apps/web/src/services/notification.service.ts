@@ -40,7 +40,7 @@ export class NotificationService extends Service {
       const res = await notificationApi.markAsRead(notificationId);
       if (res.code === 0) {
         // Update local state
-        const notification = this.notifications.find(n => n.notificationId === notificationId);
+        const notification = this.notifications.find((n) => n.notificationId === notificationId);
         if (notification && !notification.isRead) {
           notification.isRead = true;
           this.unreadCount = Math.max(0, this.unreadCount - 1);

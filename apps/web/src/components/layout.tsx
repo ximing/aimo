@@ -234,7 +234,9 @@ export const Layout = view(({ children }: LayoutProps) => {
                 <div className="px-4 py-3 border-b border-gray-200 dark:border-dark-700 flex items-center justify-between">
                   <p className="font-medium text-gray-900 dark:text-white text-sm">通知</p>
                   {notificationService.unreadCount > 0 && (
-                    <span className="text-xs text-red-500">{notificationService.unreadCount} 未读</span>
+                    <span className="text-xs text-red-500">
+                      {notificationService.unreadCount} 未读
+                    </span>
                   )}
                 </div>
                 <div className="overflow-y-auto max-h-80">

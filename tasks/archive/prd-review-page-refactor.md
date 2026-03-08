@@ -19,6 +19,7 @@
 **Description:** As a user, I want to see a prominent tab bar at the top of the review page so that I can clearly switch between AI Review and Spaced Repetition modes.
 
 **Acceptance Criteria:**
+
 - [ ] 页面顶部有两个大 Tab：「AI 回顾」和「间隔重复」
 - [ ] Tab 样式醒目，选中状态与未选中状态有明显视觉区别
 - [ ] 切换 Tab 时页面内容区域完全替换（不共用布局）
@@ -33,6 +34,7 @@
 **Description:** As a user, I want the AI review mode to use a left-right layout so that I can manage profiles and history on the left while the review session is on the right.
 
 **Acceptance Criteria:**
+
 - [ ] AI 回顾 Tab 下，页面分为左侧面板（约 280px 固定宽度）和右侧内容区
 - [ ] 左侧面板上半部分：「回顾模式」区域，显示已保存的模式列表
 - [ ] 左侧面板下半部分：「历史记录」区域，显示过往回顾会话列表
@@ -49,6 +51,7 @@
 **Description:** As a user, I want to see my saved review profiles in the left panel so that I can quickly start a review session or manage my profiles.
 
 **Acceptance Criteria:**
+
 - [ ] 左侧「回顾模式」区域顶部有「新建模式」按钮（带 `+` 图标）
 - [ ] 已保存的模式以卡片或列表项形式展示，每项显示：模式名称、范围描述（如「全部笔记」「按分类: 工作」）、题目数量
 - [ ] 每个模式项有「开始」按钮（Play 图标），点击后直接以该模式创建并进入回顾会话
@@ -65,6 +68,7 @@
 **Description:** As a user, I want a modal dialog to create and save a new review profile so that I can configure and reuse custom review settings.
 
 **Acceptance Criteria:**
+
 - [ ] 点击「新建模式」按钮，弹出对话框（Modal）
 - [ ] 弹窗包含以下字段：
   - 模式名称（文本输入，必填）
@@ -88,6 +92,7 @@
 **Description:** As a user, I want to see my past review sessions in the left panel history section so that I can review my progress.
 
 **Acceptance Criteria:**
+
 - [ ] 左侧「历史记录」区域展示过往会话列表（调用 `GET /api/v1/review/history`）
 - [ ] 每条历史项显示：日期时间（相对时间格式，如「2小时前」）、得分（如「85分」）、状态（已完成/进行中）
 - [ ] 点击某条历史记录，右侧内容区加载该会话详情（已完成的进入 summary 步骤，进行中的恢复 quiz 步骤）
@@ -104,6 +109,7 @@
 **Description:** As a user, I want to review my due spaced repetition cards with a flip-card interaction so that I can practice recall and let the system schedule my next review.
 
 **Acceptance Criteria:**
+
 - [ ] 切换到「间隔重复」Tab 后，调用 `GET /api/v1/spaced-repetition/due` 获取今日到期卡片
 - [ ] 若今日无到期卡片，显示空状态页面：「今日无需复习，继续保持！」并显示下次复习时间（如果可获取）
 - [ ] 若有到期卡片，显示进度指示器：「第 X / Y 张」
@@ -122,6 +128,7 @@
 **Description:** As a user, when there are no due cards today, I want to see helpful information and an option to import existing memos so that I can get started with spaced repetition.
 
 **Acceptance Criteria:**
+
 - [ ] 无到期卡片时，显示空状态界面（不显示卡片区域）
 - [ ] 若用户从未导入笔记（卡片总数为 0），显示「导入现有笔记」按钮，点击后调用 `POST /api/v1/spaced-repetition/import-existing`，导入完成后显示导入数量提示
 - [ ] 若已有卡片但今日无到期，显示鼓励文案和今日完成复习的提示
@@ -153,22 +160,26 @@
 ## Design Considerations
 
 ### 顶部 Tab 样式
+
 - 使用较大的 Tab 按钮（不是小型 pill tabs），类似页面级导航
 - 选中状态：深色背景或底部粗下划线
 - 图标：AI 回顾用 `BrainCircuit`，间隔重复用 `Clock`
 
 ### AI 回顾左侧面板
+
 - 左侧面板背景色略深于右侧（如 `bg-gray-50` vs `bg-white`）
 - 「回顾模式」区域固定高度约 40%，超出时内部滚动
 - 「历史记录」区域占剩余高度，超出时内部滚动
 
 ### 间隔重复翻卡片
+
 - 卡片居中显示，宽度约 600px，高度约 400px
 - 正面：白色背景，显示笔记标题（大字）+ 内容摘要
 - 背面：浅蓝色背景，显示完整内容
 - 翻转动画：0.4s ease-in-out
 
 ### 现有组件复用
+
 - 复用现有的 `formatRelativeTime` 工具函数
 - 复用现有的 `scopeLabels` 映射
 - 复用现有的 mastery 图标逻辑（CheckCircle / Circle / XCircle）

@@ -128,6 +128,7 @@ Each file contains:
    ```
 
 3. **Post-deployment validation**:
+
    ```bash
    pnpm validate:data --mode=post
    ```

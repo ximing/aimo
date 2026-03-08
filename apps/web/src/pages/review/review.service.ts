@@ -7,6 +7,8 @@ import type {
   ReviewItemDto,
   ReviewProfileDto,
   ProfileFilterRule,
+  CategoryDto,
+  TagDto,
 } from '@aimo/dto';
 import type { SRCard } from '../../api/spaced-repetition';
 import * as reviewApi from '../../api/review';
@@ -93,7 +95,7 @@ export class ReviewService extends Service {
   }
 
   get answeredCount(): number {
-    return this.session?.items.filter(item => item.mastery !== undefined).length || 0;
+    return this.session?.items.filter((item) => item.mastery !== undefined).length || 0;
   }
 
   get totalCount(): number {
@@ -106,11 +108,7 @@ export class ReviewService extends Service {
    * Initialize service - load initial data
    */
   async initialize(): Promise<void> {
-    await Promise.all([
-      this.loadHistory(),
-      this.loadProfiles(),
-      this.loadCategoriesAndTags(),
-    ]);
+    await Promise.all([this.loadHistory(), this.loadProfiles(), this.loadCategoriesAndTags()]);
     await this.restoreSession();
   }
 
@@ -163,7 +161,7 @@ export class ReviewService extends Service {
     try {
       const res = await reviewApi.getReviewSession(sessionId);
       if (res.code === 0 && res.data) {
-        const firstUnanswered = res.data.items.findIndex(item => item.mastery === undefined);
+        const firstUnanswered = res.data.items.findIndex((item) => item.mastery === undefined);
         if (res.data.status === 'completed') {
           this.session = res.data;
           this.step = 'summary';
@@ -202,7 +200,7 @@ export class ReviewService extends Service {
     try {
       const res = await reviewApi.getReviewSession(savedSessionId);
       if (res.code === 0 && res.data) {
-        const firstUnanswered = res.data.items.findIndex(item => item.mastery === undefined);
+        const firstUnanswered = res.data.items.findIndex((item) => item.mastery === undefined);
         if (res.data.status === 'completed') {
           this.session = res.data;
           this.step = 'summary';
@@ -246,18 +244,15 @@ export class ReviewService extends Service {
 
   async loadCategoriesAndTags(): Promise<void> {
     try {
-      const [catRes, tagRes] = await Promise.all([
-        categoryApi.getCategories(),
-        tagApi.getTags(),
-      ]);
+      const [catRes, tagRes] = await Promise.all([categoryApi.getCategories(), tagApi.getTags()]);
       if (catRes.code === 0) {
-        this.categories = (catRes.data?.categories || []).map((c: any) => ({
+        this.categories = (catRes.data?.categories || []).map((c: CategoryDto) => ({
           id: c.categoryId,
           name: c.name,
         }));
       }
       if (tagRes.code === 0) {
-        this.tags = (tagRes.data?.tags || []).map((t: any) => ({
+        this.tags = (tagRes.data?.tags || []).map((t: TagDto) => ({
           id: t.tagId,
           name: t.name,
         }));
@@ -326,7 +321,7 @@ export class ReviewService extends Service {
           questionCount: this.detailQuestionCount,
         });
         if (res.code === 0) {
-          this.profiles = this.profiles.map(p =>
+          this.profiles = this.profiles.map((p) =>
             p.profileId === this.detailMode ? res.data : p
           );
           this.detailDirty = false;
@@ -347,7 +342,7 @@ export class ReviewService extends Service {
     try {
       const res = await reviewApi.deleteReviewProfile(profileId);
       if (res.code === 0) {
-        this.profiles = this.profiles.filter(p => p.profileId !== profileId);
+        this.profiles = this.profiles.filter((p) => p.profileId !== profileId);
         if (this.detailMode === profileId) {
           this.detailMode = 'none';
         }
@@ -358,8 +353,7 @@ export class ReviewService extends Service {
   }
 
   async startWithDetail(): Promise<void> {
-    let profileId: string | null =
-      this.detailMode === 'new' ? null : this.detailMode;
+    let profileId: string | null = this.detailMode === 'new' ? null : this.detailMode;
 
     if (this.detailMode === 'new' || this.detailDirty) {
       profileId = await this.saveDetail();
@@ -389,6 +383,10 @@ export class ReviewService extends Service {
     } finally {
       this.loading = false;
     }
+  }
+
+  setAnswer(value: string): void {
+    this.answer = value;
   }
 
   async submitAnswer(skipAnswer = false): Promise<void> {
@@ -499,10 +497,7 @@ export class ReviewService extends Service {
     this.srStats = { mastered: 0, remembered: 0, fuzzy: 0, forgot: 0 };
 
     try {
-      const [dueRes, statsRes] = await Promise.all([
-        srApi.getDueCards(),
-        srApi.getSRStats(),
-      ]);
+      const [dueRes, statsRes] = await Promise.all([srApi.getDueCards(), srApi.getSRStats()]);
 
       if (dueRes.code === 0 && dueRes.data?.cards) {
         if (statsRes.code === 0 && statsRes.data) {

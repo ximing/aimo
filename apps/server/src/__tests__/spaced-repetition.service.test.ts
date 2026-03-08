@@ -10,7 +10,10 @@ jest.mock('../config/config.js', () => ({
   },
 }));
 
-import { SpacedRepetitionService, MAX_INTERVAL_DAYS } from '../services/spaced-repetition.service.js';
+import {
+  SpacedRepetitionService,
+  MAX_INTERVAL_DAYS,
+} from '../services/spaced-repetition.service.js';
 
 describe('SpacedRepetitionService', () => {
   let service: SpacedRepetitionService;

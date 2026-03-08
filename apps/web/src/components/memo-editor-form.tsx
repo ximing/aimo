@@ -1,4 +1,12 @@
-import { Fragment, useState, useRef, useEffect, useMemo, forwardRef, useImperativeHandle } from 'react';
+import {
+  Fragment,
+  useState,
+  useRef,
+  useEffect,
+  useMemo,
+  forwardRef,
+  useImperativeHandle,
+} from 'react';
 import { view, useService } from '@rabjs/react';
 import { Dialog, Transition } from '@headlessui/react';
 import { MemoService } from '../services/memo.service';
@@ -1403,11 +1411,7 @@ export const MemoEditorForm = view(
 
           {/* 草稿恢复确认对话框 */}
           <Transition appear show={showDraftRestoreModal} as={Fragment}>
-            <Dialog
-              as="div"
-              className="relative z-50"
-              onClose={handleDraftDiscard}
-            >
+            <Dialog as="div" className="relative z-50" onClose={handleDraftDiscard}>
               {/* Backdrop */}
               <Transition.Child
                 as={Fragment}

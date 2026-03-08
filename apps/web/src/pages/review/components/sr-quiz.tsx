@@ -54,7 +54,8 @@ const SRQuizContent = () => {
         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-3">
           <p className="text-sm text-blue-700 dark:text-blue-300">
             今日已加载 <span className="font-medium">{service.srDailyLimit}</span> 张，还有{' '}
-            <span className="font-medium">{service.srTotalDue - service.srDailyLimit}</span> 张待复习
+            <span className="font-medium">{service.srTotalDue - service.srDailyLimit}</span>{' '}
+            张待复习
           </p>
         </div>
       )}
