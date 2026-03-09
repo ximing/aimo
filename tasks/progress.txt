@@ -54,3 +54,22 @@ Files changed:
   - For debounce in React, use useRef or useMemo to store the timer and clear it properly
   - Date inputs return YYYY-MM-DD string, need to convert to timestamp using new Date().getTime()
 
+## 2026-03-09 - US-005, US-006, US-007, US-008
+- Verified and fixed frontend trash feature implementation
+- Fixed user-menu.tsx to use lucide-react Trash2 icon instead of inline SVG
+- Verified all acceptance criteria are met:
+  - US-005: Trash menu entry with Trash2 icon, navigate to /trash, close menu
+  - US-006: Trash page with Layout, title, memo list, loading state, empty state
+  - US-007: Restore and permanently delete buttons with confirm dialogs
+  - US-008: Search (500ms debounce), sort, date filter, clear filters
+- Build passes (both server and web)
+- Lint passes (only warnings, no errors)
+- Tests pass (5 test suites, 36 tests)
+
+Files changed:
+- apps/web/src/pages/home/components/user-menu.tsx (fixed Trash2 icon import)
+
+**Learnings for future iterations:**
+  - All frontend trash features were already implemented - just needed icon fix
+  - The acceptance criteria specifically requested lucide-react icons, not inline SVGs
+
