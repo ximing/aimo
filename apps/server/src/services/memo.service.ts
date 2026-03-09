@@ -592,6 +592,66 @@ export class MemoService {
   }
 
   /**
+   * Restore a memo from trash (set deletedAt to 0)
+   * @returns 'not_found' if memo doesn't exist or doesn't belong to user
+   * @returns 'not_deleted' if memo is not in trash
+   * @returns 'success' if restore was successful
+   */
+  async restoreMemo(
+    memoId: string,
+    uid: string
+  ): Promise<'not_found' | 'not_deleted' | 'success'> {
+    try {
+      const db = getDatabase();
+
+      // First, check if the memo exists and belongs to the user
+      const existingMemo = await db
+        .select()
+        .from(memos)
+        .where(and(eq(memos.memoId, memoId), eq(memos.uid, uid)))
+        .limit(1);
+
+      if (existingMemo.length === 0) {
+        return 'not_found';
+      }
+
+      const memo = existingMemo[0];
+
+      // Check if the memo is actually deleted
+      if (memo.deletedAt === 0n) {
+        return 'not_deleted';
+      }
+
+      // Restore memo in MySQL (set deletedAt to 0)
+      await withTransaction(async (tx) => {
+        await tx
+          .update(memos)
+          .set({ deletedAt: 0n })
+          .where(and(eq(memos.memoId, memoId), eq(memos.uid, uid)));
+
+        // Restore memo_relations where both memos are now not deleted
+        await this.memoRelationService.restoreRelationsByMemo(uid, memoId, tx);
+
+        logger.info('Memo restored in MySQL:', { memoId, uid });
+      });
+
+      // Restore memo in LanceDB
+      const memosTable = await this.openMemosTable();
+      await memosTable.update({
+        where: `memoId = '${memoId}'`,
+        values: { deletedAt: 0 },
+      });
+
+      logger.info('Memo restored in LanceDB:', { memoId });
+
+      return 'success';
+    } catch (error) {
+      logger.error('Error restoring memo:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get new memos created/updated after a reference memo
    * Used for polling to detect new memos
    */

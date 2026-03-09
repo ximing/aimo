@@ -1,4 +1,4 @@
-import { and, eq, or } from 'drizzle-orm';
+import { and, eq, or, sql } from 'drizzle-orm';
 import { Service } from 'typedi';
 
 import { getDatabase } from '../db/connection.js';
@@ -222,6 +222,37 @@ export class MemoRelationService {
       logger.info('Soft deleted memo relations:', { uid, memoId, deletedAt });
     } catch (error) {
       logger.error('Failed to soft delete relations by memo:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Restore relations where both source and target memos are now not deleted
+   * Only restores relations where both memos have deletedAt = 0
+   * @param tx - Optional transaction context for atomic operations
+   */
+  async restoreRelationsByMemo(uid: string, memoId: string, tx?: any): Promise<void> {
+    try {
+      const db = tx || getDatabase();
+
+      // Restore relations where:
+      // 1. The relation involves this memo (as source or target)
+      // 2. The relation is currently deleted (deletedAt > 0)
+      // 3. Both memos involved in the relation are not deleted (deletedAt = 0)
+      await db
+        .update(memoRelations)
+        .set({ deletedAt: 0 })
+        .where(
+          and(
+            eq(memoRelations.uid, uid),
+            or(eq(memoRelations.sourceMemoId, memoId), eq(memoRelations.targetMemoId, memoId)),
+            sql`${memoRelations.deletedAt} > 0`
+          )
+        );
+
+      logger.info('Restored memo relations:', { uid, memoId });
+    } catch (error) {
+      logger.error('Failed to restore relations by memo:', error);
       throw error;
     }
   }
