@@ -1,9 +1,17 @@
 import { app, ipcMain, safeStorage } from 'electron';
+import Store from 'electron-store';
 
 import { checkForUpdates, downloadUpdate, installUpdate } from './updater';
 
-// In-memory token storage (encrypted with safeStorage)
-let encryptedToken: string | null = null;
+interface AuthStore {
+  encryptedToken: string | null;
+}
+
+// Persistent store for encrypted token (survives app restarts)
+const authStore = new Store<AuthStore>({
+  name: 'auth',
+  defaults: { encryptedToken: null },
+});
 
 export function registerIpcHandlers(): void {
   ipcMain.handle('log-preload', (_event, data) => {
@@ -11,19 +19,17 @@ export function registerIpcHandlers(): void {
     return { success: true };
   });
 
-  // Secure storage for auth token (uses OS-level encryption)
+  // Secure storage for auth token (uses OS-level encryption + persistent file storage)
   ipcMain.handle('secure-store-set', (_event, { key, value }: { key: string; value: string }) => {
     try {
       if (key === 'auth_token') {
-        // Encrypt the token using OS-level encryption
         if (safeStorage.isEncryptionAvailable()) {
           const encrypted = safeStorage.encryptString(value);
-          encryptedToken = encrypted.toString('base64');
+          authStore.set('encryptedToken', encrypted.toString('base64'));
           return { success: true };
         } else {
-          // Fallback to plaintext if encryption is not available (rare)
           console.warn('safeStorage encryption not available, using plaintext storage');
-          encryptedToken = value;
+          authStore.set('encryptedToken', value);
           return { success: true, warning: 'encryption_not_available' };
         }
       }
@@ -36,15 +42,16 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('secure-store-get', (_event, { key }: { key: string }) => {
     try {
-      if (key === 'auth_token' && encryptedToken) {
+      if (key === 'auth_token') {
+        const stored = authStore.get('encryptedToken');
+        if (!stored) return { success: true, value: null };
+
         if (safeStorage.isEncryptionAvailable()) {
-          // Decrypt the token
-          const buffer = Buffer.from(encryptedToken, 'base64');
+          const buffer = Buffer.from(stored, 'base64');
           const decrypted = safeStorage.decryptString(buffer);
           return { success: true, value: decrypted };
         } else {
-          // Return plaintext if encryption was not available when storing
-          return { success: true, value: encryptedToken };
+          return { success: true, value: stored };
         }
       }
       return { success: true, value: null };
@@ -57,7 +64,7 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('secure-store-delete', (_event, { key }: { key: string }) => {
     try {
       if (key === 'auth_token') {
-        encryptedToken = null;
+        authStore.set('encryptedToken', null);
         return { success: true };
       }
       return { success: false, error: 'Unknown key' };

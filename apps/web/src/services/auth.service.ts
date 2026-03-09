@@ -9,7 +9,7 @@ import type {
 import * as authApi from '../api/auth';
 import * as userApi from '../api/user';
 import { isElectron } from '../electron/isElectron';
-import { setElectronToken, clearElectronToken } from '../utils/request';
+import { setElectronToken, clearElectronToken, resolveTokenReady } from '../utils/request';
 
 /**
  * Authentication Service
@@ -22,16 +22,27 @@ export class AuthService extends Service {
   user: UserInfoDto | null = null;
   isAuthenticated = false;
 
+  // Promise that resolves once token is loaded (Electron only)
+  private tokenReadyPromise: Promise<void> | null = null;
+
   constructor() {
     super();
-    // Load auth state from localStorage on init
-    this.loadAuthState();
+    this.tokenReadyPromise = this.loadAuthState();
   }
 
   /**
-   * Load authentication state from localStorage
+   * Wait until the auth token has been loaded from secure storage.
+   * Resolves immediately in browser environments.
    */
-  loadAuthState() {
+  waitForToken(): Promise<void> {
+    return this.tokenReadyPromise ?? Promise.resolve();
+  }
+
+  /**
+   * Load authentication state from localStorage and, in Electron, restore
+   * the token from secure storage so requests can include the Authorization header.
+   */
+  async loadAuthState(): Promise<void> {
     const savedUser = localStorage.getItem('aimo_user');
 
     if (savedUser) {
@@ -40,7 +51,29 @@ export class AuthService extends Service {
         this.isAuthenticated = true;
       } catch (error) {
         console.error('Failed to parse saved user data:', error);
-        this.clearAuthState();
+        await this.clearAuthState();
+        return;
+      }
+    }
+
+    // In Electron, restore token from persistent secure storage into memory cache
+    if (isElectron()) {
+      try {
+        const result = await window.electronAPI?.secureStoreGet('auth_token');
+        if (result?.success && result.value) {
+          // setElectronToken resolves the tokenReadyPromise internally
+          setElectronToken(result.value);
+        } else {
+          // No token stored — resolve the gate so requests aren't blocked
+          resolveTokenReady();
+          if (this.isAuthenticated) {
+            await this.clearAuthState();
+          }
+        }
+      } catch (error) {
+        console.error('Failed to restore token from secure storage:', error);
+        resolveTokenReady();
+        await this.clearAuthState();
       }
     }
   }

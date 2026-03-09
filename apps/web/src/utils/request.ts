@@ -7,6 +7,12 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/';
 // Cached token for Electron environment (loaded once after login)
 let cachedElectronToken: string | null = null;
 
+// Promise that resolves when the token has been loaded from secure storage
+let tokenReadyResolve: (() => void) | null = null;
+let tokenReadyPromise: Promise<void> = new Promise((resolve) => {
+  tokenReadyResolve = resolve;
+});
+
 /**
  * Check if running in Electron environment
  */
@@ -15,10 +21,26 @@ function isElectron(): boolean {
 }
 
 /**
- * Set cached token (called after login)
+ * Set cached token (called after login or on startup token restore)
  */
 export function setElectronToken(token: string | null): void {
   cachedElectronToken = token;
+  // Mark token as ready so queued requests can proceed
+  if (tokenReadyResolve) {
+    tokenReadyResolve();
+    tokenReadyResolve = null;
+  }
+}
+
+/**
+ * Signal that token loading is complete with no token (not logged in).
+ * Allows queued requests to proceed and return 401 naturally.
+ */
+export function resolveTokenReady(): void {
+  if (tokenReadyResolve) {
+    tokenReadyResolve();
+    tokenReadyResolve = null;
+  }
 }
 
 /**
@@ -26,6 +48,10 @@ export function setElectronToken(token: string | null): void {
  */
 export function clearElectronToken(): void {
   cachedElectronToken = null;
+  // Reset the ready gate so the next login will re-arm it
+  tokenReadyPromise = new Promise((resolve) => {
+    tokenReadyResolve = resolve;
+  });
 }
 
 /**
@@ -49,14 +75,15 @@ const request: AxiosInstance = axios.create({
 
 /**
  * Request interceptor
- * Serialize Date objects to timestamps
+ * In Electron: wait for token to be loaded from secure storage before sending.
+ * Serialize Date objects to timestamps.
  */
 request.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    // Token is handled by HTTP Only Cookie, no need to add Authorization header manually
-    // However, for Electron environment (file:// protocol), cookies don't work
-    // So we need to add token from localStorage manually
+  async (config: InternalAxiosRequestConfig) => {
     if (isElectron()) {
+      // Block until the token has been loaded (or determined to be absent)
+      await tokenReadyPromise;
+
       const token = getElectronToken();
       if (token) {
         config.headers.set('Authorization', `Bearer ${token}`);
