@@ -1,187 +1,149 @@
 {
   "project": "AIMO",
-  "branchName": "ralph/ai-feature-model-selection",
-  "description": "AI 功能模型选择配置 - 允许用户为 AI 探索、AI 回顾 Profile、智能生成 Tag 分别指定使用哪个大模型，未配置时回退系统环境变量默认模型",
+  "branchName": "ralph/trash",
+  "description": "回收站功能 - 在用户弹窗中新增回收站入口，进入独立页面查看已删除 memo，支持还原、永久删除、关键词搜索和时间过滤",
   "userStories": [
     {
       "id": "US-001",
-      "title": "review_profiles 表新增 userModelId 字段",
-      "description": "作为开发者，我需要在 review_profiles 表中存储每个 Profile 绑定的模型 ID，以便 AI 回顾功能使用对应模型。",
+      "title": "后端 - 获取回收站 memo 列表接口",
+      "description": "As a developer, I need a backend API to fetch deleted memos for the current user so that the trash page can display them.",
       "acceptanceCriteria": [
-        "在 apps/server/src/db/schema/ 中找到 review_profiles 相关 schema 文件，新增字段 userModelId VARCHAR(191) NULL DEFAULT NULL",
-        "pnpm build 后执行 pnpm migrate:generate 生成迁移文件，SQL 包含 ALTER TABLE 添加 userModelId 列",
-        "现有 review_profiles 数据迁移后 userModelId 为 NULL，不影响已有数据",
+        "新增 TrashController 文件 apps/server/src/controllers/v1/trash.controller.ts，注册路由 GET /api/v1/trash",
+        "接口返回当前用户所有 deletedAt > 0 的 memo 列表，字段包含：memoId, content, deletedAt, createdAt, attachments, tagIds",
+        "支持 keyword 查询参数，对 content 字段进行 LIKE 模糊搜索",
+        "支持 sortBy 查询参数：deletedAt_desc（默认，最新删除在前）、deletedAt_asc",
+        "支持 startDate / endDate 查询参数（Unix 毫秒时间戳），按 deletedAt 范围过滤",
+        "支持分页：page（默认 1）、pageSize（默认 20），返回结构包含 list 和 total",
+        "只返回当前登录用户（@CurrentUser()）自己的已删除 memo",
         "Typecheck passes"
       ],
       "priority": 1,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-002",
-      "title": "新建 user_feature_configs 表（用于 Tag 生成模型设置）",
-      "description": "作为开发者，我需要一张表来持久化用户对 Tag 智能生成功能的模型选择偏好。",
+      "title": "后端 - 还原 memo 接口",
+      "description": "As a developer, I need a backend API to restore a deleted memo so that users can undo accidental deletions.",
       "acceptanceCriteria": [
-        "在 apps/server/src/db/schema/ 下新建 user-feature-configs.ts，包含字段：id VARCHAR(191) PRIMARY KEY、userId VARCHAR(191) NOT NULL、feature VARCHAR(50) NOT NULL、userModelId VARCHAR(191) NULL、createdAt TIMESTAMP、updatedAt TIMESTAMP",
-        "在 (userId, feature) 上建唯一索引",
-        "从 apps/server/src/db/schema/index.ts 导出新 schema",
-        "pnpm build 后 pnpm migrate:generate 生成包含新表的迁移文件",
+        "在 TrashController 中新增 POST /api/v1/trash/:memoId/restore 端点",
+        "将指定 memo 的 deletedAt 重置为 0（使用 Drizzle update）",
+        "同时在 LanceDB 中将该 memo 的 deletedAt 重置为 0（参考 memo.service.ts 中 deleteMemo 的 LanceDB 操作模式）",
+        "同时还原 memo_relations：将涉及该 memoId 且双端 memo 的 deletedAt 均为 0 的关系记录的 deletedAt 重置为 0",
+        "如果 memo 不存在或不属于当前用户，返回 404 错误",
+        "如果 memo 未被删除（deletedAt = 0），返回 400 错误",
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-003",
-      "title": "更新 ReviewProfile DTO 新增 userModelId 字段",
-      "description": "作为开发者，我需要 ReviewProfileDto 包含 userModelId 字段，以便前后端传递模型配置。",
+      "title": "后端 - 永久删除 memo 接口",
+      "description": "As a developer, I need a backend API to permanently delete a memo from the database so that users can free up storage and remove sensitive data.",
       "acceptanceCriteria": [
-        "在 packages/dto/src/ 中找到 ReviewProfileDto（或 review 相关 DTO 文件），新增可选字段 userModelId?: string | null",
-        "CreateReviewProfileDto 和 UpdateReviewProfileDto（若存在）同样新增可选字段 userModelId?: string | null",
-        "pnpm --filter @aimo/dto build 构建成功",
+        "在 TrashController 中新增 DELETE /api/v1/trash/:memoId 端点",
+        "如果 memo 未被删除（deletedAt = 0），返回 400 错误，防止误删正常 memo",
+        "如果 memo 不存在或不属于当前用户，返回 404 错误",
+        "使用事务从 MySQL memos 表中物理删除该行",
+        "同时物理删除 memo_relations 表中所有涉及该 memoId 的记录（sourceMemoId 或 targetMemoId 匹配）",
+        "从 LanceDB 中物理删除该 memo 的向量记录",
+        "调用 AttachmentService 删除该 memo 的附件文件（attachments 字段中的所有文件）",
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-004",
-      "title": "后端新增 getModelClient 工具方法",
-      "description": "作为开发者，我需要一个通用方法，根据可选的 userModelId 动态构建 ChatOpenAI 实例，未指定时使用系统默认配置。",
+      "title": "前端 - 回收站 API 封装与 TrashService",
+      "description": "As a developer, I need frontend API functions and a reactive service to manage trash page state so that UI components can communicate with the backend.",
       "acceptanceCriteria": [
-        "在 apps/server/src/services/ 下新建 model-client.helper.ts（或在合适位置），导出函数 getModelClient(db: Database, userId: string, userModelId?: string | null): Promise<ChatOpenAI>",
-        "当 userModelId 非空时：从 user_models 表查询对应记录，校验 userId 匹配，若不存在或不属于该用户则抛出错误；使用查询到的 apiKey、apiBaseUrl、modelName 构建 ChatOpenAI 实例",
-        "当 userModelId 为空或 null 时：使用 config.openai.apiKey、config.openai.baseURL、config.openai.model 构建 ChatOpenAI 实例",
+        "在 apps/web/src/api/ 新增 trash.ts，封装三个函数：getTrashMemos(params: { keyword?, sortBy?, startDate?, endDate?, page?, pageSize? })、restoreMemo(memoId: string)、permanentlyDeleteMemo(memoId: string)，所有函数有正确的 TypeScript 类型",
+        "在 apps/web/src/services/ 新增 trash.service.ts，使用 @rabjs/react 的 Service 模式",
+        "TrashService 包含 observable 状态：memos（列表）、total（总数）、loading（加载中）、keyword、sortBy、startDate、endDate、currentPage",
+        "实现 fetchMemos() 方法，调用 getTrashMemos API 拉取列表",
+        "实现 restore(memoId) 方法，调用 restoreMemo API，成功后从本地 memos 列表中移除该条目并更新 total",
+        "实现 permanentlyDelete(memoId) 方法，调用 permanentlyDeleteMemo API，成功后从本地 memos 列表中移除该条目并更新 total",
+        "实现 setKeyword(keyword)、setSortBy(sortBy)、setDateRange(start, end) 方法，更新对应状态、重置 currentPage 为 1 并调用 fetchMemos()",
+        "在 apps/web/src/main.tsx 中通过 register(TrashService) 全局注册",
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-005",
-      "title": "新建 UserFeatureConfigService（Tag 模型偏好 CRUD）",
-      "description": "作为开发者，我需要一个 Service 来读写用户 Tag 生成功能的模型配置。",
+      "title": "前端 - 在用户弹窗中添加回收站入口",
+      "description": "As a user, I want to access the trash from the user menu so that I can find and restore deleted memos.",
       "acceptanceCriteria": [
-        "在 apps/server/src/services/ 下新建 user-feature-config.service.ts，装饰 @Service()",
-        "提供 getTagModelId(userId: string): Promise<string | null> 方法，查询 user_feature_configs 表中 feature='tag_generation' 的 userModelId，不存在则返回 null",
-        "提供 setTagModelId(userId: string, userModelId: string | null): Promise<void> 方法，使用 Drizzle onDuplicateKeyUpdate 实现 upsert",
-        "Typecheck passes"
+        "在 apps/web/src/pages/home/components/user-menu.tsx 的用户菜单中，在退出登录按钮上方新增「回收站」菜单项",
+        "菜单项使用 Trash2 图标（lucide-react），文字为「回收站」",
+        "点击后使用 useNavigate 导航到 /trash 路由",
+        "点击后关闭用户弹窗（关闭 Popover/Dropdown）",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 5,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-006",
-      "title": "新增 UserFeatureConfig API 端点（Tag 模型设置）",
-      "description": "作为前端，我需要 REST API 来读取和更新 Tag 智能生成的模型配置。",
+      "title": "前端 - 回收站页面布局、路由注册与 memo 列表展示",
+      "description": "As a user, I want to see all my deleted memos in the trash page so that I can review what I've deleted.",
       "acceptanceCriteria": [
-        "在 apps/server/src/controllers/v1/ 新建 user-feature-config.controller.ts",
-        "GET /api/v1/user-feature-configs/tag-model 返回 { userModelId: string | null }，需 @CurrentUser() 认证",
-        "PUT /api/v1/user-feature-configs/tag-model 接受 body { userModelId: string | null }，更新配置，需 @CurrentUser() 认证",
-        "控制器在 apps/server/src/controllers/index.ts 中被注册（glob 自动导入则无需手动添加）",
-        "Typecheck passes"
+        "新建 apps/web/src/pages/trash/index.tsx 作为页面入口（使用 bindServices 包裹）",
+        "新建 apps/web/src/pages/trash/trash.tsx 作为主组件，使用 view() 包裹",
+        "页面使用与首页一致的 <Layout> 组件包裹",
+        "页面顶部显示标题「回收站」",
+        "以列表形式展示 trashService.memos，每条显示：memo 内容（超过 200 字截断并显示省略号）、删除时间（格式：X 天前删除 / X 小时前删除）、tagIds 对应的标签",
+        "列表为空且非 loading 状态时，显示空状态：居中 Trash2 大图标 + 「回收站为空」文案",
+        "页面初始化时调用 trashService.fetchMemos()",
+        "loading 为 true 时显示加载状态（spinner 或骨架屏）",
+        "在 apps/web/src/App.tsx 中注册 /trash 路由，使用 ProtectedRoute 包裹",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 6,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-007",
-      "title": "改造 ReviewService 使用 Profile 绑定的模型",
-      "description": "作为用户，我希望 AI 回顾功能使用 Profile 中配置的模型来生成问题和评估答案。",
+      "title": "前端 - 每条 memo 的还原与永久删除操作",
+      "description": "As a user, I want to restore or permanently delete individual memos in the trash so that I can manage my deleted content.",
       "acceptanceCriteria": [
-        "ReviewService 中生成问题和评估答案的方法（如 generateQuestion、evaluateAnswer 或等效方法）改为调用 getModelClient(db, userId, profile.userModelId) 动态获取 ChatOpenAI 实例",
-        "移除 ReviewService 构造函数中硬编码的 ChatOpenAI 初始化（若存在）",
-        "当 profile.userModelId 为 null 时，getModelClient 回退到系统默认配置，行为与改造前一致",
-        "Typecheck passes"
+        "每条 memo 卡片右侧显示两个操作按钮：还原（RotateCcw 图标，title=「还原」）和永久删除（Trash2 图标，title=「永久删除」）",
+        "点击还原后：调用 trashService.restore(memoId)，成功后该条目从列表消失，显示成功提示「已还原」",
+        "点击永久删除后：弹出浏览器原生 confirm 对话框，内容为「此操作不可撤销，memo 将被永久删除。确认删除？」，用户点击确认后调用 trashService.permanentlyDelete(memoId)，成功后该条目从列表消失，显示成功提示「已永久删除」",
+        "操作进行中对应按钮显示 loading 状态（disabled + spinner），防止重复点击",
+        "操作失败时显示错误提示",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 7,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-008",
-      "title": "改造 AIService（Tag 生成）使用用户配置的模型",
-      "description": "作为用户，我希望 Tag 智能生成功能使用我在设置页配置的模型。",
+      "title": "前端 - 搜索与过滤功能",
+      "description": "As a user, I want to search and filter deleted memos so that I can quickly find a specific memo to restore.",
       "acceptanceCriteria": [
-        "AIService.generateTags(content, userId: string) 新增 userId 参数",
-        "方法内部通过 UserFeatureConfigService.getTagModelId(userId) 获取 userModelId，再调用 getModelClient(db, userId, userModelId) 动态构造 ChatOpenAI 实例",
-        "找到所有调用 AIService.generateTags 的上游代码（controller 或 service），同步传入 userId",
-        "当用户未配置模型时，回退到系统默认配置，行为与改造前一致",
-        "Typecheck passes"
+        "页面顶部提供关键词搜索框，placeholder 为「搜索回收站...」，使用受控 input",
+        "输入关键词后 debounce 500ms 触发 trashService.setKeyword(keyword)",
+        "提供排序下拉选择器，选项：「最新删除」（值 deletedAt_desc，默认）、「最早删除」（值 deletedAt_asc），变更时调用 trashService.setSortBy(sortBy)",
+        "提供删除时间范围过滤：开始日期和结束日期两个 date input（type=date），变更时调用 trashService.setDateRange(start, end)（转换为 Unix 毫秒时间戳）",
+        "当 keyword 非空、或 sortBy 非默认值、或 startDate/endDate 有值时，显示「清除筛选」按钮，点击后重置所有过滤条件并重新拉取",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 8,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-009",
-      "title": "改造 ExploreService 接受可选 userModelId 参数",
-      "description": "作为用户，我希望 AI 探索功能使用我在输入框选择的模型来分析和生成内容。",
-      "acceptanceCriteria": [
-        "ExploreService 的 explore() 或等效入口方法新增可选参数 userModelId?: string | null",
-        "方法内部调用 getModelClient(db, userId, userModelId) 动态构造 ChatOpenAI 实例，替换原有硬编码初始化",
-        "ExploreController 接收请求体中的可选字段 userModelId?: string，并透传给 ExploreService",
-        "当 userModelId 为空时，回退到系统默认配置，行为与改造前一致",
-        "Typecheck passes"
-      ],
-      "priority": 9,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-010",
-      "title": "Review Profile 设置面板新增模型选择下拉",
-      "description": "作为用户，我希望在创建或编辑 Review Profile 时能选择该 Profile 使用的 AI 模型。",
-      "acceptanceCriteria": [
-        "在 apps/web/src/pages/review/components/ 中找到 ProfileDetailPanel 或等效的 Profile 编辑组件，新增「AI 模型」选择字段",
-        "下拉选项：第一项为「系统默认」（值为 null），其余从 UserModelService.models observable 获取用户配置的模型列表（显示模型 name，值为 id）",
-        "加载 Profile 时回显已保存的 userModelId（匹配下拉选项）",
-        "保存 Profile 时将 userModelId 包含在请求体中",
-        "若用户未配置任何模型，下拉仅显示「系统默认」",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 10,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-011",
-      "title": "AI 探索输入框区域新增模型选择下拉",
-      "description": "作为用户，我希望在 AI 探索页面的输入框附近能随时切换使用哪个 AI 模型。",
-      "acceptanceCriteria": [
-        "在 apps/web/src/pages/ai-explore/ 的底部输入框工具栏区域新增模型选择下拉按钮，显示当前选中模型名称或「系统默认」",
-        "下拉选项：第一项为「系统默认」（值为 null），其余从 UserModelService.models observable 获取",
-        "选择后持久化到 localStorage（key: explore_selected_model_id），刷新页面后恢复选中状态",
-        "发送查询时将选中的 userModelId（或 null）包含在请求体中传给后端",
-        "若用户未配置任何模型，下拉仅显示「系统默认」",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 11,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-012",
-      "title": "设置页新增 Tag 智能生成模型配置入口",
-      "description": "作为用户，我希望在设置页面能配置 Tag 智能生成默认使用的 AI 模型。",
-      "acceptanceCriteria": [
-        "在 apps/web/src/pages/settings/ 中新建 tag-settings.tsx 页面组件，或在现有合适的设置页面中新增「标签设置」section",
-        "若新建页面：在 settings 侧边栏导航中添加「标签设置」入口，路由路径为 /settings/tags",
-        "页面包含「智能生成 Tag 模型」选择下拉：第一项为「系统默认」（值为 null），其余从 UserModelService.models 获取",
-        "页面加载时调用 GET /api/v1/user-feature-configs/tag-model 读取当前配置并回显",
-        "用户选择后调用 PUT /api/v1/user-feature-configs/tag-model 保存，保存成功后显示成功提示",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 12,
-      "passes": true,
+      "passes": false,
       "notes": ""
     }
   ]

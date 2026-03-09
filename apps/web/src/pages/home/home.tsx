@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router';
 import { ArrowUp, ChevronLeft, ChevronRight, X, Calendar, Filter } from 'lucide-react';
 import { MemoService } from '../../services/memo.service';
 import { MemoPollingService } from '../../services/memo-polling.service';
+import { AuthService } from '../../services/auth.service';
 import { MemoEditor } from './components/memo-editor';
 import { MemoList } from './components/memo-list';
 import type { MemoEditorFormRef } from '../../components/memo-editor-form';
@@ -53,6 +54,7 @@ function saveCollapsedState(collapsed: boolean): void {
 export const HomePage = view(() => {
   const memoService = useService(MemoService);
   const pollingService = useService(MemoPollingService);
+  const authService = useService(AuthService);
   const [, setSearchParams] = useSearchParams();
   const [showScrollTop, setShowScrollTop] = useState(false);
   const memoEditorRef = useRef<MemoEditorFormRef>(null);
@@ -161,6 +163,11 @@ export const HomePage = view(() => {
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, [memoService]);
+
+  // Fetch user info on mount to keep it up to date
+  useEffect(() => {
+    authService.checkAuth();
+  }, [authService]);
 
   // Fetch memos on mount (only once)
   useEffect(() => {

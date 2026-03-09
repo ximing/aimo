@@ -1,0 +1,156 @@
+## Codebase Patterns
+- Use Drizzle ORM for MySQL schema - all schemas in schema/ directory must be exported from index.ts
+- Always build server (`pnpm build`) before generating migrations (`pnpm migrate:generate`)
+- Migration files are generated in drizzle/ folder at server root
+
+## 2026-03-08 - US-001
+- Implemented: review_profiles table schema change - added userModelId VARCHAR(191) field
+- Files changed:
+  - apps/server/src/db/schema/review-profiles.ts (added userModelId field)
+  - apps/server/drizzle/0013_faithful_lake.sql (generated migration with ALTER TABLE)
+  - apps/server/drizzle/meta/0013_snapshot.json, _journal.json (migration metadata)
+- **Learnings for future iterations:**
+  - The VARCHAR(191) length limit is due to MySQL utf8mb4 index size limit (767 bytes / 4 bytes per char = 191)
+  - Drizzle migration adds nullable columns without DEFAULT NULL - existing rows will have NULL values
+  - Build must happen before migration generation since drizzle-kit reads from dist/ folder
+  - The CLAUDE.md in db/ folder has good documentation about schema patterns
+---
+## 2026-03-08 - US-002
+- Implemented: user_feature_configs table schema - stores user preferences for AI feature model selections
+- Files changed:
+  - apps/server/src/db/schema/user-feature-configs.ts (new file - schema definition)
+  - apps/server/src/db/schema/index.ts (added export)
+  - apps/server/drizzle/0014_spooky_bucky.sql (generated migration)
+  - apps/server/drizzle/meta/0014_snapshot.json, _journal.json (migration metadata)
+- **Learnings for future iterations:**
+  - Unique indexes use `uniqueIndex()` in Drizzle, not `index()`
+  - When creating tables with unique constraints, Drizzle automatically creates the constraint in the CREATE TABLE statement
+  - VARCHAR(50) is sufficient for feature names like 'tag_generation'
+---
+## 2026-03-08 - US-003
+- Implemented: Updated ReviewProfile DTO to include userModelId field
+- Files changed:
+  - packages/dto/src/review.ts (added userModelId to ReviewProfileDto, CreateReviewProfileDto, UpdateReviewProfileDto)
+  - tasks/prd.json (marked US-003 as passes: true)
+- **Learnings for future iterations:**
+  - DTOs are in packages/dto/src/ directory, must be exported from index.ts
+  - Build DTO package with `pnpm --filter @aimo/dto build` before running typecheck
+  - All DTO changes require rebuilding the package to be visible to server
+---
+## 2026-03-08 - US-004
+- Implemented: Created model-client.helper.ts with getModelClient utility function
+- Files changed:
+  - apps/server/src/services/model-client.helper.ts (new file - getModelClient and getDefaultModelClient functions)
+  - tasks/prd.json (marked US-004 as passes: true)
+- **Learnings for future iterations:**
+  - getModelClient takes optional userModelId parameter; when null/undefined, uses system defaults from config.openai
+  - When userModelId is provided, queries user_models table and verifies ownership before using user's custom API config
+  - ErrorCode enum values are numbers, not strings - use type `number` when casting errors
+  - The helper returns ChatOpenAI instances with temperature: 0.3 (consistent with other services)
+  - User model's apiBaseUrl is optional - falls back to config.openai.baseURL if not provided
+---
+## 2026-03-08 - US-005
+- Implemented: Created UserFeatureConfigService for Tag model preferences CRUD
+- Files changed:
+  - apps/server/src/services/user-feature-config.service.ts (new file - getTagModelId, setTagModelId, getFeatureModelId, setFeatureModelId methods)
+  - tasks/prd.json (marked US-005 as passes: true)
+- **Learnings for future iterations:**
+  - This codebase doesn't use onDuplicateKeyUpdate - use check-then-insert-or-update pattern instead
+  - Generate unique IDs with generateUid() from @/utils/id.js
+  - Feature constants like TAG_GENERATION_FEATURE can be defined as module-level constants for clarity
+---
+## 2026-03-08 - US-006
+- Implemented: Created UserFeatureConfigController with GET/PUT endpoints for tag model configuration
+- Files changed:
+  - apps/server/src/controllers/v1/user-feature-config.controller.ts (new file - GET /tag-model, PUT /tag-model endpoints)
+  - tasks/prd.json (marked US-006 as passes: true)
+- **Learnings for future iterations:**
+  - Controllers use routing-controllers decorators - @JsonController, @Get, @Put, @Body, @CurrentUser
+  - Controllers don't specify explicit return types to avoid type conflicts with ResponseUtility
+  - ResponseUtility.success() and ResponseUtility.error() return ApiResponse<T> types
+  - No manual registration needed - controllers in v1/ are auto-registered via glob import
+---
+## 2026-03-08 - US-007
+- Implemented: Modified ReviewService to use Profile-bound model for AI review
+- Files changed:
+  - apps/server/src/db/schema/review-sessions.ts (added profileId column)
+  - apps/server/src/services/review.service.ts (use getModelClient for generateQuestion and evaluateAnswer)
+  - apps/server/src/__tests__/review.service.test.ts (added mock for getModelClient, removed obsolete test)
+  - apps/server/drizzle/0015_careful_karnak.sql (migration for profileId column)
+  - tasks/prd.json (marked US-007 as passes: true)
+- **Learnings for future iterations:**
+  - When modifying services that use ChatOpenAI, need to add profileId to session storage for later retrieval
+  - getModelClient takes userModelId which can be null - returns default model when null
+  - Tests need to mock getModelClient helper when testing service methods that use it
+  - Import order matters for lint - schema imports should be alphabetically ordered
+---
+## 2026-03-08 - US-008
+- Implemented: Modified AIService to use user-configured model for tag generation
+- Files changed:
+  - apps/server/src/services/ai.service.ts (added userId parameter to generateTags, inject UserFeatureConfigService, use getModelClient for dynamic model)
+  - apps/server/src/controllers/v1/ai.controller.ts (pass user.uid to generateTags)
+  - tasks/prd.json (marked US-008 as passes: true)
+- **Learnings for future iterations:**
+  - AIService.generateTags now accepts userId parameter to enable user-specific model selection
+  - UserFeatureConfigService.getTagModelId queries user_feature_configs table for user's model preference
+  - getModelClient returns default model when userModelId is null - maintaining backward compatibility
+  - The controller already has user from @CurrentUser() decorator, so userId is readily available
+  - No changes needed to frontend API - userId is handled server-side from authenticated user
+---
+## 2026-03-08 - US-009
+- Implemented: Modified ExploreService to accept optional userModelId parameter for dynamic model selection
+- Files changed:
+  - packages/dto/src/explore.ts (added userModelId optional field to ExploreQueryDto)
+  - apps/server/src/services/explore.service.ts (added userModelId parameter, use getModelClient to get dynamic model, pass model through LangGraph state)
+  - apps/server/src/controllers/v1/explore.controller.ts (pass userModelId from request body to service)
+  - tasks/prd.json (marked US-009 as passes: true)
+- **Learnings for future iterations:**
+  - ExploreService uses LangGraph workflow - model is passed through state to all nodes
+  - Added 'model' field to ExploreAgentState interface and ExploreStateAnnotation
+  - All node methods use state.model! instead of this.model (which was removed from constructor)
+  - generateSuggestedQuestions is a private method that needed model passed as parameter
+  - getModelClient returns default model when userModelId is null - maintaining backward compatibility
+  - DTO changes require rebuilding the package before typecheck
+---
+## 2026-03-08 - US-010
+- Implemented: Added AI model selection dropdown to Review Profile detail panel
+- Files changed:
+  - apps/web/src/pages/review/review.service.ts (added detailUserModelId state, updateDetailUserModelId method, updated openNewProfile/openProfile/saveDetail)
+  - apps/web/src/pages/review/components/profile-detail-panel.tsx (added model dropdown with UserModelService integration)
+  - tasks/prd.json (marked US-010 as passes: true)
+- **Learnings for future iterations:**
+  - ProfileDetailPanel uses @rabjs/react's useService for state management
+  - UserModelService.models observable contains all user-configured models
+  - Dropdown shows "系统默认" (null) as first option, then lists user models by name
+  - Models are loaded via useEffect when detailMode !== 'none' and models array is empty
+  - The DTO (CreateReviewProfileDto/UpdateReviewProfileDto) already includes userModelId field from US-003
+---
+## 2026-03-08 - US-011
+- Implemented: Added AI model selection dropdown to AI Explore input area
+- Files changed:
+  - apps/web/src/services/explore.service.ts (added selectedModelId state, localStorage persistence with EXPLORE_MODEL_STORAGE_KEY, setSelectedModel method, updated sendQuery to pass userModelId)
+  - apps/web/src/pages/ai-explore/ai-explore.tsx (added UserModelService import, added model dropdown in floating input area)
+  - tasks/prd.json (marked US-011 as passes: true)
+- **Learnings for future iterations:**
+  - ExploreService uses localStorage to persist selected model with key 'explore_selected_model_id'
+  - The model selection dropdown is placed in the floating input area before the send button
+  - Dropdown shows "系统默认" (null) as first option, then lists user models by name
+  - UserModelService loads models on component mount via useEffect
+  - The ExploreQueryDto already includes userModelId optional field from US-009
+---
+## 2026-03-08 - US-012
+- Implemented: Added Tag model configuration entry in Settings page
+- Files changed:
+  - apps/web/src/api/user-feature-config.ts (new file - getTagModelConfig, updateTagModelConfig API functions)
+  - apps/web/src/pages/settings/components/tag-settings.tsx (new file - TagSettings component)
+  - apps/web/src/App.tsx (added import and route for /settings/tags)
+  - apps/web/src/pages/settings/components/settings-menu.tsx (added Tag icon and menu item for 标签设置)
+  - tasks/prd.json (marked US-012 as passes: true)
+- **Learnings for future iterations:**
+  - API files in apps/web/src/api/ use request (from '../utils/request') instead of axios
+  - Settings components use @rabjs/react's view() and useService() for state management
+  - Menu items are defined as an array in settings-menu.tsx with id, label, icon, and to properties
+  - Routes are added in App.tsx under the /settings parent route
+  - GET /api/v1/user-feature-configs/tag-model returns { userModelId }
+  - PUT /api/v1/user-feature-configs/tag-model accepts { userModelId: string | null }
+  - The Tag icon from lucide-react is used for the menu item
