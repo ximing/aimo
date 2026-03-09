@@ -6,3 +6,28 @@
 - Services use @Service() decorator for TypeDI injection
 - Frontend services use @rabjs/react Service pattern with observable state
 - Register new frontend services in apps/web/src/main.tsx via register()
+- Register new backend controllers in apps/server/src/controllers/index.ts
+- Use `sql` template for bigint comparisons in Drizzle queries
+- Added `deletedAt` field to MemoListItemDto for trash functionality
+
+## 2026-03-09 - US-001
+- Implemented backend GET /api/v1/trash endpoint to fetch deleted memos
+- Added `getTrashMemos` method to MemoService with keyword search, sortBy, date range filtering, and pagination
+- Created TrashController in apps/server/src/controllers/v1/trash.controller.ts
+- Registered TrashController in apps/server/src/controllers/index.ts
+- Added `deletedAt` field to MemoListItemDto in packages/dto/src/memo.ts
+- Build passes (both server and web)
+- Lint passes (only warnings, no errors)
+- Tests pass (5 test suites, 36 tests)
+
+Files changed:
+- apps/server/src/controllers/v1/trash.controller.ts (new)
+- apps/server/src/controllers/index.ts (added TrashController import and export)
+- apps/server/src/services/memo.service.ts (added getTrashMemos method)
+- packages/dto/src/memo.ts (added deletedAt field to MemoListItemDto)
+
+**Learnings for future iterations:**
+  - Controllers must be explicitly imported and added to the controllers array in index.ts
+  - For bigint comparisons in Drizzle, use sql`${table.column} > 0` instead of gte/lte functions
+  - Build the DTO package first when adding new fields to DTOs before building the server
+

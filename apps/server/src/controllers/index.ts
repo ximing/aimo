@@ -19,6 +19,7 @@ import { TagV1Controller } from './v1/tag.controller.js';
 import { UserV1Controller } from './v1/user.controller.js';
 import { UserModelController } from './v1/user-model.controller.js';
 import { SystemController } from './v1/system.controller.js';
+import { TrashController } from './v1/trash.controller.js';
 import { StaticController } from './static.controller.js';
 
 // Note: StaticController import should stay last to avoid catching API routes
@@ -43,5 +44,6 @@ export const controllers = [
   NotificationController,
   SpacedRepetitionController,
   SystemController,
+  TrashController,
   StaticController,
 ];

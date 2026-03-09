@@ -141,6 +141,8 @@ export interface MemoListItemDto {
   createdAt: number;
   /** Updated timestamp in milliseconds */
   updatedAt: number;
+  /** Deletion timestamp in milliseconds (0 if not deleted) */
+  deletedAt?: number;
   /** Source URL (e.g., from Chrome extension) */
   source?: string;
 }

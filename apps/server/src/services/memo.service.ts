@@ -484,6 +484,114 @@ export class MemoService {
   }
 
   /**
+   * Get trash memos (deleted memos) for a user
+   */
+  async getTrashMemos(options: {
+    uid: string;
+    page?: number;
+    limit?: number;
+    sortBy?: 'deletedAt_desc' | 'deletedAt_asc';
+    keyword?: string;
+    startDate?: Date;
+    endDate?: Date;
+  }): Promise<{
+    list: MemoListItemDto[];
+    pagination: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    };
+  }> {
+    try {
+      const { uid, page = 1, limit = 20, sortBy = 'deletedAt_desc', keyword, startDate, endDate } =
+        options;
+
+      const db = getDatabase();
+
+      // Build filter conditions: deletedAt > 0
+      const conditions: any[] = [eq(memos.uid, uid), sql`${memos.deletedAt} > 0`];
+
+      // Add keyword filter
+      if (keyword && keyword.trim().length > 0) {
+        conditions.push(sql`${memos.content} LIKE ${`%${keyword}%`}`);
+      }
+
+      // Add date range filters (on deletedAt)
+      if (startDate && !isNaN(startDate.getTime())) {
+        conditions.push(sql`${memos.deletedAt} >= ${BigInt(startDate.getTime())}`);
+      }
+      if (endDate && !isNaN(endDate.getTime())) {
+        conditions.push(sql`${memos.deletedAt} <= ${BigInt(endDate.getTime())}`);
+      }
+
+      // Get total count
+      const countQuery = db
+        .select({ count: sql<number>`count(*)` })
+        .from(memos)
+        .where(and(...conditions));
+
+      const countResult = await countQuery;
+      const total = countResult[0]?.count || 0;
+
+      // Get paginated results
+      const offset = (page - 1) * limit;
+      const sortDirection = sortBy === 'deletedAt_asc' ? asc(memos.deletedAt) : desc(memos.deletedAt);
+
+      let query = db
+        .select()
+        .from(memos)
+        .where(and(...conditions))
+        .orderBy(sortDirection)
+        .limit(limit)
+        .offset(offset);
+
+      const results = await query;
+
+      // Convert to DTOs
+      const list: MemoListItemDto[] = [];
+      for (const memo of results) {
+        const attachmentIds = memo.attachments || [];
+        const attachmentDtos: AttachmentDto[] =
+          attachmentIds.length > 0
+            ? await this.attachmentService.getAttachmentsByIds(attachmentIds, uid)
+            : [];
+
+        list.push({
+          memoId: memo.memoId,
+          uid: memo.uid,
+          content: memo.content,
+          type: (memo.type as 'text' | 'audio' | 'video') || 'text',
+          categoryId: memo.categoryId || undefined,
+          attachments: attachmentDtos,
+          tagIds: memo.tagIds || [],
+          isPublic: memo.isPublic,
+          createdAt: memo.createdAt.getTime(),
+          updatedAt: memo.updatedAt.getTime(),
+          deletedAt: Number(memo.deletedAt),
+          source: memo.source || undefined,
+        });
+      }
+
+      // Enrich items with tags
+      const itemsWithTags = await this.enrichTags(uid, list);
+
+      return {
+        list: itemsWithTags,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+        },
+      };
+    } catch (error) {
+      logger.error('Error getting trash memos:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get new memos created/updated after a reference memo
    * Used for polling to detect new memos
    */
