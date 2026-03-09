@@ -31,3 +31,26 @@ Files changed:
   - For bigint comparisons in Drizzle, use sql`${table.column} > 0` instead of gte/lte functions
   - Build the DTO package first when adding new fields to DTOs before building the server
 
+## 2026-03-09 - US-004
+- Updated TrashService to match acceptance criteria with proper observable state names
+- Renamed trashMemos -> memos, page -> currentPage
+- Added startDate and endDate observable state for date filtering
+- Added setKeyword, setDateRange, clearFilters methods
+- Renamed methods: fetchTrashMemos -> fetchMemos, restoreMemo -> restore, permanentlyDeleteMemo -> permanentlyDelete
+- Updated trash page to use new service API and added date range filtering UI
+- Added 500ms debounce for keyword search
+- Added clear filters button when filters are active
+- Updated UI with proper icons (Trash2, RotateCcw)
+- Build passes (both server and web)
+- Lint passes (only warnings, no errors)
+- Tests pass (5 test suites, 36 tests)
+
+Files changed:
+- apps/web/src/services/trash.service.ts (updated)
+- apps/web/src/pages/trash/trash.tsx (updated)
+
+**Learnings for future iterations:**
+  - When implementing services that match acceptance criteria, use the exact method and property names specified
+  - For debounce in React, use useRef or useMemo to store the timer and clear it properly
+  - Date inputs return YYYY-MM-DD string, need to convert to timestamp using new Date().getTime()
+
