@@ -4,7 +4,7 @@ import { view, useService } from '@rabjs/react';
 import { AuthService } from '../services/auth.service';
 import { ThemeService } from '../services/theme.service';
 import { NotificationService } from '../services/notification.service';
-import { Zap, Sun, Moon, LogOut, Settings, Sparkles, Images, Brain, Bell } from 'lucide-react';
+import { Zap, Sun, Moon, LogOut, Settings, Sparkles, Images, Brain, Bell, Trash2 } from 'lucide-react';
 import logoUrl from '../assets/logo.png';
 import logoDarkUrl from '../assets/logo-dark.png';
 import { isElectron, isMacOS } from '../electron/isElectron';
@@ -325,10 +325,22 @@ export const Layout = view(({ children }: LayoutProps) => {
 
                 {/* Menu Items */}
                 <div className="py-2">
+                  {/* Trash */}
+                  <button
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      navigate('/trash');
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-700 flex items-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>回收站</span>
+                  </button>
+
                   {/* Logout */}
                   <button
                     onClick={handleLogout}
-                    className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 transition-colors cursor-pointer"
+                    className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 transition-colors cursor-pointer border-t border-gray-200 dark:border-dark-700 mt-2 pt-2"
                   >
                     <LogOut className="w-4 h-4" />
                     <span>登出</span>
