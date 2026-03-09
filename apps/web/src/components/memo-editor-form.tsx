@@ -607,8 +607,7 @@ export const MemoEditorForm = view(
         });
       };
 
-      const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = Array.from(e.target.files || []);
+      const uploadFiles = async (files: File[]) => {
         if (files.length === 0) return;
 
         // 检查数量限制
@@ -665,11 +664,30 @@ export const MemoEditorForm = view(
             });
           }
         }
+      };
 
+      const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        await uploadFiles(files);
         // 重置 input
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
+      };
+
+      const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+        const imageFiles = Array.from(e.clipboardData.items)
+          .filter((item) => item.type.startsWith('image/'))
+          .map((item) => item.getAsFile())
+          .filter((file): file is File => file !== null);
+
+        if (imageFiles.length === 0) return;
+
+        e.preventDefault();
+        if (!isEditorActive) {
+          setIsEditorActive(true);
+        }
+        await uploadFiles(imageFiles);
       };
 
       // OCR 专用文件选择处理函数 - 先上传附件，再调用 OCR 服务
@@ -945,6 +963,7 @@ export const MemoEditorForm = view(
                 onFocus={handleFocus}
                 onBlur={handleBlur}
                 onKeyDown={handleKeyDown}
+                onPaste={handlePaste}
                 placeholder={mode === 'create' ? '记录你的想法... (⌘+Enter)' : '编辑你的笔记...'}
                 className="w-full px-0 py-0 bg-transparent text-gray-900 dark:text-gray-50 rounded-lg focus:outline-none resize-none placeholder-gray-400 dark:placeholder-gray-600 text-sm leading-relaxed"
                 style={{ minHeight: '120px', maxHeight: '480px' }}
