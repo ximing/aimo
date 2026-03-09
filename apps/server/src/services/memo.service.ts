@@ -4,7 +4,7 @@ import * as lancedb from '@lancedb/lancedb';
 
 import { OBJECT_TYPE } from '../models/constant/type.js';
 import { getDatabase } from '../db/connection.js';
-import { memos } from '../db/schema/memos.js';
+import { memos, memoRelations } from '../db/schema/index.js';
 import { withTransaction } from '../db/transaction.js';
 import { generateTypeId } from '../utils/id.js';
 import { logger } from '../utils/logger.js';
@@ -647,6 +647,86 @@ export class MemoService {
       return 'success';
     } catch (error) {
       logger.error('Error restoring memo:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Permanently delete a memo from trash
+   * @returns 'not_found' if memo doesn't exist or doesn't belong to user
+   * @returns 'not_deleted' if memo is not in trash
+   * @returns 'success' if deletion was successful
+   */
+  async permanentlyDeleteMemo(
+    memoId: string,
+    uid: string
+  ): Promise<'not_found' | 'not_deleted' | 'success'> {
+    try {
+      const db = getDatabase();
+
+      // First, check if the memo exists and belongs to the user
+      const existingMemo = await db
+        .select()
+        .from(memos)
+        .where(and(eq(memos.memoId, memoId), eq(memos.uid, uid)))
+        .limit(1);
+
+      if (existingMemo.length === 0) {
+        return 'not_found';
+      }
+
+      const memo = existingMemo[0];
+
+      // Check if the memo is actually deleted
+      if (memo.deletedAt === 0n) {
+        return 'not_deleted';
+      }
+
+      // Delete attachments from storage first
+      if (memo.attachments && memo.attachments.length > 0) {
+        for (const attachmentId of memo.attachments) {
+          try {
+            await this.attachmentService.deleteAttachment(attachmentId, uid);
+          } catch (error) {
+            logger.warn('Failed to delete attachment during memo permanent delete:', {
+              attachmentId,
+              memoId,
+              error,
+            });
+          }
+        }
+      }
+
+      // Use transaction for physical deletion
+      await withTransaction(async (tx) => {
+        // Physically delete memo_relations involving this memo
+        await tx
+          .delete(memoRelations)
+          .where(
+            and(
+              eq(memoRelations.uid, uid),
+              or(
+                eq(memoRelations.sourceMemoId, memoId),
+                eq(memoRelations.targetMemoId, memoId)
+              )
+            )
+          );
+
+        // Physically delete the memo
+        await tx.delete(memos).where(and(eq(memos.memoId, memoId), eq(memos.uid, uid)));
+
+        logger.info('Memo permanently deleted from MySQL:', { memoId, uid });
+      });
+
+      // Physically delete from LanceDB
+      const memosTable = await this.openMemosTable();
+      await memosTable.delete(`memoId = '${memoId}'`);
+
+      logger.info('Memo permanently deleted from LanceDB:', { memoId });
+
+      return 'success';
+    } catch (error) {
+      logger.error('Error permanently deleting memo:', error);
       throw error;
     }
   }

@@ -100,4 +100,28 @@ export class TrashController {
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
+
+  @Delete('/:memoId')
+  async permanentlyDeleteMemo(@Param('memoId') memoId: string, @CurrentUser() user: UserInfoDto) {
+    try {
+      if (!user?.uid) {
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
+      }
+
+      const result = await this.memoService.permanentlyDeleteMemo(memoId, user.uid);
+
+      if (result === 'not_found') {
+        return ResponseUtility.error(ErrorCode.NOT_FOUND);
+      }
+
+      if (result === 'not_deleted') {
+        return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'Memo is not in trash');
+      }
+
+      return ResponseUtility.success({ message: 'Memo permanently deleted' });
+    } catch (error) {
+      logger.error('Permanently delete memo error:', error);
+      return ResponseUtility.error(ErrorCode.DB_ERROR);
+    }
+  }
 }
