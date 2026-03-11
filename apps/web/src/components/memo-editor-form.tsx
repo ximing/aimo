@@ -824,7 +824,8 @@ export const MemoEditorForm = view(
       };
 
       const handleSelectCategory = (categoryId: string | null) => {
-        setSelectedCategoryId(categoryId);
+        // 点击已选中的分类时取消选中
+        setSelectedCategoryId(categoryId !== null && categoryId === selectedCategoryId ? null : categoryId);
         setIsCategoryDropdownOpen(false);
       };
 
