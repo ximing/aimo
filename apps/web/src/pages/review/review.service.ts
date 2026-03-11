@@ -53,7 +53,6 @@ export class ReviewService extends Service {
   // ========== Spaced Repetition State ==========
   srCards: SRCard[] = [];
   srCurrentIndex = 0;
-  srCardFlipped = false;
   skippedCards: SRCard[] = [];
   srLoading = false;
   srStats: SRStats = {
@@ -132,7 +131,6 @@ export class ReviewService extends Service {
     // Reset SR states
     this.srCards = [];
     this.srCurrentIndex = 0;
-    this.srCardFlipped = false;
     this.skippedCards = [];
     this.srStats = { mastered: 0, remembered: 0, fuzzy: 0, forgot: 0 };
 
@@ -548,10 +546,6 @@ export class ReviewService extends Service {
     }
   }
 
-  flipSRCard(): void {
-    this.srCardFlipped = true;
-  }
-
   async reviewSRCard(quality: SRQuality): Promise<void> {
     if (this.srCurrentIndex >= this.srCards.length) return;
 
@@ -585,7 +579,6 @@ export class ReviewService extends Service {
   }
 
   private moveToNextSR(): void {
-    this.srCardFlipped = false;
     const remainingCards = this.srCards.length - this.srCurrentIndex - 1;
     const totalSkipped = this.skippedCards.length;
 
