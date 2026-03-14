@@ -837,7 +837,7 @@ export class MemoService {
         .limit(1);
 
       if (results.length === 0) {
-        throw new Error('Memo not found');
+        return null;
       }
 
       const existingMemo = results[0];
@@ -1046,7 +1046,7 @@ export class MemoService {
         .limit(1);
 
       if (results.length === 0) {
-        throw new Error('Memo not found');
+        return false;
       }
 
       const deletedAt = Date.now();
@@ -1105,7 +1105,7 @@ export class MemoService {
         .limit(1);
 
       if (results.length === 0) {
-        throw new Error('Memo not found');
+        return null;
       }
 
       const existingMemo = results[0];

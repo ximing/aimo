@@ -310,11 +310,8 @@ export class MemoV1Controller {
         message: 'Tags updated successfully',
         memo,
       });
-    } catch (error: any) {
+    } catch (error) {
       logger.error('Update memo tags error:', error);
-      if (error.message === 'Memo not found') {
-        return ResponseUtility.error(ErrorCode.NOT_FOUND);
-      }
       return ResponseUtility.error(ErrorCode.DB_ERROR);
     }
   }
