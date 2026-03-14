@@ -185,21 +185,31 @@ export class ReviewService {
 
   async completeSession(uid: string, sessionId: string): Promise<CompleteSessionResponseDto> {
     const db = getDatabase();
+
+    // 1. 先验证 session 归属，防止越权操作他人 session
+    const [session] = await db
+      .select()
+      .from(reviewSessions)
+      .where(and(eq(reviewSessions.sessionId, sessionId), eq(reviewSessions.uid, uid)));
+    if (!session) throw new Error('Session not found');
+
     const items = await db.select().from(reviewItems).where(eq(reviewItems.sessionId, sessionId));
 
     const score = this.calculateScore(items);
 
+    // 2. 更新时加 uid 约束，防止越权写入
     await db
       .update(reviewSessions)
       .set({ status: 'completed', score, completedAt: new Date() })
-      .where(eq(reviewSessions.sessionId, sessionId));
+      .where(and(eq(reviewSessions.sessionId, sessionId), eq(reviewSessions.uid, uid)));
 
     const itemDtos = await Promise.all(
       items.map(async (i) => {
+        // 3. memo 查询加入 uid 约束，防止内容泄露
         const [memo] = await db
           .select({ content: memos.content })
           .from(memos)
-          .where(eq(memos.memoId, i.memoId));
+          .where(and(eq(memos.memoId, i.memoId), eq(memos.uid, uid)));
         return {
           itemId: i.itemId,
           sessionId: i.sessionId,
