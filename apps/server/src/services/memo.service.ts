@@ -1367,18 +1367,32 @@ export class MemoService {
     uid: string,
     page: number = 1,
     limit: number = 10
-  ): Promise<PaginatedMemoListWithScoreDto> {
+  ): Promise<PaginatedMemoListWithScoreDto | null> {
     try {
-      // Get the memo's embedding from LanceDB
+      // Verify ownership from MySQL first: memo must exist, belong to uid, and not be deleted
+      const db = getDatabase();
+      const ownerCheck = await db
+        .select({ memoId: memos.memoId })
+        .from(memos)
+        .where(and(eq(memos.memoId, memoId), eq(memos.uid, uid), eq(memos.deletedAt, 0)))
+        .limit(1);
+
+      if (ownerCheck.length === 0) {
+        // Foreign or non-existent memo id — do not reach vector similarity search
+        return null;
+      }
+
+      // Get the memo's embedding from LanceDB (ownership confirmed)
       const memosTable = await this.openMemosTable();
       const vectorResults = await memosTable
         .query()
-        .where(`memoId = '${memoId}' AND deletedAt = 0`)
+        .where(`memoId = '${memoId}' AND uid = '${uid}' AND deletedAt = 0`)
         .limit(1)
         .toArray();
 
       if (vectorResults.length === 0) {
-        throw new Error('Memo not found in vector store');
+        // Embedding not yet indexed — treat as not found
+        return null;
       }
 
       const memoEmbedding = (vectorResults[0] as any).embedding;
@@ -1399,7 +1413,6 @@ export class MemoService {
       const total = similarMemos.filter((m: any) => m.memoId !== memoId).length;
 
       // Get scalar data from MySQL
-      const db = getDatabase();
       const memoIds = filteredResults.map((m: any) => m.memoId);
 
       if (memoIds.length === 0) {

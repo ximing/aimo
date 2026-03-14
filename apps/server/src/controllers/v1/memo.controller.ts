@@ -352,6 +352,10 @@ export class MemoV1Controller {
 
       const result = await this.memoService.findRelatedMemos(memoId, user.uid, page, limit);
 
+      if (result === null) {
+        return ResponseUtility.error(ErrorCode.NOT_FOUND);
+      }
+
       return ResponseUtility.success(result);
     } catch (error) {
       logger.error('Find related memos error:', error);
