@@ -2,6 +2,7 @@ import { Service } from 'typedi';
 
 import { UserModelService } from './user-model.service.js';
 import { logger } from '../utils/logger.js';
+import { validateURLForSSRFSync } from '../utils/url-validator.js';
 
 import type { UserModel } from '../db/schema/user-models.js';
 import type { LLMProvider } from '@aimo/dto';
@@ -92,6 +93,21 @@ export class LLMService {
         break;
       default:
         throw new LLMError(`Unknown provider: ${provider}`, provider as string);
+    }
+
+    // SSRF protection: validate the URL (sync version for performance)
+    const urlValidation = validateURLForSSRFSync(baseUrl, provider);
+    if (!urlValidation.valid) {
+      logger.warn('SSRF attempt blocked in LLM service', {
+        provider,
+        baseUrl,
+        error: urlValidation.error,
+      });
+      throw new LLMError(
+        urlValidation.error || 'Invalid API URL',
+        provider,
+        403
+      );
     }
 
     return {

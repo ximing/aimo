@@ -16,6 +16,7 @@ import { UserModelService } from '../../services/user-model.service.js';
 import { LLMService, type ChatMessage } from '../../services/llm.service.js';
 import { logger } from '../../utils/logger.js';
 import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
+import { validateURLForSSRF } from '../../utils/url-validator.js';
 
 import type {
   CreateUserModelDto,
@@ -96,6 +97,17 @@ export class UserModelController {
           break;
         default:
           return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'Invalid provider');
+      }
+
+      // SSRF protection: validate the URL before making request
+      const urlValidation = await validateURLForSSRF(baseUrl, testData.provider);
+      if (!urlValidation.valid) {
+        logger.warn('SSRF attempt blocked in user model test', {
+          provider: testData.provider,
+          baseUrl,
+          error: urlValidation.error,
+        });
+        return ResponseUtility.error(ErrorCode.FORBIDDEN, urlValidation.error || 'Invalid URL');
       }
 
       const testMessages: ChatMessage[] = [
