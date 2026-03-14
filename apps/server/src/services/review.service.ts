@@ -317,7 +317,10 @@ export class ReviewService {
       updates.filterValues = dto.filterRules as unknown as string[];
     if (dto.questionCount !== undefined) updates.questionCount = dto.questionCount;
 
-    await db.update(reviewProfiles).set(updates).where(eq(reviewProfiles.profileId, profileId));
+    await db
+      .update(reviewProfiles)
+      .set(updates)
+      .where(and(eq(reviewProfiles.profileId, profileId), eq(reviewProfiles.userId, uid)));
 
     const [updated] = await db
       .select()
@@ -336,7 +339,9 @@ export class ReviewService {
 
     if (!profile) return false;
 
-    await db.delete(reviewProfiles).where(eq(reviewProfiles.profileId, profileId));
+    await db
+      .delete(reviewProfiles)
+      .where(and(eq(reviewProfiles.profileId, profileId), eq(reviewProfiles.userId, uid)));
     return true;
   }
 
