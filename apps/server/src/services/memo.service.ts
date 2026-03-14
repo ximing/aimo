@@ -1635,21 +1635,19 @@ export class MemoService {
       const currentMonth = today.getUTCMonth() + 1;
       const currentDay = today.getUTCDate();
 
-      // Get all memos for this user
-      const allMemos = await db
+      // Filter memos at the SQL level using MONTH/DAY/YEAR functions
+      const memosOnThisDay = await db
         .select()
         .from(memos)
-        .where(and(eq(memos.uid, uid), eq(memos.deletedAt, 0)));
-
-      // Filter memos by month and day
-      const memosOnThisDay = allMemos.filter((memo) => {
-        const memoDate = memo.createdAt;
-        return (
-          memoDate.getUTCMonth() + 1 === currentMonth &&
-          memoDate.getUTCDate() === currentDay &&
-          memoDate.getUTCFullYear() !== today.getUTCFullYear()
+        .where(
+          and(
+            eq(memos.uid, uid),
+            eq(memos.deletedAt, 0),
+            sql`MONTH(${memos.createdAt}) = ${currentMonth}`,
+            sql`DAY(${memos.createdAt}) = ${currentDay}`,
+            sql`YEAR(${memos.createdAt}) != ${today.getUTCFullYear()}`
+          )
         );
-      });
 
       // Convert to array of OnThisDayMemoDto
       const items: OnThisDayMemoDto[] = [];
