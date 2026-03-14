@@ -5,60 +5,27 @@
 
 import { eq, and, sql } from 'drizzle-orm';
 import { Service } from 'typedi';
-import * as lancedb from '@lancedb/lancedb';
 
 import { getDatabase } from '../db/connection.js';
 import { withTransaction } from '../db/transaction.js';
 import { tags, memos } from '../db/schema/index.js';
 import { generateTagId } from '../utils/id.js';
-import { config } from '../config/config.js';
 import { logger } from '../utils/logger.js';
+import { LanceDbService } from '../sources/lancedb.js';
 
 import type { Tag } from '../db/schema/tags.js';
 import type { TagDto, CreateTagDto, UpdateTagDto } from '@aimo/dto';
-import type { Connection, Table } from '@lancedb/lancedb';
+import type { Table } from '@lancedb/lancedb';
 
 @Service()
 export class TagService {
-  private lanceDb: Connection | null = null;
-  private initialized = false;
-
-  constructor() {}
-
-  /**
-   * Initialize LanceDB connection
-   */
-  private async initLanceDb(): Promise<void> {
-    try {
-      const lanceDbPath = config.lancedb.path;
-      this.lanceDb = await lancedb.connect(lanceDbPath);
-      this.initialized = true;
-      logger.info('LanceDB initialized in TagService');
-    } catch (error) {
-      logger.error('Failed to initialize LanceDB in TagService:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get LanceDB connection (throws if not initialized)
-   */
-  private getLanceDb(): Connection {
-    if (!this.lanceDb || !this.initialized) {
-      throw new Error('LanceDB not initialized in TagService');
-    }
-    return this.lanceDb;
-  }
+  constructor(private lanceDbService: LanceDbService) {}
 
   /**
    * Open memos table in LanceDB
    */
   private async openMemosTable(): Promise<Table> {
-    if (!this.initialized) {
-      await this.initLanceDb();
-    }
-    const db = this.getLanceDb();
-    return db.openTable('memos');
+    return this.lanceDbService.openTable('memos');
   }
 
   /**

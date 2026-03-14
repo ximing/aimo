@@ -1,6 +1,5 @@
 import { Service } from 'typedi';
 import { eq, and, desc, asc, sql, or, inArray, gte, lte } from 'drizzle-orm';
-import * as lancedb from '@lancedb/lancedb';
 
 import { OBJECT_TYPE } from '../models/constant/type.js';
 import { getDatabase } from '../db/connection.js';
@@ -8,7 +7,6 @@ import { memos, memoRelations } from '../db/schema/index.js';
 import { withTransaction } from '../db/transaction.js';
 import { generateTypeId } from '../utils/id.js';
 import { logger } from '../utils/logger.js';
-import { config } from '../config/config.js';
 import { toStringList } from '../utils/arrow.js';
 
 import { AttachmentService } from './attachment.service.js';
@@ -16,6 +14,7 @@ import { EmbeddingService } from './embedding.service.js';
 import { MemoRelationService } from './memo-relation.service.js';
 import { TagService } from './tag.service.js';
 import { SpacedRepetitionService } from './spaced-repetition.service.js';
+import { LanceDbService } from '../sources/lancedb.js';
 
 import type { Memo, NewMemo } from '../db/schema/memos.js';
 import type {
@@ -32,7 +31,7 @@ import type {
   OnThisDayMemoDto,
   OnThisDayResponseDto,
 } from '@aimo/dto';
-import type { Connection, Table } from '@lancedb/lancedb';
+import type { Table } from '@lancedb/lancedb';
 
 const UNCATEGORIZED_CATEGORY_ID = '__uncategorized__';
 
@@ -67,78 +66,20 @@ export interface MemoVectorSearchOptions {
 
 @Service()
 export class MemoService {
-  private lanceDb!: Connection;
-  private initialized = false;
-
   constructor(
     private embeddingService: EmbeddingService,
     private attachmentService: AttachmentService,
     private memoRelationService: MemoRelationService,
     private tagService: TagService,
-    private spacedRepetitionService: SpacedRepetitionService
-  ) {
-    // Initialize local LanceDB instance for vector operations
-    this.initLanceDb().catch((error) => {
-      logger.error('Failed to initialize LanceDB in MemoService:', error);
-    });
-  }
-
-  /**
-   * Initialize local LanceDB connection for vector operations
-   */
-  private async initLanceDb(): Promise<void> {
-    try {
-      const storageType = config.lancedb.storageType;
-      const path = config.lancedb.path;
-
-      if (storageType === 's3') {
-        const s3Config = config.lancedb.s3;
-        if (!s3Config) {
-          throw new Error('S3 configuration is missing');
-        }
-
-        const storageOptions: Record<string, string> = {
-          virtualHostedStyleRequest: 'true',
-          conditionalPut: 'disabled',
-        };
-
-        if (s3Config.awsAccessKeyId) storageOptions.awsAccessKeyId = s3Config.awsAccessKeyId;
-        if (s3Config.awsSecretAccessKey)
-          storageOptions.awsSecretAccessKey = s3Config.awsSecretAccessKey;
-        if (s3Config.region) storageOptions.awsRegion = s3Config.region;
-        if (s3Config.endpoint) {
-          storageOptions.awsEndpoint = `https://${s3Config.bucket}.oss-${s3Config.region}.aliyuncs.com`;
-        }
-
-        this.lanceDb = await lancedb.connect(path, { storageOptions });
-      } else {
-        this.lanceDb = await lancedb.connect(path);
-      }
-
-      this.initialized = true;
-      logger.info('MemoService LanceDB initialized for vector operations');
-    } catch (error) {
-      logger.error('Failed to initialize LanceDB for MemoService:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get LanceDB connection
-   */
-  private getLanceDb(): Connection {
-    if (!this.initialized) {
-      throw new Error('LanceDB not initialized in MemoService');
-    }
-    return this.lanceDb;
-  }
+    private spacedRepetitionService: SpacedRepetitionService,
+    private lanceDbService: LanceDbService
+  ) {}
 
   /**
    * Open memos table from LanceDB (for vector search with filtering)
    */
   private async openMemosTable(): Promise<Table> {
-    const db = this.getLanceDb();
-    return await db.openTable('memos');
+    return this.lanceDbService.openTable('memos');
   }
 
   /**

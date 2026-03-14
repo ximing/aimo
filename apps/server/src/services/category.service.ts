@@ -1,6 +1,5 @@
 import { Service } from 'typedi';
-import { eq, and, sql, isNull } from 'drizzle-orm';
-import * as lancedb from '@lancedb/lancedb';
+import { eq, and, sql } from 'drizzle-orm';
 
 import { OBJECT_TYPE } from '../models/constant/type.js';
 import { getDatabase } from '../db/connection.js';
@@ -9,55 +8,21 @@ import { categories } from '../db/schema/categories.js';
 import { memos } from '../db/schema/memos.js';
 import { generateTypeId } from '../utils/id.js';
 import { logger } from '../utils/logger.js';
-import { config } from '../config/config.js';
+import { LanceDbService } from '../sources/lancedb.js';
 
-import type { Connection, Table } from '@lancedb/lancedb';
+import type { Table } from '@lancedb/lancedb';
 
 import type { CategoryDto, CreateCategoryDto, UpdateCategoryDto } from '@aimo/dto';
 
 @Service()
 export class CategoryService {
-  private lanceDb!: Connection;
-  private initialized = false;
-
-  constructor() {
-    // Initialize local LanceDB instance for vector operations
-    this.initLanceDb().catch((error) => {
-      logger.error('Failed to initialize LanceDB in CategoryService:', error);
-    });
-  }
-
-  /**
-   * Initialize LanceDB connection
-   */
-  private async initLanceDb(): Promise<void> {
-    try {
-      const lanceDbPath = config.lancedb.path;
-      this.lanceDb = await lancedb.connect(lanceDbPath);
-      this.initialized = true;
-      logger.info('LanceDB initialized in CategoryService');
-    } catch (error) {
-      logger.error('Failed to initialize LanceDB in CategoryService:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get LanceDB connection (throws if not initialized)
-   */
-  private getLanceDb(): Connection {
-    if (!this.initialized) {
-      throw new Error('LanceDB not initialized in CategoryService');
-    }
-    return this.lanceDb;
-  }
+  constructor(private lanceDbService: LanceDbService) {}
 
   /**
    * Open memos table from LanceDB
    */
   private async openMemosTable(): Promise<Table> {
-    const db = this.getLanceDb();
-    return await db.openTable('memos');
+    return this.lanceDbService.openTable('memos');
   }
 
   /**
