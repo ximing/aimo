@@ -136,20 +136,30 @@ export class ReviewService {
     dto: SubmitAnswerDto
   ): Promise<SubmitAnswerResponseDto> {
     const db = getDatabase();
-    const [item] = await db.select().from(reviewItems).where(eq(reviewItems.itemId, dto.itemId));
-    if (!item || item.sessionId !== sessionId) throw new Error('Item not found');
 
-    const [memo] = await db.select().from(memos).where(eq(memos.memoId, item.memoId));
-    if (!memo) throw new Error('Memo not found');
-
-    // Get session to find profileId and userModelId
+    // 1. 先验证 session 属于当前用户，防止越权操作他人 session
     const [session] = await db
       .select()
       .from(reviewSessions)
-      .where(eq(reviewSessions.sessionId, sessionId));
+      .where(and(eq(reviewSessions.sessionId, sessionId), eq(reviewSessions.uid, uid)));
+    if (!session) throw new Error('Session not found');
+
+    // 2. 通过 itemId + sessionId 双条件查询 item，归属通过 sessionId 关联验证
+    const [item] = await db
+      .select()
+      .from(reviewItems)
+      .where(and(eq(reviewItems.itemId, dto.itemId), eq(reviewItems.sessionId, sessionId)));
+    if (!item) throw new Error('Item not found');
+
+    // 3. 查询 memo 时加入 uid 校验，防止跨用户内容泄露
+    const [memo] = await db
+      .select()
+      .from(memos)
+      .where(and(eq(memos.memoId, item.memoId), eq(memos.uid, uid)));
+    if (!memo) throw new Error('Memo not found');
 
     let userModelId: string | null = null;
-    if (session?.profileId) {
+    if (session.profileId) {
       const profile = await this.getProfileById(uid, session.profileId);
       if (profile) {
         userModelId = profile.userModelId ?? null;
@@ -164,10 +174,11 @@ export class ReviewService {
       item.question
     );
 
+    // 4. 更新时使用 itemId + sessionId 双条件，防止越权写入
     await db
       .update(reviewItems)
       .set({ userAnswer: dto.answer, aiFeedback: feedback, mastery })
-      .where(eq(reviewItems.itemId, dto.itemId));
+      .where(and(eq(reviewItems.itemId, dto.itemId), eq(reviewItems.sessionId, sessionId)));
 
     return { itemId: dto.itemId, aiFeedback: feedback, mastery };
   }
