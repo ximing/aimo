@@ -213,7 +213,11 @@ export class AIConversationService {
         .update(aiConversations)
         .set({ title: data.title })
         .where(
-          and(eq(aiConversations.conversationId, conversationId), eq(aiConversations.deletedAt, 0))
+          and(
+            eq(aiConversations.conversationId, conversationId),
+            eq(aiConversations.uid, uid),
+            eq(aiConversations.deletedAt, 0)
+          )
         );
 
       // Fetch the updated conversation
