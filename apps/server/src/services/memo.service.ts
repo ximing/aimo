@@ -1519,61 +1519,45 @@ export class MemoService {
 
   /**
    * Enrich memo list items with their relation data
+   * Uses batch queries to avoid N+1 performance issues and full-table scans
    */
   private async enrichMemosWithRelations(
     uid: string,
     items: MemoListItemDto[]
   ): Promise<MemoListItemDto[]> {
     try {
-      const memosMap = new Map<string, any>();
+      if (items.length === 0) return items;
 
-      // Build a map of all memos for quick lookup
-      const allMemos = await this.getAllMemosByUid(uid);
-      for (const memo of allMemos) {
-        const attachmentIds = memo.attachments || [];
-        const attachmentDtos: AttachmentDto[] =
-          attachmentIds.length > 0
-            ? await this.attachmentService.getAttachmentsByIds(attachmentIds, uid)
-            : [];
+      // 1. Batch fetch all relations for the given items in a single query
+      const sourceMemoIds = items.map((item) => item.memoId);
+      const relationsMap = await this.memoRelationService.getRelatedMemosBatch(uid, sourceMemoIds);
 
-        memosMap.set(memo.memoId, {
-          memoId: memo.memoId,
-          uid: memo.uid,
-          content: memo.content,
-          type: (memo.type as 'text' | 'audio' | 'video') || 'text',
-          categoryId: memo.categoryId || undefined,
-          attachments: attachmentDtos,
-          tags: [], // Will be enriched if needed
-          createdAt: memo.createdAt.getTime(),
-          updatedAt: memo.updatedAt.getTime(),
-        });
+      // 2. Collect all unique related memo IDs that are actually needed
+      const allRelatedIds = [...new Set([...relationsMap.values()].flat())];
+      if (allRelatedIds.length === 0) {
+        return items.map((item) => ({ ...item, relations: undefined }));
       }
 
-      // For each item, fetch its relations
-      const enrichedItems: MemoListItemDto[] = [];
-      for (const item of items) {
-        try {
-          const relatedMemoIds = await this.memoRelationService.getRelatedMemos(uid, item.memoId);
-          const relations: MemoListItemDto[] = [];
+      // 3. Fetch only the needed memos (no full-table scan)
+      const relatedMemos = await this.getMemosByIds(allRelatedIds, uid);
+      const memosMap = new Map(relatedMemos.map((m) => [m.memoId, m]));
 
-          for (const relatedMemoId of relatedMemoIds) {
-            const relatedMemo = memosMap.get(relatedMemoId);
-            if (relatedMemo) {
-              relations.push(relatedMemo);
-            }
-          }
-
-          enrichedItems.push({
-            ...item,
-            relations: relations.length > 0 ? relations : undefined,
-          });
-        } catch (error) {
-          logger.warn(`Failed to enrich memo ${item.memoId} with relations:`, error);
-          enrichedItems.push(item);
+      // 4. Assemble results
+      return items.map((item) => {
+        const relatedIds = relationsMap.get(item.memoId);
+        if (!relatedIds || relatedIds.length === 0) {
+          return { ...item, relations: undefined };
         }
-      }
 
-      return enrichedItems;
+        const relations = relatedIds
+          .map((id) => memosMap.get(id))
+          .filter((m): m is MemoListItemDto => m !== undefined);
+
+        return {
+          ...item,
+          relations: relations.length > 0 ? relations : undefined,
+        };
+      });
     } catch (error) {
       logger.error('Error enriching memos with relations:', error);
       return items;

@@ -1,4 +1,4 @@
-import { and, eq, or, sql } from 'drizzle-orm';
+import { and, eq, inArray, or, sql } from 'drizzle-orm';
 import { Service } from 'typedi';
 
 import { getDatabase } from '../db/connection.js';
@@ -75,6 +75,44 @@ export class MemoRelationService {
       return results.map((record) => record.targetMemoId);
     } catch (error) {
       logger.error('Failed to get related memos:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Batch get related memos for multiple source memos in a single query
+   * Returns a map of sourceMemoId -> targetMemoId[]
+   */
+  async getRelatedMemosBatch(uid: string, sourceMemoIds: string[]): Promise<Map<string, string[]>> {
+    try {
+      if (sourceMemoIds.length === 0) {
+        return new Map();
+      }
+
+      const db = getDatabase();
+      const results = await db
+        .select()
+        .from(memoRelations)
+        .where(
+          and(
+            eq(memoRelations.uid, uid),
+            inArray(memoRelations.sourceMemoId, sourceMemoIds),
+            eq(memoRelations.deletedAt, 0)
+          )
+        );
+
+      const map = new Map<string, string[]>();
+      for (const record of results) {
+        const existing = map.get(record.sourceMemoId);
+        if (existing) {
+          existing.push(record.targetMemoId);
+        } else {
+          map.set(record.sourceMemoId, [record.targetMemoId]);
+        }
+      }
+      return map;
+    } catch (error) {
+      logger.error('Failed to batch get related memos:', error);
       throw error;
     }
   }
