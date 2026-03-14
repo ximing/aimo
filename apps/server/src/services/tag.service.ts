@@ -3,7 +3,7 @@
  * Business logic for tag management
  */
 
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql, inArray } from 'drizzle-orm';
 import { Service } from 'typedi';
 
 import { getDatabase } from '../db/connection.js';
@@ -98,13 +98,13 @@ export class TagService {
 
     const db = getDatabase();
 
-    // Use sql.inArray for IN clause
+    // Use inArray for parameterized IN clause
     const results = await db
       .select()
       .from(tags)
       .where(
         and(
-          sql`${tags.tagId} IN ${sql.raw(`(${tagIds.map((id) => `'${id}'`).join(',')})`)}`,
+          inArray(tags.tagId, tagIds),
           eq(tags.uid, uid),
           eq(tags.deletedAt, 0)
         )
