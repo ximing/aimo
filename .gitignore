@@ -17,3 +17,4 @@ lancedb_data/
 attachments/
 .worktrees/
 worktrees/
+coverage
