@@ -14,7 +14,7 @@ describe('PublicMemoDto privacy', () => {
     };
 
     // This line would fail TypeScript compilation if 'email' were in the type
-    const hasEmail = (publicUser as Record<string, unknown>).email;
+    const hasEmail = (publicUser as unknown as Record<string, unknown>).email;
 
     expect(hasEmail).toBeUndefined();
     expect(publicUser).not.toHaveProperty('email');
