@@ -316,7 +316,8 @@ export class MemoService {
       // Resolve tag names to tag IDs for filtering
       let tagIdsToFilter: string[] | undefined;
       if (tags && tags.length > 0) {
-        tagIdsToFilter = await this.tagService.resolveTagNamesToIds(tags, uid);
+        const resolvedTagIds = await this.tagService.resolveTagNamesToIds(tags, uid);
+        tagIdsToFilter = [...new Set(resolvedTagIds)];
       }
 
       // Build filter conditions
@@ -344,6 +345,15 @@ export class MemoService {
         conditions.push(lte(memos.createdAt, endDate));
       }
 
+      // Add tag filters in SQL so count and pagination stay consistent across pages
+      if (tagIdsToFilter && tagIdsToFilter.length > 0) {
+        for (const tagId of tagIdsToFilter) {
+          conditions.push(
+            sql`JSON_CONTAINS(COALESCE(${memos.tagIds}, JSON_ARRAY()), JSON_QUOTE(${tagId}))`
+          );
+        }
+      }
+
       // Get total count
       const countQuery = db
         .select({ count: sql<number>`count(*)` })
@@ -351,14 +361,14 @@ export class MemoService {
         .where(and(...conditions));
 
       const countResult = await countQuery;
-      let total = countResult[0]?.count || 0;
+      const total = countResult[0]?.count || 0;
 
       // Get paginated results
       const offset = (page - 1) * limit;
       const sortColumn = sortBy === 'createdAt' ? memos.createdAt : memos.updatedAt;
       const sortDirection = sortOrder === 'asc' ? asc(sortColumn) : desc(sortColumn);
 
-      let query = db
+      const query = db
         .select()
         .from(memos)
         .where(and(...conditions))
@@ -366,18 +376,7 @@ export class MemoService {
         .limit(limit)
         .offset(offset);
 
-      let results = await query;
-
-      // Apply tag filter if needed (post-query filtering for JSON array)
-      if (tagIdsToFilter && tagIdsToFilter.length > 0) {
-        results = results.filter((memo) => {
-          const memoTagIds = memo.tagIds || [];
-          // Check if memo has ALL the specified tag IDs
-          return tagIdsToFilter!.every((tagId) => memoTagIds.includes(tagId));
-        });
-        // Recalculate total after tag filtering
-        total = results.length;
-      }
+      const results = await query;
 
       // Convert to DTOs
       const items: MemoListItemDto[] = [];
