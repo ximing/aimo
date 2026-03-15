@@ -4,7 +4,6 @@
 
 import type { AttachmentDto } from './attachment.js';
 import type { TagDto } from './tag.js';
-import type { UserInfoDto } from './user.js';
 
 export interface CreateMemoDto {
   /** Memo content text */
@@ -264,11 +263,23 @@ export interface PaginatedMemoListWithScoreDto {
 }
 
 /**
- * Public memo DTO for share page (includes user info)
+ * Public user DTO for anonymous share responses
+ */
+export interface PublicUserDto {
+  /** User unique identifier */
+  uid: string;
+  /** Optional user nickname */
+  nickname?: string;
+  /** Optional avatar URL */
+  avatar?: string;
+}
+
+/**
+ * Public memo DTO for share page
  */
 export interface PublicMemoDto {
   /** Memo data with attachments */
   memo: MemoWithAttachmentsDto;
-  /** User information for the memo author */
-  user: UserInfoDto;
+  /** Public author information (PII excluded) */
+  user: PublicUserDto;
 }

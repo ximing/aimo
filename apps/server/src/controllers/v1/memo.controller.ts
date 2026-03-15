@@ -19,7 +19,13 @@ import { UserService } from '../../services/user.service.js';
 import { logger } from '../../utils/logger.js';
 import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
 
-import type { CreateMemoDto, UpdateMemoDto, UserInfoDto } from '@aimo/dto';
+import type {
+  CreateMemoDto,
+  PublicMemoDto,
+  PublicUserDto,
+  UpdateMemoDto,
+  UserInfoDto,
+} from '@aimo/dto';
 
 @Service()
 @JsonController('/api/v1/memos')
@@ -479,14 +485,13 @@ export class MemoV1Controller {
         return ResponseUtility.error(ErrorCode.NOT_FOUND, 'User not found');
       }
 
-      const userInfo: UserInfoDto = {
+      const userInfo: PublicUserDto = {
         uid: user.uid,
-        email: user.email ?? undefined,
         nickname: user.nickname ?? undefined,
         avatar: await this.avatarService.generateAvatarAccessUrl(user.avatar || ''),
       };
 
-      return ResponseUtility.success({
+      return ResponseUtility.success<PublicMemoDto>({
         memo,
         user: userInfo,
       });
