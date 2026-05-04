@@ -33,6 +33,7 @@ import videoPlaceholder from '../../../assets/icons/video.webp';
 interface MemoCardProps {
   memo: MemoListItemDto | MemoListItemWithScoreDto;
   onQuote?: (memo: MemoListItemDto) => void;
+  onMemoClick?: (memoId: string) => void;
 }
 
 // Extract plain text without markdown syntax
@@ -77,7 +78,7 @@ const extractPlainText = (content: string): string => {
   return plainText;
 };
 
-export const MemoCard = view(({ memo, onQuote }: MemoCardProps) => {
+export const MemoCard = view(({ memo, onQuote, onMemoClick }: MemoCardProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showRelatedModal, setShowRelatedModal] = useState(false);
@@ -302,9 +303,9 @@ export const MemoCard = view(({ memo, onQuote }: MemoCardProps) => {
   };
 
   const handleCardClick = () => {
-    // Only open modal if not in editing mode and not already a selected relation
-    if (!isEditing && !selectedRelationMemo) {
-      setShowRelatedModal(true);
+    // Only trigger memo click if not in editing mode and not already a selected relation
+    if (!isEditing && !selectedRelationMemo && onMemoClick) {
+      onMemoClick(memo.memoId);
     }
   };
 

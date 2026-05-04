@@ -15,7 +15,7 @@ const getNotificationIcon = (_type: string) => {
 
 const getNotificationPath = (notification: Notification): string => {
   if (notification.type === 'memo_mention' || notification.type === 'memo_comment') {
-    return notification.memoId ? `/home?memo=${notification.memoId}` : '/home';
+    return notification.memoId ? `/home?memo=${encodeURIComponent(notification.memoId)}` : '/home';
   }
   if (notification.type === 'ai_recommendation') {
     return '/ai-explore';

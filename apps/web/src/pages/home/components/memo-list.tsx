@@ -6,6 +6,7 @@ import { MemoCard } from './memo-card';
 
 interface MemoListProps {
   onQuote?: (memo: MemoListItemDto) => void;
+  onMemoClick?: (memoId: string) => void;
 }
 
 /**
@@ -34,7 +35,7 @@ const groupMemosByDate = (
   return grouped;
 };
 
-export const MemoList = view(({ onQuote }: MemoListProps) => {
+export const MemoList = view(({ onQuote, onMemoClick }: MemoListProps) => {
   const memoService = useService(MemoService);
 
   if (memoService.loading && memoService.memos.length === 0) {
@@ -131,7 +132,7 @@ export const MemoList = view(({ onQuote }: MemoListProps) => {
           <div>
             <div className="space-y-3">
               {memoService.memos.map((memo) => (
-                <MemoCard key={memo.memoId} memo={memo} onQuote={onQuote} />
+                <MemoCard key={memo.memoId} memo={memo} onQuote={onQuote} onMemoClick={onMemoClick} />
               ))}
             </div>
           </div>
@@ -161,7 +162,7 @@ export const MemoList = view(({ onQuote }: MemoListProps) => {
                     {/* Memos for this date */}
                     <div className="space-y-3">
                       {memos.map((memo) => (
-                        <MemoCard key={memo.memoId} memo={memo} onQuote={onQuote} />
+                        <MemoCard key={memo.memoId} memo={memo} onQuote={onQuote} onMemoClick={onMemoClick} />
                       ))}
                     </div>
                   </div>

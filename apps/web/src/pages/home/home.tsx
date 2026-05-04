@@ -16,6 +16,7 @@ import { CalendarHeatmap } from '../../components/calendar-heatmap';
 import { OnThisDayBanner } from './components/on-this-day-banner';
 import { DailyRecommendations } from './components/daily-recommendations';
 import { TagList } from './components/tag-list';
+import { RelatedMemosModal } from './components/related-memos-modal';
 
 // LocalStorage key for heatmap collapsed state
 const HEATMAP_COLLAPSED_KEY = 'aimo:heatmap:collapsed';
@@ -62,6 +63,9 @@ export const HomePage = view(() => {
   const [isCollapsed, setIsCollapsed] = useState(() =>
     getIsCompactLayout() ? true : loadCollapsedState()
   );
+  const [selectedMemoId, setSelectedMemoId] = useState<string | null>(null);
+  const [showRelatedModal, setShowRelatedModal] = useState(false);
+  const [selectedMemoForRelated, setSelectedMemoForRelated] = useState<MemoListItemDto | null>(null);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia(HEATMAP_COMPACT_QUERY);
@@ -104,6 +108,14 @@ export const HomePage = view(() => {
     } else {
       memoService.setTagFilter(null);
     }
+
+    // Handle memo from URL
+    const memoParam = urlParams.get('memo');
+    if (memoParam) {
+      setSelectedMemoId(decodeURIComponent(memoParam));
+    } else {
+      setSelectedMemoId(null);
+    }
   }, [memoService]);
 
   // Update URL when selected date changes
@@ -143,12 +155,29 @@ export const HomePage = view(() => {
     }
   }, [memoService.tagFilter, setSearchParams]);
 
+  // Update URL when selected memo changes
+  useEffect(() => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (selectedMemoId) {
+          next.set('memo', encodeURIComponent(selectedMemoId));
+        } else {
+          next.delete('memo');
+        }
+        return next;
+      },
+      { replace: true }
+    );
+  }, [selectedMemoId, setSearchParams]);
+
   // Handle browser back/forward buttons
   useEffect(() => {
     const handlePopState = () => {
       const urlParams = new URLSearchParams(window.location.search);
       const tagParam = urlParams.get('tag');
       const tagsParams = urlParams.getAll('tags');
+      const memoParam = urlParams.get('memo');
 
       if (tagsParams.length > 0) {
         // Tags from URL
@@ -158,11 +187,30 @@ export const HomePage = view(() => {
       } else if (!tagParam && !tagsParams.length && memoService.tagFilter.length > 0) {
         memoService.clearAllTagFilters();
       }
+
+      // Handle memo from URL
+      if (memoParam) {
+        setSelectedMemoId(decodeURIComponent(memoParam));
+      } else {
+        setSelectedMemoId(null);
+      }
     };
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, [memoService]);
+
+  // Open RelatedMemosModal when selectedMemoId changes
+  useEffect(() => {
+    if (selectedMemoId) {
+      // Find the memo from memoService.memos
+      const memo = memoService.memos.find((m) => m.memoId === selectedMemoId);
+      if (memo) {
+        setSelectedMemoForRelated(memo as MemoListItemDto);
+        setShowRelatedModal(true);
+      }
+    }
+  }, [selectedMemoId, memoService.memos]);
 
   // Fetch user info on mount to keep it up to date
   useEffect(() => {
@@ -383,7 +431,7 @@ export const HomePage = view(() => {
                 onScroll={handleScroll}
               >
                 <section aria-label="Your memos">
-                  <MemoList onQuote={handleQuoteMemo} />
+                  <MemoList onQuote={handleQuoteMemo} onMemoClick={setSelectedMemoId} />
                 </section>
 
                 {/* Scroll to Top Button */}
@@ -401,6 +449,22 @@ export const HomePage = view(() => {
           </div>
         </div>
       </div>
+
+      {/* Related Memos Modal */}
+      <RelatedMemosModal
+        isOpen={showRelatedModal}
+        onClose={() => {
+          setShowRelatedModal(false);
+          setSelectedMemoId(null);
+        }}
+        memo={selectedMemoForRelated}
+        onMemoClick={(memo) => {
+          // Set the clicked memo and open RelatedMemosModal
+          setSelectedMemoForRelated(memo as MemoListItemDto);
+          setSelectedMemoId(memo.memoId);
+          setShowRelatedModal(true);
+        }}
+      />
     </Layout>
   );
 });

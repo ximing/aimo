@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@aimo/dto": "workspace:*",
+    "@chenglou/pretext": "^0.0.6",
     "@headlessui/react": "^2.2.9",
     "@rabjs/react": "^9.0.0",
     "axios": "^1.13.5",

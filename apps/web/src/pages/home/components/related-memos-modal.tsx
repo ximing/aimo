@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { Dialog, Transition, Tab } from '@headlessui/react';
 import { Fragment } from 'react';
 import { X, ArrowRight, Link2, GitBranch, Network, Sparkles } from 'lucide-react';
@@ -7,12 +7,13 @@ import InfiniteScroll from 'react-infinite-scroll-component';
 import type { MemoListItemDto, MemoListItemWithScoreDto } from '@aimo/dto';
 import { MemoService } from '../../../services/memo.service';
 import { RelationGraph } from './relation-graph';
+import { prepareWithSegments, measureLineStats } from '@chenglou/pretext';
 
 interface RelatedMemosModalProps {
   isOpen: boolean;
   onClose: () => void;
   memo: MemoListItemDto | null;
-  onMemoClick?: (memoId: string) => void;
+  onMemoClick?: (memo: MemoListItemDto | MemoListItemWithScoreDto) => void;
 }
 
 type TabType = 'semantic' | 'forward' | 'backlinks' | 'graph';
@@ -153,6 +154,7 @@ export const RelatedMemosModal = view(
   ({ isOpen, onClose, memo, onMemoClick }: RelatedMemosModalProps) => {
     const memoService = useService(MemoService);
     const [activeTab, setActiveTab] = useState<TabType>('semantic');
+    const [isExpanded, setIsExpanded] = useState(false);
 
     const [semanticData, setSemanticData] = useState<TabData>({ items: [], loading: false });
     const [semanticPagination, setSemanticPagination] = useState<PaginationState>({
@@ -167,6 +169,22 @@ export const RelatedMemosModal = view(
 
     // Track which tabs have loaded data to prevent infinite requests when server returns empty
     const loadedTabsRef = useRef<Set<TabType>>(new Set());
+
+    // Calculate line count for memo content
+    const lineCount = useMemo(() => {
+      if (!memo) return 0;
+      const plainText = extractPlainText(memo.content, 500);
+      const prepared = prepareWithSegments(plainText, '14px system-ui, -apple-system, sans-serif');
+      const { lineCount } = measureLineStats(prepared, 600); // ~600px width for modal content area
+      return lineCount;
+    }, [memo]);
+
+    const needsExpand = lineCount > 5;
+
+    // Reset expanded state when memo changes
+    useEffect(() => {
+      setIsExpanded(false);
+    }, [memo]);
 
     // Load semantic data from API
     const loadSemanticData = useCallback(
@@ -303,9 +321,19 @@ export const RelatedMemosModal = view(
       loadBacklinksData,
     ]);
 
-    const handleMemoClick = (memoId: string) => {
+    const handleMemoClick = (memoOrId: MemoListItemDto | MemoListItemWithScoreDto | string) => {
       if (onMemoClick) {
-        onMemoClick(memoId);
+        // If it's a string (from RelationGraph), find the memo object
+        if (typeof memoOrId === 'string') {
+          const foundMemo = [...forwardData.items, ...backlinksData.items].find(m => m.memoId === memoOrId);
+          if (foundMemo) {
+            onMemoClick(foundMemo);
+          }
+        } else {
+          onMemoClick(memoOrId);
+        }
+        // Don't call onClose() - onMemoClick handles state update to show new memo
+      } else {
         onClose();
       }
     };
@@ -365,7 +393,7 @@ export const RelatedMemosModal = view(
                     key={item.memoId}
                     memo={item}
                     index={index}
-                    onClick={() => handleMemoClick(item.memoId)}
+                    onClick={() => handleMemoClick(item)}
                   />
                 ))}
               </div>
@@ -383,7 +411,7 @@ export const RelatedMemosModal = view(
                 <MemoListItem
                   key={item.memoId}
                   memo={item}
-                  onClick={() => handleMemoClick(item.memoId)}
+                  onClick={() => handleMemoClick(item)}
                 />
               ))}
             </div>
@@ -400,7 +428,7 @@ export const RelatedMemosModal = view(
                 <MemoListItem
                   key={item.memoId}
                   memo={item}
-                  onClick={() => handleMemoClick(item.memoId)}
+                  onClick={() => handleMemoClick(item)}
                 />
               ))}
             </div>
@@ -454,15 +482,30 @@ export const RelatedMemosModal = view(
               >
                 <Dialog.Panel className="w-full max-w-3xl transform overflow-hidden rounded-xl bg-white dark:bg-dark-800 shadow-xl transition-all">
                   {/* Header */}
-                  <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-dark-700">
+                  <div className="flex items-start justify-between px-6 py-4">
                     <div className="flex-1 min-w-0">
                       <Dialog.Title className="text-base font-semibold text-gray-900 dark:text-white">
                         笔记关联
                       </Dialog.Title>
                       {memo && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
-                          {extractPlainText(memo.content, 60)}
-                        </p>
+                        <div className="mt-1">
+                          <p
+                            className={`text-sm text-gray-600 dark:text-gray-400 leading-relaxed ${
+                              isExpanded ? '' : 'line-clamp-5'
+                            }`}
+                            style={!isExpanded ? { display: '-webkit-box', WebkitLineClamp: 5, WebkitBoxOrient: 'vertical', overflow: 'hidden' } : {}}
+                          >
+                            {extractPlainText(memo.content, 500)}
+                          </p>
+                          {needsExpand && (
+                            <button
+                              onClick={() => setIsExpanded(!isExpanded)}
+                              className="text-xs text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 mt-1 cursor-pointer"
+                            >
+                              {isExpanded ? '收起' : '展开'}
+                            </button>
+                          )}
+                        </div>
                       )}
                     </div>
                     <button
@@ -512,15 +555,6 @@ export const RelatedMemosModal = view(
                     </Tab.Panels>
                   </Tab.Group>
 
-                  {/* Footer */}
-                  <div className="border-t border-gray-200 dark:border-dark-700 px-6 py-3 flex justify-end">
-                    <button
-                      onClick={onClose}
-                      className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors cursor-pointer"
-                    >
-                      关闭
-                    </button>
-                  </div>
                 </Dialog.Panel>
               </Transition.Child>
             </div>
