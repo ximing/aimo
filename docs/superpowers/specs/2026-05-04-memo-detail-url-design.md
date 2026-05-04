@@ -24,29 +24,29 @@ interface MemoDetailModalProps {
 目前仅在 `DailyRecommendations` 中使用。
 
 ### 通知跳转
-`NotificationCard.tsx` 构造 `/home?memo=<id>` URL（需要用 `encodeURIComponent` 编码 memoId）。
+`NotificationCard.tsx` 构造 `/home?memo=<id>` URL。
 
-## 改动方案
+## 改动清单
 
-### 1. NotificationCard URL 编码修复
+### 1. NotificationCard.tsx（第 18 行）
 
-`apps/web/src/pages/notifications/NotificationCard.tsx` 第 18 行需要修复：
+**现状：** `return notification.memoId ? \`/home?memo=${notification.memoId}\` : '/home';`
 
+**改动：** 添加 `encodeURIComponent` 处理特殊字符：
 ```typescript
-// 修复前
-return notification.memoId ? `/home?memo=${notification.memoId}` : '/home';
-
-// 修复后
 return notification.memoId ? `/home?memo=${encodeURIComponent(notification.memoId)}` : '/home';
 ```
 
-### 2. home.tsx 添加 memo 参数同步
+### 2. home.tsx（多处改动）
 
+#### 2.1 添加 state
 ```typescript
-// 状态
 const [selectedMemoId, setSelectedMemoId] = useState<string | null>(null);
+```
 
-// 初始化：从 URL 读取 memo 参数
+#### 2.2 初始化读取 memo 参数
+在现有 `useEffect`（读取 date、tags 参数）之后添加：
+```typescript
 useEffect(() => {
   const urlParams = new URLSearchParams(window.location.search);
   const memoParam = urlParams.get('memo');
@@ -54,8 +54,11 @@ useEffect(() => {
     setSelectedMemoId(decodeURIComponent(memoParam));
   }
 }, []);
+```
 
-// 状态 → URL（保留其他参数如 date、tags）
+#### 2.3 同步到 URL
+在现有 `useEffect`（同步 date、tags）之后添加：
+```typescript
 useEffect(() => {
   setSearchParams((prev) => {
     const next = new URLSearchParams(prev);
@@ -67,21 +70,28 @@ useEffect(() => {
     return next;
   }, { replace: true });
 }, [selectedMemoId, setSearchParams]);
-
-// 监听浏览器前进/后退
-useEffect(() => {
-  const handlePopState = () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const memoParam = urlParams.get('memo');
-    setSelectedMemoId(memoParam ? decodeURIComponent(memoParam) : null);
-  };
-  window.addEventListener('popstate', handlePopState);
-  return () => window.removeEventListener('popstate', handlePopState);
-}, []);
 ```
 
-### 3. MemoDetailModal 渲染
+#### 2.4 popstate 处理
+在现有的 `window.addEventListener('popstate', handlePopState)` 处理中添加 memo 参数读取：
+```typescript
+const handlePopState = () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const dateParam = urlParams.get('date');
+  const tagParam = urlParams.get('tag');
+  const tagsParams = urlParams.getAll('tags');
+  const memoParam = urlParams.get('memo');
+  // ... existing logic for date/tag/tags ...
+  if (memoParam) {
+    setSelectedMemoId(decodeURIComponent(memoParam));
+  } else {
+    setSelectedMemoId(null);
+  }
+};
+```
 
+#### 2.5 渲染 MemoDetailModal
+在 JSX 中添加：
 ```tsx
 <MemoDetailModal
   isOpen={!!selectedMemoId}
@@ -90,20 +100,28 @@ useEffect(() => {
 />
 ```
 
-### 4. MemoCard 点击行为
+### 3. memo-list.tsx
 
-**点击行为：**
-- 点击 memo 卡片 → 打开 `MemoDetailModal`，同时 URL 变为 `/home?memo=xxx`
-- 保留原有的 RelatedMemosModal 功能（通过卡片上的菜单按钮触发）
+**现状：** `MemoListProps` 只有 `onQuote` prop。
 
-实现方式：在 `MemoList` 组件中添加 `onMemoClick` 回调，点击卡片时调用 `setSelectedMemoId`。
+**改动：** 添加 `onMemoClick` 回调：
+```typescript
+interface MemoListProps {
+  onQuote: (memo: Memo) => void;
+  onMemoClick: (memoId: string) => void;  // 新增
+}
+```
 
-### 5. 无效 memoId 处理
+在 `MemoCard` 的 `onClick` 处理中调用 `onMemoClick(memo.id)`。
 
-当 memoId 对应的 memo 不存在时：
-- `MemoDetailModal` 内部会显示错误状态
-- 关闭弹窗时 URL 自动清除 memo 参数
-- 不需要额外处理
+### 4. home.tsx 传递 onMemoClick
+
+```typescript
+<MemoList
+  onQuote={handleQuote}
+  onMemoClick={(memoId) => setSelectedMemoId(memoId)}
+/>
+```
 
 ## 行为总结
 
@@ -114,12 +132,6 @@ useEffect(() => {
 | 刷新页面（有 memo 参数） | 保持 `/home?memo=xxx` | 打开 |
 | 点击通知（memo 类型） | → `/home?memo=xxx` | 打开 |
 | 浏览器后退 | → `/home` | 关闭 |
-
-## 改动文件清单
-
-- `apps/web/src/pages/notifications/NotificationCard.tsx` — 添加 `encodeURIComponent`
-- `apps/web/src/pages/home/home.tsx` — 添加 memo 参数同步逻辑
-- `apps/web/src/pages/home/components/memo-list.tsx` — 添加 `onMemoClick` 回调处理
 
 ## 兼容性
 
