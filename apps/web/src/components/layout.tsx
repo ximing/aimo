@@ -255,7 +255,7 @@ export const Layout = view(({ children }: LayoutProps) => {
                           if (notification.memoId) {
                             navigate(`/home?memo=${notification.memoId}`);
                           } else {
-                            navigate('/review');
+                            navigate('/home');
                           }
                           setIsNotificationOpen(false);
                         }}
