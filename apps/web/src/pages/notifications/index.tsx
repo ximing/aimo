@@ -86,10 +86,10 @@ export const NotificationPage = bindServices(() => {
 
   return (
     <Layout>
-      <div className="flex-1 flex flex-col h-full overflow-hidden bg-gray-50 dark:bg-dark-900">
-        {/* Header */}
-        <div className="flex-shrink-0 bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700">
-          <div className="max-w-[720px] mx-auto px-6 py-4">
+      <div className="flex-1 overflow-hidden flex justify-center w-full">
+        <div className="w-full max-w-[720px] h-full flex flex-col">
+          {/* Header */}
+          <div className="flex-shrink-0 bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700 px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <button
@@ -129,11 +129,9 @@ export const NotificationPage = bindServices(() => {
               <NotificationTabs activeTab={activeTab} onTabChange={setActiveTab} />
             </div>
           </div>
-        </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="max-w-[720px] mx-auto px-6 py-6">
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto bg-gray-50 dark:bg-dark-900 px-6 py-6">
             {notificationService.loading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="w-8 h-8 text-primary-600 animate-spin" />
