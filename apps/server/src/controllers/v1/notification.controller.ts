@@ -77,4 +77,23 @@ export class NotificationController {
       return ResponseUtility.error(ErrorCode.DB_ERROR, 'Failed to mark notification as read');
     }
   }
+
+  /**
+   * POST /api/v1/notifications/read-all
+   * Marks all notifications as read for the current user
+   */
+  @Post('/read-all')
+  async markAllAsRead(@CurrentUser() user: UserInfoDto) {
+    try {
+      if (!user?.uid) {
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
+      }
+
+      const count = await this.notificationService.markAllAsRead(user.uid);
+      return ResponseUtility.success({ count, message: `${count} notifications marked as read` });
+    } catch (error) {
+      logger.error('Mark all notifications as read error:', error);
+      return ResponseUtility.error(ErrorCode.DB_ERROR, 'Failed to mark all notifications as read');
+    }
+  }
 }
