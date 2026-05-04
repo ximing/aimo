@@ -91,4 +91,24 @@ export class NotificationService {
 
     return created[0];
   }
+
+  /**
+   * Mark all notifications as read for a user. Returns the count of updated notifications.
+   */
+  async markAllAsRead(userId: string): Promise<number> {
+    const db = getDatabase();
+
+    await db
+      .update(inAppNotifications)
+      .set({ isRead: true })
+      .where(and(eq(inAppNotifications.userId, userId), eq(inAppNotifications.isRead, false)));
+
+    // Drizzle doesn't return affected rows directly; use a separate count query
+    const countResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(inAppNotifications)
+      .where(and(eq(inAppNotifications.userId, userId), eq(inAppNotifications.isRead, true)));
+
+    return Number(countResult[0]?.count ?? 0);
+  }
 }
