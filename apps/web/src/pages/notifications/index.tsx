@@ -45,8 +45,11 @@ export const NotificationPage = bindServices(() => {
   const [markingAllRead, setMarkingAllRead] = useState(false);
 
   useEffect(() => {
-    notificationService.fetchNotifications();
-    notificationService.fetchUnreadCount();
+    const loadAndMarkAsRead = async () => {
+      await notificationService.fetchNotifications();
+      await notificationService.markAllAsRead();
+    };
+    loadAndMarkAsRead();
   }, [notificationService]);
 
   const filteredNotifications = useMemo(() => {
