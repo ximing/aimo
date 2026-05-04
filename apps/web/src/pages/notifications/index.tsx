@@ -89,29 +89,9 @@ export const NotificationPage = bindServices(() => {
       <div className="flex-1 overflow-hidden flex justify-center w-full">
         <div className="w-full max-w-[720px] h-full flex flex-col">
           {/* Header */}
-          <div className="flex-shrink-0 bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700 px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => navigate(-1)}
-                  className="p-2 -ml-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors"
-                >
-                  <svg
-                    className="w-5 h-5 text-gray-600 dark:text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 19l-7-7 7-7"
-                    />
-                  </svg>
-                </button>
-                <h1 className="text-lg font-semibold text-gray-900 dark:text-white">通知中心</h1>
-              </div>
+          <div className="flex-shrink-0 px-6 pt-4">
+            <div className="flex items-center justify-between mb-4">
+              <h1 className="text-lg font-semibold text-gray-900 dark:text-white">通知中心</h1>
               {activeTab !== 'read' && hasUnreadInCurrentTab && (
                 <button
                   onClick={handleMarkAllAsRead}
@@ -125,9 +105,7 @@ export const NotificationPage = bindServices(() => {
             </div>
 
             {/* Tabs */}
-            <div className="mt-4">
-              <NotificationTabs activeTab={activeTab} onTabChange={setActiveTab} />
-            </div>
+            <NotificationTabs activeTab={activeTab} onTabChange={setActiveTab} />
           </div>
 
           {/* Content */}
