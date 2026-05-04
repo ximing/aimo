@@ -26,3 +26,9 @@ export const markAsRead = (notificationId: string) =>
     `/api/v1/notifications/${notificationId}/read`,
     {}
   );
+
+export const markAllAsRead = () =>
+  request.post<unknown, { code: number; data: { count: number; message: string } }>(
+    '/api/v1/notifications/read-all',
+    {}
+  );
