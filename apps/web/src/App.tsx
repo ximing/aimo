@@ -18,6 +18,7 @@ import SharePage from './pages/share';
 import NotFoundPage from './pages/not-found';
 import ReviewPage from './pages/review';
 import TrashPage from './pages/trash';
+import NotificationPage from './pages/notifications';
 import { ProtectedRoute } from './components/protected-route';
 import { ToastContainer } from './components/toast';
 import { setNavigate } from './utils/navigation';
@@ -116,6 +117,14 @@ function App() {
           element={
             <ProtectedRoute>
               <TrashPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute>
+              <NotificationPage />
             </ProtectedRoute>
           }
         />
