@@ -239,7 +239,7 @@ export const Layout = view(({ children }: LayoutProps) => {
                     </span>
                   )}
                 </div>
-                <div className="overflow-y-auto max-h-80">
+                <div className="overflow-y-auto max-h-[calc(100%-120px)]">
                   {notificationService.notifications.length === 0 ? (
                     <p className="px-4 py-6 text-sm text-gray-500 dark:text-gray-400 text-center">
                       暂无通知
@@ -286,7 +286,7 @@ export const Layout = view(({ children }: LayoutProps) => {
                     ))
                   )}
                 </div>
-                <div className="px-4 py-3 border-t border-gray-200 dark:border-dark-700">
+                <div className="px-4 py-3 border-t border-gray-200 dark:border-dark-700 sticky bottom-0 bg-white dark:bg-dark-800">
                   <button
                     onClick={() => {
                       setIsNotificationOpen(false);
