@@ -67,8 +67,10 @@
 | `memo_mention` / `memo_comment` | `/home?memo=:id` |
 | `ai_recommendation` | `/ai-explore` |
 | `system` | `/settings` |
-| 无 memoId 的其他类型 | `/review` |
+| 其他已知类型 (无 memoId) | `/home` |
 | 未知类型 | `/home` |
+
+**说明**: 现有 `layout.tsx` 中无 memoId 时跳转到 `/review`，与 review 页功能不符。新设计统一为 fallback 到 `/home`。
 
 ## 分页策略
 
