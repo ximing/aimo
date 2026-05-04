@@ -54,6 +54,22 @@ export class NotificationService extends Service {
     }
   }
 
+  async markAllAsRead(): Promise<boolean> {
+    try {
+      const res = await notificationApi.markAllAsRead();
+      if (res.code === 0) {
+        // Update local state - mark all as read
+        this.notifications = this.notifications.map((n) => ({ ...n, isRead: true }));
+        this.unreadCount = 0;
+        return true;
+      }
+      return false;
+    } catch (e) {
+      console.error('Mark all as read error:', e);
+      return false;
+    }
+  }
+
   startPolling(intervalMs = 60000): void {
     this.stopPolling();
     this.pollIntervalId = setInterval(() => {
