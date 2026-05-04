@@ -7,7 +7,8 @@ interface NotificationCardProps {
   notification: Notification;
 }
 
-const getNotificationIcon = (type: string) => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const getNotificationIcon = (_type: string) => {
   // Placeholder - can be enhanced with type-specific icons
   return '🔔';
 };

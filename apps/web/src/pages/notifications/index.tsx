@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router';
-import { view, useService, bindServices } from '@rabjs/react';
+import { useService, bindServices } from '@rabjs/react';
 import { Layout } from '../../components/layout';
 import { NotificationService } from '../../services/notification.service';
 import { NotificationTabs, type NotificationTab } from './NotificationTabs';
@@ -39,7 +38,6 @@ const groupNotificationsByTime = (notifications: Notification[]) => {
 };
 
 export const NotificationPage = bindServices(() => {
-  const navigate = useNavigate();
   const notificationService = useService(NotificationService);
   const [activeTab, setActiveTab] = useState<NotificationTab>('all');
   const [markingAllRead, setMarkingAllRead] = useState(false);
