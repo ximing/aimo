@@ -140,7 +140,6 @@ export class ASRV1Controller {
    * POST /api/v1/asr/transcribe-and-wait
    */
   @Post('/transcribe-and-wait')
-  @HttpCode(202)
   async transcribeAndWait(@Body() request: ASRTranscribeRequestDto) {
     try {
       if (!request.fileUrls || request.fileUrls.length === 0) {

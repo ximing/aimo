@@ -103,7 +103,7 @@ export class ExploreController {
    */
   @Get('/relations/:memoId')
   async getRelations(
-    @QueryParam('memoId') memoId: string,
+    @Param('memoId') memoId: string,
     @QueryParam('includeBacklinks') includeBacklinks: boolean = true,
     @CurrentUser() user: UserInfoDto
   ) {
