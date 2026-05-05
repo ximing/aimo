@@ -50,14 +50,14 @@ export const uploadAvatar = (file: File) => {
  * Create a new API token
  */
 export const createToken = (data: { name: string; expiresAt: number }) =>
-  request.post('/user/tokens', data);
+  request.post('/api/v1/user/tokens', data);
 
 /**
  * Get all API tokens
  */
-export const getTokens = () => request.get('/user/tokens');
+export const getTokens = () => request.get('/api/v1/user/tokens');
 
 /**
  * Revoke an API token
  */
-export const revokeToken = (id: string) => request.delete(`/user/tokens/${id}`);
+export const revokeToken = (id: string) => request.delete(`/api/v1/user/tokens/${id}`);
