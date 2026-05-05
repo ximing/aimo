@@ -13,6 +13,8 @@ export const ErrorCode = {
   USER_ALREADY_EXISTS: 1001,
   PASSWORD_ERROR: 1002,
   TOKEN_EXPIRED: 1003,
+  TOKEN_NOT_FOUND: 1004,
+  TOKEN_REVOKED: 1005,
 
   // 数据库相关错误: 2000-2999
   DB_ERROR: 2000,
@@ -45,6 +47,8 @@ export const ErrorMessage = {
   [ErrorCode.USER_ALREADY_EXISTS]: '用户已存在',
   [ErrorCode.PASSWORD_ERROR]: '密码错误',
   [ErrorCode.TOKEN_EXPIRED]: 'token已过期',
+  [ErrorCode.TOKEN_NOT_FOUND]: 'token不存在',
+  [ErrorCode.TOKEN_REVOKED]: 'token已撤销',
   [ErrorCode.DB_ERROR]: '数据库错误',
   [ErrorCode.DB_CONNECT_ERROR]: '数据库连接错误',
   [ErrorCode.BUSINESS_ERROR]: '业务错误',
