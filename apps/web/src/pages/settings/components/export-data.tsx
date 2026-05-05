@@ -119,7 +119,7 @@ export const ExportData = bindServices(() => {
             <button
               onClick={handleExport}
               disabled={isExporting}
-              className="mt-6 px-6 py-2 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors"
+              className="mt-6 px-4 py-1.5 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors"
             >
               {isExporting ? (
                 <span className="flex items-center gap-2">
@@ -295,7 +295,7 @@ export const ExportData = bindServices(() => {
                   setExportResult(null);
                   exportService.resetProgress();
                 }}
-                className="flex-1 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors"
+                className="flex-1 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors"
               >
                 再次导出
               </button>
@@ -303,7 +303,7 @@ export const ExportData = bindServices(() => {
                 onClick={() => {
                   navigate('/');
                 }}
-                className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-dark-700 dark:hover:bg-dark-600 text-gray-900 dark:text-gray-50 rounded-lg font-medium transition-colors"
+                className="flex-1 px-3 py-1.5 bg-gray-200 hover:bg-gray-300 dark:bg-dark-700 dark:hover:bg-dark-600 text-gray-900 dark:text-gray-50 rounded-lg font-medium transition-colors"
               >
                 查看笔记
               </button>

@@ -103,7 +103,7 @@ export const ApiTokensPage = view(() => {
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-50">我的 Token</h2>
             <button
               onClick={() => setShowModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
             >
               <Plus className="w-4 h-4" />
               创建 Token
@@ -210,7 +210,7 @@ export const ApiTokensPage = view(() => {
           <div className="mt-4 flex justify-end">
             <button
               onClick={handleCloseNewToken}
-              className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+              className="px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
             >
               关闭
             </button>
@@ -292,14 +292,14 @@ export const ApiTokensPage = view(() => {
           <div className="flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-dark-700">
             <button
               onClick={() => setShowModal(false)}
-              className="px-4 py-2 border border-gray-200 dark:border-dark-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"
+              className="px-3 py-1.5 border border-gray-200 dark:border-dark-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"
             >
               取消
             </button>
             <button
               onClick={handleCreate}
               disabled={!form.name.trim() || loading}
-              className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? '创建中...' : '创建'}
             </button>

@@ -295,7 +295,7 @@ export const SpacedRepetitionSettings = bindServices(() => {
             type="button"
             onClick={handleImportExisting}
             disabled={!settings.srEnabled || importing}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-dark-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-600 transition-colors text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-dark-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-600 transition-colors text-sm disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <Upload className="w-4 h-4" />
             {importing ? '导入中...' : '导入历史笔记'}
@@ -431,7 +431,7 @@ export const SpacedRepetitionSettings = bindServices(() => {
             <button
               type="submit"
               disabled={addingRule || selectedValues.length === 0}
-              className="flex items-center gap-1.5 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <Plus className="w-4 h-4" />
               添加
@@ -482,7 +482,7 @@ export const SpacedRepetitionSettings = bindServices(() => {
             <div className="flex gap-3 justify-end">
               <button
                 onClick={closeConfirm}
-                className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-dark-600 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"
+                className="px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-dark-600 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"
               >
                 取消
               </button>
@@ -491,7 +491,7 @@ export const SpacedRepetitionSettings = bindServices(() => {
                   closeConfirm();
                   confirmDialog.onConfirm();
                 }}
-                className="px-4 py-2 text-sm text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors"
+                className="px-3 py-1.5 text-sm text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors"
               >
                 确认
               </button>
