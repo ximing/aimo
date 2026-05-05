@@ -1,5 +1,5 @@
 ---
-name: api-reference
+name: aimo-api-reference
 description: >
   Complete reference for the AIMO backend API. Use this skill whenever the user asks about API endpoints,
   how to call the backend, request/response formats, REST API design, adding/modifying endpoints,
