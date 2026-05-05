@@ -17,6 +17,7 @@ export * from './review-sessions.js';
 export * from './review-items.js';
 export * from './table-migrations.js';
 export * from './user-models.js';
+export * from './user-tokens.js';
 export * from './spaced-repetition-cards.js';
 export * from './spaced-repetition-rules.js';
 export * from './in-app-notifications.js';
