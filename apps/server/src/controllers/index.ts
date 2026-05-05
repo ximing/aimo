@@ -18,6 +18,7 @@ import { SpacedRepetitionController } from './v1/spaced-repetition.controller.js
 import { TagV1Controller } from './v1/tag.controller.js';
 import { UserV1Controller } from './v1/user.controller.js';
 import { UserModelController } from './v1/user-model.controller.js';
+import { UserTokenController } from './v1/user-token.controller.js';
 import { SystemController } from './v1/system.controller.js';
 import { TrashController } from './v1/trash.controller.js';
 import { StaticController } from './static.controller.js';
@@ -30,6 +31,7 @@ export const controllers = [
   AuthV1Controller,
   UserV1Controller,
   UserModelController,
+  UserTokenController,
   CategoryV1Controller,
   DebugBAController,
   TagV1Controller,
