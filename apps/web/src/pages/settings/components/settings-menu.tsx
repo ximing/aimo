@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router';
-import { User, Import, Download, Info, Bell, Bot, BrainCircuit, Tag } from 'lucide-react';
+import { User, Import, Download, Info, Bell, Bot, BrainCircuit, Tag, Key } from 'lucide-react';
 
 export const SettingsMenu = () => {
   const menuItems: Array<{ id: string; label: string; icon: React.ReactNode; to: string }> = [
@@ -44,6 +44,12 @@ export const SettingsMenu = () => {
       label: '数据导出',
       icon: <Download className="w-5 h-5" />,
       to: '/settings/export',
+    },
+    {
+      id: 'api-tokens',
+      label: 'API Token',
+      icon: <Key className="w-5 h-5" />,
+      to: '/settings/api-tokens',
     },
     {
       id: 'about',
