@@ -1,9 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { Container } from 'typedi';
+import crypto from 'crypto';
 
 import { config } from '../config/config.js';
 import { UserService } from '../services/user.service.js';
+import { UserTokenService } from '../services/user-token.service.js';
 import { logger } from '../utils/logger.js';
 
 // Paths that require authentication
@@ -89,17 +91,52 @@ export const authHandler = async (request: Request, res: Response, next: NextFun
     next();
   } catch (error) {
     // Handle token verification errors
-    if (error instanceof jwt.JsonWebTokenError) {
+    if (error instanceof jwt.JsonWebTokenError || error instanceof jwt.TokenExpiredError) {
+      // Try personal token if JWT fails
+      const authHeader = request.headers.authorization;
+      if (authHeader?.startsWith('Bearer ')) {
+        const token = authHeader.slice(7);
+        // Skip if looks like JWT (contains two dots)
+        if (!token.includes('.')) {
+          try {
+            const tokenKey = crypto.createHash('sha256').update(token).digest('hex');
+            const userTokenService = Container.get(UserTokenService);
+            const tokenRecord = await userTokenService.getTokenByKey(tokenKey);
+
+            if (tokenRecord) {
+              // Get user from database
+              const userService = Container.get(UserService);
+              const user = await userService.findUserByUid(tokenRecord.userId);
+
+              if (user && user.deletedAt === 0) {
+                // Add user information to request context
+                request.user = {
+                  uid: user.uid,
+                  email: user.email ?? undefined,
+                  nickname: user.nickname ?? undefined,
+                };
+                return next();
+              }
+            }
+          } catch (tokenError) {
+            // Token validation failed, continue to return JWT error
+            logger.debug('Personal token validation failed:', {
+              error: tokenError instanceof Error ? tokenError.message : String(tokenError),
+            });
+          }
+        }
+      }
+
+      // Return JWT error if personal token didn't work
+      if (error instanceof jwt.TokenExpiredError) {
+        return res.status(401).json({
+          success: false,
+          message: 'Token expired',
+        });
+      }
       return res.status(401).json({
         success: false,
         message: 'Invalid token',
-      });
-    }
-
-    if (error instanceof jwt.TokenExpiredError) {
-      return res.status(401).json({
-        success: false,
-        message: 'Token expired',
       });
     }
 
