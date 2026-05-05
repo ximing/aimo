@@ -10,102 +10,156 @@
 ┌─────────────────────────────────────────────────────────────┐
 │                     认证中间件 (auth-handler.ts)            │
 │  1. 尝试 JWT Token 验证                                      │
-│  2. JWT 失败 → 提取 Bearer Token → 匹配 Personal Token      │
-│  3. Personal Token 验证通过 → 附加用户信息到 request.user   │
+│  2. JWT 失败 → 提取 Bearer Token → 查找 tokenKey hash        │
+│  3. Token 验证通过 → 附加用户信息到 request.user             │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+**Token 存储策略**：使用 dual-hash 方案
+- `tokenKey`: SHA-256 hash of original token，用于快速查找（唯一索引）
+- `tokenHash`: bcrypt hash，用于校验（防止彩虹表攻击）
+- 原始 token 只在创建时返回一次
 
 ## 数据模型
 
 ### user_tokens 表
 
+**文件**: `apps/server/src/db/schema/user-tokens.ts`
+
 | 字段 | 类型 | 说明 |
 |---|---|---|
 | id | VARCHAR(36) | UUID，主键 |
-| user_id | VARCHAR(36) | 外键 → users.uid |
+| userId | VARCHAR(36) | 外键 → users.uid |
 | name | VARCHAR(100) | Token 名称 |
-| token | VARCHAR(255) | Token 值（bcrypt hash 存储） |
-| expires_at | INT | 过期时间戳（0 = 永不过期） |
-| created_at | INT | 创建时间 |
-| revoked_at | INT | 失效时间（0 = 未失效） |
+| tokenKey | VARCHAR(64) | SHA-256(token)，唯一索引 |
+| tokenHash | VARCHAR(255) | bcrypt hash，用于校验 |
+| expiresAt | TIMESTAMP(3) | 过期时间戳（NULL = 永不过期） |
+| createdAt | TIMESTAMP(3) | 创建时间 |
+| revokedAt | TIMESTAMP(3) | 失效时间（NULL = 未失效） |
 
 **索引**：
-- `user_id` 上有普通索引
-- `token` 上有唯一索引（用于快速查找）
+- `tokenKey` 上有唯一索引
+- `userId` 上有普通索引
 
 ## 后端改动
 
-### 1. 新建 Token Service
+### 1. 新建 Schema 文件
+
+**文件**: `apps/server/src/db/schema/user-tokens.ts`
+
+```typescript
+export const userTokens = mysqlTable('user_tokens', {
+  id: varchar('id', { length: 36 }).primaryKey(),
+  userId: varchar('user_id', { length: 36 }).notNull(),
+  name: varchar('name', { length: 100 }).notNull(),
+  tokenKey: varchar('token_key', { length: 64 }).notNull().unique(),
+  tokenHash: varchar('token_hash', { length: 255 }).notNull(),
+  expiresAt: timestamp('expires_at', { mode: 'date', fsp: 3 }),
+  createdAt: timestamp('created_at', { mode: 'date', fsp: 3 }).notNull().defaultNow(),
+  revokedAt: timestamp('revoked_at', { mode: 'date', fsp: 3 }),
+});
+```
+
+导出添加到 `apps/server/src/db/schema/index.ts`
+
+### 2. 新建 DTO 文件
+
+**文件**: `packages/dto/src/user-token.ts`
+
+```typescript
+export class CreateUserTokenDto {
+  name: string;        // 1-100 字符
+  expiresAt: number;   // 毫秒时间戳，0 = 永不过期
+}
+
+export class UserTokenResponseDto {
+  id: string;
+  name: string;
+  token?: string;       // 创建时返回原始值
+  expiresAt: number;
+  createdAt: number;
+  revokedAt: number;
+  isExpired: boolean;
+  isActive: boolean;
+}
+
+export class UserTokenListResponseDto {
+  tokens: UserTokenResponseDto[];
+}
+```
+
+### 3. 新建 Token Service
 
 **文件**: `apps/server/src/services/user-token.service.ts`
 
 ```typescript
 @Service()
 export class UserTokenService {
-  // createToken(userId, name, expiresAt) - 创建 Token，返回原始 token
-  // getTokensByUserId(userId) - 获取用户所有 Token（不含 token 值）
-  // getTokenByValue(token) - 根据 token 值查找有效 Token
-  // revokeToken(id, userId) - 失效 Token
+  constructor(
+    private db: ReturnType<typeof getDatabase>,
+  ) {}
+
+  // 创建 Token（返回原始 token）
+  async createToken(userId: string, name: string, expiresAt: number): Promise<{ token: string; id: string }> {
+    const token = `aimo_tk_${crypto.randomBytes(32).toString('hex')}`;
+    const tokenKey = crypto.createHash('sha256').update(token).digest('hex');
+    const tokenHash = await bcrypt.hash(token, 10);
+
+    // ... 插入数据库
+    return { token, id };
+  }
+
+  // 根据 tokenKey 查找有效 Token
+  async getTokenByKey(tokenKey: string): Promise<UserToken | null> {
+    // ... 查询并验证未过期、未失效
+  }
+
+  // 获取用户所有 Token（不含敏感信息）
+  async getTokensByUserId(userId: string): Promise<UserTokenResponseDto[]> {}
+
+  // 失效 Token
+  async revokeToken(id: string, userId: string): Promise<void> {}
 }
 ```
 
-**Token 生成**: `crypto.randomBytes(32).toString('hex')` 生成 64 位十六进制字符串
-**存储**: 使用 bcrypt hash 存储
-
-### 2. 认证中间件升级
+### 4. 认证中间件升级
 
 **文件**: `apps/server/src/middlewares/auth-handler.ts`
 
-修改认证逻辑：
-1. 先尝试现有 JWT Token 验证
-2. JWT 失败时，从 `Authorization: Bearer <token>` 提取 token
-3. 调用 `UserTokenService.getTokenByValue()` 查找有效 Token
-4. 验证 Token 未过期且未失效
-5. 附加用户信息到 `request.user`
-
-### 3. 新增 API 端点
-
-| 方法 | 路径 | 说明 | 认证 |
-|---|---|---|---|
-| POST | `/api/v1/user/tokens` | 创建 Token | 是 |
-| GET | `/api/v1/user/tokens` | 列出 Token | 是 |
-| DELETE | `/api/v1/user/tokens/:id` | 失效 Token | 是 |
-
-**创建 Token 请求体**:
-```json
-{
-  "name": "My API Token",
-  "expiresAt": 0
+```typescript
+// 提取 Bearer Token
+const authHeader = request.headers.authorization;
+if (authHeader?.startsWith('Bearer ')) {
+  const token = authHeader.slice(7);
+  const tokenKey = crypto.createHash('sha256').update(token).digest('hex');
+  const userToken = await userTokenService.getTokenByKey(tokenKey);
+  if (userToken && userToken.user) {
+    request.user = userToken.user;
+  }
 }
 ```
 
-**创建 Token 响应**:
-```json
-{
-  "id": "uuid",
-  "name": "My API Token",
-  "token": "原始token值（只返回一次）",
-  "expiresAt": 0,
-  "createdAt": 1234567890
-}
+### 5. 新建 Controller
+
+**文件**: `apps/server/src/controllers/v1/user-token.controller.ts`
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| POST | `/tokens` | 创建 Token |
+| GET | `/tokens` | 列出 Token |
+| DELETE | `/tokens/:id` | 失效 Token |
+
+### 6. 错误码
+
+**文件**: `apps/server/src/constants/error-codes.ts`
+
+添加新错误码：
+```typescript
+TOKEN_NOT_FOUND: 1004,
+TOKEN_REVOKED: 1005,
 ```
 
-**列出 Token 响应**:
-```json
-{
-  "tokens": [
-    {
-      "id": "uuid",
-      "name": "My API Token",
-      "expiresAt": 0,
-      "createdAt": 1234567890,
-      "revokedAt": 0,
-      "isExpired": false,
-      "isActive": true
-    }
-  ]
-}
-```
+复用现有 `TOKEN_EXPIRED: 1003`。
 
 ## 前端改动
 
@@ -123,24 +177,21 @@ export class UserTokenService {
 **文件**: `apps/web/src/pages/settings/api-tokens.tsx`
 
 功能:
-- 列出用户所有 Token（名称、创建时间、过期时间、状态）
-- 创建 Token 按钮 → 弹出表单（输入名称、选择有效期）
-- 失效按钮（每个 Token 行）
-- 创建后显示原始 Token 值，提示用户保存
+- 列出用户所有 Token
+- 创建 Token 按钮 → 弹出表单
+- 失效按钮
+- 创建后显示原始 Token
 
 ### 3. API 层
 
-**文件**: `apps/web/src/api/user/token.ts`
+**文件**: `apps/web/src/api/user.ts`（扩展现有文件）
 
 ```typescript
-// 创建 Token
-export const createToken = (data: { name: string; expiresAt: number }) =>
+export const createToken = (data: CreateUserTokenDto) =>
   axios.post('/user/tokens', data);
 
-// 获取 Token 列表
 export const getTokens = () => axios.get('/user/tokens');
 
-// 失效 Token
 export const revokeToken = (id: string) => axios.delete(`/user/tokens/${id}`);
 ```
 
@@ -148,27 +199,34 @@ export const revokeToken = (id: string) => axios.delete(`/user/tokens/${id}`);
 
 | 选项 | expiresAt 值 |
 |---|---|
-| 7 天 | `now + 7*24*60*60*1000` |
-| 30 天 | `now + 30*24*60*60*1000` |
-| 90 天 | `now + 90*24*60*60*1000` |
-| 365 天 | `now + 365*24*60*60*1000` |
+| 7 天 | `Date.now() + 7*24*60*60*1000` |
+| 30 天 | `Date.now() + 30*24*60*60*1000` |
+| 90 天 | `Date.now() + 90*24*60*60*1000` |
+| 365 天 | `Date.now() + 365*24*60*60*1000` |
 | 永不过期 | `0` |
 
-前端用下拉选择。
+## 实现步骤
 
-## 错误处理
-
-| 场景 | 错误码 | 说明 |
-|---|---|---|
-| Token 不存在 | `TOKEN_NOT_FOUND` | 404 |
-| Token 已失效 | `TOKEN_REVOKED` | 401 |
-| Token 已过期 | `TOKEN_EXPIRED` | 401 |
-| 无权操作 | `FORBIDDEN` | 403（尝试操作他人 Token） |
+1. 创建 schema: `apps/server/src/db/schema/user-tokens.ts`
+2. 导出到 `schema/index.ts`
+3. 构建: `cd apps/server && pnpm build`
+4. 生成迁移: `cd apps/server && pnpm migrate:generate`
+5. 创建 DTO: `packages/dto/src/user-token.ts`
+6. 构建 DTO: `pnpm --filter @aimo/dto build`
+7. 创建 Service: `apps/server/src/services/user-token.service.ts`
+8. 创建 Controller: `apps/server/src/controllers/v1/user-token.controller.ts`
+9. 注册 Controller: 在 controllers index 中添加
+10. 更新 Middleware: `apps/server/src/middlewares/auth-handler.ts`
+11. 添加错误码: `apps/server/src/constants/error-codes.ts`
+12. 前端: 添加设置菜单项
+13. 前端: 创建 API Token 设置页面
+14. 前端: 扩展 `apps/web/src/api/user.ts`
 
 ## 安全性
 
 1. Token 值只返回一次（创建时），后续查询不返回
-2. 存储使用 bcrypt hash
+2. 存储使用 SHA-256（查找）+ bcrypt（校验）双哈希
 3. 每个 Token 只能被其创建者操作
 4. 支持随时失效
 5. 过期 Token 自动失效（查询时检查）
+6. Token 前缀 `aimo_tk_` 便于识别
