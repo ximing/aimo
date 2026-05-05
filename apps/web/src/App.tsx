@@ -12,6 +12,7 @@ import { About } from './pages/settings/components/about';
 import { PushRulesSettings } from './pages/settings/components/push-rule';
 import { SpacedRepetitionSettings } from './pages/settings/components/spaced-repetition';
 import { TagSettings } from './pages/settings/components/tag-settings';
+import { ApiTokensPage } from './pages/settings/api-tokens';
 import AIExplorePage from './pages/ai-explore';
 import GalleryPage from './pages/gallery';
 import SharePage from './pages/share';
@@ -86,6 +87,7 @@ function App() {
           <Route path="export" element={<ExportData />} />
           <Route path="spaced-repetition" element={<SpacedRepetitionSettings />} />
           <Route path="about" element={<About />} />
+          <Route path="api-tokens" element={<ApiTokensPage />} />
         </Route>
         <Route
           path="/ai-explore"

@@ -17,6 +17,11 @@ export default defineConfig(({ mode }) => {
       'import.meta.env.VITE_API_BASE_URL': JSON.stringify(apiBaseUrl),
     },
     base: isElectron ? './' : '/',
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, './src'),
+      },
+    },
     plugins: [react()],
     server: {
       port: 5173,
