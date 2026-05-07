@@ -1,5 +1,5 @@
 ---
-name: reactive-state-react
+name: rabjs-react
 description: Quick reference for @rabjs/react (RSJS) - a React reactive state management library. Use this skill when working with @rabjs/react, implementing reactive components, creating Service classes, using dependency injection, or managing observable state in React applications. Covers observer/view patterns, useService/useObserver hooks, bindServices, Service lifecycle, async state tracking, event systems, and domain architecture.
 ---
 
