@@ -193,7 +193,7 @@ jobs:
             unset CSC_LINK
             unset CSC_KEY_PASSWORD
           fi
-          pnpm --filter @aimo/client run dist:mac -- --x64
+          cd apps/client && pnpm exec electron-builder --mac --x64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_LINK: ${{ secrets.CSC_LINK }}
@@ -206,10 +206,10 @@ jobs:
         with:
           name: macos-x64-artifacts
           path: |
-            apps/client/release/*-x64.dmg
-            apps/client/release/*-x64.zip
+            apps/client/release/AIMO-*-x64.dmg
+            apps/client/release/AIMO-*-x64.zip
             apps/client/release/latest-mac.yml
-          if-no-files-found: warn
+          if-no-files-found: error
 
   # macOS Apple Silicon (arm64) build
   build-macos-arm64:
@@ -264,7 +264,7 @@ jobs:
             unset CSC_LINK
             unset CSC_KEY_PASSWORD
           fi
-          pnpm --filter @aimo/client run dist:mac -- --arm64
+          cd apps/client && pnpm exec electron-builder --mac --arm64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_LINK: ${{ secrets.CSC_LINK }}
@@ -277,10 +277,10 @@ jobs:
         with:
           name: macos-arm64-artifacts
           path: |
-            apps/client/release/*-arm64.dmg
-            apps/client/release/*-arm64.zip
+            apps/client/release/AIMO-*-arm64.dmg
+            apps/client/release/AIMO-*-arm64.zip
             apps/client/release/latest-mac.yml
-          if-no-files-found: warn
+          if-no-files-found: error
 
   # Windows x64 build
   build-windows:

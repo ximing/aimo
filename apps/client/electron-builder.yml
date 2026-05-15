@@ -18,16 +18,11 @@ files:
 
 # macOS Configuration
 mac:
+  artifactName: ${productName}-${version}-${arch}.${ext}
   category: public.app-category.productivity
   target:
     - target: dmg
-      arch:
-        - x64
-        - arm64
     - target: zip
-      arch:
-        - x64
-        - arm64
   icon: build/icon.icns
   hardenedRuntime: false
   gatekeeperAssess: false
