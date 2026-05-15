@@ -27,9 +27,11 @@ export function DailyRecommendations() {
     return `${month}月${day}日 ${weekday}`;
   }, []);
 
-  // Fetch recommendations on mount
+  // Fetch recommendations on mount, with auto-refresh
   useEffect(() => {
     let isMounted = true;
+    let refreshTimer: ReturnType<typeof setInterval> | null = null;
+    let currentDay = new Date().getDate();
 
     async function fetchRecommendations() {
       try {
@@ -59,8 +61,33 @@ export function DailyRecommendations() {
 
     fetchRecommendations();
 
+    // Auto-refresh every 30 minutes
+    refreshTimer = setInterval(() => {
+      const now = new Date();
+      // Refresh if day changed or on regular interval
+      if (now.getDate() !== currentDay) {
+        currentDay = now.getDate();
+      }
+      fetchRecommendations();
+    }, 30 * 60 * 1000);
+
+    // Refresh when tab becomes visible again
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        const now = new Date();
+        if (now.getDate() !== currentDay) {
+          currentDay = now.getDate();
+          fetchRecommendations();
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
       isMounted = false;
+      if (refreshTimer) clearInterval(refreshTimer);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 

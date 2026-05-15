@@ -29,22 +29,57 @@ export const OnThisDayBanner = view(() => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    let isMounted = true;
+    let refreshTimer: ReturnType<typeof setInterval> | null = null;
+    let currentDay = new Date().getDate();
+
     const fetchOnThisDayMemos = async () => {
       setIsLoading(true);
       try {
         const response = await memoApi.getOnThisDayMemos();
+        if (!isMounted) return;
         if (response.code === 0 && response.data) {
-          // Take at most 5 memos for the banner
           setMemos(response.data.items.slice(0, 5));
         }
       } catch (error) {
+        if (!isMounted) return;
         console.error('Failed to fetch on this day memos:', error);
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchOnThisDayMemos();
+
+    // Auto-refresh every 30 minutes
+    refreshTimer = setInterval(() => {
+      const now = new Date();
+      if (now.getDate() !== currentDay) {
+        currentDay = now.getDate();
+      }
+      fetchOnThisDayMemos();
+    }, 30 * 60 * 1000);
+
+    // Refresh when tab becomes visible again and day has changed
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        const now = new Date();
+        if (now.getDate() !== currentDay) {
+          currentDay = now.getDate();
+          fetchOnThisDayMemos();
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      isMounted = false;
+      if (refreshTimer) clearInterval(refreshTimer);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   // Handle horizontal scroll with mouse wheel
