@@ -8,9 +8,6 @@ import { UserService } from '../services/user.service.js';
 import { UserTokenService } from '../services/user-token.service.js';
 import { logger } from '../utils/logger.js';
 
-// Paths that require authentication
-// const PROTECTED_PATHS = ['/api', '/home', '/ai-explore', '/gallery', '/settings'];
-
 // Paths that don't require authentication even if they match protected prefixes
 const AUTH_EXCLUDED_PATHS = [
   '/api/v1/auth/login',
@@ -23,16 +20,19 @@ const AUTH_EXCLUDED_PATHS = [
 ];
 
 /**
- * Check if the request path requires authentication
+ * Check if the request path requires authentication.
+ * Only API requests are guarded — page and static-asset requests must pass
+ * through so the SPA can load and handle the login redirect client-side.
  */
 const requiresAuth = (path: string): boolean => {
-  // First check if path is explicitly excluded from auth
+  if (!path.startsWith('/api')) {
+    return false;
+  }
+  // Check if path is explicitly excluded from auth
   if (AUTH_EXCLUDED_PATHS.some((excluded) => path === excluded || path.startsWith(excluded))) {
     return false;
   }
   return true;
-  // Then check if path requires authentication
-  // return PROTECTED_PATHS.some((prefix) => path.startsWith(prefix));
 };
 
 /**
