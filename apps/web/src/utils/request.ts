@@ -62,6 +62,35 @@ function getElectronToken(): string | null {
 }
 
 /**
+ * Public pages that can be visited without authentication.
+ * 401 responses on these pages should NOT trigger a redirect to /auth.
+ */
+const PUBLIC_PAGE_PATTERNS: Array<string | RegExp> = ['/', /^\/share\//];
+
+/**
+ * Get the current route path, compatible with both BrowserRouter (pathname)
+ * and HashRouter (hash, used by the Electron app).
+ */
+function getCurrentRoutePath(): string {
+  const hash = window.location.hash;
+  if (hash.startsWith('#/')) {
+    // Strip leading '#' and any query string: '#/share/abc?x=1' -> '/share/abc'
+    return hash.slice(1).split('?')[0];
+  }
+  return window.location.pathname;
+}
+
+/**
+ * Check if the current page is public (no login required)
+ */
+function isPublicPage(): boolean {
+  const path = getCurrentRoutePath();
+  return PUBLIC_PAGE_PATTERNS.some((pattern) =>
+    typeof pattern === 'string' ? pattern === path : pattern.test(path)
+  );
+}
+
+/**
  * Create axios instance with default config
  */
 const request: AxiosInstance = axios.create({
@@ -123,13 +152,14 @@ request.interceptors.response.use(
 
       switch (status) {
         case 401: {
-          // Unauthorized - clear auth data and redirect to login
+          // Unauthorized - clear auth data
           localStorage.removeItem('aimo_user');
 
-          // Only redirect if not already on auth page (check both pathname and hash for compatibility)
+          // Redirect to login, unless we're on a public page (landing, share)
+          // or already on the auth page (check both pathname and hash for compatibility)
           const isAuthPage =
             window.location.pathname.includes('/auth') || window.location.hash.includes('/auth');
-          if (!isAuthPage) {
+          if (!isAuthPage && !isPublicPage()) {
             navigate('/auth', { replace: true });
           }
           break;
