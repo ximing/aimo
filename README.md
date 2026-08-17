@@ -13,7 +13,6 @@
 
 AI First 卡片笔记。随手记下想法，检索、关联和复习交给 AI；数据留在自己的机器上，也可以给 Agent 当私有记忆用。
 
-源码公开：个人使用、自托管免费；拿去卖成竞品 SaaS 需要授权（[BSL 1.1](./LICENSE)）。
 
 ![AIMO Screenshot](./apps/web/src/assets/landing/00.png)
 

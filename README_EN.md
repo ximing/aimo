@@ -12,7 +12,6 @@ English | [简体中文](./README.md) | [Website](https://aimo.plus)
 
 AI-first card memos. Capture a thought in one card; retrieval, linking, and review are built in. Your data stays on your machine, and can become private memory for your agents.
 
-Source-available: free for personal use and self-hosting. Selling it as a competing SaaS requires a license ([BSL 1.1](./LICENSE)).
 
 ![AIMO Screenshot](./apps/web/src/assets/landing/00.png)
 
