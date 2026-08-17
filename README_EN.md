@@ -1,4 +1,4 @@
-# 🚀 AIMO - AI-Powered Smart Note System
+# AIMO
 
 [![CI](https://github.com/ximing/aimo/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/ximing/aimo/actions/workflows/ci.yml)
 [![Docker Build and Publish](https://github.com/ximing/aimo/actions/workflows/docker-build.yml/badge.svg?branch=master)](https://github.com/ximing/aimo/actions/workflows/docker-build.yml)
@@ -8,11 +8,24 @@
 ![Docker](https://img.shields.io/badge/Docker-Ready-blue)
 ![License](https://img.shields.io/badge/License-BSL%201.1-blue)
 
-English | [简体中文](./README.md)
+English | [简体中文](./README.md) | [Website](https://aimo.plus)
 
-A modern AI-powered note-taking and knowledge management tool that combines semantic search, intelligent associations, and multi-platform support to help you build your own knowledge graph.
+AI-first card memos. Capture a thought in one card; retrieval, linking, and review are built in. Your data stays on your machine, and can become private memory for your agents.
+
+Source-available: free for personal use and self-hosting. Selling it as a competing SaaS requires a license ([BSL 1.1](./LICENSE)).
 
 ![AIMO Screenshot](./apps/web/src/assets/landing/00.png)
+
+## Positioning
+
+One card, one thought. AI is a first-class capability, not a bolted-on button.
+
+|                 | AIMO                                              | Document knowledge base | Capture-only tools |
+| :-------------- | :------------------------------------------------ | :---------------------- | :----------------- |
+| How you write   | A stream of cards                                 | Long documents you organize | Short captures |
+| AI              | First-class: search, links, review, memory        | Plugin or add-on        | Little or none     |
+| Where data lives| Your server or computer                           | Local or self-hosted    | Usually the cloud  |
+| Getting started | Three-line Docker, or desktop / Android           | Assemble a workflow     | Sign up            |
 
 ## ✨ Core Features
 
@@ -21,7 +34,8 @@ A modern AI-powered note-taking and knowledge management tool that combines sema
 - **Smart Summarization** - AI automatically generates note summaries, extracting key information quickly
 - **Semantic Search** - Vector-based search powered by OpenAI Embedding, understanding meaning rather than keyword matching
 - **Intelligent Associations** - Automatically discovers relationships between notes, building a visual knowledge graph
-- **Daily Recommendations** - Smart recommendations of "On This Day" notes to rediscover past inspirations
+- **Daily Recommendations** - Surface "On This Day" notes to rediscover past ideas
+- **Spaced Repetition** - Built-in review so notes come back to you instead of disappearing into the archive
 
 ### 📝 Note Management
 
@@ -273,11 +287,12 @@ aimo/
 
 ## 📄 License
 
-This project is licensed under the [Business Source License 1.1 (BSL 1.1)](./LICENSE).
+This project is licensed under the [Business Source License 1.1 (BSL 1.1)](./LICENSE). The source is public; this is not OSI “open source”.
 
-- ✅ **Allowed**: Personal use, non-commercial use, internal enterprise use
-- ❌ **Prohibited**: Commercial services, commercial product integration
-- 💼 **Commercial License**: Contact us for commercial licensing
+- ✅ **Allowed**: Personal use, learning, self-hosting, internal enterprise use
+- ❌ **Prohibited**: Selling it as a competing SaaS, or offering it as a commercial hosted product
+- ⏳ **Change**: Converts to MIT four years after publication, per BSL
+- 💼 **Commercial license**: Contact [morningxm@hotmail.com](mailto:morningxm@hotmail.com)
 
 ## 📞 Contact Us
 

@@ -44,10 +44,10 @@ const navItems = [
 const useCases = [
   {
     id: 1,
-    title: '个人知识库',
+    title: '碎片想法',
     description:
-      '将碎片化的信息整理成结构化的知识体系。无论是技术文档、读书笔记还是生活感悟，AIMO 都能帮你建立属于自己的知识网络，让知识触手可及。',
-    tags: ['知识管理', '信息整理', '长期积累'],
+      '一张卡片一个想法。先记下来，语义搜索和关联由系统完成，半年后还能按意思找回。',
+    tags: ['快速记录', '语义搜索', '长期积累'],
     gradient: 'from-blue-500 to-indigo-600',
     icon: Brain,
   },
@@ -75,8 +75,8 @@ const useCases = [
 const screenshots = [
   {
     id: 1,
-    title: '智能笔记编辑',
-    description: 'AI 辅助写作，实时生成摘要和关键词',
+    title: '随手记下',
+    description: '一张卡片一个想法，记完就走',
     gradient: 'from-blue-500 to-purple-600',
     image: screenshot00,
   },
@@ -359,7 +359,7 @@ export function LandingPage() {
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800">
             <Sparkles className="w-4 h-4 text-primary-600 dark:text-primary-400" />
             <span className="text-sm font-medium text-primary-700 dark:text-primary-300">
-              AI 驱动的知识管理
+              AI First 卡片笔记
             </span>
           </div>
 
@@ -372,13 +372,13 @@ export function LandingPage() {
 
           {/* Tagline */}
           <p className="text-2xl sm:text-3xl font-semibold text-slate-800 dark:text-slate-100 transition-colors duration-300">
-            让知识管理更智能
+            先记下来，理解和找回交给 AI
           </p>
 
           {/* Subtitle */}
           <p className="text-lg text-slate-600 dark:text-slate-400 max-w-xl mx-auto leading-relaxed transition-colors duration-300">
-            融合 AI 技术的现代化笔记工具。智能摘要、语义搜索、自动关联，
-            帮你构建属于自己的知识图谱。
+            一张卡片一个想法。检索、关联和复习是一等能力，不是后加的按钮。
+            数据留在自己的机器上。
           </p>
 
           {/* CTA Buttons */}
@@ -482,38 +482,38 @@ export function LandingPage() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">核心功能</h2>
-            <p className="text-slate-600 dark:text-slate-400">强大的 AI 功能，助你高效管理知识</p>
+            <p className="text-slate-600 dark:text-slate-400">先记下来，检索、关联和复习交给 AI</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <FeatureCard
               icon={<Sparkles className="w-6 h-6" />}
-              title="AI 笔记"
-              description="智能生成笔记摘要，自动提取关键信息，让记录更高效"
+              title="卡片流"
+              description="一张卡片一个想法，打开就能写下，记完就走"
             />
             <FeatureCard
               icon={<Search className="w-6 h-6" />}
               title="语义搜索"
-              description="基于向量相似度的智能搜索，快速找到相关内容"
+              description="按意思找回半年前的卡片，而不只是匹配关键词"
             />
             <FeatureCard
               icon={<Link2 className="w-6 h-6" />}
-              title="知识关联"
-              description="自动发现笔记间的关联，构建可视化知识图谱"
+              title="自动关联"
+              description="卡片之间自己长出关系，并可视化成图谱"
             />
             <FeatureCard
               icon={<Brain className="w-6 h-6" />}
-              title="智能补全"
-              description="AI 辅助写作，智能补全内容，激发创作灵感"
+              title="间隔重复"
+              description="重要的卡片会回来找你，而不只是沉进时间线"
             />
             <FeatureCard
               icon={<Network className="w-6 h-6" />}
-              title="多端同步"
-              description="支持桌面端和移动端，随时随地访问你的知识库"
+              title="多端"
+              description="Web、桌面端和 Android，随时记下一闪而过的想法"
             />
             <FeatureCard
               icon={<Shield className="w-6 h-6" />}
-              title="隐私安全"
-              description="本地优先存储，端到端加密，你的数据只属于你"
+              title="数据在自己手里"
+              description="自托管部署，卡片留在你的服务器或电脑上"
             />
           </div>
         </div>
@@ -532,7 +532,7 @@ export function LandingPage() {
             </div>
             <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">应用截图</h2>
             <p className="text-slate-600 dark:text-slate-400 max-w-xl mx-auto">
-              探索 AIMO 的优雅界面，体验流畅的知识管理之旅
+              一张卡片一个想法，记完就能搜、能连、能复习
             </p>
           </div>
 
@@ -796,7 +796,7 @@ export function LandingPage() {
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">下载 AIMO</h2>
             <p className="text-slate-600 dark:text-slate-400">
-              选择适合你的平台，开始高效的知识管理之旅
+              Web、桌面端和 Android，想法记在自己的机器上
             </p>
           </div>
 
@@ -879,7 +879,7 @@ export function LandingPage() {
                 <span className="text-xl font-bold text-slate-900 dark:text-white">AIMO</span>
               </div>
               <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-                AI 驱动的知识管理工具，让知识管理更智能。
+                AI First 卡片笔记。先记下来，理解和找回交给 AI。
               </p>
               {/* Social Links */}
               <div className="flex items-center gap-3">

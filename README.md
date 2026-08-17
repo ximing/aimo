@@ -1,4 +1,4 @@
-# 🚀 AIMO - AI 驱动的智能笔记系统
+# AIMO
 
 [![CI](https://github.com/ximing/aimo/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/ximing/aimo/actions/workflows/ci.yml)
 [![Docker Build and Publish](https://github.com/ximing/aimo/actions/workflows/docker-build.yml/badge.svg?branch=master)](https://github.com/ximing/aimo/actions/workflows/docker-build.yml)
@@ -9,11 +9,24 @@
 ![Docker](https://img.shields.io/badge/Docker-Ready-blue)
 ![License](https://img.shields.io/badge/License-BSL%201.1-blue)
 
-[English](./README_EN.md) | 简体中文
+[English](./README_EN.md) | 简体中文 | [官网](https://aimo.plus)
 
-一个现代化的 AI 驱动笔记与知识管理工具，融合语义搜索、智能关联、多端同步，帮助你构建属于自己的知识图谱。
+AI First 卡片笔记。随手记下想法，检索、关联和复习交给 AI；数据留在自己的机器上，也可以给 Agent 当私有记忆用。
+
+源码公开：个人使用、自托管免费；拿去卖成竞品 SaaS 需要授权（[BSL 1.1](./LICENSE)）。
 
 ![AIMO Screenshot](./apps/web/src/assets/landing/00.png)
+
+## 定位
+
+一张卡片一个想法。AI 是一等能力，不是后加的按钮。
+
+|              | AIMO                              | 文档型知识库     | 纯记录工具     |
+| :----------- | :-------------------------------- | :--------------- | :------------- |
+| 怎么记       | 卡片流，随手写下                  | 长文档、自己组织 | 短记录         |
+| AI           | 一等能力：检索、关联、复习、记忆  | 插件或后加       | 少或没有       |
+| 数据         | 自己的服务器 / 电脑               | 本地或自托管     | 多为云端       |
+| 上手         | Docker 三行，或桌面端 / Android   | 自己搭工作流     | 注册即用       |
 
 ## ✨ 核心功能
 
@@ -22,7 +35,8 @@
 - **智能摘要** - AI 自动生成笔记摘要，快速提炼关键信息
 - **语义搜索** - 基于 OpenAI Embedding 的向量搜索，理解含义而非匹配关键词
 - **智能关联** - 自动发现笔记间的关联关系，构建可视化知识图谱
-- **每日推荐** - 智能推荐"历史上的今天"记录的笔记，重温过往灵感
+- **每日推荐** - 智能推荐「历史上的今天」记录的笔记，重温过往灵感
+- **间隔重复** - 内置复习，把笔记变成会回来找你的知识，而不只是存档
 
 ### 📝 笔记管理
 
@@ -53,7 +67,7 @@
 
 ## 📸 界面预览
 
-|                 智能笔记编辑                  |                   语义搜索                    |                   知识图谱                    |
+|                   随手记下                    |                   语义搜索                    |                   知识图谱                    |
 | :-------------------------------------------: | :-------------------------------------------: | :-------------------------------------------: |
 | ![编辑](./apps/web/src/assets/landing/00.png) | ![搜索](./apps/web/src/assets/landing/01.png) | ![图谱](./apps/web/src/assets/landing/02.png) |
 
@@ -274,11 +288,12 @@ aimo/
 
 ## 📄 许可证
 
-本项目采用 [Business Source License 1.1 (BSL 1.1)](./LICENSE) 协议。
+本项目采用 [Business Source License 1.1 (BSL 1.1)](./LICENSE)。源码公开，不是 OSI 定义的「开源」。
 
-- ✅ **允许**: 个人使用、非商业用途、企业内部使用
-- ❌ **禁止**: 商业服务、商业产品集成
-- 💼 **商业许可**: 如需商业使用，请联系获取授权
+- ✅ **允许**: 个人使用、学习、自托管、企业内部使用
+- ❌ **禁止**: 拿去卖成竞品 SaaS，或作为商业产品对外提供
+- ⏳ **变更**: 按 BSL 规则，发布满四年后转为 MIT
+- 💼 **商业许可**: 如需商业使用，请联系 [morningxm@hotmail.com](mailto:morningxm@hotmail.com)
 
 ## 📞 联系我们
 

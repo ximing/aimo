@@ -42,7 +42,7 @@ export const About = view(() => {
     <div className="max-w-2xl space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">关于</h1>
-        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">关于 AIMO 知识管理工具</p>
+        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">关于 AIMO</p>
       </div>
 
       <div className="bg-white dark:bg-dark-800 rounded-lg p-6">
@@ -52,7 +52,7 @@ export const About = view(() => {
           </div>
           <div>
             <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-50">AIMO</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">AI-powered 知识管理工具</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">AI First 卡片笔记</p>
           </div>
         </div>
 
@@ -72,7 +72,7 @@ export const About = view(() => {
 
           <div className="py-3">
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              AIMO 是一个 AI 驱动的笔记和知识管理系统，帮助你高效管理和探索知识。
+              AIMO 是 AI First 的卡片笔记：随手记下想法，检索、关联和复习交给 AI。
             </p>
           </div>
         </div>
