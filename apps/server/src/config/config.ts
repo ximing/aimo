@@ -139,6 +139,9 @@ export interface Config {
   env: string;
 }
 
+// 启动时的安全配置校验（JWT_SECRET 等），由入口 index.ts 调用
+export { validateSecurityConfig } from './security.js';
+
 export const config: Config = {
   port: Number(process.env.PORT) || 3000,
   cors: {

@@ -61,7 +61,85 @@
 | :---------------------------------------------: | :---------------------------------------------: | :-------------------------------------------: |
 | ![多媒体](./apps/web/src/assets/landing/03.png) | ![AI探索](./apps/web/src/assets/landing/04.png) | ![主题](./apps/web/src/assets/landing/05.png) |
 
-## 🚀 快速开始
+## 🐳 Docker 部署（推荐）
+
+只需安装 Docker，无需预装 MySQL 或其他任何依赖。`docker-compose.yml` 会自动编排完整服务：MySQL 数据库、AIMO 应用，应用启动时自动建表和初始化。
+
+### 快速启动
+
+```bash
+# 1. 下载部署文件（无需克隆整个仓库）
+mkdir aimo && cd aimo
+curl -O https://raw.githubusercontent.com/ximing/aimo/master/docker-compose.yml
+curl -o .env https://raw.githubusercontent.com/ximing/aimo/master/.env.docker.example
+
+# 2. 编辑 .env，填入两项必需配置：
+#    JWT_SECRET       —— JWT 密钥，随机生成一个（openssl rand -base64 32）
+#    OPENAI_API_KEY   —— OpenAI API Key（用于语义搜索等 AI 功能）
+#    MySQL 无需配置，compose 已内置并自动连接
+
+# 3. 启动
+docker compose up -d
+```
+
+启动完成后访问 <http://localhost:3000>，注册第一个账号即可开始使用。
+
+> 💡 首次启动需要拉取镜像并初始化 MySQL，大约需要 1~2 分钟。查看启动进度：`docker compose logs -f app`
+>
+> ⚠️ 建议注册完自己的账号后，在 `.env` 中设置 `ALLOW_REGISTRATION=false` 并执行 `docker compose up -d` 重启，避免他人注册。
+
+### 数据持久化
+
+所有数据都持久化在**宿主机的 `./data` 目录**下，而不是容器内部。删除容器、重新拉取镜像、升级版本都不会丢失数据：
+
+```
+aimo/
+├── docker-compose.yml
+├── .env              # 配置文件（含 JWT_SECRET，请妥善保管）
+└── data/
+    ├── mysql/        # MySQL 关系型数据（用户、笔记、分类、标签等）
+    ├── lancedb/      # LanceDB 向量数据（语义搜索索引）
+    └── attachments/  # 附件文件（图片、文档等）
+```
+
+**备份数据** —— 停止服务后，把 `data/` 目录连同 `.env` 一起拷走即可：
+
+```bash
+docker compose down
+cp -r data ~/backup/aimo-data-$(date +%Y%m%d)
+cp .env ~/backup/aimo-data-$(date +%Y%m%d).env
+```
+
+**迁移到其他机器** —— 在新机器上重复"快速启动"步骤，然后用备份的 `data/` 目录和 `.env` 覆盖同名文件，重新 `docker compose up -d`。
+
+**自定义数据目录** —— 如果想把数据放在其他位置（如 NAS 的共享卷），编辑 `docker-compose.yml`，将三个 volumes 中的 `./data` 前缀替换为目标绝对路径即可，例如 `- /volume1/aimo/mysql:/var/lib/mysql`。
+
+### 升级版本
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+新版本容器启动时会自动执行数据库结构迁移（MySQL 表结构和 LanceDB 向量数据均自动升级），无需手动操作。建议升级前先按上述方法备份 `data/` 目录。
+
+### 使用已有的外部 MySQL（可选）
+
+如果你已有 MySQL 8.0+ 实例，可以不用 compose 里的 MySQL 容器，直接运行单个应用容器：
+
+```bash
+docker run -d \
+  --name aimo \
+  -p 3000:3000 \
+  --env-file .env \
+  -v $(pwd)/data/lancedb:/app/lancedb_data \
+  -v $(pwd)/data/attachments:/app/attachments \
+  ghcr.io/ximing/aimo:stable
+```
+
+此时请在 `.env` 中将 `MYSQL_HOST` 指向你的数据库地址。
+
+## 🛠️ 本地开发
 
 ### 环境要求
 
@@ -70,7 +148,7 @@
 - **MySQL** >= 8.0 或 MariaDB >= 10.6
 - **OpenAI API Key** - 用于 AI 功能
 
-### 本地开发
+### 启动步骤
 
 ```bash
 # 1. 克隆项目
@@ -87,7 +165,7 @@ CREATE DATABASE aimo CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 EXIT;
 
 # 或使用 Docker 启动 MySQL
-docker-compose up -d mysql
+docker compose up -d mysql
 
 # 4. 配置环境变量
 cp .env.example .env
@@ -110,21 +188,6 @@ pnpm lint          # 代码检查
 pnpm format        # 代码格式化
 ```
 
-## 🐳 Docker 部署
-
-### 使用预构建镜像
-
-```bash
-docker pull ghcr.io/ximing/aimo:stable
-
-docker run -d \
-  -p 3000:3000 \
-  --name aimo \
-  --env-file .env \
-  -v $(pwd)/data:/app/data \
-  ghcr.io/ximing/aimo:stable
-```
-
 ## 📥 下载客户端
 
 |  平台   |                          下载链接                          |   系统要求    |
@@ -140,8 +203,8 @@ docker run -d \
 ### 必需配置
 
 ```env
-# JWT 密钥（至少 32 个字符）
-JWT_SECRET=your-super-secret-key
+# JWT 密钥（至少 32 个字符，随机生成：openssl rand -base64 32）
+JWT_SECRET=<随机字符串，至少32字符>
 
 # OpenAI API 密钥
 OPENAI_API_KEY=sk-xxx...

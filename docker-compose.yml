@@ -1,11 +1,11 @@
-version: '3.8'
-
 services:
   mysql:
     image: mysql:8.0
     container_name: aimo-mysql
     ports:
-      - '3306:3306'
+      # 仅绑定宿主机回环地址，不对局域网/公网暴露；应用容器走内部网络访问
+      # 本地开发需要从宿主机连接其他工具时仍可用 127.0.0.1:3306
+      - '127.0.0.1:3306:3306'
     volumes:
       # MySQL 数据文件映射到外部磁盘
       - ./data/mysql:/var/lib/mysql
@@ -69,7 +69,8 @@ services:
       - CORS_CREDENTIALS=${CORS_CREDENTIALS:-true}
 
       # ===== JWT 配置 =====
-      - JWT_SECRET=${JWT_SECRET:-your-secret-key-change-in-production}
+      # 必需：请在 .env 中设置随机密钥（openssl rand -base64 32），生产环境缺失将拒绝启动
+      - JWT_SECRET=${JWT_SECRET}
 
       # ===== MySQL 数据库配置 =====
       - MYSQL_HOST=${MYSQL_HOST:-mysql}

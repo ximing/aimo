@@ -17,6 +17,9 @@ async function bootstrap() {
     logger.info(`🚀 AIMO Server v${SERVER_VERSION} starting...`);
     logger.info(`   Environment: ${process.env.NODE_ENV || 'development'}`);
 
+    const { validateSecurityConfig } = await import('./config/config.js');
+    validateSecurityConfig();
+
     const { createApp } = await import('./app.js');
     await createApp();
 

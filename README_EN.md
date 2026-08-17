@@ -1,7 +1,7 @@
 # 🚀 AIMO - AI-Powered Smart Note System
 
 [![CI](https://github.com/ximing/aimo/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/ximing/aimo/actions/workflows/ci.yml)
-[![Docker Build and Publish](https://github.com/ximing/aimo/actions/workflows/docker-publish.yml/badge.svg?branch=master)](https://github.com/ximing/aimo/actions/workflows/docker-publish.yml)
+[![Docker Build and Publish](https://github.com/ximing/aimo/actions/workflows/docker-build.yml/badge.svg?branch=master)](https://github.com/ximing/aimo/actions/workflows/docker-build.yml)
 ![Node.js](https://img.shields.io/badge/Node.js-20+-green)
 ![React](https://img.shields.io/badge/React-19-blue)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.7+-blue)
@@ -60,7 +60,85 @@ A modern AI-powered note-taking and knowledge management tool that combines sema
 | :-------------------------------------------------: | :-------------------------------------------------: | :--------------------------------------------: |
 | ![Multimedia](./apps/web/src/assets/landing/03.png) | ![AI Explore](./apps/web/src/assets/landing/04.png) | ![Theme](./apps/web/src/assets/landing/05.png) |
 
-## 🚀 Quick Start
+## 🐳 Docker Deployment (Recommended)
+
+All you need is Docker — no MySQL or any other dependency to pre-install. `docker-compose.yml` orchestrates the full stack: a MySQL database and the AIMO app, with tables created and initialized automatically on startup.
+
+### Quick Start
+
+```bash
+# 1. Download the deployment files (no need to clone the whole repo)
+mkdir aimo && cd aimo
+curl -O https://raw.githubusercontent.com/ximing/aimo/master/docker-compose.yml
+curl -o .env https://raw.githubusercontent.com/ximing/aimo/master/.env.docker.example
+
+# 2. Edit .env and fill in the two required settings:
+#    JWT_SECRET       —— a random secret, e.g. openssl rand -base64 32
+#    OPENAI_API_KEY   —— OpenAI API key (for semantic search and other AI features)
+#    No MySQL config needed — compose ships with one and wires it up automatically
+
+# 3. Start
+docker compose up -d
+```
+
+Once it's up, visit <http://localhost:3000> and register the first account to get started.
+
+> 💡 The first startup pulls images and initializes MySQL, which takes about 1–2 minutes. Follow the progress with: `docker compose logs -f app`
+>
+> ⚠️ After registering your own account, consider setting `ALLOW_REGISTRATION=false` in `.env` and restarting with `docker compose up -d` to prevent others from signing up.
+
+### Data Persistence
+
+All data is persisted on the **host machine under `./data`**, not inside containers. Removing containers, pulling new images, or upgrading versions will not lose any data:
+
+```
+aimo/
+├── docker-compose.yml
+├── .env              # Configuration (contains JWT_SECRET — keep it safe)
+└── data/
+    ├── mysql/        # MySQL relational data (users, notes, categories, tags, etc.)
+    ├── lancedb/      # LanceDB vector data (semantic search index)
+    └── attachments/  # Attachment files (images, documents, etc.)
+```
+
+**Back up data** — stop the services, then copy the `data/` directory together with `.env`:
+
+```bash
+docker compose down
+cp -r data ~/backup/aimo-data-$(date +%Y%m%d)
+cp .env ~/backup/aimo-data-$(date +%Y%m%d).env
+```
+
+**Move to another machine** — repeat the Quick Start steps on the new machine, overwrite `data/` and `.env` with your backups, then run `docker compose up -d` again.
+
+**Custom data directory** — to store data elsewhere (e.g. a NAS volume), edit `docker-compose.yml` and replace the `./data` prefix in the three volumes with your target absolute path, e.g. `- /volume1/aimo/mysql:/var/lib/mysql`.
+
+### Upgrading
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+The new container runs database schema migrations automatically on startup (both MySQL tables and LanceDB vector data upgrade themselves) — no manual steps needed. Backing up the `data/` directory before upgrading is recommended.
+
+### Using an External MySQL (Optional)
+
+If you already have a MySQL 8.0+ instance, you can skip the bundled MySQL container and run a single app container:
+
+```bash
+docker run -d \
+  --name aimo \
+  -p 3000:3000 \
+  --env-file .env \
+  -v $(pwd)/data/lancedb:/app/lancedb_data \
+  -v $(pwd)/data/attachments:/app/attachments \
+  ghcr.io/ximing/aimo:stable
+```
+
+In this case, point `MYSQL_HOST` in your `.env` at your database.
+
+## 🛠️ Local Development
 
 ### Requirements
 
@@ -69,7 +147,7 @@ A modern AI-powered note-taking and knowledge management tool that combines sema
 - **MySQL** >= 8.0 or MariaDB >= 10.6
 - **OpenAI API Key** - For AI features
 
-### Local Development
+### Steps
 
 ```bash
 # 1. Clone the project
@@ -86,7 +164,7 @@ CREATE DATABASE aimo CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 EXIT;
 
 # Or use Docker to start MySQL
-docker-compose up -d mysql
+docker compose up -d mysql
 
 # 4. Configure environment variables
 cp .env.example .env
@@ -109,21 +187,6 @@ pnpm lint          # Code linting
 pnpm format        # Code formatting
 ```
 
-## 🐳 Docker Deployment
-
-### Using Pre-built Image
-
-```bash
-docker pull ghcr.io/ximing/aimo:stable
-
-docker run -d \
-  -p 3000:3000 \
-  --name aimo \
-  --env-file .env \
-  -v $(pwd)/data:/app/data \
-  ghcr.io/ximing/aimo:stable
-```
-
 ## 📥 Download Clients
 
 | Platform |                         Download Link                          | System Requirements |
@@ -139,8 +202,8 @@ docker run -d \
 ### Required Configuration
 
 ```env
-# JWT Secret (at least 32 characters)
-JWT_SECRET=your-super-secret-key
+# JWT Secret (at least 32 characters, generate with: openssl rand -base64 32)
+JWT_SECRET=<random-string-at-least-32-characters>
 
 # OpenAI API Key
 OPENAI_API_KEY=sk-xxx...
