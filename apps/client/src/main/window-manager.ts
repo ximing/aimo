@@ -41,7 +41,7 @@ export function createWindow(): void {
     minHeight: 600,
     show: false,
     title: 'AIMO',
-    icon: iconPath,
+    ...(iconPath ? { icon: iconPath } : {}),
     titleBarStyle: 'hidden',
     webPreferences: {
       preload: PRELOAD_PATH,

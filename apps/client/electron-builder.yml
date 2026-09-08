@@ -15,6 +15,23 @@ directories:
 files:
   - dist/**
   - package.json
+  - build/trayTemplate.png
+  - build/trayTemplate@2x.png
+  - build/icon.png
+  - build/icon_16.png
+  - build/icon_32.png
+
+extraResources:
+  - from: build/trayTemplate.png
+    to: icons/trayTemplate.png
+  - from: build/trayTemplate@2x.png
+    to: icons/trayTemplate@2x.png
+  - from: build/icon.png
+    to: icons/icon.png
+  - from: build/icon_16.png
+    to: icons/icon_16.png
+  - from: build/icon_32.png
+    to: icons/icon_32.png
 
 # macOS Configuration
 mac:
