@@ -19,3 +19,6 @@ attachments/
 .worktrees/
 worktrees/
 coverage
+
+# 生产部署记录，含主机地址，不进仓库
+docs/deploy-production.md
