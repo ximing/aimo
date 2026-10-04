@@ -8,6 +8,7 @@ import { logger } from '../utils/logger.js';
 import { ChannelFactory } from './channels/channel.factory.js';
 import { DailyContentGenerator } from './channels/daily-content.generator.js';
 import { NotificationService } from './notification.service.js';
+import { PushDeviceService } from './push-device.service.js';
 import { PushRuleService } from './push-rule.service.js';
 import { SpacedRepetitionService } from './spaced-repetition.service.js';
 import { getDatabase } from '../db/connection.js';
@@ -31,7 +32,8 @@ export class SchedulerService {
     @Inject() private contentGenerator: DailyContentGenerator,
     @Inject() private channelFactory: ChannelFactory,
     @Inject() private spacedRepetitionService: SpacedRepetitionService,
-    @Inject() private notificationService: NotificationService
+    @Inject() private notificationService: NotificationService,
+    @Inject() private pushDeviceService: PushDeviceService
   ) {}
 
   /**
@@ -158,11 +160,16 @@ export class SchedulerService {
    * 为单个规则发送推送
    */
   private async sendPushForRule(rule: PushRuleDto): Promise<void> {
-    // Get channels and send
+    let content;
+    try {
+      content = await this.contentGenerator.generate(rule.contentType, rule.uid);
+    } catch (error) {
+      logger.error(`Failed to generate push content for rule ${rule.id}:`, error);
+      return;
+    }
+
     for (const channelConfig of rule.channels) {
       try {
-        const content = await this.contentGenerator.generate(rule.contentType, rule.uid);
-
         // If channel is text type and content is HTML, convert to plain text
         let message = content.msg;
         if (channelConfig.msgType === 'text' && content.isHtml) {
@@ -182,6 +189,20 @@ export class SchedulerService {
         );
         // Continue with other channels
       }
+    }
+
+    try {
+      const message = content.isHtml ? this.stripHtml(content.msg) : content.msg;
+      const huawei = await this.pushDeviceService.deliver(rule.uid, {
+        title: content.title,
+        body: message,
+        target: { kind: 'home' },
+      });
+      if (!huawei.skipped) {
+        logger.info(`Huawei push for rule ${rule.id}: sent=${huawei.sent} failed=${huawei.failed}`);
+      }
+    } catch (error) {
+      logger.error(`Failed to send Huawei push for rule ${rule.id}:`, error);
     }
   }
 
@@ -279,6 +300,17 @@ export class SchedulerService {
             body: pushBody,
             memoId: card.memoId,
           });
+
+          const huawei = await this.pushDeviceService.deliver(userId, {
+            title: pushTitle,
+            body: pushBody,
+            target: { kind: 'memo', id: card.memoId },
+          });
+          if (!huawei.skipped) {
+            logger.info(
+              `Huawei SR push for user ${userId}, card ${card.cardId}: sent=${huawei.sent} failed=${huawei.failed}`
+            );
+          }
         } catch (cardError) {
           logger.error(`Failed to process SR push for card ${card.cardId}:`, cardError);
         }

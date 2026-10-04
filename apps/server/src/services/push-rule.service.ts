@@ -8,6 +8,7 @@ import { generateTypeId } from '../utils/id.js';
 import { logger } from '../utils/logger.js';
 
 import { ChannelFactory } from './channels/channel.factory.js';
+import { PushDeviceService } from './push-device.service.js';
 
 import type { CreatePushRuleDto, PushRuleDto, UpdatePushRuleDto } from '@aimo/dto';
 
@@ -15,6 +16,9 @@ import type { CreatePushRuleDto, PushRuleDto, UpdatePushRuleDto } from '@aimo/dt
 export class PushRuleService {
   @Inject()
   private channelFactory!: ChannelFactory;
+
+  @Inject()
+  private pushDeviceService!: PushDeviceService;
 
   constructor() {}
 
@@ -237,6 +241,15 @@ export class PushRuleService {
         );
         throw error;
       }
+    }
+
+    const huawei = await this.pushDeviceService.deliver(uid, {
+      title: '测试推送',
+      body: '这是一条测试消息，如果你能看到这条消息，说明华为推送已接通。',
+      target: { kind: 'home' },
+    });
+    if (!huawei.skipped && huawei.failed > 0) {
+      throw new Error(huawei.error || '华为推送失败');
     }
   }
 

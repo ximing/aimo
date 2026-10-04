@@ -64,6 +64,9 @@ export const generateTypeId = (type: (typeof OBJECT_TYPE)[keyof typeof OBJECT_TY
     case OBJECT_TYPE.PUSH_RULE: {
       return `push${typeid()}`;
     }
+    case OBJECT_TYPE.PUSH_DEVICE: {
+      return `pd${typeid()}`;
+    }
     case OBJECT_TYPE.REVIEW_SESSION: {
       return `rev${typeid()}`;
     }

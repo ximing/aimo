@@ -136,6 +136,12 @@ export interface Config {
   auth: {
     allowRegistration: boolean; // 是否允许用户注册
   };
+  huawei: {
+    clientId: string; // AppGallery 应用级 OAuth 客户端 ID，空则跳过华为推送
+    clientSecret: string;
+    packageName: string; // Android 包名，点击通知时拉起这个应用
+    scheme: string; // 点击通知打开的 URL scheme
+  };
   env: string;
 }
 
@@ -286,6 +292,12 @@ export const config: Config = {
   },
   auth: {
     allowRegistration: process.env.ALLOW_REGISTRATION !== 'false', // 默认允许注册
+  },
+  huawei: {
+    clientId: process.env.HUAWEI_PUSH_CLIENT_ID || '',
+    clientSecret: process.env.HUAWEI_PUSH_CLIENT_SECRET || '',
+    packageName: process.env.HUAWEI_PUSH_PACKAGE || 'com.delu.aimo',
+    scheme: process.env.HUAWEI_PUSH_SCHEME || 'aimoapp',
   },
   env: process.env.NODE_ENV || 'development',
 };

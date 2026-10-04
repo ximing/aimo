@@ -37,6 +37,9 @@ export * from './tag.js';
 // Push Rule DTOs
 export * from './push-rule.js';
 
+// Push device DTOs
+export * from './push-device.js';
+
 // Review DTOs
 export * from './review.js';
 

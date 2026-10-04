@@ -13,6 +13,7 @@ export * from './ai-conversations.js';
 export * from './ai-messages.js';
 export * from './daily-recommendations.js';
 export * from './push-rules.js';
+export * from './push-devices.js';
 export * from './review-sessions.js';
 export * from './review-items.js';
 export * from './table-migrations.js';

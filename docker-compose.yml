@@ -131,6 +131,13 @@ services:
       # ===== 本地化配置 =====
       - LOCALE_LANGUAGE=${LOCALE_LANGUAGE:-zh-cn}
       - LOCALE_TIMEZONE=${LOCALE_TIMEZONE:-Asia/Shanghai}
+
+      # ===== 华为推送 =====
+      # 空着则跳过。密钥只放在宿主机 .env，不进镜像。
+      - HUAWEI_PUSH_CLIENT_ID=${HUAWEI_PUSH_CLIENT_ID:-}
+      - HUAWEI_PUSH_CLIENT_SECRET=${HUAWEI_PUSH_CLIENT_SECRET:-}
+      - HUAWEI_PUSH_PACKAGE=${HUAWEI_PUSH_PACKAGE:-com.delu.aimo}
+      - HUAWEI_PUSH_SCHEME=${HUAWEI_PUSH_SCHEME:-aimoapp}
     restart: unless-stopped
     healthcheck:
       test:

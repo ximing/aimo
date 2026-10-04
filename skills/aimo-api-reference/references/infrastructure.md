@@ -269,6 +269,32 @@ Deletes a push rule.
 { "message": "Push rule deleted successfully" }
 ```
 
+## `POST /api/v1/push-devices`
+
+Registers the current device's Huawei Push Kit token on the logged-in account. The same token registered again moves to the new account. Scheduled push rules and spaced-repetition reminders are also delivered to these devices when `HUAWEI_PUSH_CLIENT_ID` and `HUAWEI_PUSH_CLIENT_SECRET` are set.
+
+- Auth: JWT or personal API token
+- Request body:
+
+```json
+{
+  "provider": "huawei",
+  "token": "huawei-device-token"
+}
+```
+
+- Request fields:
+  - `provider`: `huawei`, required
+  - `token`: string, 1-512 characters, no whitespace, required
+- Success `data`:
+
+```json
+{
+  "id": "pd_xxx",
+  "provider": "huawei"
+}
+```
+
 ## `POST /api/v1/push-rules/:id/test`
 
 Sends a test push for one rule.
