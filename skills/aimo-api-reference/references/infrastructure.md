@@ -36,6 +36,30 @@ Returns the latest desktop and Android app versions discovered from GitHub relea
 
 - If one lookup fails, the corresponding object may instead contain an `error` field.
 
+## `GET /api/v1/system/open/android`
+
+Latest Android APK from GitHub Releases (`ximing/aimo-app` by default, override with `GITHUB_APK_REPO`).
+
+- Auth: Public
+- Success `data`:
+
+```json
+{
+  "android": {
+    "versionName": "1.4.3",
+    "versionCode": 10403,
+    "apkUrl": "https://github.com/ximing/aimo-app/releases/download/v1.4.3/app-release.apk",
+    "sizeBytes": 42000000,
+    "releaseNotes": "后台下载并安装"
+  }
+}
+```
+
+- `android` is `null` when no published release has a `vMAJOR.MINOR.PATCH` tag and an `.apk` asset.
+- `versionCode` is `major * 10000 + minor * 100 + patch`.
+- `minVersionCode` is present only when `ANDROID_RELEASE_MIN_VERSION_CODE` is set and is not above `versionCode`.
+- The APK is downloaded from `apkUrl` (GitHub `browser_download_url`). The preferred asset name is `app-release.apk`.
+
 ## `GET /api/v1/system/open/config`
 
 Returns public config flags needed by clients before login.

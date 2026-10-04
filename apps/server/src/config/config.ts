@@ -142,6 +142,11 @@ export interface Config {
     packageName: string; // Android 包名，点击通知时拉起这个应用
     scheme: string; // 点击通知打开的 URL scheme
   };
+  github: {
+    apkRepo: string; // Android APK 所在的 GitHub 仓库
+    token: string; // 可选，提高 GitHub API 限额
+    androidMinVersionCode?: number; // 低于该 versionCode 的客户端必须更新
+  };
   env: string;
 }
 
@@ -299,5 +304,17 @@ export const config: Config = {
     packageName: process.env.HUAWEI_PUSH_PACKAGE || 'com.delu.aimo',
     scheme: process.env.HUAWEI_PUSH_SCHEME || 'aimoapp',
   },
+  github: {
+    apkRepo: process.env.GITHUB_APK_REPO || 'ximing/aimo-app',
+    token: process.env.GITHUB_RELEASES_TOKEN || '',
+    androidMinVersionCode: positiveInt(process.env.ANDROID_RELEASE_MIN_VERSION_CODE),
+  },
   env: process.env.NODE_ENV || 'development',
 };
+
+function positiveInt(value: string | undefined): number | undefined {
+  if (!value) return undefined;
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 1) return undefined;
+  return parsed;
+}

@@ -1,18 +1,69 @@
+import {
+  androidReleaseFromGitHubRelease,
+  type AndroidRelease,
+  type AllVersionsResponseDto,
+  type VersionInfoDto,
+} from '@aimo/dto';
 import { Service } from 'typedi';
 
+import { config } from '../config/config.js';
 import { logger } from '../utils/logger.js';
-
-import type { AllVersionsResponseDto, VersionInfoDto } from '@aimo/dto';
 
 interface CachedVersion {
   version: string;
   timestamp: number;
 }
 
+interface GitHubJson {
+  status: number;
+  body: unknown;
+}
+
+type GitHubFetch = (url: string, headers: Record<string, string>) => Promise<GitHubJson>;
+
+const GITHUB_API = 'https://api.github.com';
+const ANDROID_CACHE_MS = 60_000;
+
+async function defaultGitHubFetch(url: string, headers: Record<string, string>): Promise<GitHubJson> {
+  const response = await fetch(url, { headers, signal: AbortSignal.timeout(10_000) });
+  const text = await response.text();
+  if (text === '') return { status: response.status, body: null };
+  try {
+    return { status: response.status, body: JSON.parse(text) as unknown };
+  } catch {
+    return { status: response.status, body: null };
+  }
+}
+
+let fetchGitHub: GitHubFetch = defaultGitHubFetch;
+
+export function setGitHubReleaseFetchForTest(fn?: GitHubFetch): void {
+  fetchGitHub = fn ?? defaultGitHubFetch;
+}
+
+/** Pick the newest GitHub release that contains an APK, then apply the forced-update floor. */
+export function selectAndroidRelease(
+  latest: GitHubJson,
+  list: GitHubJson | null,
+  minVersionCode?: number
+): AndroidRelease | null {
+  let release = latest.status === 200 ? androidReleaseFromGitHubRelease(latest.body) : null;
+  if (!release && list && list.status === 200 && Array.isArray(list.body)) {
+    for (const item of list.body) {
+      release = androidReleaseFromGitHubRelease(item);
+      if (release) break;
+    }
+  }
+  if (!release) return null;
+  if (minVersionCode === undefined || minVersionCode > release.versionCode) return release;
+  return { ...release, minVersionCode };
+}
+
 @Service()
 export class GitHubReleaseService {
   private readonly cacheDuration = 60 * 60 * 1000; // 1 hour in milliseconds
   private cache: Map<string, CachedVersion> = new Map();
+  private androidCache: { repo: string; at: number; value: AndroidRelease | null } | null = null;
 
   private readonly repos = {
     desktop: 'ximing/aimo',
@@ -58,9 +109,33 @@ export class GitHubReleaseService {
   }
 
   /**
+   * Latest Android APK from GitHub Releases.
+   * Returns null when no vMAJOR.MINOR.PATCH release has an .apk asset.
+   */
+  async getAndroidRelease(): Promise<AndroidRelease | null> {
+    const repo = config.github.apkRepo;
+    const now = Date.now();
+    if (this.androidCache && this.androidCache.repo === repo && now - this.androidCache.at < ANDROID_CACHE_MS) {
+      return this.androidCache.value;
+    }
+    try {
+      const value = await this.fetchAndroidRelease(repo);
+      this.androidCache = { repo, at: now, value };
+      return value;
+    } catch (error) {
+      logger.warn('android_release.github_error', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      if (this.androidCache && this.androidCache.repo === repo) return this.androidCache.value;
+      return null;
+    }
+  }
+
+  /**
    * Clear the cache for a specific repo or all repos
    */
   clearCache(repoKey?: 'desktop' | 'apk'): void {
+    this.androidCache = null;
     if (repoKey) {
       this.cache.delete(repoKey);
     } else {
@@ -128,5 +203,30 @@ export class GitHubReleaseService {
 
     // Remove 'v' prefix if present (e.g., v1.0.0 -> 1.0.0)
     return data.tag_name.replace(/^v/, '');
+  }
+
+  private githubHeaders(): Record<string, string> {
+    const headers: Record<string, string> = {
+      Accept: 'application/vnd.github+json',
+      'User-Agent': 'aimo-server',
+      'X-GitHub-Api-Version': '2022-11-28',
+    };
+    if (config.github.token) headers.Authorization = `Bearer ${config.github.token}`;
+    return headers;
+  }
+
+  private async fetchAndroidRelease(repo: string): Promise<AndroidRelease | null> {
+    const headers = this.githubHeaders();
+    const latest = await fetchGitHub(`${GITHUB_API}/repos/${repo}/releases/latest`, headers);
+    let list: GitHubJson | null = null;
+    const parsedLatest = latest.status === 200 ? androidReleaseFromGitHubRelease(latest.body) : null;
+    if (!parsedLatest) {
+      list = await fetchGitHub(`${GITHUB_API}/repos/${repo}/releases?per_page=10`, headers);
+    }
+    const release = selectAndroidRelease(latest, list, config.github.androidMinVersionCode);
+    if (!release && latest.status >= 400 && latest.status !== 404) {
+      logger.warn('android_release.github_failed', { status: latest.status, repo });
+    }
+    return release;
   }
 }

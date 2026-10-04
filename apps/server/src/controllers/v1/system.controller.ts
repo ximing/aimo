@@ -42,6 +42,16 @@ export class SystemController {
   }
 
   /**
+   * Latest Android APK from GitHub Releases.
+   * Public endpoint - no authentication required.
+   */
+  @Get('/open/android')
+  async getAndroidRelease() {
+    const android = await this.gitHubReleaseService.getAndroidRelease();
+    return ResponseUtility.success({ android });
+  }
+
+  /**
    * Get public system configuration
    * Public endpoint - no authentication required
    */

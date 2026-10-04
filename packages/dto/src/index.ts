@@ -28,6 +28,9 @@ export * from './insights.js';
 // Version DTOs
 export * from './version.js';
 
+// Android GitHub release
+export * from './app-release.js';
+
 // AI DTOs
 export * from './ai.js';
 
