@@ -1,14 +1,15 @@
 import { Service } from 'typedi';
-import { eq, and, lte, inArray } from 'drizzle-orm';
+import { eq, and, gte, lte, lt, inArray, isNotNull } from 'drizzle-orm';
 
 import { getDatabase } from '../db/connection.js';
-import { spacedRepetitionCards, spacedRepetitionRules } from '../db/schema/index.js';
+import { inAppNotifications, spacedRepetitionCards, spacedRepetitionRules } from '../db/schema/index.js';
 import { users } from '../db/schema/users.js';
 import { memos } from '../db/schema/memos.js';
 import { tags } from '../db/schema/tags.js';
 import { generateTypeId } from '../utils/id.js';
 import { OBJECT_TYPE } from '../models/constant/type.js';
 import { logger } from '../utils/logger.js';
+import { mergeReviewDaySources, toReviewDayCard, type ReviewDayCard } from './review-day.js';
 
 import type { SpacedRepetitionCard } from '../db/schema/spaced-repetition-cards.js';
 import type { SpacedRepetitionRule } from '../db/schema/spaced-repetition-rules.js';
@@ -597,5 +598,95 @@ export class SpacedRepetitionService {
 
     logger.info('SR import completed:', { userId, imported, skipped });
     return { imported, skipped };
+  }
+
+  /**
+   * Cards for one local day.
+   * Reviewed rows come from lastReviewAt. Assigned rows come from that day's review pushes.
+   * includeDue adds cards still waiting today, so the current day is visible before the push job.
+   */
+  async listReviewDay(
+    userId: string,
+    from: Date,
+    to: Date,
+    includeDue: boolean
+  ): Promise<ReviewDayCard[]> {
+    const db = getDatabase();
+    const reviewed = await db
+      .select({
+        cardId: spacedRepetitionCards.cardId,
+        memoId: spacedRepetitionCards.memoId,
+        reviewedAt: spacedRepetitionCards.lastReviewAt,
+      })
+      .from(spacedRepetitionCards)
+      .where(
+        and(
+          eq(spacedRepetitionCards.userId, userId),
+          gte(spacedRepetitionCards.lastReviewAt, from),
+          lt(spacedRepetitionCards.lastReviewAt, to)
+        )
+      );
+
+    const assigned = await db
+      .select({
+        memoId: inAppNotifications.memoId,
+      })
+      .from(inAppNotifications)
+      .where(
+        and(
+          eq(inAppNotifications.userId, userId),
+          eq(inAppNotifications.type, 'spaced_repetition'),
+          isNotNull(inAppNotifications.memoId),
+          gte(inAppNotifications.createdAt, from),
+          lt(inAppNotifications.createdAt, to)
+        )
+      );
+
+    const due = includeDue ? (await this.getDueCards(userId)).slice(0, await this.dailyLimit(userId)) : [];
+
+    const sources = mergeReviewDaySources([
+      ...reviewed.map((card) => ({
+        memoId: card.memoId,
+        cardId: card.cardId,
+        reviewedAt: card.reviewedAt,
+        status: 'reviewed' as const,
+      })),
+      ...assigned.flatMap((row) =>
+        row.memoId ? [{ memoId: row.memoId, status: 'due' as const }] : []
+      ),
+      ...due.map((card) => ({
+        memoId: card.memoId,
+        cardId: card.cardId,
+        status: 'due' as const,
+      })),
+    ]).slice(0, 100);
+
+    if (sources.length === 0) return [];
+
+    const memoRows = await db
+      .select({ memoId: memos.memoId, content: memos.content })
+      .from(memos)
+      .where(
+        and(
+          eq(memos.uid, userId),
+          eq(memos.deletedAt, 0),
+          inArray(
+            memos.memoId,
+            sources.map((source) => source.memoId)
+          )
+        )
+      );
+    const contentById = new Map(memoRows.map((row) => [row.memoId, row.content]));
+
+    return sources.flatMap((source) => {
+      const content = contentById.get(source.memoId);
+      if (typeof content !== 'string') return [];
+      return [toReviewDayCard(source, content)];
+    });
+  }
+
+  private async dailyLimit(userId: string): Promise<number> {
+    const settings = await this.getSettings(userId);
+    return settings?.srDailyLimit ?? 5;
   }
 }

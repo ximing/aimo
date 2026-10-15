@@ -6,12 +6,14 @@ import {
   Delete,
   Body,
   Param,
+  QueryParam,
   CurrentUser,
 } from 'routing-controllers';
 import { Service } from 'typedi';
 import { eq, and } from 'drizzle-orm';
 
 import { ErrorCode } from '../../constants/error-codes.js';
+import { parseReviewWindow } from '../../services/review-day.js';
 import { SpacedRepetitionService } from '../../services/spaced-repetition.service.js';
 import { logger } from '../../utils/logger.js';
 import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
@@ -246,6 +248,41 @@ export class SpacedRepetitionController {
     } catch (error) {
       logger.error('Get due cards error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR, 'Failed to get due cards');
+    }
+  }
+
+  /**
+   * GET /api/v1/spaced-repetition/history?from=&to=&includeDue=
+   * Cards reviewed or assigned during one local day. from/to is a half-open ISO range.
+   */
+  @Get('/history')
+  async getHistory(
+    @QueryParam('from') from: string,
+    @QueryParam('to') to: string,
+    @QueryParam('includeDue') includeDue: string | boolean | undefined,
+    @CurrentUser() user: UserInfoDto
+  ) {
+    try {
+      if (!user?.uid) {
+        return ResponseUtility.error(ErrorCode.UNAUTHORIZED);
+      }
+
+      const window = parseReviewWindow(from, to);
+      if (!window) {
+        return ResponseUtility.error(ErrorCode.PARAMS_ERROR, 'from and to must cover one day');
+      }
+
+      const withDue = includeDue === true || includeDue === 'true' || includeDue === '1';
+      const cards = await this.spacedRepetitionService.listReviewDay(
+        user.uid,
+        window.from,
+        window.to,
+        withDue
+      );
+      return ResponseUtility.success({ cards });
+    } catch (error) {
+      logger.error('Get SR history error:', error);
+      return ResponseUtility.error(ErrorCode.DB_ERROR, 'Failed to get review history');
     }
   }
 
