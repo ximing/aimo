@@ -1516,6 +1516,7 @@ export class MemoService {
           isPublic: memo.isPublic,
           createdAt: memo.createdAt.getTime(),
           updatedAt: memo.updatedAt.getTime(),
+          source: memo.source || undefined,
         });
       }
 
@@ -1527,6 +1528,20 @@ export class MemoService {
       logger.error('Error getting memos by IDs:', error);
       throw error;
     }
+  }
+
+  /**
+   * List-page memo cards for the given ids, including tags, attachments, and relations.
+   * Result order follows memoIds. Missing or deleted memos are omitted.
+   */
+  async getListItemsByIds(memoIds: string[], uid: string): Promise<MemoListItemDto[]> {
+    const items = await this.getMemosByIds(memoIds, uid);
+    const enriched = await this.enrichMemosWithRelations(uid, items);
+    const byId = new Map(enriched.map((item) => [item.memoId, item]));
+    return memoIds.flatMap((memoId) => {
+      const item = byId.get(memoId);
+      return item ? [item] : [];
+    });
   }
 
   /**

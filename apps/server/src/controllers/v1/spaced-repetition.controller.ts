@@ -14,6 +14,7 @@ import { eq, and } from 'drizzle-orm';
 
 import { ErrorCode } from '../../constants/error-codes.js';
 import { parseReviewWindow } from '../../services/review-day.js';
+import { MemoService } from '../../services/memo.service.js';
 import { SpacedRepetitionService } from '../../services/spaced-repetition.service.js';
 import { logger } from '../../utils/logger.js';
 import { ResponseUtil as ResponseUtility } from '../../utils/response.js';
@@ -25,7 +26,10 @@ import type { UserInfoDto } from '@aimo/dto';
 @Service()
 @JsonController('/api/v1/spaced-repetition')
 export class SpacedRepetitionController {
-  constructor(private spacedRepetitionService: SpacedRepetitionService) {}
+  constructor(
+    private spacedRepetitionService: SpacedRepetitionService,
+    private memoService: MemoService
+  ) {}
 
   /**
    * GET /api/v1/spaced-repetition/settings
@@ -279,7 +283,17 @@ export class SpacedRepetitionController {
         window.to,
         withDue
       );
-      return ResponseUtility.success({ cards });
+      const memos = await this.memoService.getListItemsByIds(
+        cards.map((card) => card.memoId),
+        user.uid
+      );
+      const memoById = new Map(memos.map((memo) => [memo.memoId, memo]));
+      return ResponseUtility.success({
+        cards: cards.map((card) => ({
+          ...card,
+          memo: memoById.get(card.memoId) ?? null,
+        })),
+      });
     } catch (error) {
       logger.error('Get SR history error:', error);
       return ResponseUtility.error(ErrorCode.DB_ERROR, 'Failed to get review history');
