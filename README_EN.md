@@ -53,7 +53,7 @@ One card, one thought. AI is a first-class capability, not a bolted-on button.
 ### 💻 Multi-Platform Support
 
 - **Web App** - Responsive design for desktop and mobile browsers
-- **Desktop Client** - Electron app for macOS, Windows, and Linux
+- **Desktop Client** - Tauri app that opens https://aimo.plus, for macOS, Windows, and Linux
 - **Mobile App** - Android APK support, iOS pending release
 - **Browser Extension** - Quick web content saving (in development)
 
@@ -194,7 +194,7 @@ pnpm dev
 ```bash
 pnpm dev:web       # Start frontend only
 pnpm dev:server    # Start backend only
-pnpm dev:client    # Start Electron desktop client
+pnpm dev:client    # Start the Tauri desktop shell (local web in development)
 pnpm build         # Build all apps
 pnpm lint          # Code linting
 pnpm format        # Code formatting
@@ -206,7 +206,7 @@ pnpm format        # Code formatting
 | :------: | :------------------------------------------------------------: | :-----------------: |
 |  macOS   |   [Download](https://github.com/ximing/aimo/releases/latest)   |      macOS 12+      |
 | Windows  |   [Download](https://github.com/ximing/aimo/releases/latest)   |     Windows 10+     |
-|  Linux   |   [Download](https://github.com/ximing/aimo/releases/latest)   |    Ubuntu 20.04+    |
+|  Linux   |   [Download](https://github.com/ximing/aimo/releases/latest)   |    Ubuntu 22.04+    |
 | Android  | [Download](https://github.com/ximing/aimo-app/releases/latest) |    Android 8.0+     |
 |   iOS    |                        Pending release                         |          -          |
 
@@ -268,7 +268,7 @@ aimo/
 ├── apps/
 │   ├── web/              # React frontend app
 │   ├── server/           # Express backend service
-│   ├── client/           # Electron desktop client
+│   ├── client/           # Tauri desktop shell, loads the hosted site
 │   └── extension/        # Browser extension
 ├── packages/
 │   └── dto/              # Shared type definitions

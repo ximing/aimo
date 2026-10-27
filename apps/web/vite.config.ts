@@ -6,17 +6,14 @@ import path from 'node:path';
 export default defineConfig(({ mode }) => {
   // Load env file based on mode
   const env = loadEnv(mode, process.cwd(), '');
-  const isElectron = process.env.ELECTRON === 'true';
-
-  // Determine API base URL for Electron build
-  const apiBaseUrl = isElectron ? 'https://aimo.plus' : env.VITE_API_BASE_URL || '';
+  const apiBaseUrl = env.VITE_API_BASE_URL || '';
 
   return {
     // Inject environment variables
     define: {
       'import.meta.env.VITE_API_BASE_URL': JSON.stringify(apiBaseUrl),
     },
-    base: isElectron ? './' : '/',
+    base: '/',
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
@@ -33,10 +30,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     build: {
-      // Output to different locations based on target (Electron vs server)
-      // For Electron: output to apps/client/dist directly (not dist/web)
-      // This way /logo.png will be found at dist/logo.png
-      outDir: isElectron ? path.resolve(__dirname, '../client/dist') : '../server/public',
+      outDir: '../server/public',
       emptyOutDir: true,
 
       // Optimize chunk size

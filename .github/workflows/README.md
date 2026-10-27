@@ -130,25 +130,25 @@ docker run --rm --network aimo-network \
   node apps/server/dist/scripts/docker-migrate.js migrate-data
 ```
 
-### 4. build-electron.yml - Electron Desktop App
+### 4. build-desktop.yml - Tauri Desktop App
 
 **Triggers:**
 
-- Push tags matching `v*` (e.g., v1.0.0)
+- Push to `master`
 - Manual workflow dispatch
 
 **What it does:**
 
-- Builds Electron desktop application
+- Builds the Tauri desktop shell
+- The shell loads https://aimo.plus (override with `AIMO_WEB_URL`)
 - Multi-platform: macOS (x64, arm64), Windows (x64), Linux (x64)
-- Creates installers and portable versions
-- Uploads release artifacts to GitHub Releases
+- Replaces the `desktop` GitHub Release and uploads the installers there
 
 **Artifacts:**
 
-- macOS: `.dmg` files (Intel and Apple Silicon)
-- Windows: `.exe` installer
-- Linux: AppImage, `.deb`, `.rpm`
+- macOS: `.dmg` (Intel and Apple Silicon)
+- Windows: `.exe` / `.msi`
+- Linux: `.deb`, AppImage
 
 ### 5. docker-publish.yml - Legacy Docker Publish
 

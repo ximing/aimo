@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/ximing/aimo/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/ximing/aimo/actions/workflows/ci.yml)
 [![Docker Build and Publish](https://github.com/ximing/aimo/actions/workflows/docker-build.yml/badge.svg?branch=master)](https://github.com/ximing/aimo/actions/workflows/docker-build.yml)
-[![Electron Build and Publish](https://github.com/ximing/aimo/actions/workflows/build-electron.yml/badge.svg?branch=master)](https://github.com/ximing/aimo/actions/workflows/build-electron.yml)
+[![Desktop Build](https://github.com/ximing/aimo/actions/workflows/build-desktop.yml/badge.svg?branch=master)](https://github.com/ximing/aimo/actions/workflows/build-desktop.yml)
 ![Node.js](https://img.shields.io/badge/Node.js-20+-green)
 ![React](https://img.shields.io/badge/React-19-blue)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.7+-blue)
@@ -54,7 +54,7 @@ AI First 卡片笔记。随手记下想法，检索、关联和复习交给 AI�
 ### 💻 多端支持
 
 - **Web 应用** - 响应式设计，支持桌面和移动端浏览器
-- **桌面客户端** - Electron 应用，支持 macOS、Windows、Linux
+- **桌面客户端** - Tauri 应用，打开 https://aimo.plus，支持 macOS、Windows、Linux
 - **移动应用** - Android APK 支持，iOS 待上架
 - **浏览器扩展** - 快速收藏网页内容（开发中）
 
@@ -195,7 +195,7 @@ pnpm dev
 ```bash
 pnpm dev:web       # 仅启动前端
 pnpm dev:server    # 仅启动后端
-pnpm dev:client    # 启动 Electron 桌面端
+pnpm dev:client    # 启动 Tauri 桌面端（开发时加载本地 Web）
 pnpm build         # 构建所有应用
 pnpm lint          # 代码检查
 pnpm format        # 代码格式化
@@ -207,7 +207,7 @@ pnpm format        # 代码格式化
 | :-----: | :--------------------------------------------------------: | :-----------: |
 |  macOS  |   [下载](https://github.com/ximing/aimo/releases/latest)   |   macOS 12+   |
 | Windows |   [下载](https://github.com/ximing/aimo/releases/latest)   |  Windows 10+  |
-|  Linux  |   [下载](https://github.com/ximing/aimo/releases/latest)   | Ubuntu 20.04+ |
+|  Linux  |   [下载](https://github.com/ximing/aimo/releases/latest)   | Ubuntu 22.04+ |
 | Android | [下载](https://github.com/ximing/aimo-app/releases/latest) | Android 8.0+  |
 |   iOS   |                           待上架                           |       -       |
 
@@ -269,7 +269,7 @@ aimo/
 ├── apps/
 │   ├── web/              # React 前端应用
 │   ├── server/           # Express 后端服务
-│   ├── client/           # Electron 桌面端
+│   ├── client/           # Tauri 桌面端，加载远端站点
 │   └── extension/        # 浏览器扩展
 ├── packages/
 │   └── dto/              # 共享类型定义

@@ -1,0 +1,162 @@
+# Build the AIMO desktop shell (Tauri 2) for Windows, macOS, and Linux.
+#
+# Push to master creates or replaces the "desktop" GitHub Release and uploads
+# the installers. Download them from the release page.
+#
+# The shell loads this site as frontendDist. It does not bundle the web app.
+# Override with repository secret or variable AIMO_WEB_URL; otherwise
+# https://aimo.plus.
+name: Build Desktop
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+concurrency:
+  group: desktop-build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  AIMO_WEB_URL: ${{ secrets.AIMO_WEB_URL || vars.AIMO_WEB_URL || 'https://aimo.plus' }}
+
+jobs:
+  release:
+    name: Prepare release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      release_id: ${{ steps.release.outputs.id }}
+      version: ${{ steps.meta.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read shell version
+        id: meta
+        shell: bash
+        run: |
+          if command -v python3 >/dev/null; then PY=python3; else PY=python; fi
+          version="$("$PY" -c 'import json; print(json.load(open("apps/client/src-tauri/tauri.conf.json"))["version"])')"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Publish desktop release
+        id: release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          version="${{ steps.meta.outputs.version }}"
+          sha="${GITHUB_SHA::7}"
+          gh release delete desktop --yes --cleanup-tag || true
+          gh release create desktop \
+            --target "$GITHUB_SHA" \
+            --title "AIMO Desktop ${version}" \
+            --latest \
+            --notes "$(cat <<EOF
+          桌面端 ${version}（${sha}）。
+
+          打开后加载 ${AIMO_WEB_URL}，登录与浏览器相同。
+
+          - macOS：下载对应芯片的 .dmg（Apple 芯片选 aarch64，Intel 选 x86_64）。安装包未签名，若被拦截，到「系统设置 → 隐私与安全性」里允许。
+          - Windows：下载 .exe 安装包。
+          - Linux：下载 .deb 或 .AppImage。需要 Ubuntu 22.04 或更新的系统。
+          EOF
+          )"
+          id="$(gh release view desktop --json databaseId --jq .databaseId)"
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+
+  build-desktop:
+    name: Build ${{ matrix.name }}
+    needs: release
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macos-aarch64
+            platform: macos-latest
+            args: --target aarch64-apple-darwin --bundles dmg
+          - name: macos-x86_64
+            platform: macos-latest
+            args: --target x86_64-apple-darwin --bundles dmg
+          - name: linux-x86_64
+            platform: ubuntu-22.04
+            args: --bundles deb,appimage
+          - name: windows-x86_64
+            platform: windows-latest
+            args: --bundles nsis
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Linux webkit/gtk
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.22.0
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Stamp hosted site
+        shell: bash
+        run: |
+          if command -v python3 >/dev/null; then PY=python3; else PY=python; fi
+          "$PY" - <<'PY'
+          import json, os, pathlib
+          web = os.environ.get("AIMO_WEB_URL", "https://aimo.plus").strip().rstrip("/")
+          if not web.startswith(("https://", "http://")):
+              raise SystemExit("AIMO_WEB_URL must be an http(s) origin")
+          conf = pathlib.Path("apps/client/src-tauri/tauri.conf.json")
+          data = json.loads(conf.read_text())
+          data["build"]["frontendDist"] = web
+          conf.write_text(json.dumps(data, indent=2) + "\n")
+          PY
+
+      - name: Install Rust stable
+        if: matrix.platform != 'macos-latest'
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Rust stable (macOS targets)
+        if: matrix.platform == 'macos-latest'
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: apps/client/src-tauri -> target
+          shared-key: desktop-${{ matrix.name }}
+
+      - name: Install JS deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Build desktop
+        uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Ad-hoc sign so Apple Silicon DMGs are "unidentified developer", not "damaged".
+          APPLE_SIGNING_IDENTITY: '-'
+        with:
+          projectPath: apps/client
+          args: ${{ matrix.args }}
+          tagName: desktop
+          releaseId: ${{ needs.release.outputs.release_id }}
+          uploadUpdaterJson: 'false'
+          uploadWorkflowArtifacts: 'true'
+          workflowArtifactNamePattern: aimo-desktop-[platform]-[arch]-[bundle]
+          releaseAssetNamePattern: AIMO-[version]-[platform]-[arch][setup][ext]

@@ -1,4 +1,4 @@
-import { BrowserRouter, HashRouter, Routes, Route, Navigate, useNavigate } from 'react-router';
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router';
 import { useEffect } from 'react';
 import AuthPage from './pages/auth';
 import HomePage from './pages/home';
@@ -23,16 +23,7 @@ import NotificationPage from './pages/notifications';
 import { ProtectedRoute } from './components/protected-route';
 import { ToastContainer } from './components/toast';
 import { setNavigate } from './utils/navigation';
-import { isElectron } from './electron/isElectron';
 import { DraftService } from './services/draft.service';
-
-// 内部组件，用于根据环境渲染根路由
-function RootRoute() {
-  if (isElectron()) {
-    return <Navigate to="/home" replace />;
-  }
-  return <LandingPage />;
-}
 
 // 内部组件，用于初始化 navigate 函数
 function AppContent() {
@@ -47,8 +38,6 @@ function AppContent() {
 }
 
 function App() {
-  const Router = isElectron() ? HashRouter : BrowserRouter;
-
   // 清除过期草稿（应用启动时执行一次）
   useEffect(() => {
     const draftService = new DraftService();
@@ -56,11 +45,11 @@ function App() {
   }, []);
 
   return (
-    <Router>
+    <BrowserRouter>
       <AppContent />
       <ToastContainer />
       <Routes>
-        <Route path="/" element={<RootRoute />} />
+        <Route path="/" element={<LandingPage />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route
           path="/home"
@@ -132,7 +121,7 @@ function App() {
         />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
-    </Router>
+    </BrowserRouter>
   );
 }
 

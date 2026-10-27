@@ -1,0 +1,7 @@
+{
+  "identifier": "default",
+  "description": "Local shell only. The remote site is not granted IPC.",
+  "windows": ["main"],
+  "local": true,
+  "permissions": []
+}

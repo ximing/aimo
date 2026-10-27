@@ -4,50 +4,15 @@
   "private": true,
   "license": "BSL-1.1",
   "type": "module",
-  "main": "dist/main/index.js",
-  "homepage": "https://github.com/ximing/aimo",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/ximing/aimo.git"
-  },
+  "description": "Tauri 2 shell that opens the AIMO site. Login is the site cookie, same as the browser. No menu bar status icon.",
   "scripts": {
-    "dev": "vite",
-    "build": "pnpm build:web && pnpm build:electron",
-    "build:web": "cd ../web && ELECTRON=true pnpm build",
-    "build:electron": "vite build && tsc -b",
-    "build:all": "pnpm build && pnpm dist",
-    "typecheck": "tsc --noEmit",
-    "lint": "eslint src/",
-    "lint:fix": "eslint src/ --fix --fix-type problem",
-    "dist": "electron-builder",
-    "dist:all": "electron-builder -mwl",
-    "dist:mac": "electron-builder --mac",
-    "dist:win": "electron-builder --win",
-    "dist:linux": "electron-builder --linux"
-  },
-  "dependencies": {
-    "@aimo/dto": "workspace:*",
-    "electron-store": "^10.0.0",
-    "electron-updater": "^6.7.3"
+    "dev": "tauri dev",
+    "build": "node --test __tests__/tauri.contract.test.mjs",
+    "dist": "tauri build",
+    "tauri": "tauri",
+    "test": "node --test __tests__/tauri.contract.test.mjs"
   },
   "devDependencies": {
-    "@aimo/eslint-config": "workspace:*",
-    "@aimo/typescript-config": "workspace:*",
-    "@fiahfy/icns": "^0.0.7",
-    "@types/node": "^22.13.4",
-    "electron": "^40.6.0",
-    "electron-builder": "^26.0.12",
-    "eslint": "^9.39.1",
-    "eslint-config-prettier": "^9.0.0",
-    "eslint-plugin-only-warn": "^1.1.0",
-    "eslint-plugin-turbo": "^2.4.2",
-    "globals": "^16.5.0",
-    "icns-lib": "^1.0.1",
-    "png-to-ico": "^3.0.1",
-    "typescript": "^5.7.3",
-    "typescript-eslint": "^8.48.0",
-    "vite": "^7.3.1",
-    "vite-plugin-electron": "^0.29.0",
-    "vite-plugin-electron-renderer": "^0.14.6"
+    "@tauri-apps/cli": "^2.9.0"
   }
 }

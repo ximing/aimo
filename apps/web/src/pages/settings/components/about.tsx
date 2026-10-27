@@ -8,24 +8,14 @@ export const About = view(() => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Check if running in Electron
-  const isElectron = typeof window !== 'undefined' && !!window.electronAPI;
-
   useEffect(() => {
     const fetchVersion = async () => {
       try {
-        // If running in Electron, use electronAPI to get version
-        if (isElectron) {
-          const electronVersion = window.electronAPI?.getVersion();
-          setVersion(electronVersion || '');
+        const response = await getVersion();
+        if (response.code === 0 && response.data) {
+          setVersion(response.data.version);
         } else {
-          // Otherwise, fetch from server API
-          const response = await getVersion();
-          if (response.code === 0 && response.data) {
-            setVersion(response.data.version);
-          } else {
-            setError('获取版本信息失败');
-          }
+          setError('获取版本信息失败');
         }
       } catch (err) {
         setError('获取版本信息失败');
@@ -36,7 +26,7 @@ export const About = view(() => {
     };
 
     fetchVersion();
-  }, [isElectron]);
+  }, []);
 
   return (
     <div className="max-w-2xl space-y-8">

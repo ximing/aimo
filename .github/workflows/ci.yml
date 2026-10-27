@@ -61,8 +61,8 @@ jobs:
       - name: Typecheck web
         run: cd apps/web && pnpm typecheck
 
-      - name: Typecheck client
-        run: cd apps/client && pnpm typecheck
+      - name: Test desktop shell contract
+        run: pnpm --filter @aimo/client test
 
   build:
     name: Build All Packages

@@ -4,79 +4,13 @@ import { navigate } from './navigation';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/';
 
-// Cached token for Electron environment (loaded once after login)
-let cachedElectronToken: string | null = null;
-
-// Promise that resolves when the token has been loaded from secure storage
-let tokenReadyResolve: (() => void) | null = null;
-let tokenReadyPromise: Promise<void> = new Promise((resolve) => {
-  tokenReadyResolve = resolve;
-});
-
-/**
- * Check if running in Electron environment
- */
-function isElectron(): boolean {
-  return typeof window !== 'undefined' && !!window.electronAPI;
-}
-
-/**
- * Set cached token (called after login or on startup token restore)
- */
-export function setElectronToken(token: string | null): void {
-  cachedElectronToken = token;
-  // Mark token as ready so queued requests can proceed
-  if (tokenReadyResolve) {
-    tokenReadyResolve();
-    tokenReadyResolve = null;
-  }
-}
-
-/**
- * Signal that token loading is complete with no token (not logged in).
- * Allows queued requests to proceed and return 401 naturally.
- */
-export function resolveTokenReady(): void {
-  if (tokenReadyResolve) {
-    tokenReadyResolve();
-    tokenReadyResolve = null;
-  }
-}
-
-/**
- * Clear cached token (called on logout)
- */
-export function clearElectronToken(): void {
-  cachedElectronToken = null;
-  // Reset the ready gate so the next login will re-arm it
-  tokenReadyPromise = new Promise((resolve) => {
-    tokenReadyResolve = resolve;
-  });
-}
-
-/**
- * Get stored token for Electron environment (from cache)
- */
-function getElectronToken(): string | null {
-  return cachedElectronToken;
-}
-
 /**
  * Public pages that can be visited without authentication.
  * 401 responses on these pages should NOT trigger a redirect to /auth.
  */
 const PUBLIC_PAGE_PATTERNS: Array<string | RegExp> = ['/', /^\/share\//];
 
-/**
- * Get the current route path, compatible with both BrowserRouter (pathname)
- * and HashRouter (hash, used by the Electron app).
- */
 function getCurrentRoutePath(): string {
-  const hash = window.location.hash;
-  if (hash.startsWith('#/')) {
-    // Strip leading '#' and any query string: '#/share/abc?x=1' -> '/share/abc'
-    return hash.slice(1).split('?')[0];
-  }
   return window.location.pathname;
 }
 
@@ -103,22 +37,11 @@ const request: AxiosInstance = axios.create({
 });
 
 /**
- * Request interceptor
- * In Electron: wait for token to be loaded from secure storage before sending.
- * Serialize Date objects to timestamps.
+ * Request interceptor. Serialize Date objects to timestamps.
+ * The session cookie is sent with the request.
  */
 request.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
-    if (isElectron()) {
-      // Block until the token has been loaded (or determined to be absent)
-      await tokenReadyPromise;
-
-      const token = getElectronToken();
-      if (token) {
-        config.headers.set('Authorization', `Bearer ${token}`);
-      }
-    }
-
     // Serialize Date objects in query parameters to timestamps
     if (config.params) {
       Object.keys(config.params).forEach((key) => {
@@ -156,9 +79,7 @@ request.interceptors.response.use(
           localStorage.removeItem('aimo_user');
 
           // Redirect to login, unless we're on a public page (landing, share)
-          // or already on the auth page (check both pathname and hash for compatibility)
-          const isAuthPage =
-            window.location.pathname.includes('/auth') || window.location.hash.includes('/auth');
+          const isAuthPage = window.location.pathname.includes('/auth');
           if (!isAuthPage && !isPublicPage()) {
             navigate('/auth', { replace: true });
           }
