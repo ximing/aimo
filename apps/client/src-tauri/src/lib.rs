@@ -76,6 +76,9 @@ fn reload_main(app: &tauri::AppHandle) {
 }
 
 fn toggle_devtools(app: &tauri::AppHandle) {
+    // These methods exist only when debug assertions are on, or when the
+    // `devtools` cargo feature is enabled. `tauri build` is a release build.
+    #[cfg(any(debug_assertions, feature = "devtools"))]
     if let Some(window) = app.get_webview_window(MAIN_LABEL) {
         if window.is_devtools_open() {
             window.close_devtools();
@@ -83,6 +86,8 @@ fn toggle_devtools(app: &tauri::AppHandle) {
             window.open_devtools();
         }
     }
+    #[cfg(not(any(debug_assertions, feature = "devtools")))]
+    let _ = app;
 }
 
 fn build_menu<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<tauri::menu::Menu<R>> {
@@ -102,17 +107,6 @@ fn build_menu<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<tau
         None::<&str>,
     )?;
     let reload = MenuItem::with_id(app, "reload", "重新加载", true, Some("CmdOrCtrl+R"))?;
-    let devtools = MenuItem::with_id(
-        app,
-        "devtools",
-        "切换开发者工具",
-        true,
-        Some(if cfg!(target_os = "macos") {
-            "Alt+Cmd+I"
-        } else {
-            "Ctrl+Shift+I"
-        }),
-    )?;
     let github = MenuItem::with_id(app, "github", "访问 GitHub", true, None::<&str>)?;
     let edit = Submenu::with_items(
         app,
@@ -128,17 +122,29 @@ fn build_menu<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<tau
             &PredefinedMenuItem::select_all(app, Some("全选"))?,
         ],
     )?;
+    let view_separator = PredefinedMenuItem::separator(app)?;
+    let fullscreen = PredefinedMenuItem::fullscreen(app, Some("全屏"))?;
+    #[cfg(any(debug_assertions, feature = "devtools"))]
+    let devtools = MenuItem::with_id(
+        app,
+        "devtools",
+        "切换开发者工具",
+        true,
+        Some(if cfg!(target_os = "macos") {
+            "Alt+Cmd+I"
+        } else {
+            "Ctrl+Shift+I"
+        }),
+    )?;
+    #[cfg(any(debug_assertions, feature = "devtools"))]
     let view = Submenu::with_items(
         app,
         "视图",
         true,
-        &[
-            &reload,
-            &devtools,
-            &PredefinedMenuItem::separator(app)?,
-            &PredefinedMenuItem::fullscreen(app, Some("全屏"))?,
-        ],
+        &[&reload, &devtools, &view_separator, &fullscreen],
     )?;
+    #[cfg(not(any(debug_assertions, feature = "devtools")))]
+    let view = Submenu::with_items(app, "视图", true, &[&reload, &view_separator, &fullscreen])?;
     let window = Submenu::with_items(
         app,
         "窗口",
