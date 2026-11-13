@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, useNavigate } from 'react-router';
+import { BrowserRouter, Navigate, Routes, Route, useNavigate } from 'react-router';
 import { useEffect } from 'react';
 import AuthPage from './pages/auth';
 import HomePage from './pages/home';
