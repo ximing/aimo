@@ -6,7 +6,7 @@
 import dayjs from 'dayjs';
 import { nanoid } from 'nanoid';
 import { Service } from 'typedi';
-import { eq, and, desc, sql } from 'drizzle-orm';
+import { eq, and, desc, inArray, sql } from 'drizzle-orm';
 
 import { config } from '../config/config.js';
 import { getDatabase } from '../db/connection.js';
@@ -508,7 +508,7 @@ export class AttachmentService {
       .from(attachments)
       .where(
         and(
-          sql`${attachments.attachmentId} IN ${sql.raw(`(${attachmentIds.map((id) => `'${id}'`).join(',')})`)}`,
+          inArray(attachments.attachmentId, attachmentIds),
           eq(attachments.uid, uid),
           eq(attachments.deletedAt, 0)
         )
