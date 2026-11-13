@@ -1,6 +1,7 @@
 import { Inject, Service } from 'typedi';
 
 import { LanceDbService as LanceDatabaseService } from '../../sources/lancedb.js';
+import { lanceStringLiteral } from '../../utils/lance-string.js';
 import { RecommendationService } from '../recommendation.service.js';
 
 import type { ContentGenerator, PushContent } from './content-generator.interface.js';
@@ -73,7 +74,7 @@ export class DailyContentGenerator implements ContentGenerator {
     const endOfDay = startOfDay + 24 * 60 * 60 * 1000 - 1;
 
     // Get all memos for the user
-    const allMemos = await memosTable.query().where(`uid = '${uid}'`).toArray();
+    const allMemos = await memosTable.query().where(`uid = ${lanceStringLiteral(uid)}`).toArray();
 
     // Filter to today's memos
     const todayMemos = allMemos.filter((memo: any) => {

@@ -3,9 +3,18 @@ import { Service } from 'typedi';
 
 import { config } from '../config/config.js';
 import { MigrationManager } from '../migrations/index.js';
+import { lanceStringLiteral } from '../utils/lance-string.js';
 import { logger } from '../utils/logger.js';
 
 import type { Connection, Table } from '@lancedb/lancedb';
+
+const LANCE_COLUMN_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
+
+function assertLanceColumnName(columnName: string): void {
+  if (!LANCE_COLUMN_NAME.test(columnName)) {
+    throw new Error('Invalid LanceDB column name');
+  }
+}
 
 // Re-export for backward compatibility
 
@@ -234,8 +243,9 @@ export class LanceDbService {
    */
   async deleteVector(tableName: string, idField: string, idValue: string): Promise<void> {
     try {
+      assertLanceColumnName(idField);
       const table = await this.openTable(tableName);
-      await table.delete(`${idField} = '${idValue}'`);
+      await table.delete(`${idField} = ${lanceStringLiteral(idValue)}`);
       logger.debug(`Deleted vector from ${tableName} where ${idField} = ${idValue}`);
     } catch (error) {
       logger.error(`Failed to delete vector from ${tableName}:`, error);
@@ -276,8 +286,13 @@ export class LanceDbService {
    */
   async getVector(tableName: string, idField: string, idValue: string): Promise<any | null> {
     try {
+      assertLanceColumnName(idField);
       const table = await this.openTable(tableName);
-      const results = await table.query().where(`${idField} = '${idValue}'`).limit(1).toArray();
+      const results = await table
+        .query()
+        .where(`${idField} = ${lanceStringLiteral(idValue)}`)
+        .limit(1)
+        .toArray();
 
       return results.length > 0 ? results[0] : null;
     } catch (error) {

@@ -5,6 +5,7 @@ import urllib from 'urllib';
 
 import { config } from '../config/config.js';
 import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
+import { lanceStringLiteral } from '../utils/lance-string.js';
 import { logger } from '../utils/logger.js';
 
 /**
@@ -273,7 +274,9 @@ export class MultimodalEmbeddingService {
       const results = await cacheTable
         .query()
         .where(
-          `modelHash = '${modelHash}' AND contentHash = '${contentHash}' AND modalityType = '${modalityType}'`
+          `modelHash = ${lanceStringLiteral(modelHash)} AND contentHash = ${lanceStringLiteral(
+            contentHash
+          )} AND modalityType = ${lanceStringLiteral(modalityType)}`
         )
         .limit(1)
         .toArray();

@@ -10,6 +10,7 @@ import { getDatabase } from '../db/connection.js';
 import { withTransaction } from '../db/transaction.js';
 import { tags, memos } from '../db/schema/index.js';
 import { generateTagId } from '../utils/id.js';
+import { lanceStringLiteral } from '../utils/lance-string.js';
 import { logger } from '../utils/logger.js';
 import { LanceDbService } from '../sources/lancedb.js';
 
@@ -288,7 +289,7 @@ export class TagService {
       // Find all memos with this tagId in LanceDB
       const lanceDbMemos = await memosTable
         .query()
-        .where(`uid = '${uid}' AND deletedAt = 0`)
+        .where(`uid = ${lanceStringLiteral(uid)} AND deletedAt = 0`)
         .toArray();
 
       // Filter and update memos that have this tagId
@@ -328,7 +329,7 @@ export class TagService {
             values: Record<string, any>;
             valuesSql?: Record<string, string>;
           } = {
-            where: `memoId = '${m.memoId}' AND uid = '${uid}'`,
+            where: `memoId = ${lanceStringLiteral(m.memoId)} AND uid = ${lanceStringLiteral(uid)}`,
             values: updateValues,
           };
 

@@ -7,6 +7,7 @@ import { withTransaction } from '../db/transaction.js';
 import { categories } from '../db/schema/categories.js';
 import { memos } from '../db/schema/memos.js';
 import { generateTypeId } from '../utils/id.js';
+import { lanceStringLiteral } from '../utils/lance-string.js';
 import { logger } from '../utils/logger.js';
 import { LanceDbService } from '../sources/lancedb.js';
 
@@ -264,7 +265,7 @@ export class CategoryService {
       if (category) {
         const memosTable = await this.openMemosTable();
         await memosTable.update({
-          where: `categoryId = '${categoryId}' AND deletedAt = 0`,
+          where: `categoryId = ${lanceStringLiteral(categoryId)} AND deletedAt = 0`,
           values: { categoryId: null },
         });
 

@@ -13,6 +13,7 @@ import { getDatabase } from '../db/connection.js';
 import { attachments } from '../db/schema/attachments.js';
 import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
 import { UnifiedStorageAdapterFactory } from '../sources/unified-storage-adapter/index.js';
+import { lanceStringLiteral } from '../utils/lance-string.js';
 import { logger } from '../utils/logger.js';
 
 import { MultimodalEmbeddingService } from './multimodal-embedding.service.js';
@@ -330,7 +331,7 @@ export class AttachmentService {
       // Update embedding in LanceDB attachments table
       const attachmentsTable = await this.lanceDatabaseService.openTable('attachments');
       await attachmentsTable.update({
-        where: `attachmentId = '${attachmentId}'`,
+        where: `attachmentId = ${lanceStringLiteral(attachmentId)}`,
         values: {
           multimodalEmbedding: embedding,
           multimodalModelHash: modelHash,
@@ -473,7 +474,7 @@ export class AttachmentService {
     try {
       const attachmentsTable = await this.lanceDatabaseService.openTable('attachments');
       await attachmentsTable.update({
-        where: `attachmentId = '${attachmentId}'`,
+        where: `attachmentId = ${lanceStringLiteral(attachmentId)}`,
         values: {
           deletedAt: Date.now(),
         },

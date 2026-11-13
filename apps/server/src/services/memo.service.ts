@@ -6,6 +6,7 @@ import { getDatabase } from '../db/connection.js';
 import { memos, memoRelations } from '../db/schema/index.js';
 import { withTransaction } from '../db/transaction.js';
 import { generateTypeId } from '../utils/id.js';
+import { lanceStringLiteral } from '../utils/lance-string.js';
 import { logger } from '../utils/logger.js';
 import { toStringList } from '../utils/arrow.js';
 
@@ -578,7 +579,7 @@ export class MemoService {
       // Restore memo in LanceDB
       const memosTable = await this.openMemosTable();
       await memosTable.update({
-        where: `memoId = '${memoId}'`,
+        where: `memoId = ${lanceStringLiteral(memoId)}`,
         values: { deletedAt: 0 },
       });
 
@@ -660,7 +661,7 @@ export class MemoService {
 
       // Physically delete from LanceDB
       const memosTable = await this.openMemosTable();
-      await memosTable.delete(`memoId = '${memoId}'`);
+      await memosTable.delete(`memoId = ${lanceStringLiteral(memoId)}`);
 
       logger.info('Memo permanently deleted from LanceDB:', { memoId });
 
@@ -924,7 +925,7 @@ export class MemoService {
       }
 
       await memosTable.update({
-        where: `memoId = '${memoId}'`,
+        where: `memoId = ${lanceStringLiteral(memoId)}`,
         values: lanceUpdateValues,
       });
 
@@ -1070,7 +1071,7 @@ export class MemoService {
       // Soft delete memo in LanceDB (outside transaction)
       const memosTable = await this.openMemosTable();
       await memosTable.update({
-        where: `memoId = '${memoId}'`,
+        where: `memoId = ${lanceStringLiteral(memoId)}`,
         values: { deletedAt },
       });
 
@@ -1201,12 +1202,12 @@ export class MemoService {
       const memosTable = await this.openMemosTable();
 
       // Build filter string for LanceDB
-      let filterStr = `uid = '${uid}' AND deletedAt = 0`;
+      let filterStr = `uid = ${lanceStringLiteral(uid)} AND deletedAt = 0`;
 
       const isUncategorizedFilter = categoryId === UNCATEGORIZED_CATEGORY_ID;
 
       if (categoryId && !isUncategorizedFilter) {
-        filterStr += ` AND categoryId = '${categoryId}'`;
+        filterStr += ` AND categoryId = ${lanceStringLiteral(categoryId)}`;
       } else if (isUncategorizedFilter) {
         filterStr += ` AND categoryId IS NULL`;
       }
@@ -1385,7 +1386,11 @@ export class MemoService {
       const memosTable = await this.openMemosTable();
       const vectorResults = await memosTable
         .query()
-        .where(`memoId = '${memoId}' AND uid = '${uid}' AND deletedAt = 0`)
+        .where(
+          `memoId = ${lanceStringLiteral(memoId)} AND uid = ${lanceStringLiteral(
+            uid
+          )} AND deletedAt = 0`
+        )
         .limit(1)
         .toArray();
 
@@ -1400,7 +1405,7 @@ export class MemoService {
       const offset = (page - 1) * limit;
       const similarMemos = await memosTable
         .search(memoEmbedding)
-        .where(`uid = '${uid}' AND deletedAt = 0`) // Filter by user and not deleted
+        .where(`uid = ${lanceStringLiteral(uid)} AND deletedAt = 0`) // Filter by user and not deleted
         .limit(limit + offset + 1) // +1 to exclude self
         .toArray();
 

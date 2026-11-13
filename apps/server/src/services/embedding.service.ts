@@ -6,6 +6,7 @@ import { Service } from 'typedi';
 
 import { config } from '../config/config.js';
 import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
+import { lanceStringLiteral } from '../utils/lance-string.js';
 import { logger } from '../utils/logger.js';
 
 @Service()
@@ -54,7 +55,11 @@ export class EmbeddingService {
       const cacheTable = await this.lanceDatabase.openTable('embedding_cache');
       const results = await cacheTable
         .query()
-        .where(`modelHash = '${modelHash}' AND contentHash = '${contentHash}'`)
+        .where(
+          `modelHash = ${lanceStringLiteral(modelHash)} AND contentHash = ${lanceStringLiteral(
+            contentHash
+          )}`
+        )
         .limit(1)
         .toArray();
 
