@@ -13,6 +13,7 @@ import { getDatabase } from '../db/connection.js';
 import { attachments } from '../db/schema/attachments.js';
 import { LanceDbService as LanceDatabaseService } from '../sources/lancedb.js';
 import { UnifiedStorageAdapterFactory } from '../sources/unified-storage-adapter/index.js';
+import { safeFileExtension } from '../utils/file-extension.js';
 import { lanceStringLiteral } from '../utils/lance-string.js';
 import { logger } from '../utils/logger.js';
 
@@ -63,7 +64,7 @@ export class AttachmentService {
     // Generate storage path: {uid}/{YYYY-MM-DD}/{nanoid24}.{ext}
     // Note: prefix (e.g., 'attachments') is added by the storage adapter
     const fileId = nanoid(24);
-    const extension = filename.split('.').pop() || '';
+    const extension = safeFileExtension(filename);
     const dateString = dayjs().format('YYYY-MM-DD');
     const path = `${uid}/${dateString}/${fileId}.${extension}`;
 

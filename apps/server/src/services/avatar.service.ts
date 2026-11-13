@@ -9,6 +9,7 @@ import { Service } from 'typedi';
 
 import { config } from '../config/config.js';
 import { UnifiedStorageAdapterFactory } from '../sources/unified-storage-adapter/index.js';
+import { safeFileExtension } from '../utils/file-extension.js';
 import { logger } from '../utils/logger.js';
 
 import type { UnifiedStorageAdapter } from '../sources/unified-storage-adapter/index.js';
@@ -44,7 +45,7 @@ export class AvatarService {
 
     // 生成唯一文件名
     const fileId = nanoid(24);
-    const extension = filename.split('.').pop() || 'png';
+    const extension = safeFileExtension(filename, 'png');
     const dateString = dayjs().format('YYYY-MM-DD');
 
     // 构建存储路径: avatar/{uid}/{YYYY-MM-DD}/{nanoid}.{ext}

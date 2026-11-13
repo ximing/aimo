@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import { logger } from '../../utils/logger.js';
+import { resolveInsideBase } from '../../utils/storage-path.js';
 
 import { BaseUnifiedStorageAdapter, type StorageMetadata } from './base.adapter.js';
 
@@ -23,8 +24,8 @@ export class LocalUnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
   }
 
   async uploadFile(key: string, buffer: Buffer): Promise<void> {
+    const filePath = resolveInsideBase(this.basePath, key);
     try {
-      const filePath = path.join(this.basePath, key);
       const dir = path.dirname(filePath);
 
       // Ensure directory exists
@@ -40,8 +41,8 @@ export class LocalUnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
   }
 
   async downloadFile(key: string): Promise<Buffer> {
+    const filePath = resolveInsideBase(this.basePath, key);
     try {
-      const filePath = path.join(this.basePath, key);
       const buffer = await fs.readFile(filePath);
       logger.debug(`File downloaded from local storage: ${filePath}`);
       return buffer;
@@ -52,8 +53,8 @@ export class LocalUnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
   }
 
   async deleteFile(key: string): Promise<void> {
+    const filePath = resolveInsideBase(this.basePath, key);
     try {
-      const filePath = path.join(this.basePath, key);
       await fs.unlink(filePath);
       logger.debug(`File deleted from local storage: ${filePath}`);
     } catch (error) {
@@ -66,9 +67,8 @@ export class LocalUnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
   }
 
   async listFiles(prefix?: string): Promise<string[]> {
+    const searchPath = prefix ? resolveInsideBase(this.basePath, prefix) : this.basePath;
     try {
-      const searchPath = prefix ? path.join(this.basePath, prefix) : this.basePath;
-
       const stat = await fs.stat(searchPath).catch(() => null);
       if (!stat || !stat.isDirectory()) {
         return [];
@@ -94,8 +94,8 @@ export class LocalUnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
   }
 
   async fileExists(key: string): Promise<boolean> {
+    const filePath = resolveInsideBase(this.basePath, key);
     try {
-      const filePath = path.join(this.basePath, key);
       await fs.access(filePath);
       return true;
     } catch {
@@ -107,8 +107,8 @@ export class LocalUnifiedStorageAdapter extends BaseUnifiedStorageAdapter {
     size: number;
     lastModified: Date;
   } | null> {
+    const filePath = resolveInsideBase(this.basePath, key);
     try {
-      const filePath = path.join(this.basePath, key);
       const stat = await fs.stat(filePath);
       return {
         size: stat.size,
