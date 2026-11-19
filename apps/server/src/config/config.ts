@@ -147,6 +147,19 @@ export interface Config {
     token: string; // 可选，提高 GitHub API 限额
     androidMinVersionCode?: number; // 低于该 versionCode 的客户端必须更新
   };
+  web: {
+    origin: string; // 站点 origin，OIDC 回调必须与它同源
+  };
+  oidc: {
+    issuer?: string;
+    clientId?: string;
+    clientSecret?: string;
+    redirectUri?: string;
+    audience?: string;
+    scopes?: string;
+    adminUser?: string;
+    adminPassword?: string;
+  };
   env: string;
 }
 
@@ -309,6 +322,19 @@ export const config: Config = {
     token: process.env.GITHUB_RELEASES_TOKEN || '',
     androidMinVersionCode: positiveInt(process.env.ANDROID_RELEASE_MIN_VERSION_CODE),
   },
+  web: {
+    origin: (process.env.WEB_ORIGIN || 'http://localhost:5173').trim().replace(/\/$/, ''),
+  },
+  oidc: {
+    issuer: emptyToUndefined(process.env.OIDC_ISSUER),
+    clientId: emptyToUndefined(process.env.OIDC_CLIENT_ID),
+    clientSecret: emptyToUndefined(process.env.OIDC_CLIENT_SECRET),
+    redirectUri: emptyToUndefined(process.env.OIDC_REDIRECT_URI),
+    audience: emptyToUndefined(process.env.OIDC_AUDIENCE),
+    scopes: emptyToUndefined(process.env.OIDC_SCOPES),
+    adminUser: emptyToUndefined(process.env.OIDC_ADMIN_USER),
+    adminPassword: emptyToUndefined(process.env.OIDC_ADMIN_PASSWORD),
+  },
   env: process.env.NODE_ENV || 'development',
 };
 
@@ -317,4 +343,10 @@ function positiveInt(value: string | undefined): number | undefined {
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed < 1) return undefined;
   return parsed;
+}
+
+function emptyToUndefined(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
 }

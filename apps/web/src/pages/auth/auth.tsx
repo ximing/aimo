@@ -5,6 +5,8 @@ import { AuthService } from '../../services/auth.service';
 import { LoginForm } from './components/login-form';
 import { RegisterForm } from './components/register-form';
 import { getSystemConfig } from '../../api/system';
+import { getOidcStatus } from '../../api/oidc';
+import { oidcErrorText } from '../../utils/oidc-error-text';
 import logoLight from '../../assets/logo.png';
 import logoDark from '../../assets/logo-dark.png';
 
@@ -13,7 +15,9 @@ export const AuthPage = view(() => {
   const authService = useService(AuthService);
   const navigate = useNavigate();
   const [allowRegistration, setAllowRegistration] = useState(true);
+  const [oidcEnabled, setOidcEnabled] = useState(false);
   const isLogin = searchParams.get('mode') !== 'register';
+  const oidcError = oidcErrorText(searchParams.get('oidc_error'));
 
   // Fetch system config
   useEffect(() => {
@@ -33,6 +37,26 @@ export const AuthPage = view(() => {
     };
     fetchConfig();
   }, [isLogin, navigate]);
+
+  useEffect(() => {
+    let active = true;
+    getOidcStatus()
+      .then((status) => {
+        if (active) setOidcEnabled(Boolean(status.enabled));
+      })
+      .catch(() => {
+        if (active) setOidcEnabled(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!authService.isAuthenticated) {
+      void authService.checkAuth();
+    }
+  }, [authService]);
 
   // Redirect to home if already authenticated
   useEffect(() => {
@@ -61,8 +85,14 @@ export const AuthPage = view(() => {
             </p>
           </div>
 
+          {oidcError && (
+            <div className="bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg text-sm mb-6">
+              {oidcError}
+            </div>
+          )}
+
           {/* Forms */}
-          {isLogin ? <LoginForm /> : <RegisterForm />}
+          {isLogin ? <LoginForm oidcEnabled={oidcEnabled} /> : <RegisterForm />}
 
           {/* Toggle */}
           {allowRegistration && (

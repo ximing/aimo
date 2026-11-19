@@ -23,3 +23,10 @@ export const register = (data: RegisterDto) => {
 export const login = (data: LoginDto) => {
   return request.post<LoginDto, ApiResponseDto<LoginResponseDto>>('/api/v1/auth/login', data);
 };
+
+/**
+ * Clear the httpOnly session cookie. Does not call Keycloak.
+ */
+export const logout = () => {
+  return request.post<unknown, ApiResponseDto<{ ok: boolean }>>('/api/v1/auth/logout');
+};

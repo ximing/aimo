@@ -19,6 +19,15 @@ const AUTH_EXCLUDED_PATHS = [
   '/api/v1/system/open',
 ];
 
+// Exact paths only. Do not exclude the whole /api/v1/auth/oidc prefix:
+// bind/start and /account stay behind the session.
+const AUTH_EXCLUDED_EXACT = new Set([
+  '/api/v1/auth/logout',
+  '/api/v1/auth/oidc/status',
+  '/api/v1/auth/oidc/start',
+  '/api/v1/auth/oidc/callback',
+]);
+
 /**
  * Check if the request path requires authentication.
  * Only API requests are guarded — page and static-asset requests must pass
@@ -26,6 +35,9 @@ const AUTH_EXCLUDED_PATHS = [
  */
 const requiresAuth = (path: string): boolean => {
   if (!path.startsWith('/api')) {
+    return false;
+  }
+  if (AUTH_EXCLUDED_EXACT.has(path)) {
     return false;
   }
   // Check if path is explicitly excluded from auth

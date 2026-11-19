@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router';
 import { view, useService } from '@rabjs/react';
 import { AuthService } from '../../../services/auth.service';
 
-export const LoginForm = view(() => {
+export const LoginForm = view(({ oidcEnabled = false }: { oidcEnabled?: boolean }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -96,6 +96,20 @@ export const LoginForm = view(() => {
       >
         {loading ? 'Signing in...' : 'Sign In'}
       </button>
+
+      {oidcEnabled && (
+        <div className="pt-2 space-y-2">
+          <a
+            href="/api/v1/auth/oidc/start?returnTo=/home"
+            className="block w-full text-center border border-gray-300 dark:border-dark-600 text-gray-800 dark:text-gray-100 font-medium py-3 px-4 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"
+          >
+            使用统一账号登录
+          </a>
+          <p className="text-xs text-center text-gray-500 dark:text-dark-400">
+            使用管理员已经开通的统一账号。这里不会注册新账号。
+          </p>
+        </div>
+      )}
     </form>
   );
 });

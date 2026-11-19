@@ -22,7 +22,7 @@ export const updateUserInfo = (data: UpdateUserDto) => {
  * Change password
  */
 export const changePassword = (data: ChangePasswordDto) => {
-  return request.post<unknown, { code: number; data: { message: string } }>(
+  return request.post<unknown, { code: number; msg?: string; data: { message: string } | null }>(
     '/api/v1/user/password',
     data
   );

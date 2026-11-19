@@ -11,6 +11,7 @@ import morgan from 'morgan';
 import { useExpressServer, Action, useContainer } from 'routing-controllers';
 import { Container } from 'typedi';
 
+import { redactOidcUrl } from './auth/oidc-logic.js';
 import { config } from './config/config.js';
 import { controllers } from './controllers/index.js';
 import { initializeDatabase, checkConnectionHealth, closeDatabase } from './db/connection.js';
@@ -18,6 +19,7 @@ import { runMigrations } from './db/migrate.js';
 import { initIOC } from './ioc.js';
 import { authHandler } from './middlewares/auth-handler.js';
 import { errorHandler } from './middlewares/error-handler.js';
+import { logOidcStartup } from './services/oidc.service.js';
 import { SchedulerService } from './services/scheduler.service.js';
 import { LanceDbService as LanceDatabaseService } from './sources/lancedb.js';
 import { logger } from './utils/logger.js';
@@ -47,6 +49,8 @@ export async function createApp() {
     logger.error('Failed to run database migrations:', error);
     throw error;
   }
+
+  logOidcStartup();
 
   await Container.get(LanceDatabaseService).init();
 
@@ -80,7 +84,22 @@ export async function createApp() {
   );
   app.use(cors());
   app.use(cookieParser());
-  app.use(morgan('dev'));
+  app.use(
+    morgan((tokens, req, res) => {
+      const url = redactOidcUrl(tokens.url(req, res) ?? '');
+      return [
+        tokens.method(req, res),
+        url,
+        tokens.status(req, res),
+        tokens['response-time'](req, res),
+        'ms',
+        '-',
+        tokens.res(req, res, 'content-length'),
+      ]
+        .filter((part) => part !== undefined)
+        .join(' ');
+    })
+  );
   app.use(bodyParser.json());
   app.use(bodyParser.urlencoded({ extended: true }));
   app.use(authHandler);

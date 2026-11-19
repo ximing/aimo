@@ -4,6 +4,7 @@
  */
 
 export * from './users.js';
+export * from './oidc-identities.js';
 export * from './categories.js';
 export * from './tags.js';
 export * from './memos.js';

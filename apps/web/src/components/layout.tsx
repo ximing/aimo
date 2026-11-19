@@ -74,8 +74,9 @@ export const Layout = view(({ children }: LayoutProps) => {
 
   const handleLogout = () => {
     setIsMenuOpen(false);
-    authService.logout();
-    navigate('/auth', { replace: true });
+    void authService.logout().finally(() => {
+      navigate('/auth', { replace: true });
+    });
   };
 
   const handleMemoClick = () => {

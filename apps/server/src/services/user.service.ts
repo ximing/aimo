@@ -1,8 +1,13 @@
-import * as bcrypt from 'bcrypt';
 import { Service } from 'typedi';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 
+import {
+  hashPassword as hashPasswordValue,
+  verifyPassword as verifyPasswordValue,
+} from '../auth/password.js';
+import { normalizeEmail } from '../auth/oidc-logic.js';
 import { getDatabase } from '../db/connection.js';
+import { categories } from '../db/schema/categories.js';
 import { users } from '../db/schema/users.js';
 import { generateUid } from '../utils/id.js';
 import { logger } from '../utils/logger.js';
@@ -64,7 +69,7 @@ export class UserService {
 
       return createdUser;
     } catch (error) {
-      logger.error('Error creating user:', error);
+      logger.error('Error creating user');
       throw error;
     }
   }
@@ -74,11 +79,13 @@ export class UserService {
    */
   async findUserByEmail(email: string): Promise<User | null> {
     try {
+      const normalized = normalizeEmail(email);
+      if (!normalized) return null;
       const db = getDatabase();
       const results = await db
         .select()
         .from(users)
-        .where(and(eq(users.email, email), eq(users.deletedAt, 0)))
+        .where(and(sql`lower(${users.email}) = ${normalized}`, eq(users.deletedAt, 0)))
         .limit(1);
 
       return results.length > 0 ? results[0] : null;
@@ -129,27 +136,30 @@ export class UserService {
   /**
    * Verify user password
    */
-  async verifyPassword(plainPassword: string, hashedPassword: string): Promise<boolean> {
+  async verifyPassword(plainPassword: string, hashedPassword: string | null): Promise<boolean> {
+    return verifyPasswordValue(plainPassword, hashedPassword);
+  }
+
+  /**
+   * Hash a new password as argon2id. The salt lives inside the PHC string.
+   */
+  async hashPassword(password: string): Promise<{ hashedPassword: string; salt: null }> {
     try {
-      return await bcrypt.compare(plainPassword, hashedPassword);
+      const hashedPassword = await hashPasswordValue(password);
+      return { hashedPassword, salt: null };
     } catch (error) {
-      logger.error('Error verifying password:', error);
-      return false;
+      logger.error('Error hashing password');
+      throw error;
     }
   }
 
   /**
-   * Hash password with bcrypt
+   * Remove a user created in this request when Keycloak or the identity row failed.
    */
-  async hashPassword(password: string): Promise<{ hashedPassword: string; salt: string }> {
-    try {
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(password, salt);
-      return { hashedPassword, salt };
-    } catch (error) {
-      logger.error('Error hashing password:', error);
-      throw error;
-    }
+  async deleteCreatedUser(uid: string): Promise<void> {
+    const db = getDatabase();
+    await db.delete(categories).where(eq(categories.uid, uid));
+    await db.delete(users).where(eq(users.uid, uid));
   }
 
   /**
@@ -182,7 +192,7 @@ export class UserService {
 
       return updatedUser;
     } catch (error) {
-      logger.error('Error updating user:', error);
+      logger.error('Error updating user');
       throw error;
     }
   }
@@ -228,6 +238,10 @@ export class UserService {
         return { success: false, message: '用户不存在' };
       }
 
+      if (!user.password) {
+        return { success: false, message: '此账号没有本地密码' };
+      }
+
       // Verify old password
       const isPasswordValid = await this.verifyPassword(oldPassword, user.password);
       if (!isPasswordValid) {
@@ -244,8 +258,8 @@ export class UserService {
       });
 
       return { success: true, message: '密码修改成功' };
-    } catch (error) {
-      logger.error('Error changing password:', error);
+    } catch {
+      logger.error('Error changing password');
       return { success: false, message: '密码修改失败' };
     }
   }

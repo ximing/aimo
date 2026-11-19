@@ -95,17 +95,16 @@ export class AuthService extends Service {
 
       if (response.code === 0) {
         return { success: true };
-      } else {
-        return {
-          success: false,
-          message: 'Registration failed',
-        };
       }
+      return {
+        success: false,
+        message: response.msg || 'Registration failed',
+      };
     } catch (error: unknown) {
       console.error('Registration error:', error);
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Registration failed',
+        message: messageFrom(error, 'Registration failed'),
       };
     }
   }
@@ -114,6 +113,11 @@ export class AuthService extends Service {
    * Logout current user
    */
   async logout() {
+    try {
+      await authApi.logout();
+    } catch (error: unknown) {
+      console.error('Logout error:', error);
+    }
     await this.clearAuthState();
   }
 
@@ -205,20 +209,29 @@ export class AuthService extends Service {
     try {
       const response = await userApi.changePassword(data);
 
-      if (response.code === 0 && response.data) {
-        return { success: true, message: response.data.message };
+      if (response.code === 0) {
+        return { success: true, message: response.data?.message || response.msg };
       }
 
       return {
         success: false,
-        message: response.data?.message || 'Password change failed',
+        message: response.msg || response.data?.message || 'Password change failed',
       };
     } catch (error: unknown) {
       console.error('Change password error:', error);
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Password change failed',
+        message: messageFrom(error, 'Password change failed'),
       };
     }
   }
+}
+
+function messageFrom(error: unknown, fallback: string): string {
+  if (typeof error === 'object' && error && 'message' in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === 'string' && message.length > 0) return message;
+  }
+  if (error instanceof Error && error.message) return error.message;
+  return fallback;
 }

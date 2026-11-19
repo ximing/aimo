@@ -1,6 +1,9 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { useSearchParams } from 'react-router';
 import { view, useService } from '@rabjs/react';
 import { AuthService } from '../../../services/auth.service';
+import { getOidcAccount, type OidcAccount } from '../../../api/oidc';
+import { oidcErrorText } from '../../../utils/oidc-error-text';
 import { Save, Camera, User as UserIcon } from 'lucide-react';
 import { toast } from '../../../services/toast.service';
 
@@ -8,6 +11,23 @@ export const AccountSettings = view(() => {
   const authService = useService(AuthService);
   const user = authService.user;
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [searchParams] = useSearchParams();
+  const [oidcAccount, setOidcAccount] = useState<OidcAccount | null>(null);
+  const oidcError = oidcErrorText(searchParams.get('oidc_error'));
+
+  useEffect(() => {
+    let active = true;
+    getOidcAccount()
+      .then((account) => {
+        if (active) setOidcAccount(account);
+      })
+      .catch(() => {
+        if (active) setOidcAccount(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // User info form state
   const [nickname, setNickname] = useState(user?.nickname || '');
@@ -235,74 +255,101 @@ export const AccountSettings = view(() => {
         </form>
       </div>
 
+      {oidcAccount?.enabled && (
+        <div className="bg-white dark:bg-dark-800 rounded-lg p-6">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-50 mb-4">统一账号</h2>
+          {oidcError && (
+            <p className="mb-3 text-sm text-red-600 dark:text-red-400" role="alert">
+              {oidcError}
+            </p>
+          )}
+          {oidcAccount.linked ? (
+            <p className="text-sm text-gray-700 dark:text-gray-300">已绑定统一账号</p>
+          ) : (
+            <a
+              href="/api/v1/auth/oidc/bind/start"
+              className="inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-dark-600 rounded-lg text-sm text-gray-800 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-dark-700"
+            >
+              绑定统一账号
+            </a>
+          )}
+        </div>
+      )}
+
       {/* Password Change Form */}
       <div className="bg-white dark:bg-dark-800 rounded-lg p-6">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-50 mb-4">修改密码</h2>
-        <form onSubmit={handleUpdatePassword} className="space-y-4">
-          <div>
-            <label
-              htmlFor="oldPassword"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-            >
-              当前密码
-            </label>
-            <input
-              type="password"
-              id="oldPassword"
-              value={oldPassword}
-              onChange={(e) => setOldPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-200 dark:border-dark-700 rounded-lg bg-white dark:bg-dark-900 text-gray-900 dark:text-gray-50 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-colors"
-              placeholder="请输入当前密码"
-              required
-            />
-          </div>
+        {oidcAccount && !oidcAccount.hasPassword ? (
+          <p className="text-sm text-gray-600 dark:text-gray-400">此账号没有本地密码</p>
+        ) : (
+          <>
+            <form onSubmit={handleUpdatePassword} className="space-y-4">
+              <div>
+                <label
+                  htmlFor="oldPassword"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
+                  当前密码
+                </label>
+                <input
+                  type="password"
+                  id="oldPassword"
+                  value={oldPassword}
+                  onChange={(e) => setOldPassword(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-dark-700 rounded-lg bg-white dark:bg-dark-900 text-gray-900 dark:text-gray-50 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-colors"
+                  placeholder="请输入当前密码"
+                  required
+                />
+              </div>
 
-          <div>
-            <label
-              htmlFor="newPassword"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-            >
-              新密码
-            </label>
-            <input
-              type="password"
-              id="newPassword"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-200 dark:border-dark-700 rounded-lg bg-white dark:bg-dark-900 text-gray-900 dark:text-gray-50 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-colors"
-              placeholder="请输入新密码"
-              required
-            />
-          </div>
+              <div>
+                <label
+                  htmlFor="newPassword"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
+                  新密码
+                </label>
+                <input
+                  type="password"
+                  id="newPassword"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-dark-700 rounded-lg bg-white dark:bg-dark-900 text-gray-900 dark:text-gray-50 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-colors"
+                  placeholder="请输入新密码"
+                  required
+                />
+              </div>
 
-          <div>
-            <label
-              htmlFor="confirmPassword"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-            >
-              确认新密码
-            </label>
-            <input
-              type="password"
-              id="confirmPassword"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-200 dark:border-dark-700 rounded-lg bg-white dark:bg-dark-900 text-gray-900 dark:text-gray-50 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-colors"
-              placeholder="请再次输入新密码"
-              required
-            />
-          </div>
+              <div>
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
+                  确认新密码
+                </label>
+                <input
+                  type="password"
+                  id="confirmPassword"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-dark-700 rounded-lg bg-white dark:bg-dark-900 text-gray-900 dark:text-gray-50 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-colors"
+                  placeholder="请再次输入新密码"
+                  required
+                />
+              </div>
 
-          <div className="flex justify-end pt-2">
-            <button
-              type="submit"
-              className="flex items-center gap-2 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
-            >
-              <Save className="w-4 h-4" />
-              <span>更新密码</span>
-            </button>
-          </div>
-        </form>
+              <div className="flex justify-end pt-2">
+                <button
+                  type="submit"
+                  className="flex items-center gap-2 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>更新密码</span>
+                </button>
+              </div>
+            </form>
+          </>
+        )}
       </div>
     </div>
   );
